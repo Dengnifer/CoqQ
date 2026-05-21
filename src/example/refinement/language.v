@@ -1,5 +1,5 @@
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 From mathcomp.classical Require Import boolp classical_sets.
 From mathcomp.algebra Require Import -(notations)sesquilinear.
@@ -14,8 +14,8 @@ Require Import mcextra mcaextra notation hermitian quantum
 From quantum Require Import prodvect tensor mxpred cpo extnum
   ctopology qreg qmem.
 From quantum.dirac Require Import hstensor.
-From Coq.Program Require Import Equality.
-From Coq.Strings Require Import String.
+From Stdlib.Program Require Import Equality.
+From Stdlib.Strings Require Import String.
 (* Require Import Relation_Definitions Setoid. *)
 
 (*****************************************************************************)
@@ -200,7 +200,8 @@ Fixpoint fsem_aux (c : cmd_) : set 'SO[msys]_finset.setT  :=
                          l n \in (~` P) :so ( [| c |] :so P ) ^ n  } *)
   end.
 
-Definition fsem_r := nosimpl fsem_aux.
+Definition fsem_r := fsem_aux.
+Arguments fsem_r : simpl never.
 Fact fsem_key : unit. Proof. by []. Qed.
 Definition fsem := locked_with fsem_key fsem_r.
 Canonical fsem_unlockable := [unlockable of fsem].
@@ -723,22 +724,15 @@ set f := \sum_(i < n) _; have Pf: f \is psdlf.
   by rewrite (CPMap_BuildE (comprso_cp _ _ _)) is_psdlf.
 rewrite (QOperation_BuildE (fsem_qo Pe)) (PsdLf_BuildE Pf).
 set E1 := _ (_ Pe).
-have E1_refl (U : {hspace 'H_[set: mlab]}) : E1 U U by rewrite /E1.
-set f1 := _ Pf; move: E1 E1_refl f1 => E1 E1_refl f1.
+have E1cp : E1 ^*o \is cpmap by rewrite /E1 dualso_cpE; exact: cptn_cpmap (fsem_qo Pe).
+set f1 := _ Pf; move: E1 E1cp f1 => E1 E1cp f1.
 rewrite kerhD/= caphC; f_equal.
-have Ecp : E ^*o \is cpmap by rewrite dualso_cpE; exact: cptn_cpmap (fsem_qo Pe).
-rewrite dualso_comp soE (CPMap_BuildE Ecp) kerh_cp_supp/=.
-have Ef1psd : E ^*o f1 \is psdlf.
-  by rewrite (CPMap_BuildE Ecp); apply: cp_psdlf.
-rewrite (PsdLf_BuildE Ef1psd) -kerh_cp_supp/=.
-rewrite dualso_formE hermf_adjE/= -th2hE -liftfhE shookhE.
-have ->: supph (E ^*o f1) = ~` kerh (E ^*o f1) by rewrite supphE.
-rewrite dualso_formE hermf_adjE/=.
-have ->: liftf_lf (tf2f x x (~` P)) = liftfh x (~` P) :> 'End(_) 
-  by rewrite -th2hE -liftfhE.
-have ->: liftfh x (~` P) `=>` R =
-    kerh ((liftfh x (~` P) \o ~` R) \o liftfh x (~` P)) by rewrite shookhE.
-by apply: E1_refl.
+- rewrite dualso_comp soE (CPMap_BuildE E1cp) kerh_cp_supp/=.
+  have Ef1psd : E1 ^*o f1 \is psdlf.
+    by rewrite (CPMap_BuildE E1cp); apply: cp_psdlf.
+  rewrite (PsdLf_BuildE Ef1psd) -kerh_cp_supp/=.
+  by rewrite dualso_formE hermf_adjE/= -th2hE -liftfhE shookhE supphE.
+- by rewrite dualso_formE hermf_adjE/= -th2hE -liftfhE shookhE.
 Qed.
 
 (*****************************************************************************)
@@ -897,7 +891,7 @@ transitivity (\cups_(x0 in [set l | (forall n : nat, fsem c (l n))])
   rewrite -so_liml. apply: Pc.
   rewrite supphE kerh_limn ?capsO.
     - apply: so_is_cvgl. apply: Pc.
-    - apply/chain_homo=>i; rewrite big_ord_recr/= soE sum_soE levDl -psdlfE.
+    - apply/chain_homo=>i; rewrite big_ord_recr/= soE add_soE sum_soE levDl -psdlfE.
       under eq_bigr do rewrite (QOperation_BuildE (fsem_qo (Pl _))).
       by rewrite (CPMap_BuildE (comprso_cp _ _ _)) is_psdlf.
     - move=>n; rewrite soE; apply/psdlf_sum=>/=i _.

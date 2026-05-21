@@ -1,6 +1,6 @@
 (* -------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 
 (* -------------------------------------------------------------------- *)
@@ -117,7 +117,7 @@ End ProdVectorZmod.
 
 (* ==================================================================== *)
 Section ProdVectorLmodType.
-Context {A : ringType} {I : finType} (E : I -> lmodType A).
+Context {A : nzRingType} {I : finType} (E : I -> lmodType A).
 
 Implicit Types u v w : mvector E.
 
@@ -164,7 +164,7 @@ Let S {i : I} (x : 'I_(dim (E i))) : Z := Tagged _ x.
 Let D := (\sum_i dim (E i))%N.
 
 Lemma vect_axiom_eqdim
-    {A : ringType} {M : lmodType A} (m n : nat) (eq_nm : n = m)
+    {A : nzRingType} {M : lmodType A} (m n : nat) (eq_nm : n = m)
   : Vector.axiom n M -> Vector.axiom m M.
 Proof.
 pose F (r : 'rV[A]_n) := castmx (erefl _, eq_nm) r.

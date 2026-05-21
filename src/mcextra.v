@@ -1,11 +1,11 @@
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 From mathcomp.fingroup Require Import perm fingroup.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
-From Coq.Bool Require Import Bool.
-Require Import Eqdep_dec.
+From Stdlib.Bool Require Import Bool.
+From Stdlib Require Import Eqdep_dec.
 
 Import Order.TTheory GRing.Theory Num.Theory ComplexField Num.Def complex.
 Import VectorInternalTheory.
@@ -23,7 +23,7 @@ Local Open Scope ring_scope.
 
 Notation "x %:C" := (real_complex _ x)
   (at level 2, format "x %:C") : ring_scope.
-Notation "x %:VF" := (x : 'Hom(_,_)) 
+Notation "x %:VF" := (x : 'Hom(_,_))
   (at level 2, format "x %:VF") : lfun_scope.
 Notation "t ~_ i" := (tnth t i) (at level 3, i at level 2).
 Notation nlift := (fintype.lift).
@@ -32,33 +32,33 @@ Notation "A :<=: B" := (A \subset B) (at level 70, no associativity) : set_scope
 Section VecterInternalTheoryExtra.
 Local Open Scope lfun_scope.
 
-Lemma comp_lfunACA (R : ringType) (U1 U2 U3 U4 U5 : vectType R) (A: 'Hom(U4,U5)) (B: 'Hom(U3,U4))
+Lemma comp_lfunACA (R : nzRingType) (U1 U2 U3 U4 U5 : vectType R) (A: 'Hom(U4,U5)) (B: 'Hom(U3,U4))
 (C: 'Hom(U2,U3)) (D: 'Hom(U1,U2)) :
   A \o B \o C \o D = A \o (B \o C) \o D.
 Proof. by rewrite !comp_lfunA. Qed.
 
-Lemma linearlfE (R : ringType) (U V : lmodType R) 
+Lemma linearlfE (R : nzRingType) (U V : lmodType R)
   (f : U -> V) (lf: linear f) : f =
   (HB.pack f (GRing.isLinear.Build _ _ _ _ f lf) : GRing.Linear.type _ _).
 Proof. by []. Qed.
 
-Lemma scalarlfE (R : ringType) (U : lmodType R) 
+Lemma scalarlfE (R : nzRingType) (U : lmodType R)
   (f : U -> R) (lf: scalar f) : f =
   (HB.pack f (GRing.isLinear.Build _ _ _ _ f lf) : GRing.Linear.type _ _).
 Proof. by []. Qed.
 
-Lemma can2_linearP (R : ringType) (U V : lmodType R) (f : U -> V) (f' : V -> U) :
+Lemma can2_linearP (R : nzRingType) (U V : lmodType R) (f : U -> V) (f' : V -> U) :
   linear f -> cancel f f' -> cancel f' f -> linear f'.
 Proof. move=>lf; rewrite (linearlfE lf); exact: can2_linear. Qed.
 
-Lemma can2_bij (R : ringType) (U V : lmodType R) (f : U -> V) (f' : V -> U) :
+Lemma can2_bij (R : nzRingType) (U V : lmodType R) (f : U -> V) (f' : V -> U) :
   cancel f f' -> cancel f' f -> bijective f'.
 Proof. by move=>fK f'K; exists f. Qed.
 
-Lemma v2r_bij (R : ringType) (V : vectType R) : bijective (@v2r _ V).
+Lemma v2r_bij (R : nzRingType) (V : vectType R) : bijective (@v2r _ V).
 Proof. exists (@r2v _ V). exact: v2rK. exact: r2vK. Qed.
 
-Lemma r2v_bij (R : ringType) (V : vectType R) : bijective (@r2v _ V).
+Lemma r2v_bij (R : nzRingType) (V : vectType R) : bijective (@r2v _ V).
 Proof. exists (@v2r _ V). exact: r2vK. exact: v2rK. Qed.
 Lemma f2mxK (R : fieldType) (U V : vectType R) : cancel (@f2mx _ U V) (Hom).
 Proof. move=>x; by apply/val_inj. Qed.
@@ -72,7 +72,7 @@ Proof. exact: (can_inj (@f2mxK _ _ _)). Qed.
 Lemma vecthom_inj (R : fieldType) (U V: vectType R) : injective (@Hom _ U V).
 Proof. exact: (can_inj (@vecthomK _ _ _)). Qed.
 
-Lemma comp_f2mx (R : ringType) (H G K: vectType R) (f: 'Hom(H,G)) (g: 'Hom(K,H)) :
+Lemma comp_f2mx (R : nzRingType) (H G K: vectType R) (f: 'Hom(H,G)) (g: 'Hom(K,H)) :
   f2mx (f \o g)%VF = f2mx g *m f2mx f.
 Proof.
 rewrite /comp_lfun /fun_of_lfun unlock /= /fun_of_lfun_def /= unlock.
@@ -82,8 +82,8 @@ by move=>k /negPf P; rewrite /delta_mx !mxE P mul0r.
 by rewrite /delta_mx !mxE !eqxx mul1r addr0.
 Qed.
 
-Lemma f2mx1 (R : ringType) (G: vectType R) : f2mx (\1%VF : 'End(G)) = 1%:M.
-Proof. 
+Lemma f2mx1 (R : nzRingType) (G: vectType R) : f2mx (\1%VF : 'End(G)) = 1%:M.
+Proof.
 suff: (\1%VF : 'End(G)) = Hom 1%:M. by move/(f_equal f2mx).
 apply/lfunP=>u; rewrite !lfunE/= /fun_of_lfun unlock /=.
 by rewrite /fun_of_lfun_def /= mulmx1 v2rK.
@@ -118,7 +118,7 @@ Proof. by move=>a f g; rewrite f2mxD f2mxZ. Qed.
 Lemma vecthom_is_linear (R : fieldType) (U V : vectType R) : linear (@Hom R U V).
 Proof. by move=>a A B; apply/f2mx_inj; rewrite f2mxD f2mxZ !vecthomK. Qed.
 
-Lemma f2mx_comp (R: ringType) (U V W: vectType R) (f : 'Hom(U,V)) (g: 'Hom(W,U)) :
+Lemma f2mx_comp (R: nzRingType) (U V W: vectType R) (f : 'Hom(U,V)) (g: 'Hom(W,U)) :
   f2mx (f \o g) = f2mx g *m f2mx f.
 Proof.
 rewrite /comp_lfun unlock/=. apply/matrixP=>i j.
@@ -176,7 +176,7 @@ End Etrans.
 
 Section perm_ord.
 
-Definition perm_ord_fun m n : 'I_(m+n) -> 'I_(m+n) := 
+Definition perm_ord_fun m n : 'I_(m+n) -> 'I_(m+n) :=
     (fun i => match fintype.split i with
               | inl j => (rshift _ j)
               | inr j => (lshift _ j) end) \o (cast_ord (addnC _ _)).
@@ -198,7 +198,7 @@ Lemma splitEr {m n} (k : 'I_m) : split (rshift n k) = inr k.
 Proof. by case: split_ordP=>[?/eqP|?/rshift_inj->//]; rewrite eq_rlshift. Qed.
 
 Lemma ltn_lrshift m n (i : 'I_m) (j : 'I_n) : (lshift n i < rshift m j)%N.
-Proof. by rewrite /=; apply/(leq_trans (n := m))=>//; rewrite leq_addr. Qed. 
+Proof. by rewrite /=; apply/(leq_trans (n := m))=>//; rewrite leq_addr. Qed.
 
 Lemma leq_lrshift m n (i : 'I_m) (j : 'I_n) : (lshift n i <= rshift m j)%N.
 Proof. by apply/ltnW/ltn_lrshift. Qed.
@@ -219,92 +219,92 @@ Variable (T T1 T2 : Type).
 
 Lemma castmx_inj p q p' q' (eqpq : (p = p') * (q = q')) :
   injective (@castmx T _ _ _ _ eqpq).
-Proof. 
+Proof.
 by case: eqpq=>eqp eqq; case: p' / eqp; case: q' / eqq=>x y; rewrite !castmx_id.
 Qed.
 
-Lemma castmx_cst_diag (f : forall m, 'M[T1]_m -> T2) m n 
+Lemma castmx_cst_diag (f : forall m, 'M[T1]_m -> T2) m n
   (eqmn : (m = n)) (A : 'M[T1]_m) :
   f _ (castmx (eqmn,eqmn) A) = f _ A.
 Proof. by case: n/eqmn; rewrite castmx_id. Qed.
 
-Lemma castmx_cst_rv (f : forall m, 'rV[T1]_m -> T2) m n 
+Lemma castmx_cst_rv (f : forall m, 'rV[T1]_m -> T2) m n
   (eqmn : (m = n)) (A : 'rV[T1]_m) :
   f _ (castmx (erefl _,eqmn) A) = f _ A.
 Proof. by case: n/eqmn; rewrite castmx_id. Qed.
 
-Lemma castmx_cst_cv (f : forall m, 'cV[T1]_m -> T2) m n 
+Lemma castmx_cst_cv (f : forall m, 'cV[T1]_m -> T2) m n
   (eqmn : (m = n)) (A : 'cV[T1]_m) :
   f _ (castmx (eqmn,erefl _) A) = f _ A.
 Proof. by case: n/eqmn; rewrite castmx_id. Qed.
 
-Lemma castmx_cst_mx (f : forall m n, 'M[T1]_(m,n) -> T2) m n p q 
+Lemma castmx_cst_mx (f : forall m n, 'M[T1]_(m,n) -> T2) m n p q
   (eqmn : (m = n) * (p = q)) (A : 'M[T1]_(m,p)) :
   f _ _ (castmx eqmn A) = f _ _ A.
 Proof. by case: eqmn=>a b; case: n/a; case: q/b; rewrite castmx_id. Qed.
 
-Lemma castmx_mx_diag (f : forall m, 'M[T1]_m -> 'M[T2]_m) m n 
+Lemma castmx_mx_diag (f : forall m, 'M[T1]_m -> 'M[T2]_m) m n
   (eqmn : (m = n)) (A : 'M[T1]_m) :
   f _ (castmx (eqmn,eqmn) A) = castmx (eqmn,eqmn) (f _ A).
 Proof. by case: n/eqmn; rewrite castmx_id. Qed.
 
-Lemma castmx_mx_mx (f : forall m n, 'M[T1]_(m,n) -> 'M[T2]_(m,n)) m n p q 
+Lemma castmx_mx_mx (f : forall m n, 'M[T1]_(m,n) -> 'M[T2]_(m,n)) m n p q
   (eqmn : (m = n) * (p = q)) (A : 'M[T1]_(m,p)) :
   f _ _ (castmx eqmn A) = castmx eqmn (f _ _ A).
 Proof. by case: eqmn=>a b; case: n/a; case: q/b; rewrite castmx_id. Qed.
 
-Lemma castmx_mx_rv (f : forall m, 'rV[T1]_m -> 'rV[T2]_m) m n 
+Lemma castmx_mx_rv (f : forall m, 'rV[T1]_m -> 'rV[T2]_m) m n
   (eqmn : (m = n)) (A : 'rV[T1]_m) :
   f _ (castmx (erefl _,eqmn) A) = castmx (erefl _,eqmn) (f _ A).
 Proof. by case: n/eqmn; rewrite castmx_id. Qed.
 
-Lemma castmx_mx_cv (f : forall m, 'cV[T1]_m -> 'cV[T2]_m) m n 
+Lemma castmx_mx_cv (f : forall m, 'cV[T1]_m -> 'cV[T2]_m) m n
   (eqmn : (m = n)) (A : 'cV[T1]_m) :
   f _ (castmx (eqmn,erefl _) A) = castmx (eqmn,erefl _) (f _ A).
 Proof. by case: n/eqmn; rewrite castmx_id. Qed.
 
-Lemma castmx_mx_mxT (f : forall m n, 'M[T1]_(m,n) -> 'M[T2]_(n,m)) m n p q 
+Lemma castmx_mx_mxT (f : forall m n, 'M[T1]_(m,n) -> 'M[T2]_(n,m)) m n p q
   (eqmn : (m = n) * (p = q)) (A : 'M[T1]_(m,p)) :
   f _ _ (castmx eqmn A) = castmx (eqmn.2,eqmn.1) (f _ _ A).
 Proof. by case: eqmn=>a b; case: n/a; case: q/b; rewrite castmx_id. Qed.
 
-Lemma cast_qualifier_diag p p' (eqp : p = p') (P : forall p, qualifier 0 'M[T]_p) 
+Lemma cast_qualifier_diag p p' (eqp : p = p') (P : forall p, qualifier 0 'M[T]_p)
   (A : 'M[T]_p) : ((castmx (eqp,  eqp) A) \is P p') = (A \is P p).
 Proof. by case: p' / eqp A P =>A P; rewrite castmx_id. Qed.
 
-Lemma cast_qualifier_rv p p' (eqp : p = p') (P : forall p, qualifier 0 'rV[T]_p) 
+Lemma cast_qualifier_rv p p' (eqp : p = p') (P : forall p, qualifier 0 'rV[T]_p)
   (A : 'rV[T]_p) : ((castmx (erefl _, eqp) A) \is P p') = (A \is P p).
 Proof. by case: p' / eqp A P =>A P; rewrite castmx_id. Qed.
 
-Lemma cast_qualifier_cv p p' (eqp : p = p') (P : forall p, qualifier 0 'cV[T]_p) 
+Lemma cast_qualifier_cv p p' (eqp : p = p') (P : forall p, qualifier 0 'cV[T]_p)
   (A : 'cV[T]_p) : ((castmx (eqp, erefl _) A) \is P p') = (A \is P p).
 Proof. by case: p' / eqp A P =>A P; rewrite castmx_id. Qed.
 
-Lemma cast_qualifier_mx p q p' q' (eqpq : (p = p') * (q = q')) 
+Lemma cast_qualifier_mx p q p' q' (eqpq : (p = p') * (q = q'))
   (P : forall p q, qualifier 0 'M[T]_(p,q)) (A : 'M[T]_(p,q)) :
   (castmx eqpq A \is P p' q') = (A \is P p q).
 Proof.
-by case: eqpq=>eqp eqq; case : p' / eqp P A; 
+by case: eqpq=>eqp eqq; case : p' / eqp P A;
 case: q' / eqq=>P A; rewrite castmx_id.
 Qed.
 
-Lemma cast_qualifier1_diag p p' (eqp : p = p') (P : forall p, qualifier 1 'M[T]_p) 
+Lemma cast_qualifier1_diag p p' (eqp : p = p') (P : forall p, qualifier 1 'M[T]_p)
   (A : 'M[T]_p) : ((castmx (eqp,  eqp) A) \is a P p') = (A \is a P p).
 Proof. by case: p' / eqp A P =>A P; rewrite castmx_id. Qed.
 
-Lemma cast_qualifier1_rv p p' (eqp : p = p') (P : forall p, qualifier 1 'rV[T]_p) 
+Lemma cast_qualifier1_rv p p' (eqp : p = p') (P : forall p, qualifier 1 'rV[T]_p)
   (A : 'rV[T]_p) : ((castmx (erefl _, eqp) A) \is a P p') = (A \is a P p).
 Proof. by case: p' / eqp A P =>A P; rewrite castmx_id. Qed.
 
-Lemma cast_qualifier1_cv p p' (eqp : p = p') (P : forall p, qualifier 1 'cV[T]_p) 
+Lemma cast_qualifier1_cv p p' (eqp : p = p') (P : forall p, qualifier 1 'cV[T]_p)
   (A : 'cV[T]_p) : ((castmx (eqp, erefl _) A) \is a P p') = (A \is a P p).
 Proof. by case: p' / eqp A P =>A P; rewrite castmx_id. Qed.
 
-Lemma cast_qualifier1_mx p q p' q' (eqpq : (p = p') * (q = q')) 
+Lemma cast_qualifier1_mx p q p' q' (eqpq : (p = p') * (q = q'))
   (P : forall p q, qualifier 1 'M[T]_(p,q)) (A : 'M[T]_(p,q)) :
   (castmx eqpq A \is a P p' q') = (A \is a P p q).
 Proof.
-by case: eqpq=>eqp eqq; case : p' / eqp P A; 
+by case: eqpq=>eqp eqq; case : p' / eqp P A;
 case: q' / eqq=>P A; rewrite castmx_id.
 Qed.
 
@@ -314,7 +314,7 @@ Proof. by case: r' / eqr A => A; rewrite !castmx_id. Qed.
 
 End Cast1.
 
-Definition castmx_funE := (castmx_cst_diag, castmx_cst_rv, castmx_cst_cv, 
+Definition castmx_funE := (castmx_cst_diag, castmx_cst_rv, castmx_cst_cv,
   castmx_cst_mx, castmx_mx_diag, castmx_mx_mx, castmx_mx_rv, castmx_mx_cv,
   castmx_mx_mxT,cast_qualifier_diag,cast_qualifier_rv,cast_qualifier_cv,
   cast_qualifier_mx, cast_qualifier1_diag,cast_qualifier1_rv,cast_qualifier1_cv,
@@ -339,7 +339,7 @@ Qed.
 Lemma row_mx_cast0 p q (A : 'M[R]_(p,q)) :
   A = castmx (erefl _, addn0 q) (row_mx A 0).
 Proof.
-apply/esym/(canLR (castmxKV _ _))=>/=.  
+apply/esym/(canLR (castmxKV _ _))=>/=.
 apply/matrixP=>i j. rewrite castmxE/= cast_ord_id esymK mxE -{2}(splitK j).
 case: (fintype.split j)=>a/=; destruct a=>//=.
 f_equal. by apply ord_inj=>/=.
@@ -355,28 +355,28 @@ Proof. by rewrite /block_mx row_mx0 -col_mx_cast0. Qed.
 
 Lemma block_mx_cast00 p q (A : 'M[R]_(p,q)) :
   A = castmx (addn0 p, addn0 q) (block_mx A 0 0 0).
-Proof. 
-by rewrite -[addn0 p]etrans_ereflV -[addn0 q]etrans_erefl 
+Proof.
+by rewrite -[addn0 p]etrans_ereflV -[addn0 q]etrans_erefl
   -castmx_comp -block_mx_castr0 -row_mx_cast0.
 Qed.
 
 End Cast2.
 
 Section Cast3.
-Variable (R : ringType).
+Variable (R : nzRingType).
 
-Lemma castmx_mul p q r p' q' r' (eqq : q = q') (eqp : p = p') (eqr : r = r') 
+Lemma castmx_mul p q r p' q' r' (eqq : q = q') (eqp : p = p') (eqr : r = r')
   (A : 'M[R]_(p,q)) (B : 'M[R]_(q,r)) :
   (castmx (eqp,eqq) A) *m (castmx (eqq,eqr) B) = (castmx (eqp,eqr) (A *m B)).
-Proof. by case: p' / eqp A; case: q' / eqq B; 
+Proof. by case: p' / eqp A; case: q' / eqq B;
 case: r' / eqr=>A B; rewrite !castmx_id. Qed.
 
-Lemma castmx_mulr m n p p' (eqp: p = p') 
+Lemma castmx_mulr m n p p' (eqp: p = p')
   (A: 'M[R]_(m,n)) (B: 'M_(n,p)) :
   A *m castmx (erefl _, eqp) B = castmx (erefl _,eqp) (A *m B).
 Proof. by case: p' / eqp; rewrite !castmx_id. Qed.
 
-Lemma castmx_mull m n p p' (eqp : p = p') 
+Lemma castmx_mull m n p p' (eqp : p = p')
   (A: 'M[R]_(p,m)) (B: 'M_(m,n)) :
   castmx (eqp, erefl _) A *m B = castmx (eqp, erefl _) (A *m B).
 Proof. by case: p' / eqp; rewrite !castmx_id. Qed.
@@ -384,11 +384,11 @@ Proof. by case: p' / eqp; rewrite !castmx_id. Qed.
 Lemma castmx_is_linear p q p' q' (eqpq : (p = p') * (q = q')) :
   linear (@castmx R p q p' q' eqpq).
 Proof.
-by case: eqpq=>eqp eqq; case: p' / eqp; 
+by case: eqpq=>eqp eqq; case: p' / eqp;
 case: q' / eqq => a A B; rewrite !castmx_id.
 Qed.
 
-HB.instance Definition _ p q p' q' (eqpq : (p = p') * (q = q')) := 
+HB.instance Definition _ p q p' q' (eqpq : (p = p') * (q = q')) :=
   GRing.isLinear.Build R _ _ _ (@castmx R p q p' q' eqpq) (@castmx_is_linear p q p' q' eqpq).
 
 Lemma row_mx_perm m n r (A : 'M[R]_(m,n)) (B : 'M_(m,r)) :
@@ -406,7 +406,7 @@ by case: split_ordP=>k ->; rewrite ?perm_ordEl ?perm_ordEr ?splitEl// splitEr.
 Qed.
 
 Lemma block_mx_perm m n k l (A : 'M[R]_(m,n)) B D (E : 'M_(k,l)) :
-  block_mx A B D E = castmx (addnC _ _, addnC _ _) 
+  block_mx A B D E = castmx (addnC _ _, addnC _ _)
     (perm_mx perm_ord *m (block_mx E D B A) *m perm_mx perm_ord^-1).
 Proof.
 by rewrite -(castmx_mul erefl) -col_mx_perm mul_col_mx !castmx_mulr -!row_mx_perm.
@@ -416,7 +416,7 @@ End Cast3.
 End MxCast.
 
 Section MxMul.
-Variable (R: ringType).
+Variable (R: nzRingType).
 
 Lemma scalemx0 n : (0%:M : 'M[R]_n) = 0.
 Proof. by apply/matrixP=>i j; rewrite !mxE mul0rn. Qed.
@@ -424,13 +424,13 @@ Proof. by apply/matrixP=>i j; rewrite !mxE mul0rn. Qed.
 Lemma const_mx0 m n : (const_mx 0 : 'M[R]_(m,n)) = 0.
 Proof. by apply/matrixP=>i j; rewrite !mxE. Qed.
 
-Lemma mulmx_rowcol p q r (A : 'M[R]_(p,q)) (B : 'M[R]_(q,r)) i j : 
+Lemma mulmx_rowcol p q r (A : 'M[R]_(p,q)) (B : 'M[R]_(q,r)) i j :
   (A *m B) i j = (row i A *m col j B) 0 0.
 Proof. by rewrite !mxE; apply eq_bigr=>k _; rewrite !mxE. Qed.
 
-Lemma col_diag_mul {T : comRingType} n (D : 'rV[T]_n) p (A : 'M[T]_(p,n)) i : col i (A *m diag_mx D) = D 0 i *: col i A.
+Lemma col_diag_mul {T : comNzRingType} n (D : 'rV[T]_n) p (A : 'M[T]_(p,n)) i : col i (A *m diag_mx D) = D 0 i *: col i A.
 Proof.
-apply/matrixP=>j k; rewrite !mxE (bigD1 i)//= big1; 
+apply/matrixP=>j k; rewrite !mxE (bigD1 i)//= big1;
 last by rewrite mxE eqxx mulr1n addr0 mulrC.
 by move=>l /negPf nli; rewrite !mxE nli mulr0n mulr0.
 Qed.
@@ -438,11 +438,11 @@ Qed.
 Lemma delta_mx_cast m n m' n' (eqmn : (m = m') * (n = n')) (i : 'I_m) (j : 'I_n) :
   castmx eqmn (delta_mx i j : 'M[R]__) = delta_mx (cast_ord eqmn.1 i) (cast_ord eqmn.2 j).
 Proof.
-by case: eqmn=> eqm eqn; case: m' / eqm i; case: n' / eqn j=>i j; 
+by case: eqmn=> eqm eqn; case: m' / eqm i; case: n' / eqn j=>i j;
 rewrite castmx_id !cast_ord_id.
 Qed.
 
-Lemma mulmxACA m1 m2 m3 m4 m5 
+Lemma mulmxACA m1 m2 m3 m4 m5
  (M1 :'M[R]_(m1,m2)) (M2 : 'M_(m2,m3)) (M3 : 'M_(m3,m4)) (M4 : 'M_(m4,m5)) :
   M1 *m M2 *m M3 *m M4 = M1 *m (M2 *m M3) *m M4.
 Proof. by rewrite !mulmxA. Qed.
@@ -462,23 +462,23 @@ rewrite mxE (bigD1 j)// big1/= ?mxE ?eqxx/= ?addr0 1?eq_sym ?andbT//.
 move=>k /negPf Pk; rewrite mxE Pk/= andbF mul0r//.
 Qed.
 
-Lemma diag_mx_deltaM m n i (j : 'I_n) (D : 'rV[R]_m) : 
+Lemma diag_mx_deltaM m n i (j : 'I_n) (D : 'rV[R]_m) :
   diag_mx D *m delta_mx i j = D 0 i *: delta_mx i j.
-Proof. 
+Proof.
 apply/matrixP=>a b. rewrite !mxE (bigD1 i)//= big1.
   by move=>k /negPf nki; rewrite !mxE nki/= mulr0.
-by rewrite addr0 !mxE eqxx/=; case: eqP=>[->|]; 
+by rewrite addr0 !mxE eqxx/=; case: eqP=>[->|];
   rewrite ?mulr1n//= mulr0n mulr0 mul0r.
 Qed.
 
-Lemma mulmx_colrow p q r (A : 'M[R]_(p,q)) (B : 'M[R]_(q,r)) : 
+Lemma mulmx_colrow p q r (A : 'M[R]_(p,q)) (B : 'M[R]_(q,r)) :
   (A *m B) = \sum_i  (col i A) *m (row i B).
-Proof. 
+Proof.
 apply/matrixP=>i j. rewrite !mxE summxE. apply eq_bigr=> k _.
 by rewrite !mxE big_ord1 !mxE.
 Qed.
 
-Lemma row_diag_mul p q (D : 'rV[R]_p) (A : 'M[R]_(p,q)) i : 
+Lemma row_diag_mul p q (D : 'rV[R]_p) (A : 'M[R]_(p,q)) i :
   row i (diag_mx D *m A) = D 0 i *: row i A.
 Proof.
 apply/matrixP=>j k; rewrite !mxE (bigD1 i)//= big1.
@@ -486,7 +486,7 @@ by move=>l /negPf nli; rewrite !mxE eq_sym nli mulr0n mul0r.
 by rewrite mxE eqxx mulr1n addr0.
 Qed.
 
-Lemma rank_block_mx000 [F : fieldType] m n p q (A : 'M[F]_(m,n)) : 
+Lemma rank_block_mx000 [F : fieldType] m n p q (A : 'M[F]_(m,n)) :
   \rank (block_mx A 0 0 0 : 'M_(m+p,n+q)) = \rank A.
 Proof. by rewrite /block_mx row_mx0 rank_col_mx0 rank_row_mx0. Qed.
 
@@ -496,7 +496,7 @@ Section row_col.
 Section Def.
 Variable (R : Type).
 
-Definition col'' [m n] (j0 : 'I_n) (A : 'M[R]_(m,n.-1)) (v : 'cV_m) := 
+Definition col'' [m n] (j0 : 'I_n) (A : 'M[R]_(m,n.-1)) (v : 'cV_m) :=
     \matrix_(i, j) match unlift j0 j with | None => v i 0 | Some j => A i j end.
 
 Lemma col''K [m n] j (A : 'M[R]_(m,n)) :
@@ -506,7 +506,7 @@ apply/matrixP=>i k.
 by rewrite !mxE; case: unliftP=>[a ->|->//]; rewrite mxE.
 Qed.
 
-Definition row'' [m n] (i0 : 'I_m) (A : 'M[R]_(m.-1,n)) (v : 'rV_n) := 
+Definition row'' [m n] (i0 : 'I_m) (A : 'M[R]_(m.-1,n)) (v : 'rV_n) :=
     \matrix_(i, j) match unlift i0 i with | None => v 0 j | Some i => A i j end.
 
 Lemma row''K [m n] i (A : 'M[R]_(m,n)) :
@@ -557,7 +557,7 @@ Lemma map_row'' [aT rT : Type] (f : aT -> rT) [m n] j (A : 'M[aT]_(m.-1,n)) v :
   map_mx f (row'' j A v) = row'' j (map_mx f A) (map_mx f v).
 Proof. by apply/matrixP=>i k; rewrite !mxE; case: unliftP=>//??; rewrite mxE. Qed.
 
-Lemma mulmx_colrow'' [R : ringType] [m n r] (i : 'I_n) 
+Lemma mulmx_colrow'' [R : nzRingType] [m n r] (i : 'I_n)
   (A : 'M[R]_(m,n.-1)) (B : 'M[R]_(n.-1,r)) (u : 'cV_m)  (v : 'rV_r) :
   (col'' i A u) *m (row'' i B v) = A *m B + u *m v.
 Proof.
@@ -569,7 +569,7 @@ Qed.
 End row_col.
 
 
-Lemma nth_tnth (R: ringType) n (t: n.-tuple R) i (ltin : (i < n)%N) :
+Lemma nth_tnth (R: nzRingType) n (t: n.-tuple R) i (ltin : (i < n)%N) :
   t`_i = t~_(Ordinal ltin).
 Proof. by rewrite (tnth_nth 0). Qed.
 
@@ -581,18 +581,18 @@ Lemma tnthE n (T : Type) (f : 'I_n -> T) i :
   [tuple f i | i < n] ~_ i = f i.
 Proof. by rewrite tnth_map tnth_ord_tuple. Qed.
 
-Lemma tnth_bigE (R: Type) (idx: R) (op: R->R->R) (I: ringType) (n : nat) 
+Lemma tnth_bigE (R: Type) (idx: R) (op: R->R->R) (I: nzRingType) (n : nat)
   (X : n.-tuple I) P (F: 'I_n -> I -> R) :
   \big[op/idx]_(i < n | P i) F i (X`_i) = \big[op/idx]_(i | P i) F i X~_i.
 Proof.
-rewrite (eq_bigr (fun i => F i X~_i)) // => i _. 
+rewrite (eq_bigr (fun i => F i X~_i)) // => i _.
 by apply f_equal; rewrite (tnth_nth 0).
 Qed.
 
 Lemma pair_neq (T1 T2: eqType) (d d' : T1 * T2) :
   d != d' -> d.1 == d'.1 = false \/ d.2 == d'.2 = false.
 Proof.
-by destruct d=>/=; rewrite -pair_eqE /pair_eq/= 
+by destruct d=>/=; rewrite -pair_eqE /pair_eq/=
   negb_and=>/orP[/negPf->|/negPf->]; [left|right].
 Qed.
 
@@ -604,7 +604,7 @@ apply/existsP; move: P; apply/contra_neqT; rewrite negb_exists=>/forallP P.
 by apply eq_from_tnth=>x; move: (P x); rewrite negbK=>/eqP.
 Qed.
 
-Lemma dffun_neqP (I : finType) (J : forall i : I, eqType) 
+Lemma dffun_neqP (I : finType) (J : forall i : I, eqType)
   (f g : {dffun forall i, J i}) :
   reflect (exists i, f i != g i) (f != g).
 Proof.
@@ -627,22 +627,22 @@ Proof. by rewrite -[RHS]split2r mul1r. Qed.
 Definition split2 := (split21, split2r).
 
 (* similar to %:C, inject real number to imaginary number *)
-Definition im_complex_def (F : ringType) (phF : phant F) (x : F) :=
+Definition im_complex_def (F : nzRingType) (phF : phant F) (x : F) :=
   Complex 0 x.
 Notation im_complex F := (@im_complex_def _ (Phant F)).
 Notation "x %:Ci" := (im_complex _ x)
   (at level 2, format "x %:Ci")  : ring_scope.
-Lemma im_complex_is_additive (R: ringType) : additive (im_complex R).
+Lemma im_complex_is_additive (R: nzRingType) : zmod_morphism (im_complex R).
 Proof. by move=>a b; simpc. Qed.
 
-Definition im_complex_additive (R: ringType) := 
-  (HB.pack (im_complex R) (GRing.isAdditive.Build _ _ (im_complex R)
+Definition im_complex_additive (R: nzRingType) :=
+  (HB.pack (im_complex R) (GRing.isZmodMorphism.Build _ _ (im_complex R)
   (@im_complex_is_additive R)) : GRing.Additive.type _ _).
-Lemma complex_split (R: ringType) (x : R[i]) : (Re x)%:C + (Im x)%:Ci = x.
+Lemma complex_split (R: nzRingType) (x : R[i]) : (Re x)%:C + (Im x)%:Ci = x.
 Proof. by simpc; destruct x. Qed.
 
 Section complex_extra.
-Implicit Type (F:ringType) (R:rcfType).
+Implicit Type (F:nzRingType) (R:rcfType).
 Lemma re_realid F (x:F) : Re (x%:C) = x.
 Proof. by simpc. Qed.
 Lemma im_imid F (x:F) : Im (x%:Ci) = x.
@@ -652,15 +652,15 @@ Proof. by simpc. Qed.
 Lemma re_im0 F (x:F) : Re (x%:Ci) = 0.
 Proof. by simpc. Qed.
 Lemma normc_real R (x:R) : `|x%:C| = `|x|%:C.
-Proof. 
+Proof.
 by rewrite normc_def im_real0 expr0n addr0 re_realid Num.Theory.sqrtr_sqr.
 Qed.
 Lemma normc_im R (x:R) : `|x%:Ci| = `|x|%:C.
-Proof. 
+Proof.
 by rewrite normc_def re_im0 expr0n add0r im_imid Num.Theory.sqrtr_sqr.
 Qed.
 Lemma cgt0_real R (e : R[i]) : 0 < e -> (Re e)%:C = e.
-Proof. 
+Proof.
 rewrite -{3}(complex_split e) ltcE=>/andP[/eqP ->]/=; by rewrite addr0.
 Qed.
 Lemma real_gt0 R (e : R[i]) : 0 < e -> 0 < Re e.
@@ -668,7 +668,7 @@ by rewrite ltcE/==>/andP[ _].
 Qed.
 Lemma normc_ge_Im R (x : R[i]): `|Im x|%:C <= `|x|.
 Proof.
-by case: x => a b; simpc=>/=; rewrite -Num.Theory.sqrtr_sqr 
+by case: x => a b; simpc=>/=; rewrite -Num.Theory.sqrtr_sqr
   Num.Theory.ler_wsqrtr // Num.Theory.lerDr Num.Theory.sqr_ge0.
 Qed.
 
@@ -700,7 +700,7 @@ Qed. *)
 Section EnumOrd.
 Variable (n : nat) (F : finType).
 
-Lemma enum_ord_eq  (eqt : #|F| = n) (j : 'I_n) (t : F) : 
+Lemma enum_ord_eq  (eqt : #|F| = n) (j : 'I_n) (t : F) :
 (@fintype.enum_val F predT (cast_ord (esym eqt) j) == t) =
   (j == cast_ord eqt (@fintype.enum_rank F t)).
 Proof.
@@ -770,7 +770,7 @@ Lemma big_mlaw_absord (I : finType) (i : I) (F : I -> R) :
   F i = 0 -> \big[*%M/1]_(i : I) F i = 0.
 Proof. by move=>Fi; apply: (big_mlaw_absord_seq _ Fi). Qed.
 
-Lemma big_distr_big_dffun 
+Lemma big_distr_big_dffun
  (I  : finType)
  (J  : I -> finType)
  (PJ : forall i : I, pred (J i))
@@ -778,12 +778,12 @@ Lemma big_distr_big_dffun
 :
     \big[*%M/1]_(i : I)
       \big[+%M/0]_(j : J i| PJ i j) F i j
-  = \big[+%M/0]_(f : {dffun forall i : I, J i} | f \in family_mem (fun i : I => Mem (PJ i))) 
+  = \big[+%M/0]_(f : {dffun forall i : I, J i} | f \in family_mem (fun i : I => Mem (PJ i)))
         \big[*%M/1]_(i : I) F i (f i).
 Proof.
 case/boolP: [forall i, (#|J i| > 0)%N]; last first.
 - rewrite negb_forall => /existsP[] i; rewrite -eqn0Ngt => h.
-  rewrite (@big_mlaw_absord _ i).  
+  rewrite (@big_mlaw_absord _ i).
   - rewrite big_pred0 // => j; have/fintype0 := j.
     by rewrite (eqP h).
   - rewrite big_pred0 //= => f; have /fintype0 := f i.
@@ -838,7 +838,7 @@ rewrite (reindex h); last first.
     by rewrite /tagged_as; case: eqP.
 Qed.
 
-Lemma big_distr_dffun 
+Lemma big_distr_dffun
 (I : finType) (J : forall i : I, finType)
   (F : forall i : I, J i -> R) :
   \big[times/one]_(i : I) \big[plus/zero]_(j : J i) F i j =
@@ -851,7 +851,7 @@ Qed.
 
 End big_distr_big_dffun.
 
-Lemma pair_bigV (R : Type) (idx : R) (op : Monoid.com_law idx) 
+Lemma pair_bigV (R : Type) (idx : R) (op : Monoid.com_law idx)
 (I J : finType) (P : pred (I * J)) (F : I * J -> R) :
   \big[op/idx]_(p | P p) F p =
     \big[op/idx]_(i : I) \big[op/idx]_(j | P (i,j)) F (i, j).
@@ -860,16 +860,16 @@ rewrite pair_big_dep/=.
 by apply eq_big=>[i|i _]; rewrite -surjective_pairing.
 Qed.
 
-Lemma big_negb_all (I : Type) (r : seq I) (P B : pred I) : 
-  ~~ (\big[andb/true]_(i <- r | P i) B i) = 
+Lemma big_negb_all (I : Type) (r : seq I) (P B : pred I) :
+  ~~ (\big[andb/true]_(i <- r | P i) B i) =
   \big[orb/false]_(i <- r | P i) (~~ B i).
 Proof.
 elim: r=>[|r x IH]; rewrite ?big_nil// !big_cons.
 case: (P r)=>//; by rewrite negb_and IH.
 Qed.
 
-Lemma big_negb_or (I : Type) (r : seq I) (P B : pred I) : 
-  ~~ (\big[orb/false]_(i <- r | P i) B i) = 
+Lemma big_negb_or (I : Type) (r : seq I) (P B : pred I) :
+  ~~ (\big[orb/false]_(i <- r | P i) B i) =
   \big[andb/true]_(i <- r | P i) (~~ B i).
 Proof.
 rewrite -[RHS]negbK big_negb_all; f_equal.
@@ -877,7 +877,7 @@ by apply eq_bigr=>i _; rewrite negbK.
 Qed.
 
 
-Lemma big_sig_cond (T : Type) (idm : T) (op : Monoid.com_law idm) 
+Lemma big_sig_cond (T : Type) (idm : T) (op : Monoid.com_law idm)
   (I : finType) (P Q : pred I) (f : I -> T) :
   \big[op/idm]_(i : {x : I | P x} | Q (val i)) f (val i) = \big[op/idm]_(i | P i && Q i) f i.
 Proof.
@@ -892,7 +892,7 @@ by destruct y=>/=; move: P1=>/= P1; rewrite (eq_irrelevance i P1).
 all: by move: Py; rewrite inE=>/andP[].
 Qed.
 
-Lemma big_sig (T : Type) (idm : T) (op : Monoid.com_law idm) 
+Lemma big_sig (T : Type) (idm : T) (op : Monoid.com_law idm)
   (I : finType) (P : pred I) (f : I -> T) :
   \big[op/idm]_(i : {x : I | P x}) f (val i) = \big[op/idm]_(i | P i) f i.
 Proof.
@@ -900,7 +900,7 @@ move: (@big_sig_cond T idm op I P (fun=>true) f)=>->.
 by apply eq_bigl=>i; rewrite andbT.
 Qed.
 
-Lemma big_sig_set_cond (R : Type) (idm : R) (op : Monoid.com_law idm) (L: finType) 
+Lemma big_sig_set_cond (R : Type) (idm : R) (op : Monoid.com_law idm) (L: finType)
   (P: pred L) (W: {set L}) (F: L -> R) :
   \big[op/idm]_(i : {i:L|i \in W} | P (val i)) F (val i) = \big[op/idm]_(i in W | P i) F i.
 Proof. exact: big_sig_cond. Qed.
@@ -919,15 +919,15 @@ Proof. by move=>/ltn_eqF->. Qed.
 Section WidenOrd.
 Variable (n : nat).
 
-Lemma widen_lift (i : 'I_n) : 
+Lemma widen_lift (i : 'I_n) :
   widen_ord (leqnSn n) i = nlift ord_max i.
 Proof. by apply/ord_inj; rewrite lift_max/=. Qed.
 
-Lemma widen_ord_neq (i : 'I_n) : 
+Lemma widen_ord_neq (i : 'I_n) :
   (widen_ord (leqnSn n) i) != ord_max.
 Proof. by rewrite -(inj_eq val_inj); case: i=>/= m/ltn_neq. Qed.
 
-Lemma lift_max_neq (i : 'I_n) : 
+Lemma lift_max_neq (i : 'I_n) :
   (nlift ord_max i) != ord_max.
 Proof. by rewrite -widen_lift widen_ord_neq. Qed.
 
@@ -940,7 +940,7 @@ Variant widen_spec : 'I_n.+1 -> Type :=
 
 Lemma widenP i : widen_spec i.
 Proof.
-case E: (ord_max == i). move: E=>/eqP <-; constructor. 
+case E: (ord_max == i). move: E=>/eqP <-; constructor.
 move: E=>/eqP/eqP/unlift_some[j -> _].
 rewrite -widen_lift. constructor.
 Qed.
@@ -951,7 +951,7 @@ Variant lift_ord0_spec : 'I_n.+1 -> Type :=
 
 Lemma lift0P i : lift_ord0_spec i.
 Proof.
-case E: (ord0 == i). move: E=>/eqP <-; constructor. 
+case E: (ord0 == i). move: E=>/eqP <-; constructor.
 move: E=>/eqP/eqP/unlift_some[j -> _]; constructor.
 Qed.
 
@@ -1072,7 +1072,7 @@ Definition ord_uphalf (m : nat) := Ordinal (ord_uphalf_subproof m).
 Lemma uphalf_ord_odd_rev (m : nat) :
   ~~(odd m) -> rev_ord (ord_half m) = ord_half m.
 Proof.
-by move=>/negPf P; apply/val_inj=>/=; rewrite subSS uphalf_half 
+by move=>/negPf P; apply/val_inj=>/=; rewrite subSS uphalf_half
   -{1}(odd_double_half m) P/= !add0n -addnn addnK.
 Qed.
 
@@ -1102,21 +1102,21 @@ Qed.
 
 Lemma big_half_split (T : Type) (idx : T) (op : Monoid.com_law idx)
   n (F : 'I_n.+1 -> T) :
-  \big[op/idx]_(i < n.+1) F i = 
+  \big[op/idx]_(i < n.+1) F i =
   op (\big[op/idx]_(i : 'I_(n.+1./2)) (op (F (half_ord i)) (F (rev_ord (half_ord i)))))
   (if odd n then idx else F (ord_half n)).
 Proof.
 rewrite (big_ord_half _ (fun i => op (F i) (F (rev_ord i)))).
 case E: (odd n).
 rewrite (bigID (fun i : 'I_n.+1=> i < uphalf n)%N)/= big_split Monoid.mulm1; f_equal.
-by rewrite big_ord_rev; apply eq_bigl=>i/=; rewrite subSS -leqNgt leq_subCr 
+by rewrite big_ord_rev; apply eq_bigl=>i/=; rewrite subSS -leqNgt leq_subCr
   ?leq_ord// ?uphalf_leqn// sub_uphalf eq_uphalf_half_odd.
 rewrite (bigD1 (ord_half n))// Monoid.mulmC/=; f_equal.
 rewrite (bigID (fun i : 'I_n.+1=> i < uphalf n)%N)/= big_split; f_equal.
 by apply eq_bigl=>i; symmetry; rewrite eq_sym; case: eqP=>//<-/=; rewrite ltnn.
 rewrite big_ord_rev; apply eq_bigl=>i/=.
-rewrite subSS -leqNgt leq_subCr ?leq_ord// ?uphalf_leqn// 
-  sub_uphalf eq_uphalf_half_even ?E// ltn_neqAle (inv_eq rev_ordK) 
+rewrite subSS -leqNgt leq_subCr ?leq_ord// ?uphalf_leqn//
+  sub_uphalf eq_uphalf_half_even ?E// ltn_neqAle (inv_eq rev_ordK)
   uphalf_ord_odd_rev ?E// -(inj_eq val_inj)/= eq_uphalf_half_even ?E//.
 Qed.
 
@@ -1128,29 +1128,29 @@ by pose t0 := t ~_ ord0; rewrite !(tnth_nth t0)/= nth_rev size_tuple.
 Qed.
 
 Lemma big_setE (T : Type) (idx : T) (op : T -> T -> T)
-  (F : finType) (P : pred F) (f : F -> T): 
+  (F : finType) (P : pred F) (f : F -> T):
     \big[op/idx]_(i | P i) f i = \big[op/idx]_(i in [set x | P x]) f i.
 Proof. by apply: eq_bigl=>y; rewrite inE. Qed.
 
 Lemma big_setT (T : Type) (idx : T) (op : T -> T -> T)
-  (F : finType) (f : F -> T): 
+  (F : finType) (f : F -> T):
     \big[op/idx]_i f i = \big[op/idx]_(i in setT) f i.
 Proof. by rewrite big_setE/=. Qed.
 
 Lemma big_setEV (T : Type) (idx : T) (op : T -> T -> T)
-  (F : finType) (B : {set F}) (f : F -> T): 
+  (F : finType) (B : {set F}) (f : F -> T):
     \big[op/idx]_(i in B) f i = \big[op/idx]_(i | i \in B) f i.
 Proof. by rewrite big_setE/=. Qed.
 
-Lemma big_setIDx (T : Type) (idx : T) (aop : Monoid.com_law idx) 
-  (F : finType) (B : {set F}) (f : F -> T): 
+Lemma big_setIDx (T : Type) (idx : T) (aop : Monoid.com_law idx)
+  (F : finType) (B : {set F}) (f : F -> T):
   \big[aop/idx]_i f i =
      aop (\big[aop/idx]_(i in B ) f i)
          (\big[aop/idx]_(i in ~: B) f i).
 Proof. by rewrite big_setT (big_setID B) setTI setTD. Qed.
 Global Arguments big_setIDx [T idx aop F] B.
 
-Lemma big_rcons (T : Type) (idx : T) (op : Monoid.law idx) 
+Lemma big_rcons (T : Type) (idx : T) (op : Monoid.law idx)
     I i r (P : pred I) F :
     let x := \big[op/idx]_(j <- r | P j) F j in
   \big[op/idx]_(j <- rcons r i | P j) F j = if P i then op x (F i) else x.
@@ -1171,7 +1171,7 @@ Lemma tuple_ffunE (K : Type) (m : nat) (f : m.-tuple K) (i : 'I_m) :
 Proof. by rewrite -tnth_ffun_tuple finfun_of_tupleK. Qed.
 
 Lemma eqb_iff (b1 b2 : bool): (b1 <-> b2) <-> b1 = b2.
-Proof. by split=>[/Coq.Bool.Bool.eq_iff_eq_true|->]. Qed.
+Proof. by split=>[/Stdlib.Bool.Bool.eq_iff_eq_true|->]. Qed.
 Lemma eq_iff (T : eqType) (t1 t2 : T) : t1 == t2 <-> t1 = t2.
 Proof. by split=>[/eqP|->]. Qed.
 
@@ -1219,13 +1219,13 @@ apply: (comparabler_trans (y := y)).
 by apply/le_comparable. by apply/gt_comparable.
 Qed.
 
-Variant bigmax_x0_or_in (disp : Order.disp_t) (T : porderType disp) (x0 : T) 
+Variant bigmax_x0_or_in (disp : Order.disp_t) (T : porderType disp) (x0 : T)
   (I : eqType) (r : seq I) (P : pred I) (F : I -> T) : T -> Type :=
   | bigmax_eq_x0 : @bigmax_x0_or_in disp T x0 I r P F x0
   | bigmax_in_seq (i : I) of (i \in r) & P i: @bigmax_x0_or_in disp T x0 I r P F (F i).
 
-Lemma bigmax_eq_elemP (disp : Order.disp_t) (T : porderType disp) (x0 : T) 
-  (I : eqType) (r : seq I) (P : pred I) (F : I -> T) :  
+Lemma bigmax_eq_elemP (disp : Order.disp_t) (T : porderType disp) (x0 : T)
+  (I : eqType) (r : seq I) (P : pred I) (F : I -> T) :
     @bigmax_x0_or_in disp T x0 I r P F (\big[Order.max/x0]_(i <- r | P i) F i).
 Proof.
 rewrite big_seq_cond; elim/big_rec: _; first by left.
@@ -1333,7 +1333,7 @@ Implicit Types  (r : seq J) (P : pred J) (F :  J -> {set I}).
 Lemma bigcupsP_seqT (U : {set I}) r P F :
   (forall i : J, P i -> F i :<=: U) ->
           (\bigcup_(i <- r | P i) F i :<=: U).
-Proof. 
+Proof.
 move=>Pi; elim: r=>[|x r IH]; first by rewrite big_nil sub0set.
 by rewrite big_cons; case E: (P x)=>//; rewrite subUset IH Pi.
 Qed.
@@ -1394,7 +1394,7 @@ End BigCupSeq.
 
 Lemma big_setU (R : Type) (idx : R) (op : Monoid.com_law idx)
   A B (F : I -> R) : [disjoint A & B] ->
-  \big[op/idx]_(i in (A :|: B)) F i = 
+  \big[op/idx]_(i in (A :|: B)) F i =
     op (\big[op/idx]_(i in A) F i) (\big[op/idx]_(i in B) F i).
 Proof.
 move=>dis; rewrite (big_setID A) ; f_equal; apply eq_bigl=>x;
@@ -1402,11 +1402,11 @@ by rewrite !inE/= ?orbK// andb_orr andNb/=; apply/andb_idl/disjointP; rewrite di
 Qed.
 
 Lemma big_setD (R : zmodType) A B (F : I -> R) :
-  \sum_(i in (A :\: B)) F i = 
+  \sum_(i in (A :\: B)) F i =
     (\sum_(i in A :|: B) F i) - (\sum_(i in B) F i).
 Proof.
 rewrite -setUDV big_setU/= ?disjointXD//.
-by rewrite addrC addrA addNr add0r.
+by rewrite addrC -addrA addrN addr0.
 Qed.
 
 Lemma subsetX_disjoint A B : (A :<=: B) = [disjoint A & ~: B].
@@ -1445,9 +1445,9 @@ Notation "\bigcup_ ( i < n ) F" :=
 Section FSetMonoids.
 Import Monoid.
 Variable (I : choiceType).
-HB.instance Definition _ := 
+HB.instance Definition _ :=
   Monoid.isMulLaw.Build {fset I} fset0 _ (@fset0I I) (@fsetI0 I).
-HB.instance Definition _ := 
+HB.instance Definition _ :=
   Monoid.isAddLaw.Build {fset I} _ _ (@fsetIUl I) (@fsetIUr I).
 End FSetMonoids.
 
@@ -1519,18 +1519,18 @@ Qed.
 
 End FSetExtra.
 
-Lemma big_fsetU (R : Type) (idx : R) (op : Monoid.com_law idx) (I : choiceType) 
+Lemma big_fsetU (R : Type) (idx : R) (op : Monoid.com_law idx) (I : choiceType)
   A B (F : I -> R) : [disjoint A & B] ->
-  \big[op/idx]_(i <- (A `|` B)) F i = 
+  \big[op/idx]_(i <- (A `|` B)) F i =
     op (\big[op/idx]_(i <- A) F i) (\big[op/idx]_(i <- B) F i).
 Proof.
-move=>dis; rewrite (big_fsetID _ (mem A)); congr (op _ _); apply eq_fbigl=>x; 
+move=>dis; rewrite (big_fsetID _ (mem A)); congr (op _ _); apply eq_fbigl=>x;
 by rewrite !inE/= ?orbK// andb_orl andbN/=; apply/andb_idr/fdisjointP; rewrite fdisjoint_sym.
 Qed.
 
-Lemma big_fsetD (R : zmodType) (I : choiceType) 
+Lemma big_fsetD (R : zmodType) (I : choiceType)
   A B (F : I -> R) :
-  \sum_(i <- (A `\` B)) F i = 
+  \sum_(i <- (A `\` B)) F i =
     (\sum_(i <- A `|` B) F i) - (\sum_(i <- B) F i).
 Proof.
 by apply/eqP; rewrite eq_sym subr_eq -big_fsetU ?fdisjointDX//= fsetUDr fsetDv fsetD0.
@@ -1546,7 +1546,7 @@ have /perm_undup: map val (index_enum (@fset_sub_type I A)) =i @enum_fset I A.
 by rewrite !undup_id// map_inj_uniq ?index_enum_uniq//; apply/val_inj.
 Qed.
 
-Lemma big_in_fsetE (T : Type) (idm : T) (op : Monoid.com_law idm) 
+Lemma big_in_fsetE (T : Type) (idm : T) (op : Monoid.com_law idm)
  (I : choiceType) A (g : I -> T):
  \big[op/idm]_(i <- (index_enum (@fset_sub_type I A))) g (fsval i) = \big[op/idm]_(i <- A) g i.
 Proof. by rewrite -(big_map (@fsval _ _) predT)/=  (perm_big _ (index_enum_fset A)). Qed.
@@ -1554,13 +1554,13 @@ Arguments big_in_fsetE [T idm op I A].
 
 Lemma big_fsetU_idem (R : Type) (idx : R) (op : Monoid.com_law idx)
   (I : choiceType) (A B : {fset I}) (F : I -> R) :
-  idempotent op ->
+  idempotent_op op ->
    \big[op/idx]_(i <- A `|` B) F i =
    op (\big[op/idx]_(i <- A) F i) (\big[op/idx]_(i <- B) F i).
 Proof.
 move=>Pop.
 rewrite -{1}(fsetID A B) -{1}(fsetID B A) fsetUACA fsetIC fsetUid !big_fsetU; last first.
-rewrite -[X in op X _]Pop {1}fsetIC Monoid.mulmACA 
+rewrite -[X in op X _]Pop {1}fsetIC Monoid.mulmACA
   -{5}(fsetID A B) -{5}(fsetID B A) !big_fsetU//.
 1,2 : by rewrite fdisjointID.
 apply/(fdisjointWl (fsubsetDl _ _))/fdisjointXD.
@@ -1569,7 +1569,7 @@ Qed.
 
 Lemma big_fsetUs_idem (R : Type) (idx : R) (op : Monoid.com_law idx)
   (I J : choiceType) (r : seq I) (P : pred I) (s : I -> {fset J}) (F : J -> R) :
-  idempotent op ->
+  idempotent_op op ->
    \big[op/idx]_(i <- r | P i) (\big[op/idx]_(j <- s i) F j) =
    \big[op/idx]_(j <- \bigcup_(i <- r | P i) s i) F j.
 Proof.
@@ -1584,7 +1584,7 @@ Context {I : finType}.
 Implicit Type (A B C : {fset I}).
 
 Definition fsetT := [fset x | x : I].
-Lemma in_fsetT (x : I) : x \in fsetT. 
+Lemma in_fsetT (x : I) : x \in fsetT.
 Proof. by rewrite inE. Qed.
 
 Lemma enum_fsetT_perm :
@@ -1599,7 +1599,8 @@ move=>/perm_undup; rewrite !undup_id// ?enum_uniq// map_inj_uniq ?enum_uniq//.
 by move=>i j /(f_equal val).
 Qed.
 
-Definition fsetC A := (nosimpl fsetT `\` A).
+Definition fsetC A := fsetT `\` A.
+Arguments fsetC : simpl never.
 Notation "~` A" := (fsetC A) (at level 35, A at level 35, right associativity) : fset_scope.
 
 Lemma fsubsetT A : A `<=` fsetT.
@@ -1686,16 +1687,16 @@ End FSetFinType.
 
 Notation "~` A" := (fsetC A) (at level 35, A at level 35, right associativity) : fset_scope.
 
-Lemma big_fsetT (R : Type) (idx : R) (op : Monoid.com_law idx) 
+Lemma big_fsetT (R : Type) (idx : R) (op : Monoid.com_law idx)
   (I : finType) (F : I -> R) :
   \big[op/idx]_i F i = \big[op/idx]_(i : @fsetT I) F (val i).
 Proof.
-by rewrite /index_enum /enum_fset/= -!enumT/= 
+by rewrite /index_enum /enum_fset/= -!enumT/=
   (perm_big _ (enum_fsetT_perm)) [RHS]big_map/=.
 Qed.
 Arguments big_fsetT [R idx op I].
 
-Lemma big_seq_fsetT (R : Type) (idx : R) (op : Monoid.com_law idx) 
+Lemma big_seq_fsetT (R : Type) (idx : R) (op : Monoid.com_law idx)
   (I : finType) (F : I -> R) :
   \big[op/idx]_i F i = \big[op/idx]_(i <- @fsetT I) F i.
 Proof. by rewrite big_fsetT big_seq_fsetE. Qed.

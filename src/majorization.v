@@ -1,12 +1,12 @@
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order interval_inference.
 From mathcomp.algebra Require Import all_algebra archimedean interval.
 From mathcomp.fingroup Require Import fingroup perm.
 From mathcomp.finmap Require Import finmap.
 From mathcomp.algebra Require Import -(notations)sesquilinear.
 From quantum.external Require Import complex.
 From mathcomp.classical Require Import mathcomp_extra boolp classical_sets functions.
-From mathcomp.reals Require Import signed reals real_interval.
+From mathcomp.reals Require Import reals real_interval.
 From mathcomp.analysis Require Import ereal sequences.
 From mathcomp.analysis.topology_theory Require Import topology.
 From mathcomp.analysis.normedtype_theory Require Import normedtype.
@@ -583,7 +583,7 @@ by move: (Ps1 a); rewrite inE/= esymK.
 by move: (Ps2 a); rewrite inE/= esymK.
 Qed.
 
-Theorem Konig_FrobeniusN m (T : ringType) (A : 'M[T]_m) :
+Theorem Konig_FrobeniusN m (T : nzRingType) (A : 'M[T]_m) :
   (exists s : 'S_m, forall i, A i (s i) != 0) <->
   (forall k l (f : 'I_k -> 'I_m) (g : 'I_l -> 'I_m), 
     injective f -> injective g -> mxsub f g A = 0 -> (k + l <= m)%N).
@@ -618,7 +618,7 @@ suff : g j \in (~: Gk R f).
 by rewrite Pg; apply/imsetP; exists j.
 Qed.
 
-Theorem Konig_Frobenius m (T : ringType) (A : 'M[T]_m) :
+Theorem Konig_Frobenius m (T : nzRingType) (A : 'M[T]_m) :
   (forall s : 'S_m, exists i, A i (s i) = 0) <->
   (exists k l (f : 'I_k -> 'I_m) (g : 'I_l -> 'I_m), 
     injective f /\ injective g /\ mxsub f g A = 0 /\ (m < k + l)%N).
@@ -1106,7 +1106,8 @@ have P1 (v : 'rV[R]_m) t i :
   \sum_(j < m | ~~(j < i)%N) t.
   rewrite !big_split/= -!raddf_sum/= addrA addrC !addrA; do 2 f_equal.
   apply/eqP; rewrite eq_sym subr_eq addrC [\sum_j v 0 j](bigID (fun j : 'I_m => (j < i)%N))/=.
-  by rewrite addrA addrK mulrDl mul1r.
+  rewrite mulrDl !mul1r.
+  by rewrite addrAC addrA addrK.
 split.
 - move=>P t; move: (sortv_nincr x)=>/rv_nincrP/(rv_nincr_itv t)[i Pi].
   move: (permv_sortv x)=>[sx Psx]; rewrite (P0 sx) Psx.
@@ -2793,7 +2794,7 @@ Lemma second_derivative_concave (f : R -> R^o) (a b : R^o) :
 Proof.
 move=>P1 P2 P3 P4 P5 t Pab.
 suff: (-f) (conv t a b) <= conv t ((-f) a) ((-f) b).
-  by rewrite -lerN2 convN !fctE !opprK.
+  by rewrite -lerN2 convN !fctE.
 have Q1 : {in `]a, b[, forall x : R, is_derive x 1 (-f) (- 'D_1 f x)}.
   move=>x Px; move: (P4 x Px)=>/derivableP; apply is_deriveN.
 have Q2 : {in `]a, b[, forall x : R, is_derive x 1 ('D_1 (-f)) (- 'D_1 ('D_1 f) x)}.
@@ -3091,7 +3092,7 @@ have P1 (y : R) : 0 <= y -> is_derive y 1 (fun y : R => ln (1 + y) - y) (1/(y+1)
   rewrite mulrC addrC; apply: is_derive1_comp.
   by apply: is_derive1_ln; apply/(lt_le_trans ltr01); rewrite lerDl.
   rewrite -{3}[1]add0r; apply: is_deriveD.
-apply: (ler0_derive1_nincr (f := fun x => ln (1 + x) - x) (a := 0) (b := x))=>//.
+apply: (ler0_derive1_le_cc (f := fun x => ln (1 + x) - x) (a := 0) (b := x))=>//.
 - by move=>y; rewrite in_itv/==>/andP[]/ltW/P1[].
 - move=>y; rewrite in_itv derive1E/==>/andP[]/ltW Py _; 
   move: {+}Py=> /P1[ _ -> ].
@@ -3100,6 +3101,8 @@ apply: (ler0_derive1_nincr (f := fun x => ln (1 + x) - x) (a := 0) (b := x))=>//
 - apply: continuous_in_subspaceT=>y.
   rewrite inE/= in_itv/==>/andP[]/P1[]/= + _ _.
   by rewrite derivable1_diffP=>/differentiable_continuous.
+- by rewrite in_itv/= lexx Px.
+- by rewrite in_itv/= Px lexx.
 Qed.
 
 Lemma xlnx_cvg :
@@ -3109,7 +3112,7 @@ have : 0 @[ x --> (0 : R)^'+] --> (0 : R) by apply: cvg_cst.
 have : - (2 * (Num.sqrt x - x)) @[x --> 0^'+] --> (0 : R).
   rewrite -{2}oppr0; apply: cvgN.
   have {2}-> : 0 = 2 * (Num.sqrt 0 - 0) :> R by rewrite sqrtr0 subrr mulr0.
-  apply: cvgMr; apply: cvgB.
+  apply: cvgMl_tmp; apply: cvgB.
   apply: continuous_cvg; first by apply: sqrt_continuous.
   1,2: by apply/cvg_at_right_filter/cvg_id.
 apply: squeeze_cvgr.

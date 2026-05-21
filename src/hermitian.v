@@ -1,6 +1,6 @@
 (* -------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 From mathcomp.fingroup Require Import perm.
 From mathcomp.algebra Require Import -(notations)sesquilinear.
@@ -459,7 +459,8 @@ by apply/GramSchmidt_orthonormal/(basis_free (vbasisP A)).
 Qed.
 
 Definition vonbasis (A : {vspace E}) : (\dim A).-tuple E :=
-  nosimpl (projT1 (vonbasis_proof A)).
+  projT1 (vonbasis_proof A).
+Arguments vonbasis : simpl never.
 
 Lemma vonbasisP (A : {vspace E}) : onbasis_of A (vonbasis A).
 Proof. by rewrite /vonbasis; case: vonbasis_proof. Qed.
@@ -481,7 +482,7 @@ Qed.
 
 Lemma ort_onbf {n} (X: n.-tuple E) :
   n = \dim {:E} -> orthonormal X -> onbasis_of fullv X.
-Proof. 
+Proof.
 move=> ndim ort; apply/andP; split => //.
 rewrite basisEfree; apply/andP; split; first by apply ort_free.
 apply/andP; split; first by apply subvf.
@@ -514,7 +515,7 @@ apply: eq_big => [i|i _]; first by rewrite eqxx.
 by rewrite (orthonormalP _ onAvs) ?size_tuple // eqxx mulr1.
 Qed.
 
-Lemma intro_dotl (u v: E) : 
+Lemma intro_dotl (u v: E) :
   (forall t, [< t ; u >] = [< t ; v >]) <-> u = v.
 Proof.
 move: (vonbasisP {: E}); set e := (vonbasis fullv) => P.
@@ -529,7 +530,7 @@ by move=> j /negPf nji; rewrite coord_free // eq_sym nji conjC0 mul0r.
 by rewrite coord_free // eqxx conjC1 mul1r addr0.
 Qed.
 
-Lemma intro_dotr (u v: E) : 
+Lemma intro_dotr (u v: E) :
   (forall t, [< u ; t >] = [< v ; t >]) <-> u = v.
 Proof.
 split; [| move=>-> //]; rewrite -intro_dotl=> P t.
@@ -564,7 +565,7 @@ HB.export CanonicalHermitianSpaceExports.
 
 Section LfunAlgebraComp.
 
-Variables (R : comRingType) (vT : vectType R).
+Variables (R : comNzRingType) (vT : vectType R).
 Hypothesis vT_proper : (dim vT > 0) %N.
 
 Definition lfun_comp_lalgMixin := GRing.Lmodule_isLalgebra.Build R
@@ -590,7 +591,7 @@ Lemma dim_proper_cast : (dim E - 1).+1 = dim E.
 Proof. by rewrite -addn1 subnK// dim_proper. Qed.
 
 Canonical chsf_comp_ringType := lfun_comp_nzRingType (@dim_proper E).
-HB.instance Definition _ := GRing.SemiRing.copy 'End(E) ('End(E):ringType).
+HB.instance Definition _ := GRing.NzSemiRing.copy 'End(E) ('End(E):nzRingType).
 Canonical chsf_comp_lalgType := lfun_comp_lalgType (@dim_proper E).
 Canonical chsf_comp_algType := lfun_comp_algType (@dim_proper E).
 
@@ -717,9 +718,9 @@ Lemma c2hEV u : r2v u = c2h (h2vU *m u^T).
 Proof. by rewrite c2hE !trmx_mul mulmx_h2vK trmxK. Qed.
 
 Lemma h2cK : cancel h2c c2h.
-Proof. by move=>u; rewrite h2cE c2hE mulmxA mulmx_Kv2h trmxK v2rK. Qed. 
+Proof. by move=>u; rewrite h2cE c2hE mulmxA mulmx_Kv2h trmxK v2rK. Qed.
 Lemma c2hK : cancel c2h h2c.
-Proof. by move=>u; rewrite h2cE c2hE r2vK trmxK mulmxA mulmx_Kh2v. Qed. 
+Proof. by move=>u; rewrite h2cE c2hE r2vK trmxK mulmxA mulmx_Kh2v. Qed.
 Lemma h2c_inj : injective h2c. Proof. exact: (can_inj h2cK). Qed.
 Lemma c2h_inj : injective c2h. Proof. exact: (can_inj c2hK). Qed.
 Lemma h2c_bij : bijective h2c.
@@ -751,17 +752,17 @@ rewrite {1}(dec_eb u) {1}(dec_eb v) /conjmx /trmx mxE dotp_suml.
 apply eq_bigr => i _; rewrite dotp_sumr !mxE (bigD1 i) //= big1.
 by move=> j /negPf nji; rewrite dotpZl dotpZr eb_dot eq_sym nji !mulr0.
 by rewrite dotpZl dotpZr eb_dot eqxx mulr1 addr0.
-Qed. 
+Qed.
 
-Lemma intro_ebl (u v: E) : 
+Lemma intro_ebl (u v: E) :
   (forall i, [< eb i ; u >] = [< eb i ; v >]) <-> u = v.
 Proof.
-split; last by move=>->. 
+split; last by move=>->.
 move=> P; rewrite -intro_dotl => t; rewrite (dec_eb t) !dotp_suml.
 by apply eq_bigr=>i _; rewrite !dotpZl P.
 Qed.
 
-Lemma intro_ebr (u v: E) : 
+Lemma intro_ebr (u v: E) :
   (forall i, [< u ; eb i >] = [< v ; eb i >]) <-> u = v.
 Proof.
 split; [| move=>-> //]; rewrite -intro_ebl=> P t.
@@ -786,12 +787,12 @@ Lemma mx2hEV f : Hom f = mx2h (h2vU *m f^T *m v2hU).
 Proof. by rewrite mx2hE !mulmxA mulmx_Kv2h -mulmxA mulmx_v2h1 mulmx1 trmxK. Qed.
 Lemma h2mxK : cancel h2mx mx2h.
 Proof.
-by move=>f; rewrite h2mxE mx2hE !mulmxA mulmx_Kv2h 
+by move=>f; rewrite h2mxE mx2hE !mulmxA mulmx_Kv2h
  -mulmxA mulmx_v2h1 mulmx1 trmxK f2mxK.
-Qed. 
+Qed.
 Lemma mx2hK : cancel mx2h h2mx.
 Proof.
-by move=>f; rewrite h2mxE mx2hE/= trmxK !mulmxA 
+by move=>f; rewrite h2mxE mx2hE/= trmxK !mulmxA
   mulmx_Kh2v -mulmxA mulmx_h2v1 mulmx1.
 Qed.
 Lemma h2mx_inj : injective h2mx. Proof. exact: (can_inj h2mxK). Qed.
@@ -828,7 +829,7 @@ Lemma mx2h0 : mx2h 0 = 0%VF.
 Proof. exact: linear0. Qed.
 Lemma h2mx_dec (f : 'Hom(E,F)) i j : h2mx f i j = [<eb i; f (eb j) >].
 Proof.
-by rewrite dotp_mulmx applyfh c2hK !h2c_eb adjmx_delta 
+by rewrite dotp_mulmx applyfh c2hK !h2c_eb adjmx_delta
   delta_mx_mulEr delta_mx_mulEl !eqxx !mul1r.
 Qed.
 End HermitianLfun.
@@ -839,15 +840,15 @@ Implicit Type (H G K: chsType).
 Lemma h2mx_comp {H G K} (f: 'Hom(H,G)) (g: 'Hom(K,H)) :
   h2mx (f \o g)%VF = h2mx f *m h2mx g.
 Proof.
-by rewrite h2mxE f2mx_comp trmx_mul !h2mxE 
+by rewrite h2mxE f2mx_comp trmx_mul !h2mxE
   -{1}[(f2mx f)^T]mulmx1 -mulmx_v2h1 !mulmxA.
 Qed.
 
 Lemma h2mx1 {G} : h2mx (\1%VF : 'End(G)) = 1%:M.
-Proof. by apply/mx2h_inj/lfunP=>u; rewrite h2mxK lfunE/= applyfh mx2hK mul1mx h2cK. Qed.  
+Proof. by apply/mx2h_inj/lfunP=>u; rewrite h2mxK lfunE/= applyfh mx2hK mul1mx h2cK. Qed.
 
 Lemma mx2h1 {G} : mx2h 1%:M = (\1%VF : 'End(G)).
-Proof. by rewrite -h2mx1 h2mxK. Qed.  
+Proof. by rewrite -h2mx1 h2mxK. Qed.
 
 End HermitianLfunExtra.
 
@@ -935,7 +936,7 @@ Context {H: chsType}.
 Local Notation conjv := (@conjv H).
 
 Lemma conjv_eb i : (eb i)^*v = (eb i :H).
-Proof. by rewrite conjv.unlock h2c_eb conjmx_delta c2h_eb. Qed.  
+Proof. by rewrite conjv.unlock h2c_eb conjmx_delta c2h_eb. Qed.
 
 Lemma conjv_is_antilinear : antilinear conjv.
 Proof. by move=>a u v; rewrite conjv.unlock !linearP. Qed.
@@ -985,7 +986,7 @@ Local Notation conjf := (@conj_lfun H G).
 Local Notation trf := (@tr_lfun H G).
 
 Lemma adjfK : cancel adjf (@adj_lfun G H).
-Proof. by move=>f; rewrite adj_lfun.unlock mx2hK adjmxK h2mxK. Qed.  
+Proof. by move=>f; rewrite adj_lfun.unlock mx2hK adjmxK h2mxK. Qed.
 
 Lemma adjf_inj : injective adjf.
 Proof. exact (can_inj adjfK). Qed.
@@ -1024,10 +1025,10 @@ Lemma adj_dotEr f u v : [< u ; f^A v >] = [< f u ; v >].
 Proof. by rewrite -conj_dotp -[RHS]conj_dotp -adj_dotEl. Qed.
 
 Lemma conjfE f u : (f^C u = (f%VF u^*v)^*v)%VF.
-Proof. by rewrite !applyfh conj_lfun.unlock mx2hK conjv.unlock !c2hK conjmxM conjmxK. Qed. 
+Proof. by rewrite !applyfh conj_lfun.unlock mx2hK conjv.unlock !c2hK conjmxM conjmxK. Qed.
 
 Lemma conjfK : involutive conjf.
-Proof. by move=>f; rewrite conj_lfun.unlock mx2hK conjmxK h2mxK. Qed.  
+Proof. by move=>f; rewrite conj_lfun.unlock mx2hK conjmxK h2mxK. Qed.
 
 Lemma conjf_inj : injective conjf.
 Proof. exact (inv_inj conjfK). Qed.
@@ -1066,7 +1067,7 @@ Lemma trfAC f : f^T = f^A^C.
 Proof. by rewrite tr_lfun.unlock adj_lfun.unlock conj_lfun.unlock mx2hK adjmxTC conjmxK. Qed.
 
 Lemma trfK : cancel trf (@tr_lfun G H).
-Proof. by move=>f; rewrite tr_lfun.unlock mx2hK trmxK h2mxK. Qed.  
+Proof. by move=>f; rewrite tr_lfun.unlock mx2hK trmxK h2mxK. Qed.
 
 Lemma trf_inj : injective trf.
 Proof. exact (can_inj trfK). Qed.
@@ -1180,15 +1181,15 @@ Proof. by apply/lfunP=>t; rewrite conjfE !outpE conjvZ conj_dotp conjv_dotl. Qed
 Lemma tr_outp H G (u : H) (v : G) : [> u; v <]^T = [> v^*v ; u^*v <].
 Proof. by rewrite trfAC adj_outp conj_outp. Qed.
 
-Lemma outp_compl H G W (u : H) (v : G) (f : 'Hom(W,G)) : 
+Lemma outp_compl H G W (u : H) (v : G) (f : 'Hom(W,G)) :
   [> u ; v <] \o f = [> u ; f^A v <].
 Proof. by apply/lfunP=>w; rewrite lfunE/= !outpE -adj_dotEl. Qed.
 
-Lemma outp_compr H G W (u : H) (v : G) (f : 'Hom(H,W)) : 
+Lemma outp_compr H G W (u : H) (v : G) (f : 'Hom(H,W)) :
   f \o [> u ; v <] = [> f u ; v <].
 Proof. by apply/lfunP=>w; rewrite lfunE/= !outpE linearZ. Qed.
 
-Lemma outp_comp H G W (u : H) (v w : G) (t : W) : 
+Lemma outp_comp H G W (u : H) (v w : G) (t : W) :
   [> u ; v <] \o [> w ; t <] = [< v ; w >] *: [> u ; t <].
 Proof. by rewrite outp_compr outpE linearZl_LR. Qed.
 
@@ -1237,7 +1238,7 @@ HB.instance Definition _ := ncf_regular_chsMixin.
 
 End ScalarHermitian.
 
-Lemma mxtrace_delta (R : ringType) m (i j : 'I_m) : 
+Lemma mxtrace_delta (R : nzRingType) m (i j : 'I_m) :
   \tr (delta_mx i j : 'M[R]__) = (i == j)%:R.
 Proof.
 rewrite /mxtrace (bigD1 i)//= big1=>[k/negPf nk|];
@@ -1277,7 +1278,7 @@ Definition lfun_hermitianType : hermitianType := (HB.pack 'Hom(U,V) lfun_hermiti
 
 Lemma lfun_dim_proper : (dim 'Hom(U,V) > 0)%N.
 Proof. by rewrite/dim/= muln_gt0 !dim_proper. Qed.
-Definition lfun_eb (i : 'I_(dim 'Hom(U,V))) : 'Hom(U,V) 
+Definition lfun_eb (i : 'I_(dim 'Hom(U,V))) : 'Hom(U,V)
   := [> eb (mxtens_unindex i).2; eb (mxtens_unindex i).1 <].
 Lemma lfun_eb_dot i j : [<lfun_eb i ; lfun_eb j >] = (i == j)%:R.
 Proof.

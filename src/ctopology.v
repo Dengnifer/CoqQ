@@ -1,9 +1,9 @@
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order interval_inference.
 From mathcomp.algebra Require Import all_algebra.
 From mathcomp.classical Require Import boolp cardinality mathcomp_extra
   classical_sets functions.
-From mathcomp.reals Require Import reals signed prodnormedzmodule.
+From mathcomp.reals Require Import reals prodnormedzmodule.
 From mathcomp.analysis Require Import ereal sequences.
 From mathcomp.analysis.topology_theory Require Import topology.
 From mathcomp.analysis.normedtype_theory Require Import normedtype.
@@ -60,10 +60,10 @@ Qed.
 Let mx2c (m : 'rV[R]_2) := (m 0 0 +i* m 0 1)%C.
 Let mx2c_norm (m : 'rV[R]_2) := complex.Re `|mx2c m|.
 
-Lemma mx2c_is_additive : additive mx2c.
+Lemma mx2c_is_additive : zmod_morphism mx2c.
 Proof. by move=>m n; rewrite/mx2c !mxE; simpc. Qed.
 #[local]
-HB.instance Definition _ := GRing.isAdditive.Build 'rV_2 R[i] mx2c mx2c_is_additive.
+HB.instance Definition _ := GRing.isZmodMorphism.Build 'rV_2 R[i] mx2c mx2c_is_additive.
 
 Lemma mx2c_continuous : continuous mx2c.
 Proof.
@@ -181,12 +181,12 @@ Lemma is_ccvgnDlE f g : cvgn g -> cvgn (f + g) = cvgn f. Proof. exact: is_cvgDlE
 Lemma is_ccvgnDrE f g : cvgn f -> cvgn (f + g) = cvgn g. Proof. exact: is_cvgDrE. Qed.
 Lemma ccvgnM f g a b : f @ \oo --> a -> g @ \oo --> b -> (f * g) @ \oo --> a * b. Proof. exact: cvgZ. Qed.
 Lemma is_ccvgnM f g : cvgn f -> cvgn g -> cvgn (f * g). Proof. exact: is_cvgZ. Qed.
-Lemma ccvgnMl f a b (g := fun=>b): f @ \oo --> a -> f * g @ \oo --> a * b. Proof. exact: cvgZl. Qed.
-Lemma ccvgnMr g a b (f := fun=>a): g @ \oo --> b -> f * g @ \oo --> a * b. Proof. exact: cvgZr. Qed.
-Lemma is_ccvgnMr g a (f := fun=> a) : cvgn g -> cvgn (f * g). Proof. exact: is_cvgZr. Qed.
-Lemma is_ccvgnMrE g a (f := fun=> a) : a != 0 -> cvgn (f * g) = cvgn g. Proof. exact: is_cvgZrE. Qed.
-Lemma is_ccvgnMl f a (g := fun=> a) : cvgn f -> cvgn (f * g). Proof. exact: is_cvgMl. Qed.
-Lemma is_ccvgnMlE f a (g := fun=> a) : a != 0 -> cvgn (f * g) = cvgn f. Proof. exact: is_cvgMlE. Qed.
+Lemma ccvgnMl f a b (g := fun=>b): f @ \oo --> a -> f * g @ \oo --> a * b. Proof. exact: cvgZr_tmp. Qed.
+Lemma ccvgnMr g a b (f := fun=>a): g @ \oo --> b -> f * g @ \oo --> a * b. Proof. exact: cvgZl_tmp. Qed.
+Lemma is_ccvgnMr g a (f := fun=> a) : cvgn g -> cvgn (f * g). Proof. exact: is_cvgZl_tmp. Qed.
+Lemma is_ccvgnMrE g a (f := fun=> a) : a != 0 -> cvgn (f * g) = cvgn g. Proof. exact: is_cvgZlE. Qed.
+Lemma is_ccvgnMl f a (g := fun=> a) : cvgn f -> cvgn (f * g). Proof. exact: is_cvgMr_tmp. Qed.
+Lemma is_ccvgnMlE f a (g := fun=> a) : a != 0 -> cvgn (f * g) = cvgn f. Proof. exact: is_cvgMrE_tmp. Qed.
 Lemma ccvgn_norm f a : f @ \oo --> a -> (Num.norm \o f) @ \oo --> `|a|. Proof. exact: cvg_norm. Qed.
 Lemma is_ccvgn_norm f : cvgn f -> cvgn (Num.norm \o f). Proof. exact: is_cvg_norm. Qed.
 Lemma climnN f : cvgn f -> limn (- f) = - limn f. Proof. exact: limN. Qed.
@@ -402,8 +402,10 @@ Section C_sup.
 Variable (R : realType).
 Local Notation C := R[i].
 
-Definition csup : set C -> C := nosimpl (@etsup R C).
-Definition cinf : set C -> C := nosimpl (@etinf R C).
+Definition csup : set C -> C := @etsup R C.
+Arguments csup : simpl never.
+Definition cinf : set C -> C := @etinf R C.
+Arguments cinf : simpl never.
 
 Lemma csup_adherent (E : set C) (eps : C) : 0 < eps ->
   has_sup E -> exists2 e : C, E e & (csup E - eps) < e.

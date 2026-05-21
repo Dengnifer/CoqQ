@@ -1,5 +1,5 @@
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 From mathcomp.finmap Require Import finmap.
 From mathcomp.classical Require Import boolp.
@@ -937,7 +937,8 @@ rewrite eq_usem.unlock !usemE linear_sumlz/=.
 apply eq_bigr=>i _; rewrite usemE -!comp_lfunA; do 2 f_equal.
 move: (usem_local c)=>[U ->].
 rewrite liftf_lf_compC//.
-by apply/ucmd_var_disj_vsetP.
+move: H; rewrite /cmd_expose=>/ucmd_var_disj_vsetP H.
+by rewrite disjoint_sym.
 Qed.
 
 Lemma sequ_distrlG T (q : qreg T) (F : finType) (M : 'ONB(F;'Ht T)) c f
@@ -949,7 +950,8 @@ rewrite eq_usem.unlock !usemE linear_sumr/=.
 apply eq_bigr=>i _; rewrite usemE !comp_lfunA; do 2 f_equal.
 move: (usem_local c)=>[U ->].
 rewrite liftf_lf_compC//.
-by rewrite disjoint_sym; apply/ucmd_var_disj_vsetP.
+move: H; rewrite /cmd_expose=>/ucmd_var_disj_vsetP H.
+by exact: H.
 Qed.
 
 Lemma sequ_distrrB q phi c c0 c1 {H : `{{ucmd_var_disj q c}}} :

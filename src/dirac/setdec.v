@@ -1,19 +1,19 @@
-(*  TODO 
+(*  TODO
   - add support to F_True and F_False
   - cut rules
   - optimize autorewrite
   - subst in setform (to speed up the decision procedure)
-  - optimize br_ext_single 
+  - optimize br_ext_single
 *)
 
 (*  Proof by reflection implementation of
     Anisimov, Alexander. Proof Automation for Typed Finite Sets. 2015. *)
 (* -------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From elpi     Require Export elpi.
-(* ------- *) Require Import BinPos Number Decimal.
-From Coq.Lists Require List.
+(* ------- *) From Stdlib Require Import BinPos Number Decimal.
+From Stdlib.Lists Require List.
 
 (* -------------------------------------------------------------------- *)
 Set Implicit Arguments.
@@ -238,7 +238,7 @@ Canonical setform_eqType := Eval hnf in EqType setform setform_eqMixin. *)
 Section setform_interp.
   Context {T : finType}.
 
-  (*  
+  (*
     setvar_lst collects set variables,
     var_lst collects T variables.
   *)
@@ -257,7 +257,7 @@ Section setform_interp.
     | None => None
     end.
 
-  Fixpoint sem_setsyn (x : setsyn) : option {set T} := 
+  Fixpoint sem_setsyn (x : setsyn) : option {set T} :=
     match x with
     | FSS_empty => Some set0
     | FSS_full => Some setT
@@ -309,7 +309,7 @@ Section setform_interp.
     | Some A, Some B => Some (A \subset B)
     | _, _ => None
     end.
-      
+
 
   Definition sem_setpred (p : setpred) : option bool :=
     match p with
@@ -536,7 +536,7 @@ Section setform_decide.
       assert (ainB := Hsub _ aincons).
       rewrite (in_mem_all ainB PB).
       assert (AsB : {subset A <= B}).
-    - move=> x xinA. apply: Hsub. by rewrite in_cons xinA orbT. 
+    - move=> x xinA. apply: Hsub. by rewrite in_cons xinA orbT.
       by rewrite (IH _ AsB PB).
   Qed.
 
@@ -1112,7 +1112,7 @@ Proof.
     end.
 
   Lemma get_form_branching_aux_sound asn ext fs br:
-    (forall f a b, ext f = Some (a, b) -> valid_form asn f -> 
+    (forall f a b, ext f = Some (a, b) -> valid_form asn f ->
                    valid_form asn a || valid_form asn b) ->
     all (valid_form asn) fs ->
     forall a b, get_form_branching_aux ext fs br = Some (a, b) ->
@@ -1132,7 +1132,7 @@ Proof.
     get_form_branching_aux ext br br.
 
   Lemma get_form_branching_sound asn ext br:
-    (forall f a b, ext f = Some (a, b) -> valid_form asn f -> 
+    (forall f a b, ext f = Some (a, b) -> valid_form asn f ->
                    valid_form asn a || valid_form asn b) ->
     all (valid_form asn) br ->
     forall a b, get_form_branching ext br = Some (a, b) ->
@@ -1372,7 +1372,7 @@ Proof.
     rewrite /valid_form eqx /=.
     case: (sem_form asn y) => //=; last by rewrite yin => /= /(_ erefl).
     move=> b _; rewrite yin /=.
-    by rewrite -eqx xin eqxx => /(_ erefl). 
+    by rewrite -eqx xin eqxx => /(_ erefl).
   Qed.
 
 
@@ -1399,8 +1399,8 @@ Proof.
     rewrite finbr. by rewrite (Hf asn).
   Qed.
 
-  (* Eval cbv in 
-    (has is_in_empty 
+  (* Eval cbv in
+    (has is_in_empty
          [:: F_Pred (FSP_In (FE_var xH) FSS_empty)]). *)
 
   Definition is_nin_full (f : setform) :=
@@ -1430,13 +1430,13 @@ Proof.
     apply: (@all_false _ f).
     rewrite finbr. by rewrite (Hf asn).
   Qed.
-  
+
   Definition is_neg_refl (f : setform) :=
     match f with
     | F_Not (F_Pred (FSP_Eqelt a b)) => a == b
     | _ => false
     end.
-  
+
   Lemma neg_refl_false asn f :
     is_neg_refl f -> ~~ valid_form asn f.
   Proof.
@@ -1467,7 +1467,7 @@ Proof.
     (close_branch
        [:: F_Not (F_Pred (FSP_Eqset (FSS_var xH) (FSS_var xH)));
         (F_Pred (FSP_Eqset (FSS_var xH) (FSS_var xH)))]). *)
-  
+
   (* Eval cbv in
     (close_branch
        [:: F_Pred (FSP_In (FE_var xH) FSS_empty)]). *)
@@ -1563,7 +1563,7 @@ Proof.
            (brs : seq branch) :=
     match n with
     | O => brs
-    | S n => 
+    | S n =>
         match brs with
         | nil => nil
         | br :: brs =>
@@ -1579,7 +1579,7 @@ Proof.
     end.
 
   Lemma saturate_Sn_brbrs n br brs :
-    saturate (S n) (br :: brs) = 
+    saturate (S n) (br :: brs) =
       let newbr := br_ext_nonbranching br in
       if newbr == br
       then
@@ -1604,8 +1604,8 @@ Proof.
       + move: (cons_br_branching Hbr).
         case: (br_branching br); last by move=> _; apply: (HVB_one Hbr).
         move=> [a b] /(_ a b erefl) /orP [].
-        * move=> Ha. apply IH. apply: (HVB_one Ha). 
-        * move=> Hb. apply IH. apply: HVB_cons. apply: (HVB_one Hb). 
+        * move=> Ha. apply IH. apply: (HVB_one Ha).
+        * move=> Hb. apply IH. apply: HVB_cons. apply: (HVB_one Hb).
       + apply: IH. apply: remove_closed_branch_sound.
         assert (Hbr' := (br_ext_nonbranching_sound Hbr)).
         move: Hbr' => [asn' Hasn']. apply: HVB_one.
@@ -1616,14 +1616,14 @@ Proof.
       cbv zeta.
       case: (locked br_ext_nonbranching br == br).
       + case: (br_branching br).
-        * move=> [a b]. apply: IH. apply: HVB_cons. by apply: HVB_cons. 
+        * move=> [a b]. apply: IH. apply: HVB_cons. by apply: HVB_cons.
         * by apply: HVB_cons.
       + apply: IH. apply: remove_closed_branch_sound. by apply: HVB_cons.
   Qed.
 
 
   Lemma has_not_valid_branch_nil :
-    ~ has_valid_branch nil. 
+    ~ has_valid_branch nil.
   Proof. move=> H. inversion H. Qed.
 
   Lemma valid_formNN f asn :
@@ -1635,7 +1635,7 @@ Proof.
   Lemma has_not_valid_branch_single f asn :
     ~ has_valid_branch [:: [:: f]] -> ~~ (valid_form asn f).
   Proof.
-    move=> H. apply/negP. 
+    move=> H. apply/negP.
     have g : valid_form asn f -> has_valid_branch [:: [:: f]]
       by move=> Hbr; apply: (@HVB_one [:: f] asn) => /=; rewrite Hbr.
     by move=> /g /H.
@@ -1719,7 +1719,7 @@ Elpi Accumulate lp:{{
     close {{ _ :: lp:XS }} :- close XS.
 
     pred quote-elt o:term, i:term, o:term.
-    quote-elt Eltvars X {{ lp:N }} :- 
+    quote-elt Eltvars X {{ lp:N }} :-
       mem Eltvars X RN,
       coq.reduction.cbv.norm RN N.
 
@@ -1744,20 +1744,20 @@ Elpi Accumulate lp:{{
       coq.reduction.cbv.norm RN N.
 
     pred quote-form i:term, o:term, o:term, i:term, o:term.
-    quote-form _T Setvars Eltvars 
-        {{ @eq_op lp:S lp:X lp:Y }} {{ F_Pred (FSP_Eqset lp:PX lp:PY)}}:- 
+    quote-form _T Setvars Eltvars
+        {{ @eq_op lp:S lp:X lp:Y }} {{ F_Pred (FSP_Eqset lp:PX lp:PY)}}:-
       coq.unify-eq S {{ finset_set_of__canonical__eqtype_Equality _ }} ok,
       quote-syn Setvars Eltvars X PX,
       quote-syn Setvars Eltvars Y PY.
-    quote-form T _Setvars Eltvars 
+    quote-form T _Setvars Eltvars
         {{ @eq_op lp:T lp:X lp:Y }} {{ F_Pred (FSP_Eqelt (FE_var lp:PX) (FE_var lp:PY)) }}:- !,
       quote-elt Eltvars X PX,
       quote-elt Eltvars Y PY.
-    quote-form _T Setvars Eltvars 
+    quote-form _T Setvars Eltvars
         {{ in_mem lp:X (mem (@pred_of_set _ lp:Y)) }} {{ F_Pred (FSP_In (FE_var lp:PX) lp:PY)}}:- !,
       quote-elt Eltvars X PX,
       quote-syn Setvars Eltvars Y PY.
-    quote-form _T Setvars Eltvars 
+    quote-form _T Setvars Eltvars
         {{ subset (mem (@pred_of_set _ lp:X)) (mem (@pred_of_set _ lp:Y)) }} {{ F_Pred (FSP_Sub lp:PX lp:PY)}}:- !,
       quote-syn Setvars Eltvars X PX,
       quote-syn Setvars Eltvars Y PY.
@@ -1780,13 +1780,12 @@ Elpi Accumulate lp:{{
     quote-form _FT Setvars Eltvars EGoal FGoal,
     close Setvars,
     close Eltvars,
-    coq.elaborate-skeleton 
+    coq.elaborate-skeleton
         {{ _ : valid_form lp:Setvars lp:Eltvars (fun x y => None) lp:FGoal}} _ Res ok,
     refine Res G GL.
 }}.
-Elpi Typecheck.
 
-(*  
+(*
   setdec_bool is about 5-10x faster than the setdec implemented in MSetDecide.v
   while the setdec here is 2-3x slower than setdec_bool.
   Maybe the performance of the autorewrite tactic or even the rewrite tactic
@@ -1797,9 +1796,9 @@ Elpi Typecheck.
 Ltac setdec_bool :=
   autorewrite with setdec_unfold;
   elpi setform_reify;
-  apply: (@set_decide_sound _ _ _ (Nat.of_num_uint 10000%uint)); vm_compute; 
+  apply: (@set_decide_sound _ _ _ (Nat.of_num_uint 10000%uint)); vm_compute;
   reflexivity.
-  
+
 Ltac setdec :=
   autorewrite with setdec_unfold;
   unfold not;
@@ -1807,7 +1806,7 @@ Ltac setdec :=
   autorewrite with setdec_prop_to_bool;
   autorewrite with setdec_bool_simp;
   elpi setform_reify;
-  apply: (@set_decide_sound _ _ _ (Nat.of_num_uint 10000%uint)); vm_compute; 
+  apply: (@set_decide_sound _ _ _ (Nat.of_num_uint 10000%uint)); vm_compute;
   reflexivity.
 
 (* test cases *)
@@ -1815,25 +1814,25 @@ Ltac setdec :=
 Lemma tb0 (T : finType) (A B : {set T}) (x : T) :
   (A \subset B) ==> (x \in A) ==> (x \in B).
 Proof.
-  time setdec_bool.
+  setdec_bool.
 Defined.
 
 Lemma t0 (T : finType) (A B : {set T}) (x : T) :
   (A \subset B) -> (x \in A) -> (x \in B).
 Proof.
-  time setdec.
+  setdec.
 Defined.
 
 Lemma tb1 (T : finType) (x y : T) :
   [set x;y] == [set y;x;x].
 Proof.
-  time setdec_bool.
+  setdec_bool.
 Qed.
 
 Lemma t1 (T : finType) (x y : T) :
   [set x;y] = [set y;x;x].
 Proof.
-  time setdec.
+  setdec.
 Qed.
 
 (* seq not supported
@@ -1841,17 +1840,17 @@ Lemma t2 (T : finType) (x y : T) :
 [set e in [:: y;x]] = [set e in [:: x;y;x]].
 Proof.
 setdec.
-Abort. 
+Abort.
   *)
 
 Lemma tb2 (A B : {set 'I_3}) : (A :|: B == A) ==> (B \subset A).
 Proof.
-  time setdec_bool.
+  setdec_bool.
 Qed.
 
 Lemma t2 (A B : {set 'I_3}) : (A :|: B == A) -> (B \subset A).
 Proof.
-  time setdec.
+  setdec.
 Qed.
 
 Local Definition o0 := @Ordinal 3 0 erefl.
@@ -1862,46 +1861,46 @@ Lemma tb3 (A B : {set 'I_3}) (x y : 'I_3):
   (([set o0; x] \subset A) && ([set o1; y] \subset B))
     ==> (([set o0; x; y] \subset (setU B A))).
 Proof.
-  time setdec_bool.
+  setdec_bool.
 Qed.
 
 Lemma t3 (A B : {set 'I_3}) (x y : 'I_3):
   (([set o0; x] \subset A) /\ ([set o1; y] \subset B))
     -> (([set o0; x; y] \subset (setU B A))).
 Proof.
-  time setdec.
+  setdec.
 Qed.
 
 Lemma tb4 (T : finType) (A B : {set T}) :
   [disjoint A & B] ==> [disjoint B & A].
 (* A `&` B = set0 -> B `&` A = set0. *)
 Proof.
-  time setdec_bool.
+  setdec_bool.
 Qed.
 
 Lemma t4 (T : finType) (A B : {set T}) :
   [disjoint A & B] -> [disjoint B & A].
 (* A `&` B = set0 -> B `&` A = set0. *)
 Proof.
-  time setdec.
+  setdec.
 Qed.
 
 Lemma tb5 (T : finType) (f2 f4 f0 : {set T}) :
-  (f2 :&: f2 == set0) ==> 
+  (f2 :&: f2 == set0) ==>
   (f0 :&: (f2 :|: f4) == set0) ==>
   (f0 :&: f2 == set0) ==>
   ~~ ((f0 :|: f2) :&: f4 != set0).
 Proof.
-  time setdec_bool.
+  setdec_bool.
 Qed.
 
 Lemma t5 (T : finType) (f2 f4 f0 : {set T}) :
-  (f2 :&: f2 = set0) -> 
+  (f2 :&: f2 = set0) ->
   (f0 :&: (f2 :|: f4) = set0) ->
   (f0 :&: f2 = set0) ->
   ~ ((f0 :|: f2) :&: f4 <> set0).
 Proof.
-  time setdec.
+  setdec.
 Qed.
 
 Section Examples.
@@ -1912,9 +1911,9 @@ Lemma test_eq_trans_1 : forall x y z (s : {set T}),
   ~ ~ z = y ->
   x \in s ->
   z \in s.
-Proof.  
+Proof.
   move=> x y z s.
-  setdec. 
+  setdec.
 Qed.
 
 Lemma test_eq_trans_2 : forall (x y z : T) (r s : {set T}),
@@ -1923,9 +1922,9 @@ Lemma test_eq_trans_2 : forall (x y z : T) (r s : {set T}),
   ~ ~ z \in (y |: r) ->
   x \in s ->
   z \in s.
-Proof. 
+Proof.
   move=> x y z r s.
-  setdec. 
+  setdec.
 Qed.
 
 Lemma test_eq_neq_trans_1 : forall w x y z (s : {set T}),
@@ -1934,13 +1933,13 @@ Lemma test_eq_neq_trans_1 : forall w x y z (s : {set T}),
   ~ y = z ->
   w \in s ->
   w \in (s :\ z).
-Proof. 
+Proof.
   move=> w x y z s.
-  setdec. 
+  setdec.
 Qed.
 
 (*
-  The performance on this example is much worse than the Ltac implementation of 
+  The performance on this example is much worse than the Ltac implementation of
   the same decision procedure.
   Maybe the reason is the lack of substitution in setforms.
 *)
@@ -1952,11 +1951,11 @@ Lemma test_eq_neq_trans_2 : forall w x y z (r1 r2 s : {set T}),
   y \in (r2 :\ z) ->
   w \in s ->
   w \in (s :\ z).
-Proof. 
-  move=> w x y z r1 r2 s.  
+Proof.
+  move=> w x y z r1 r2 s.
   unfold not.
   autorewrite with setdec_prop_to_bool.
-  time setdec_bool. 
+  setdec_bool.
 Qed.
 
 Lemma test_In_singleton : forall (x : T),
@@ -1999,10 +1998,10 @@ Proof. move=> a x s s'. setdec. Qed.
   (setU q r) = set0 ->
   (setI (setD s q) (setD s r)) = set0 ->
   ~ x \in s.
-Proof. 
+Proof.
   move=> x q r s.
   unfold not.
-  autorewrite with setdec_prop_to_bool. 
+  autorewrite with setdec_prop_to_bool.
   elpi setform_reify. *)
 
 (* cut rule needed *)
@@ -2015,7 +2014,7 @@ Proof.
   x4 \in (x3 |: s3) ->
   x1 \in s4 ->
   (x4 |: s4) \subset s4.
-Proof. 
+Proof.
   move=> x1 x2 x3 x4 s1 s2 s3 s4. *)
 
 Lemma test_too_complex : forall (x y z : T) (r s : {set T}),
@@ -2037,9 +2036,9 @@ Lemma function_test_1 :
   x1 = (g (g x2)) ->
   x1 \in s1 ->
   (g (g x2)) \in (f s2).
-Proof. 
-  move=> f g s1 s2 x1 x2. 
-  setdec. 
+Proof.
+  move=> f g s1 s2 x1 x2.
+  setdec.
 Qed.
 
 (* setdec in MSetDecide.v cannot solve this directly *)
@@ -2054,7 +2053,7 @@ Lemma function_test_2 :
   g x2 = g (g x2) ->
   (g (g x2)) \in (f s2).
 Proof.
-  move=> f g s1 s2 x1 x2. 
+  move=> f g s1 s2 x1 x2.
   setdec.
 Qed.
 

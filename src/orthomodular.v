@@ -1,8 +1,8 @@
 (* -------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
-From Coq.Bool Require Import Bool.
+From Stdlib.Bool Require Import Bool.
 
 (****************************************************************************)
 (*                     Module for orthomodular lattice                      *)
@@ -260,7 +260,7 @@ Implicit Type (x y : T).
 
 Lemma leO : {mono (@ocompl _ T) : a b /~ a <= b}.
 Proof.
-move=>a b; apply/Coq.Bool.Bool.eq_iff_eq_true; split.
+move=>a b; apply/Stdlib.Bool.Bool.eq_iff_eq_true; split.
 rewrite -{2}(ocomplK b) -{2}(ocomplK a).
 all: apply leOP.
 Qed.
@@ -404,19 +404,20 @@ split; last first.
   move=>Pc x y le; move: {+}le=>/le_commute;
   rewrite Pc /commute ![y `&` _]meetC.
   by move: le; rewrite leEmeet=>/eqP->/eqP.
-move=>Po a b; apply/Coq.Bool.Bool.eq_iff_eq_true.
+move=>Po a b; apply/Stdlib.Bool.Bool.eq_iff_eq_true.
 suff P (x y : T) : x _C_ y -> y _C_ x by split=>/P.
 rewrite /commute=>/eqP P1; apply/eqP.
-rewrite -[RHS]ocomplK ocomplU ocomplI ocomplI ocomplK.
-rewrite -[y `&` ~` x]ocomplK -ocomplI.
+apply/ocompl_inj.
+rewrite ocomplU !ocomplI !ocomplK.
+symmetry.
 apply: (proj1 orthomodular_le_meet0_eqO Po).
-  by rewrite ocomplI !ocomplU !ocomplK leUx !leIl.
-rewrite -(meetxO y); f_equal.
-move: (proj1 orthomodular_le_meetUO Po (~` x `|` ~` y) (~` y) (leUr _ _)).
-move=> {2}<-.
-by rewrite joinC; f_equal; 
-  rewrite ocomplI !ocomplK {1}P1 joinC -joinA [X in _ `|` X]joinC
-  meetKUC ocomplU !ocomplK.
+  by rewrite lexI !leUl.
+have Hyx : ~` y `|` x = ~` (~` y `|` ~` x) `|` ~` y.
+  rewrite ocomplU !ocomplK {1}P1.
+  by rewrite joinC -joinA [x `&` ~` y `|` ~` y]joinC meetKUC meetC.
+rewrite Hyx.
+move: (proj1 orthomodular_le_meetUO Po (~` y `|` ~` x) (~` y) (leUl _ _)).
+by move=> ->; rewrite meetOx.
 Qed.
 
 Lemma orthomodular_commuteOx : orthomodular_law T <-> 
@@ -515,7 +516,7 @@ Proof. by rewrite /ortho_commute commuteC andbb. Qed.
 
 Lemma commute_char2 a b : ((a `|` ~` b) `&` b == a `&` b) = a _C_ b.
 Proof.
-apply/Coq.Bool.Bool.eq_iff_eq_true; split.
+apply/Stdlib.Bool.Bool.eq_iff_eq_true; split.
 move=>/eqP P; rewrite commuteC /commute meetC -P joinC -[a `|` ~` b]joinC.
 by rewrite -[~` b `|` a]ocomplK ocomplU ocomplK eq_sym;
   apply/eqP/le_joinIO/leIl.
@@ -525,7 +526,7 @@ Qed.
 
 Lemma commute_char1 a b : ((a `|` ~` b) `&` b == (b `|` ~` a) `&` a) = a _C_ b.
 Proof.
-apply/Coq.Bool.Bool.eq_iff_eq_true; split;
+apply/Stdlib.Bool.Bool.eq_iff_eq_true; split;
 first by move=>/eqP P;
 rewrite -commute_char2 -{2}[b]meetxx meetA P meetC meetA joinKI meetC eqxx.
 move=>P; move: P {+}P; rewrite -{1}commute_char2=>/eqP->.
@@ -769,7 +770,7 @@ Proof. by rewrite /sasaki_projection leIl. Qed.
 
 Lemma leEshook x y : (x <= y) = (x `=>` y == \top).
 Proof.
-apply/Coq.Bool.Bool.eq_iff_eq_true; split; rewrite /sasaki_hook.
+apply/Stdlib.Bool.Bool.eq_iff_eq_true; split; rewrite /sasaki_hook.
 by rewrite leEmeet=>/eqP->; rewrite joinOx eqxx.
 move=>/eqP/(f_equal (meet x)); 
 rewrite meetx1 meetUrxl ?commuteOxx// ?commuteOx ?commutexIl//.
@@ -779,7 +780,7 @@ Qed.
 (* compatible import-export law *)
 Lemma commute_leIx x y z : x _C_ y -> (x `&` y <= z) = (x <= (y `=>` z)).
 Proof.
-move=>P; apply/Coq.Bool.Bool.eq_iff_eq_true; rewrite !leEmeet; split.
+move=>P; apply/Stdlib.Bool.Bool.eq_iff_eq_true; rewrite !leEmeet; split.
   rewrite /sasaki_hook meetUrxl.
   by rewrite meetA=>/eqP->; rewrite joinC eq_sym.
   by rewrite commuteOx commuteC.
@@ -801,7 +802,7 @@ Qed.
 
 Lemma eq_shookr x y : (x `=>` y == y) = (~` x <= y).
 Proof.
-apply/Coq.Bool.Bool.eq_iff_eq_true; split.
+apply/Stdlib.Bool.Bool.eq_iff_eq_true; split.
 by move=>/eqP<-; apply/leUl.
 move=>P; rewrite commuteHE. by rewrite -leEjoin.
 by rewrite -commuteOx; apply/le_commute.
@@ -809,7 +810,7 @@ Qed.
 
 Lemma eq_shookl x y : (x `=>` y == ~` x) = (x `&` y == \bot).
 Proof.
-apply/Coq.Bool.Bool.eq_iff_eq_true; split.
+apply/Stdlib.Bool.Bool.eq_iff_eq_true; split.
 rewrite /sasaki_hook eq_joinl=>/(leI2 (lexx x)).
 by rewrite meetA meetxx meetxO lex0.
 by rewrite /sasaki_hook=>/eqP->; rewrite joinx0 eqxx.

@@ -1,13 +1,13 @@
 (* -------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 From mathcomp.fingroup Require Import perm fingroup.
 From mathcomp.algebra Require Import -(notations)sesquilinear.
 From quantum.external Require Import spectral.
 From mathcomp.reals Require Import reals.
 From mathcomp.classical Require Import classical_sets.
-From Coq.Bool Require Import Bool.
+From Stdlib.Bool Require Import Bool.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
 From mathcomp.real_closed Require Import mxtens.
@@ -140,8 +140,8 @@ Qed.
 Proof. exact: dnorm_ge0. Qed.
 
 #[local] Lemma ddotp_eq0 v : (ddotp v v == 0) = (v == 0).
-Proof. 
-by rewrite dnorm_eq0 -(inj_eq (@conjmx_inj _ _ _)) conjmxK 
+Proof.
+by rewrite dnorm_eq0 -(inj_eq (@conjmx_inj _ _ _)) conjmxK
     -(inj_eq (@r2v_inj _ _)) v2rK !linear0.
 Qed.
 
@@ -177,14 +177,14 @@ Definition ihb_chsMixin := HermitianSpace_isCanonical.Build H ddotp_chE ihb_dim_
 End DefaultChsType.
 
 HB.lock
-Definition ihb_chsType (T : ihbFinType) := 
+Definition ihb_chsType (T : ihbFinType) :=
   CanonicalHermitianSpace.Pack (CanonicalHermitianSpace.Class (@ihb_chsMixin T)).
 
 Notation "''Hs' T" := (ihb_chsType T%type) (at level 8, T at level 2, format "''Hs'  T").
 (* Notation "''Hs' T" := (ihb_chsType [ihbFinType of T]) (at level 8, T at level 2, format "''Hs'  T"). *)
 Notation "''Hom[' T1 , T2 ]" := ('Hom('Hs T1%type, 'Hs T2%type)) (at level 8, format "''Hom[' T1 ,  T2 ]").
 Notation "''End[' T ]" := ('End('Hs T%type)) (at level 8, format "''End[' T ]").
-Notation "x %:V" := (x : 'Hs _) 
+Notation "x %:V" := (x : 'Hs _)
   (at level 2, format "x %:V") : lfun_scope.
 
 Section DefaultChsType1.
@@ -242,9 +242,9 @@ by rewrite c2hK mxE ord1 enum_valK cast_ord_comp cast_ord_id.
 Qed.
 
 Lemma mv2tvP f g : mv2tv f = mv2tv g <-> f =1 g.
-Proof. 
+Proof.
 split=>P. by move=>i; rewrite -mv2tvK P mv2tvK.
-by apply/h2c_inj/matrixP=>i j; rewrite /mv2tv !c2hK !mxE P. 
+by apply/h2c_inj/matrixP=>i j; rewrite /mv2tv !c2hK !mxE P.
 Qed.
 Lemma tv2mvP f g : tv2mv f =1 tv2mv g <-> f = g.
 Proof. by rewrite -mv2tvP !tv2mvK. Qed.
@@ -254,7 +254,7 @@ Definition mx2tf (f : T -> T -> C) : 'End('Hs T) :=
   mx2h (\matrix_(i,j) f (enum_val (cast_ord (esym (@ihb_dim_cast T)) i))
   (enum_val (cast_ord (esym (@ihb_dim_cast T)) j))).
 Definition tf2mx (f : 'End('Hs T)) : T -> T -> C :=
-  (fun t1 t2 : T => h2mx f (cast_ord (@ihb_dim_cast T) (enum_rank t1)) 
+  (fun t1 t2 : T => h2mx f (cast_ord (@ihb_dim_cast T) (enum_rank t1))
     (cast_ord (@ihb_dim_cast T) (enum_rank t2))).
 
 Lemma mx2tfK f : tf2mx (mx2tf f) =2 f.
@@ -266,20 +266,20 @@ Qed.
 Lemma tf2mxK : cancel tf2mx mx2tf.
 Proof.
 move=>x; rewrite /mx2tf /tf2mx; apply/h2mx_inj/matrixP=>i j.
-by rewrite mx2hK !mxE/= !enum_valK !cast_ord_comp !cast_ord_id. 
+by rewrite mx2hK !mxE/= !enum_valK !cast_ord_comp !cast_ord_id.
 Qed.
 
 Lemma mx2tfP f g : mx2tf f = mx2tf g <-> f =2 g.
-Proof. 
+Proof.
 split=>P. by move=>i j; rewrite -mx2tfK P mx2tfK.
-by apply/h2mx_inj/matrixP=>i j; rewrite /mx2tf/= !mx2hK !mxE P. 
+by apply/h2mx_inj/matrixP=>i j; rewrite /mx2tf/= !mx2hK !mxE P.
 Qed.
 Lemma tf2mxP f g : tf2mx f =2 tf2mx g <-> f = g.
 Proof. by rewrite -mx2tfP !tf2mxK. Qed.
 
 (* we do not map T to vectType, so we need to redefine the following things *)
 (* provide the way to translate lfun to ffun *)
-(* further, we only want to give a computation, 
+(* further, we only want to give a computation,
 so do not need to define any algebraic structure*)
 Definition funf_add (f1 f2 : T -> T -> C) : T -> T -> C :=
   (fun x y : T => f1 x y + f2 x y).
@@ -319,7 +319,7 @@ Proof. by apply/h2mx_inj/matrixP=>i j; rewrite linearZ/= !mx2hK !mxE. Qed.
 Lemma mx2tf_comp (f g : T -> T -> C) : (mx2tf f) \o (mx2tf g) = mx2tf (funf_comp f g).
 Proof.
 apply/h2mx_inj/matrixP=>i j; rewrite h2mx_comp !mx2hK !mxE /funf_comp.
-under eq_bigr do rewrite !mxE. symmetry. apply: reindex. apply bij_enum_ord. 
+under eq_bigr do rewrite !mxE. symmetry. apply: reindex. apply bij_enum_ord.
 Qed.
 Lemma mx2tf_adj (f : T -> T -> C) : (mx2tf f)^A = mx2tf (funf_adj f).
 Proof. by apply/h2mx_inj/matrixP=>i j; rewrite adj_lfun.unlock !mx2hK !mxE. Qed.
@@ -363,8 +363,8 @@ Proof. by apply/tf2mxP=>i j; rewrite mx2tfK /tf2mx linear0/= mxE. Qed.
 Lemma mv2tv0 : 0 = mv2tv (fun _=>0).
 Proof. by apply/tv2mvP=>i; rewrite mv2tvK /tv2mv linear0/= mxE. Qed.
 
-Definition tf2mxE := (mx2tf_add, mx2tf_opp, mx2tf_scale, mx2tf_comp, mx2tf_adj, 
-mx2tf_tr, mx2tf_conj, mx2tf_apply, mv2tv_add, mv2tv_opp, mv2tv_scale, mv2tv_conj, 
+Definition tf2mxE := (mx2tf_add, mx2tf_opp, mx2tf_scale, mx2tf_comp, mx2tf_adj,
+mx2tf_tr, mx2tf_conj, mx2tf_apply, mv2tv_add, mv2tv_opp, mv2tv_scale, mv2tv_conj,
 mx2tf1, mx2tf0, mv2tv0, mv2tv_dot, mv2tv_out).
 
 Definition t2tv (t : T) : 'Hs T :=
@@ -416,8 +416,8 @@ Proof. by rewrite /deltaft conj_outp !t2tv_conj. Qed.
 
 Lemma mx2tf_coord f t1 t2 : [< ''t1 ; mx2tf f ''t2 >] = f t1 t2.
 Proof.
-by rewrite mx2tf_apply /t2tv mv2tv_dot /funv_dot /funf_apply 
-  (bigD1 t1)//= (bigD1 t2)//= !big1 =>[i/negPf ni|i/negPf ni|]; 
+by rewrite mx2tf_apply /t2tv mv2tv_dot /funv_dot /funf_apply
+  (bigD1 t1)//= (bigD1 t2)//= !big1 =>[i/negPf ni|i/negPf ni|];
   rewrite ?ni ?mulr0// ?conjC0 ?mul0r// !eqxx mulr1 conjC1 mul1r !addr0.
 Qed.
 
@@ -453,17 +453,17 @@ Definition idx_pair (i : 'I_(dim 'Hs T1)) (j : 'I_(dim 'Hs T2))
 
 Lemma idx_pair1K i j : idx_pair1 (idx_pair i j) = i.
 Proof.
-by rewrite /idx_pair1 /idx_pair cast_ord_comp cast_ord_id 
+by rewrite /idx_pair1 /idx_pair cast_ord_comp cast_ord_id
   enum_rankK/= enum_valK cast_ord_comp cast_ord_id.
 Qed.
 Lemma idx_pair2K i j : idx_pair2 (idx_pair i j) = j.
 Proof.
-by rewrite /idx_pair2 /idx_pair cast_ord_comp cast_ord_id 
+by rewrite /idx_pair2 /idx_pair cast_ord_comp cast_ord_id
   enum_rankK/= enum_valK cast_ord_comp cast_ord_id.
 Qed.
 Lemma idx_pairK i : idx_pair (idx_pair1 i) (idx_pair2 i) = i.
 Proof.
-by rewrite /idx_pair /idx_pair1 /idx_pair2 !cast_ord_comp !cast_ord_id 
+by rewrite /idx_pair /idx_pair1 /idx_pair2 !cast_ord_comp !cast_ord_id
   !enum_rankK -surjective_pairing enum_valK cast_ord_comp cast_ord_id.
 Qed.
 
@@ -495,13 +495,13 @@ Qed.
 Lemma tentv_t2tvV (t : T1 * T2) : ''t = tentv ''(t.1) ''(t.2).
 Proof. by rewrite tentv_t2tv -surjective_pairing. Qed.
 
-Lemma tentv_dot v1 v2 u1 u2 : 
+Lemma tentv_dot v1 v2 u1 u2 :
   [< tentv v1 v2 ; tentv u1 u2 >] = [< v1 ; u1 >] * [< v2 ; u2 >].
 Proof.
 rewrite !dotp_mulmx !mxE mulr_suml. under [RHS]eq_bigr do rewrite mulr_sumr.
 rewrite pair_big/= (reindex (fun i=>(idx_pair1 i,idx_pair2 i)))/=; last first.
 by apply eq_bigr=>k _; rewrite/=/tentv !c2hK !mxE rmorphM mulrACA.
-exists (fun i=> idx_pair i.1 i.2)=>/=x _; 
+exists (fun i=> idx_pair i.1 i.2)=>/=x _;
 by rewrite ?idx_pairK// idx_pair1K idx_pair2K -surjective_pairing.
 Qed.
 
@@ -517,7 +517,7 @@ case: i; case: j=>i i' j j'.
 rewrite /tentv_fun/= tentv_dot !ponb_dot -pair_eqE/=.
 by do 2 case: eqP=>_; rewrite ?mulr1 ?mulr0.
 Qed.
-HB.instance Definition _ (F G : finType) (f : 'PONB(F;'Hs T1)) (g : 'PONB(G;'Hs T2)) := 
+HB.instance Definition _ (F G : finType) (f : 'PONB(F;'Hs T1)) (g : 'PONB(G;'Hs T2)) :=
   isPONB.Build _ (F * G)%type (tentv_fun f g) (@tentv_ponb F G f g).
 Lemma tentv_card (F G : finType) (f : 'ONB(F;'Hs T1)) (g : 'ONB(G;'Hs T2)) :
   #|{: F * G}| = dim ('Hs (T1 * T2)%type).
@@ -525,17 +525,17 @@ Proof.
 by rewrite card_prod (@onb_card _ _ f) (@onb_card _ _ g) -!ihb_dim_cast/= card_prod.
 Qed.
 HB.instance Definition _ (F G : finType) (f : 'ONB(F;'Hs T1)) (g : 'ONB(G;'Hs T2)) :=
-  isFullDim.Build ('Hs (T1 * T2)%type) (F * G)%type (tentv_fun f g) 
+  isFullDim.Build ('Hs (T1 * T2)%type) (F * G)%type (tentv_fun f g)
     (tentv_card f g).
 Definition tentv_onbasis (F G : finType) (f : 'ONB(F;'Hs T1)) (g : 'ONB(G;'Hs T2))
   : onbType _ _ := (tentv_fun f g).
 Definition t2tv2_onbasis := tentv_onbasis t2tv t2tv.
 
-Lemma intro_tvl (u v : 'Hs(T1 * T2)%type) : 
+Lemma intro_tvl (u v : 'Hs(T1 * T2)%type) :
   (forall u1 u2, [<tentv u1 u2 ; u >] = [<tentv u1 u2 ; v >]) <-> u = v.
 Proof. split=>[H|->//]; apply/(intro_onbl t2tv2_onbasis)=>/= i; apply H. Qed.
 
-Lemma intro_tvr (u v : 'Hs(T1 * T2)%type) : 
+Lemma intro_tvr (u v : 'Hs(T1 * T2)%type) :
   (forall u1 u2, [<u ; tentv u1 u2 >] = [< v ; tentv u1 u2 >]) <-> u = v.
 Proof. split=>[H|->//]; apply/(intro_onbr t2tv2_onbasis)=>/= i; apply H. Qed.
 
@@ -569,19 +569,19 @@ Section TypeLfunTensor.
 Variable (S1 S2 T1 T2: ihbFinType).
 
 Definition tentf (f : 'Hom[S1, T1]) (g : 'Hom[S2, T2]) : 'Hom[(S1 * S2)%type, (T1 * T2)%type] :=
-  mx2h (\matrix_(i, j) ((h2mx f (idx_pair1 i) (idx_pair1 j)) * 
+  mx2h (\matrix_(i, j) ((h2mx f (idx_pair1 i) (idx_pair1 j)) *
     (h2mx g (idx_pair2 i) (idx_pair2 j)))).
 
 Lemma linear_tentf v1: linear (tentf v1).
 Proof.
-by move=>a v w; apply/h2mx_inj/matrixP=>i j; 
+by move=>a v w; apply/h2mx_inj/matrixP=>i j;
 rewrite linearP/= !mx2hK linearP !mxE mulrDr !mulrA [a * _]mulrC.
 Qed.
 HB.instance Definition _ (v1 : 'Hom[S1, T1]) := GRing.isLinear.Build C 'Hom('Hs S2, 'Hs T2)
   'Hom('Hs (S1 * S2)%type, 'Hs (T1 * T2)%type) *:%R (tentf v1) (linear_tentf v1).
 Lemma linear_tentfr v2 : linear (tentf^~ v2).
 Proof.
-by move=>a v w; apply/h2mx_inj/matrixP=>i j; 
+by move=>a v w; apply/h2mx_inj/matrixP=>i j;
 rewrite linearP/= !mx2hK linearP !mxE mulrDl !mulrA.
 Qed.
 HB.instance Definition _ := bilinear_isBilinear.Build C 'Hom('Hs S1, 'Hs T1) 'Hom('Hs S2, 'Hs T2)
@@ -596,7 +596,7 @@ apply/h2c_inj/matrixP=>i j; rewrite !applyfh !c2hK !mxE mulr_suml.
 under [RHS]eq_bigr do rewrite mulr_sumr.
 rewrite pair_big/= (reindex (fun i=>(idx_pair1 i,idx_pair2 i)))/=; last first.
 by apply eq_bigr=>k _; rewrite/= mx2hK !mxE mulrACA.
-exists (fun i=> idx_pair i.1 i.2)=>/=x _; 
+exists (fun i=> idx_pair i.1 i.2)=>/=x _;
 by rewrite ?idx_pairK// idx_pair1K idx_pair2K -surjective_pairing.
 Qed.
 
@@ -604,10 +604,10 @@ Lemma intro_tv (f g : 'Hom('Hs (S1 * S2)%type, 'Hs (T1 * T2)%type)) :
   (forall u1 u2, f (u1 ⊗t u2) = g (u1 ⊗t u2)) <-> f = g.
 Proof. by split=>[H|->//]; apply/(intro_onb t2tv2_onbasis)=>/= i; apply H. Qed.
 
-Lemma tentv_out u1 u2 v1 v2 : 
+Lemma tentv_out u1 u2 v1 v2 :
   tentf [> u1 ; v1 <] [> u2 ; v2 <] = [> u1 ⊗t u2; v1 ⊗t v2 <].
 Proof.
-by apply/intro_tv=>u v; rewrite tentf_apply 
+by apply/intro_tv=>u v; rewrite tentf_apply
   !outpE linearZlr/= scalerA tentv_dot.
 Qed.
 
@@ -626,11 +626,11 @@ Lemma tentf_comp (S1 S2 S3 T1 T2 T3: ihbFinType) (f1 : 'Hom[S1,S2]) (f2 : 'Hom[T
   f1 ⊗f f2 \o g1 ⊗f g2 = (f1 \o g1) ⊗f (f2 \o g2).
 Proof. by apply/intro_tv=>u v; rewrite lfunE/= !tentf_apply !lfunE. Qed.
 
-Lemma tentf_tr (T1 T2 S1 S2 : ihbFinType) (f : 'Hom[T1,T2]) (g : 'Hom[S1,S2]) : 
+Lemma tentf_tr (T1 T2 S1 S2 : ihbFinType) (f : 'Hom[T1,T2]) (g : 'Hom[S1,S2]) :
   ((f ⊗f g)^T = f^T ⊗f g^T)%VF.
 Proof. by apply/h2mx_inj/matrixP=>i j; rewrite tr_lfun.unlock !mx2hK !mxE. Qed.
 
-Lemma tentf_adj (T1 T2 S1 S2 : ihbFinType) (f : 'Hom[T1,T2]) (g : 'Hom[S1,S2]) : 
+Lemma tentf_adj (T1 T2 S1 S2 : ihbFinType) (f : 'Hom[T1,T2]) (g : 'Hom[S1,S2]) :
   (f ⊗f g)^A = f^A ⊗f g^A.
 Proof. by rewrite adjfCT tentf_conj tentf_tr -!adjfCT. Qed.
 
@@ -645,13 +645,13 @@ set mA := castmx (esym dim_proper_cast, esym dim_proper_cast) (h2mx A).
 move: (i2norm_existsr mA 0)=>[mv Pv1 Pv2].
 exists (c2h (castmx (dim_proper_cast, erefl) mv)).
   rewrite hnorm_l2norm c2hK; move: mv Pv1 {Pv2}; clear.
-  by move: (@dim_proper_cast U)=>P; move: P {+}P=>/esym P; 
+  by move: (@dim_proper_cast U)=>P; move: P {+}P=>/esym P;
     case: _ / P => P mv; rewrite castmx_id.
 rewrite hnorm_l2norm /i2fnorm applyfh !c2hK.
 move: mv {Pv1} Pv2; rewrite /mA; clear; set mA := h2mx A; move: mA.
 move: (@dim_proper_cast U) (@dim_proper_cast V)=>PU PV;
 move: PU {+}PU PV {+}PV=>/esym PU + /esym PV;
-case: _ / PU; case: _ / PV=>PU PV mA mv; 
+case: _ / PU; case: _ / PV=>PU PV mA mv;
 by rewrite !castmx_id=>->.
 Qed.
 
@@ -690,7 +690,7 @@ Qed.
 
 Lemma tentf_eq0 x y : (x ⊗f y == 0) = (x == 0) || (y == 0).
 Proof.
-apply/Coq.Bool.Bool.eq_iff_eq_true; split.
+apply/Stdlib.Bool.Bool.eq_iff_eq_true; split.
 move=>/eqP/lfunP P1. case: eqP=>//=; move=>/eqP/lfun_neq0P[v /negPf Pv].
 apply/eqP/lfunP=>a; apply/intro_dotl=>b;
 move: (P1 (tentv v a))=>/intro_dotl/(_ (tentv (x v) b))/eqP.
@@ -698,11 +698,11 @@ by rewrite tentf_apply tentv_dot !lfunE/= !linear0 mulf_eq0 Pv/==>/eqP.
 by move=>/orP[/eqP->|/eqP->]; rewrite ?linear0l ?linear0r eqxx.
 Qed.
 
-Lemma ptentf_rge0 x y : 
+Lemma ptentf_rge0 x y :
   (0 : 'End(_)) ⊏ x -> ((0 : 'End(_)) ⊑ x ⊗f y) = ((0 : 'End(_)) ⊑ y).
 Proof.
 move=>/gtf0_pdP[xge0 [v Pv]].
-apply/Coq.Bool.Bool.eq_iff_eq_true; split; last by apply: tentf_ge0=>//.
+apply/Stdlib.Bool.Bool.eq_iff_eq_true; split; last by apply: tentf_ge0=>//.
 move/lef_dot=>P1. apply/lef_dot=>u.
 move: (P1 (tentv v u)).
 by rewrite tentf_apply tentv_dot !lfunE/= !linear0 pmulr_rge0.
@@ -712,14 +712,14 @@ Lemma ptentf_lge0 y x :
   (0 : 'End(_)) ⊏ y -> ((0 : 'End(_)) ⊑ x ⊗f y) = ((0 : 'End(_)) ⊑ x).
 Proof.
 move=>/gtf0_pdP[xge0 [v Pv]].
-apply/Coq.Bool.Bool.eq_iff_eq_true; split=>[/lef_dot P1|P1]; last by apply: tentf_ge0.
+apply/Stdlib.Bool.Bool.eq_iff_eq_true; split=>[/lef_dot P1|P1]; last by apply: tentf_ge0.
 apply/lef_dot=>u; move: (P1 (tentv u v)).
 by rewrite tentf_apply tentv_dot !lfunE/= !linear0 pmulr_lge0.
 Qed.
 
 HB.instance Definition _ := isBRegVOrder.Build C
   'End('Hs T1) 'End('Hs T2) 'End('Hs (T1 * T2)%type) (@tentf T1 T2 T1 T2)
-  (fun y => additive_linear (linear_tentfr y)) (fun x => additive_linear (linear_tentf x)) 
+  (fun y => zmod_morphism_linear (linear_tentfr y)) (fun x => zmod_morphism_linear (linear_tentf x))
   tentf_eq0 ptentf_rge0 ptentf_lge0.
 
 Lemma tentf_trlf x y : \Tr (x ⊗f y) = \Tr x * \Tr y.
@@ -728,7 +728,7 @@ rewrite (onb_trlf t2tv2_onbasis) !(onb_trlf t2tv)/=.
 rewrite pair_bigV/= mulr_suml; apply eq_bigr=>i _.
 rewrite mulr_sumr; apply eq_bigr=>j _.
 by rewrite /tentv_fun/= tentf_apply tentv_dot.
-Qed. 
+Qed.
 
 Definition tentv_indexl (T3 T4 : ihbFinType) (i : 'I_(dim 'Hs T3 * dim 'Hs T4)) :
   'I_(dim 'Hs (T3 * T4)%type) := cast_ord (ihb_dim_cast _)
@@ -736,13 +736,13 @@ Definition tentv_indexl (T3 T4 : ihbFinType) (i : 'I_(dim 'Hs T3 * dim 'Hs T4)) 
     enum_val (cast_ord (esym (ihb_dim_cast _)) (mxtens_unindex i).2))).
 
 Definition tentv_indexr (T3 T4 : ihbFinType) (i : 'I_(dim 'Hs (T3 * T4)%type)) :
-  'I_(dim 'Hs T3 * dim 'Hs T4) := mxtens_index 
+  'I_(dim 'Hs T3 * dim 'Hs T4) := mxtens_index
   (cast_ord (ihb_dim_cast _) (enum_rank (enum_val (cast_ord (esym (ihb_dim_cast _)) i)).1),
    cast_ord (ihb_dim_cast _) (enum_rank (enum_val (cast_ord (esym (ihb_dim_cast _)) i)).2)).
 
 Lemma tentv_indexlK {T3 T4} : cancel (@tentv_indexl T3 T4) (@tentv_indexr _ _).
 Proof.
-by move=>i; rewrite /tentv_indexl /tentv_indexr/= cast_ord_comp cast_ord_id 
+by move=>i; rewrite /tentv_indexl /tentv_indexr/= cast_ord_comp cast_ord_id
   enum_rankK/= !enum_valK !cast_ord_comp !cast_ord_id mxtens_unindexK.
 Qed.
 
@@ -752,7 +752,7 @@ by move=>i; rewrite /tentv_indexl /tentv_indexr mxtens_indexK/= !cast_ord_comp !
   !enum_rankK/= -surjective_pairing !enum_valK cast_ord_comp cast_ord_id.
 Qed.
 
-Definition tentv_mxU {T3 T4 : ihbFinType} : 'M[C]_(_, _) := 
+Definition tentv_mxU {T3 T4 : ihbFinType} : 'M[C]_(_, _) :=
   \matrix_(i,j) ((@tentv_indexr T3 T4 i) == j)%:R.
 
 Lemma tentv_mxU_unitarymx (T3 T4 : ihbFinType) : @tentv_mxU T3 T4 \is unitarymx.
@@ -834,7 +834,7 @@ Lemma tentf_proj (f : 'FP('Hs T1)) (g : 'FP('Hs T2)) : f ⊗f g \is projlf.
 Proof. by apply/projlfP; rewrite tentf_adj !hermf_adjE/= tentf_comp !projf_idem. Qed.
 HB.instance Definition _ (f : 'FP('Hs T1)) (g : 'FP('Hs T2)) :=
   Obs_isProjLf.Build 'Hs(T1 * T2)%type (f ⊗f g) (@tentf_proj f g).
-HB.instance Definition _ (f : 'FP1('Hs T1)) (g : 'FP1('Hs T2)) := 
+HB.instance Definition _ (f : 'FP1('Hs T1)) (g : 'FP1('Hs T2)) :=
   Proj1Lf.Class (ProjLf.on (f ⊗f g)) (Den1Lf.on (f ⊗f g)).
 
 Lemma tentf_iso (T3 T4 : ihbFinType) (f : 'FI('Hs T1, 'Hs T3))
@@ -865,14 +865,14 @@ Lemma tentvDl (w: 'Hs T2) (u v: 'Hs T1) : (u+v) ⊗t w = u ⊗t w + v ⊗t w.
 Proof. exact: linearDl. Qed.
 Lemma tentvZl (v: 'Hs T2) (c: C) (u: 'Hs T1) : (c*:u) ⊗t v = c *: (u ⊗t v).
 Proof. exact: linearZl_LR. Qed.
-Lemma tentvPl (w: 'Hs T2) (c: C) (u v: 'Hs T1) : 
+Lemma tentvPl (w: 'Hs T2) (c: C) (u v: 'Hs T1) :
   (c*:u+v) ⊗t w = c *: (u ⊗t w) + v ⊗t w.
 Proof. exact: linearPl. Qed.
 Lemma tentvMnl (v: 'Hs T2) (u: 'Hs T1) n : (u *+ n) ⊗t v = (u ⊗t v) *+ n.
 Proof. exact: linearMnl. Qed.
 Lemma tentvMNnl (v: 'Hs T2) (u: 'Hs T1) n : tentv (u *- n) v = (tentv u v) *- n.
 Proof. exact: linearMNnl. Qed.
-Lemma tentv_suml L r (P : pred L) (F: L -> 'Hs T1) (u: 'Hs T2) : 
+Lemma tentv_suml L r (P : pred L) (F: L -> 'Hs T1) (u: 'Hs T2) :
   (\sum_(i <- r | P i) F i) ⊗t u = \sum_(i <- r | P i) ((F i) ⊗t u).
 Proof. exact: linear_sumlz. Qed.
 Lemma tentvNr (u: 'Hs T1) (v: 'Hs T2) : u ⊗t (-v) = - (u ⊗t v).
@@ -883,14 +883,14 @@ Lemma tentvDr (w: 'Hs T1) (u v: 'Hs T2) : w ⊗t (u+v) = w ⊗t u + w ⊗t v.
 Proof. exact: linearDr. Qed.
 Lemma tentvZr (v: 'Hs T1) (c: C) (u: 'Hs T2) : v ⊗t (c*:u) = c *: (v ⊗t u).
 Proof. exact: linearZ_LR. Qed.
-Lemma tentvPr (w: 'Hs T1) (c: C) (u v: 'Hs T2) : 
+Lemma tentvPr (w: 'Hs T1) (c: C) (u v: 'Hs T2) :
   w ⊗t (c *: u + v) = c *: (w ⊗t u) + (w ⊗t v).
 Proof. exact: linearPr. Qed.
 Lemma tentvMnr (v: 'Hs T1) (u: 'Hs T2) n : v ⊗t (u *+ n) = (v ⊗t u) *+ n.
 Proof. exact: linearMnr. Qed.
 Lemma tentvMNnr (v: 'Hs T1) (u: 'Hs T2) n : v ⊗t (u *- n) = (v ⊗t u) *- n.
 Proof. exact: linearMNnr. Qed.
-Lemma tentv_sumr L r (P : pred L) (u: 'Hs T1) (F: L -> 'Hs T2)  : 
+Lemma tentv_sumr L r (P : pred L) (u: 'Hs T1) (F: L -> 'Hs T2)  :
   u ⊗t (\sum_(i <- r | P i) F i) = \sum_(i <- r | P i) (u ⊗t (F i)).
 Proof. exact: linear_sumr. Qed.
 
@@ -985,7 +985,7 @@ Section SwapTypeTensor.
 Implicit Type (S T : ihbFinType).
 
 Definition swaptf T1 T2 : 'Hom[(T1 * T2)%type, (T2 * T1)%type] :=
-  mx2h (\matrix_(i,j) ((idx_pair1 i == idx_pair2 j) 
+  mx2h (\matrix_(i,j) ((idx_pair1 i == idx_pair2 j)
     && (idx_pair2 i == idx_pair1 j))%:R).
 Global Arguments swaptf {T1 T2}.
 
@@ -1010,15 +1010,15 @@ Proof.
 by apply/intro_tv=>u v; rewrite lfunE/= swaptfEtv lfunE/= !tentf_apply swaptfEtv.
 Qed.
 
-Lemma swaptfE_onb T1 T2 (F G : finType) (onb1 : 'ONB(F;'Hs T1)) 
+Lemma swaptfE_onb T1 T2 (F G : finType) (onb1 : 'ONB(F;'Hs T1))
   (onb2 : 'ONB(G;'Hs T2)) :
     swaptf = \sum_i\sum_j [> onb2 j ⊗t onb1 i ; onb1 i ⊗t onb2 j <].
 Proof.
 apply/(intro_onb (tentv_onbasis onb1 onb2))=>[[i j]].
-rewrite/=/tentv_fun/= swaptfEtv sum_lfunE (bigD1 i)//= sum_lfunE (bigD1 j)// 
+rewrite/=/tentv_fun/= swaptfEtv sum_lfunE (bigD1 i)//= sum_lfunE (bigD1 j)//
   !big1/==>[k/negPf nk|k/negPf nk|].
 2: rewrite sum_lfunE big1// =>l _.
-all: by rewrite outpE tentv_dot ?ns_dot ?onb_dot ?nk 
+all: by rewrite outpE tentv_dot ?ns_dot ?onb_dot ?nk
   ?(mul1r,mulr0,mul0r) ?scale0r// scale1r !addr0.
 Qed.
 
@@ -1034,7 +1034,7 @@ Qed.
 
 Lemma swaptf_adj T1 T2 : (@swaptf T1 T2)^A = swaptf.
 Proof.
-apply/(intro_onb (t2tv2_onbasis))=>[[i j]]; 
+apply/(intro_onb (t2tv2_onbasis))=>[[i j]];
 apply/(intro_onbl (t2tv2_onbasis))=>[[m n]].
 by rewrite/=/tentv_fun/= adj_dotEr !swaptfEtv !tentv_dot mulrC.
 Qed.
@@ -1060,14 +1060,14 @@ Lemma swaptf_inj T1 T2 : injective (@swaptf T1 T2).
 Proof. exact: (can_inj swaptfK). Qed.
 Global Arguments swaptf_inj {T1 T2}.
 
-Lemma swaptf_dot T1 T2 (u v : 'Hs (T1 * T2)%type) : 
+Lemma swaptf_dot T1 T2 (u v : 'Hs (T1 * T2)%type) :
   [< swaptf u ; swaptf v >] = [< u ; v >].
 Proof. by rewrite -adj_dotEl swaptf_adj swaptfK. Qed.
 
 Lemma swaptf_norm T1 T2 (u : 'Hs (T1 * T2)%type) : `|swaptf u| = `|u|.
 Proof. by rewrite !hnormE swaptf_dot. Qed.
 
-Lemma swaptf_out T1 T2 (u v : 'Hs (T1 * T2)%type) : 
+Lemma swaptf_out T1 T2 (u v : 'Hs (T1 * T2)%type) :
   swaptf \o [> u ; v <] \o swaptf = [> swaptf u ; swaptf v <].
 Proof. by rewrite outp_compr outp_compl swaptf_adj. Qed.
 
@@ -1091,7 +1091,7 @@ Section TentvTuple.
 Variable (n : nat) (T : ihbFinType).
 
 Definition idx_tuplei (i : 'I_(dim 'Hs (n.-tuple T))) j : 'I_(dim 'Hs T)
-  := cast_ord (ihb_dim_cast T) (enum_rank 
+  := cast_ord (ihb_dim_cast T) (enum_rank
     ((enum_val (cast_ord (esym (ihb_dim_cast _)) i)) ~_ j)).
 Definition idx_tuple (fi : 'I_n -> 'I_(dim 'Hs T)) : 'I_(dim 'Hs (n.-tuple T))
   := cast_ord (ihb_dim_cast _) (enum_rank [tuple enum_val (cast_ord (esym (ihb_dim_cast _)) (fi i)) | i < n]).
@@ -1099,7 +1099,7 @@ Definition idx_tuple (fi : 'I_n -> 'I_(dim 'Hs T)) : 'I_(dim 'Hs (n.-tuple T))
 Lemma idx_tupleiK (fi : 'I_n -> 'I_(dim 'Hs T)) i :
   idx_tuplei (idx_tuple fi) i = fi i.
 Proof.
-by rewrite /idx_tuplei /idx_tuple cast_ord_comp cast_ord_id 
+by rewrite /idx_tuplei /idx_tuple cast_ord_comp cast_ord_id
   enum_rankK tnthE enum_valK cast_ord_comp cast_ord_id.
 Qed.
 Lemma idx_tupleK (i : 'I_(dim 'Hs (n.-tuple T))) :
@@ -1114,7 +1114,7 @@ split=>[P x|P]; first by rewrite -idx_tupleiK P idx_tupleiK.
 rewrite /idx_tuple; do 2 f_equal; by under eq_mktuple do rewrite P.
 Qed.
 
-Definition tentv_tuple (v : 'I_n -> ('Hs T)) : 'Hs (n.-tuple T) 
+Definition tentv_tuple (v : 'I_n -> ('Hs T)) : 'Hs (n.-tuple T)
   := c2h (\col_i (\prod_j h2c (v j) (idx_tuplei i j) 0)).
 
 Lemma eq_tentv_tuple (u v : 'I_n -> 'Hs T) :
@@ -1144,7 +1144,7 @@ rewrite hnormE tentv_tuple_dot sqrt_prod=>[i _|]; last apply eq_bigr=>i _;
 by rewrite dotp_norm ?sqrCK// exprn_ge0//.
 Qed.
 
-Lemma t2tv_tuple (t : n.-tuple T) : 
+Lemma t2tv_tuple (t : n.-tuple T) :
   t2tv t = tentv_tuple (fun i => ''(t ~_ i)).
 Proof.
 rewrite{1}/t2tv /tentv_tuple /mv2tv; f_equal; apply/matrixP=>i j.
@@ -1156,7 +1156,7 @@ rewrite enum_ord_eq=>/eqP->; under eq_bigr do rewrite/= c2hK mxE
 by rewrite (bigD1 k)//= /t2tv/mv2tv c2hK mxE cast_ord_comp cast_ord_id enum_rankK Pk mul0r.
 Qed.
 
-Lemma tentv_tuple_conj (t : 'I_n -> ('Hs T)) : 
+Lemma tentv_tuple_conj (t : 'I_n -> ('Hs T)) :
   (tentv_tuple t)^*v = tentv_tuple (fun i=>(t i)^*v).
 Proof.
 apply/h2c_inj/matrixP=>i j; rewrite conjv.unlock !c2hK !mxE rmorph_prod;
@@ -1181,7 +1181,7 @@ HB.instance Definition _ (t : 'I_n -> 'PS('Hs T)) := isPartialState.Build
 Lemma tentv_tuple_ns (t : 'I_n -> 'NS('Hs T)) :
   [< tentv_tuple t ; tentv_tuple t >] = 1.
 Proof. by rewrite tentv_tuple_dot big1// =>i _; rewrite ns_dot. Qed.
-HB.instance Definition _ (t : 'I_n -> 'NS('Hs T)) := 
+HB.instance Definition _ (t : 'I_n -> 'NS('Hs T)) :=
   Partial_isNormalState.Build 'Hs(n.-tuple T) (tentv_tuple t) (tentv_tuple_ns t).
 
 Definition tentv_tuple_fun (G : finType) (f : 'I_n -> G -> 'Hs T) :=
@@ -1193,9 +1193,9 @@ rewrite/tentv_tuple_fun tentv_tuple_dot.
 case: eqP=>[->|/eqP]; first by rewrite big1// =>k _; rewrite ns_dot.
 by move=>/tuple_neqP[k/negPf nk]; rewrite (bigD1 k)//= ponb_dot nk mul0r.
 Qed.
-HB.instance Definition _ (G : finType) (f : 'I_n -> 'PONB(G;'Hs T)) := 
+HB.instance Definition _ (G : finType) (f : 'I_n -> 'PONB(G;'Hs T)) :=
   isPONB.Build _ (n.-tuple G) (tentv_tuple_fun f) (tentv_tuple_ponb f).
-Lemma tentv_tuple_card (G : finType) (f : 'I_n -> 'ONB(G;'Hs T)) : 
+Lemma tentv_tuple_card (G : finType) (f : 'I_n -> 'ONB(G;'Hs T)) :
   #|{: n.-tuple G}| = dim ('Hs (n.-tuple T)).
 Proof.
 rewrite -ihb_dim_cast !card_tuple. case: n f; first by rewrite !expn0.
@@ -1231,11 +1231,11 @@ rewrite bigA_distr_bigA/= (reindex (fun i=>[ffun j => idx_tuplei i j])).
 exists (fun i : {ffun 'I_n -> _}=> idx_tuple i)=>x _.
 by rewrite -[RHS]idx_tupleK; apply/idx_tupleP=>k; rewrite ffunE.
 by apply/ffunP=>k; rewrite ffunE idx_tupleiK.
-apply eq_bigr=>k _; rewrite !mxE -big_split/=; 
+apply eq_bigr=>k _; rewrite !mxE -big_split/=;
 by apply eq_bigr=>l _; rewrite ffunE.
 Qed.
 
-Lemma tentf_tuple_out T1 T2 n (u : 'I_n -> ('Hs T1)) (v : 'I_n -> ('Hs T2)) : 
+Lemma tentf_tuple_out T1 T2 n (u : 'I_n -> ('Hs T1)) (v : 'I_n -> ('Hs T2)) :
   tentf_tuple (fun i=> [> u i ; v i <])
   = [> tentv_tuple u ; tentv_tuple v <].
 Proof.
@@ -1255,14 +1255,14 @@ Qed.
 Lemma tentf_tuple_conj T1 T2 n (f : 'I_n -> ('Hom[T1,T2])) :
   (tentf_tuple f)^C = tentf_tuple (fun i=> (f i)^C).
 Proof.
-apply/h2mx_inj/matrixP=>i j; rewrite conj_lfun.unlock /= !mx2hK !mxE rmorph_prod; 
+apply/h2mx_inj/matrixP=>i j; rewrite conj_lfun.unlock /= !mx2hK !mxE rmorph_prod;
 by apply eq_bigr => k _; rewrite mx2hK !mxE.
 Qed.
 
 Lemma tentf_tuple_tr T1 T2 n (f : 'I_n -> ('Hom[T1,T2])) :
   (tentf_tuple f)^T = tentf_tuple (fun i=> (f i)^T).
 Proof.
-apply/h2mx_inj/matrixP=>i j; rewrite tr_lfun.unlock /= !mx2hK !mxE; 
+apply/h2mx_inj/matrixP=>i j; rewrite tr_lfun.unlock /= !mx2hK !mxE;
 by apply eq_bigr => k _; rewrite mx2hK !mxE.
 Qed.
 
@@ -1280,7 +1280,7 @@ Section TentfTuplePerm.
 Variable (T : ihbFinType) (n : nat).
 
 Definition permtf (s : 'S_n) : 'End[n.-tuple T] :=
-  mx2h (\matrix_(i, j) 
+  mx2h (\matrix_(i, j)
     (idx_tuple (fun k=> (idx_tuplei i) ((s^-1)%g k)) == j)%:R).
 
 Lemma permtfEtv (s : 'S_n) (v : 'I_n -> ('Hs T)) :
@@ -1344,7 +1344,7 @@ suff ->: ''(nseq_tuple n t) = tentv_tuple (fun i => ''t) by apply: permtf_nseq.
 by rewrite t2tv_tuple; under eq_tentv_tuple do rewrite tnth_nseq.
 Qed.
 
-Lemma permtf_unitary (s : 'S_n) : 
+Lemma permtf_unitary (s : 'S_n) :
   permtf s \is unitarylf.
 Proof. by apply/unitarylfP; rewrite permtf_adj permtf_comp mulVg permtf1. Qed.
 HB.instance Definition _ (s : 'S_n) := isUnitaryLf.Build
@@ -1357,9 +1357,9 @@ Section TenTupleMultilinear.
 Variable (n : nat).
 Implicit Type (T : ihbFinType).
 
-Definition tentv_tmv T (v : mvector (fun i : 'I_n =>'Hs T)) := 
+Definition tentv_tmv T (v : mvector (fun i : 'I_n =>'Hs T)) :=
     tentv_tuple v.
-Definition tentf_tmv T1 T2 (f : mvector (fun i : 'I_n => 'Hom[T1,T2])) := 
+Definition tentf_tmv T1 T2 (f : mvector (fun i : 'I_n => 'Hom[T1,T2])) :=
     tentf_tuple f.
 
 Lemma tentv_tmvE T (v : 'I_n -> ('Hs T)) :
@@ -1381,12 +1381,12 @@ Lemma tentv_tmv_mlinear T : mlinear (@tentv_tmv T).
 Proof.
 move=>i a x v; apply/(intro_onbl t2tv)=>y.
 rewrite/= t2tv_tuple /tentv_tmv linearPr/= !tentv_tuple_dot.
-rewrite [LHS](bigD1 i)//= [X in _ = _ + X](bigD1 i)//= 
+rewrite [LHS](bigD1 i)//= [X in _ = _ + X](bigD1 i)//=
   [in LHS](eq_bigr (fun j=>[< ''(y ~_ j); x j >])); last first.
 rewrite [X in _ = _ + _ * X](eq_bigr (fun j=>[< ''(y ~_ j); x j >])); last first.
 rewrite mvE !msetii mvE eqxx linearP/= mulrDl -mulrA; do 2 f_equal.
 by rewrite [RHS](bigD1 i).
-all: move=>j; rewrite eq_sym=>/negPf P; 
+all: move=>j; rewrite eq_sym=>/negPf P;
   by rewrite ?mset_ne 2?mvE ?P ?mset_ne ?P ?mvE ?addr0 ?scale1r.
 Qed.
 
@@ -1396,18 +1396,18 @@ move=>i a x v; apply/(intro_onb t2tv)=>y.
 rewrite/= t2tv_tuple /tentf_tmv lfunE/= lfunE/= !tentf_tuple_apply.
 apply/(intro_onbl t2tv)=>z.
 rewrite/= t2tv_tuple linearPr/= !tentv_tuple_dot.
-rewrite [LHS](bigD1 i)//= [X in _ = _ + X](bigD1 i)//= 
+rewrite [LHS](bigD1 i)//= [X in _ = _ + X](bigD1 i)//=
   [in LHS](eq_bigr (fun j=>[< ''(z ~_ j); x j ''(y ~_ j) >])); last first.
 rewrite [X in _ = _ + _ * X](eq_bigr (fun j=>[< ''(z ~_ j); x j ''(y ~_ j) >])); last first.
 rewrite mvE !msetii mvE eqxx lfunE/= lfunE/= linearP/= mulrDl -mulrA.
 do 2 f_equal. by rewrite [RHS](bigD1 i).
-all: move=>j; rewrite eq_sym=>/negPf P; 
+all: move=>j; rewrite eq_sym=>/negPf P;
   by rewrite ?mset_ne 2?mvE ?P ?mset_ne ?P ?mvE ?addr0 ?scale1r.
 Qed.
 
 End TenTupleMultilinear.
 
-Lemma tentf_tuple1 (n : nat) (T : ihbFinType) : 
+Lemma tentf_tuple1 (n : nat) (T : ihbFinType) :
   tentf_tuple (fun i : 'I_n=> \1 : 'End[T]) = \1.
 Proof.
 apply/(intro_onb t2tv)=>i.
@@ -1416,18 +1416,18 @@ by under eq_tentv_tuple do rewrite lfunE.
 Qed.
 
 Definition tentv_tuple_tensU {n} {T : ihbFinType} : 'Hom(_,_) :=
-  \sum_i\sum_(f : n.-tuple T) [> tentv ''i (tentv_tuple (fun i => ''(f ~_ i))); 
+  \sum_i\sum_(f : n.-tuple T) [> tentv ''i (tentv_tuple (fun i => ''(f ~_ i)));
     tentv_tuple (fcons ''i (fun i => ''(f ~_ i))) <].
 Lemma tentv_tuple_tensU_gios n T : (@tentv_tuple_tensU n T) \is gisolf.
 Proof.
 rewrite -gisolf_adj; apply/isolf_giso_dim; last first.
   by rewrite -!ihb_dim_cast card_prod !card_tuple expnS.
 apply/isolfP; rewrite adjfK /tentv_tuple_tensU adjf_sum.
-rewrite -tentf11 -(sumonb_out t2tv) !linear_sumlz/=; apply eq_bigr=>i _. 
+rewrite -tentf11 -(sumonb_out t2tv) !linear_sumlz/=; apply eq_bigr=>i _.
 rewrite linear_sumr/= (bigD1 i)//= [X in _ + X]big1=>[j /negPf nji|];
 rewrite adjf_sum linear_sumlz/=.
   rewrite big1// =>a _; rewrite linear_sumr big1// =>b _ /=;
-  by rewrite adj_outp outp_comp tentv_tuple_dot big_ord_recl 
+  by rewrite adj_outp outp_comp tentv_tuple_dot big_ord_recl
     !fcons0 onb_dot eq_sym nji mul0r scale0r.
 rewrite addr0 -(sumonb_out t2tv) linear_sumr /=; apply eq_bigr=>j _.
 rewrite linear_sumr/= (bigD1 j)//= big1=>[k /tuple_neqP [ni /negPf nkj]|];
@@ -1436,33 +1436,33 @@ under eq_bigr do rewrite !fconsE ?ns_dot.
 by rewrite (bigD1 ni)//= onb_dot eq_sym nkj mul0r scale0r.
 by rewrite prodr_const expr1n scale1r -tentv_out addr0 -t2tv_tuple.
 Qed.
-HB.instance Definition _ n T := isGisoLf.Build _ _ 
+HB.instance Definition _ n T := isGisoLf.Build _ _
   (@tentv_tuple_tensU n T) (@tentv_tuple_tensU_gios n T).
-Lemma tentv_tuple_cons n (T : ihbFinType) x (f : 'I_n -> 'Hs T) : 
+Lemma tentv_tuple_cons n (T : ihbFinType) x (f : 'I_n -> 'Hs T) :
   tentv_tuple_tensU (tentv_tuple (fcons x f)) = tentv x (tentv_tuple f).
 Proof.
 apply/(intro_onbl t2tv)=>[[i j]].
-rewrite -adj_dotEl /tentv_tuple_tensU adjf_sum sum_lfunE (bigD1 i)//= 
+rewrite -adj_dotEl /tentv_tuple_tensU adjf_sum sum_lfunE (bigD1 i)//=
   [X in _ + X]big1=>[k /negPf nki|]; rewrite adjf_sum sum_lfunE.
-by rewrite big1// =>? _; rewrite adj_outp outpE 
+by rewrite big1// =>? _; rewrite adj_outp outpE
   -tentv_t2tv tentv_dot onb_dot nki mul0r scale0r.
 rewrite addr0 (bigD1 j)//= big1=>[k/negPf nkj|];
-rewrite -t2tv_tuple adj_outp outpE -tentv_t2tv tentv_dot !ns_dot 
-  ?onb_dot ?nkj ?mulr0 ?scale0r// mul1r scale1r addr0 t2tv_tuple 
+rewrite -t2tv_tuple adj_outp outpE -tentv_t2tv tentv_dot !ns_dot
+  ?onb_dot ?nkj ?mulr0 ?scale0r// mul1r scale1r addr0 t2tv_tuple
   tentv_dot !tentv_tuple_dot big_ord_recl !fcons0.
 by under [in LHS]eq_bigr do rewrite !fconsE.
 Qed.
-Lemma tentf_tuple_cons n (T1 T2 : ihbFinType) x (f : 'I_n -> 'Hom[T1,T2]) : 
+Lemma tentf_tuple_cons n (T1 T2 : ihbFinType) x (f : 'I_n -> 'Hom[T1,T2]) :
   tentv_tuple_tensU \o tentf_tuple (fcons x f) \o tentv_tuple_tensU^A = tentf x (tentf_tuple f).
 Proof.
 rewrite -[RHS]comp_lfun1l -(gisofEr tentv_tuple_tensU) -!comp_lfunA; f_equal.
 apply/(intro_onb t2tv)=>[[i j]].
-rewrite !lfunE/= -tentv_t2tv t2tv_tuple -{1}tentv_tuple_cons gisofKEl 
+rewrite !lfunE/= -tentv_t2tv t2tv_tuple -{1}tentv_tuple_cons gisofKEl
   tentf_apply !tentf_tuple_apply -[in RHS]tentv_tuple_cons gisofKEl.
 apply/eq_tentv_tuple=>k; case: (unliftP ord0 k)=>/=[l |]->;
 by rewrite ?fconsE// !fcons0.
 Qed.
-Lemma tentf_tuple_consV n (T1 T2 : ihbFinType) x (f : 'I_n -> 'Hom[T1,T2]) : 
+Lemma tentf_tuple_consV n (T1 T2 : ihbFinType) x (f : 'I_n -> 'Hom[T1,T2]) :
   tentf_tuple (fcons x f) = tentv_tuple_tensU^A \o tentf x (tentf_tuple f) \o tentv_tuple_tensU.
 Proof. by rewrite -tentf_tuple_cons !comp_lfunA gisofEl gisofKl comp_lfun1l. Qed.
 
@@ -1510,7 +1510,7 @@ rewrite (onb_trlf (tentvtv_tuple_onbasis _ _)).
 under [RHS]eq_bigr do rewrite (onb_trlf t2tv).
 rewrite bigA_distr_tuple/=; apply eq_bigr=>i _.
 by rewrite /tentv_tuple_fun tentf_tuple_apply tentv_tuple_dot.
-Qed. 
+Qed.
 
 Lemma tentf_tuple_ge0 m (f : 'I_m -> 'End[T]) :
   (forall i, 0%:VF ⊑ f i) -> 0%:VF ⊑ tentf_tuple f.
@@ -1584,20 +1584,20 @@ by under eq_tentf_tuple do rewrite ?hermf_adjE ?projf_idem.
 Qed.
 HB.instance Definition _ (f : 'I_n -> 'FP('Hs T)) :=
   Obs_isProjLf.Build 'Hs(n.-tuple T) (tentf_tuple f) (@tentf_tuple_proj f).
-HB.instance Definition _ (f : 'I_n -> 'FP1('Hs T)) := 
+HB.instance Definition _ (f : 'I_n -> 'FP1('Hs T)) :=
   Proj1Lf.Class (ProjLf.on (tentf_tuple f)) (Den1Lf.on (tentf_tuple f)).
 
-Lemma tentf_tuple_iso T' (f : 'I_n -> 'FI('Hs T, 'Hs T')) : 
+Lemma tentf_tuple_iso T' (f : 'I_n -> 'FI('Hs T, 'Hs T')) :
   tentf_tuple f \is isolf.
 Proof.
 rewrite isolfE tentf_tuple_adj tentf_tuple_comp.
 by under eq_tentf_tuple do rewrite isofE; rewrite tentf_tuple1.
 Qed.
 HB.instance Definition _ (T' : ihbFinType) (f : 'I_n -> 'FI('Hs T, 'Hs T')) :=
-  Bound1_isIsoLf.Build 'Hs (n.-tuple T) 'Hs (n.-tuple T') 
+  Bound1_isIsoLf.Build 'Hs (n.-tuple T) 'Hs (n.-tuple T')
   (tentf_tuple f) (tentf_tuple_iso f).
 
-Lemma tentf_tuple_giso T' (f : 'I_n -> 'FGI('Hs T, 'Hs T')) : 
+Lemma tentf_tuple_giso T' (f : 'I_n -> 'FGI('Hs T, 'Hs T')) :
   tentf_tuple f \is gisolf.
 Proof.
 rewrite gisolfE tentf_tuple_adj !tentf_tuple_comp.
@@ -1605,7 +1605,7 @@ under eq_tentf_tuple do rewrite gisofEl; rewrite tentf_tuple1.
 by under eq_tentf_tuple do rewrite gisofEr; rewrite tentf_tuple1 !eqxx.
 Qed.
 HB.instance Definition _ (T' : ihbFinType) (f : 'I_n -> 'FGI('Hs T, 'Hs T')) :=
-  Iso_isGisoLf.Build 'Hs (n.-tuple T) 'Hs (n.-tuple T') (tentf_tuple f) 
+  Iso_isGisoLf.Build 'Hs (n.-tuple T) 'Hs (n.-tuple T') (tentf_tuple f)
     (tentf_tuple_giso f).
 
 End TentfTuplePred.
@@ -1621,10 +1621,10 @@ Local Notation TH := {dffun forall i : F, TF i}.
 
 Definition idx_dffuni (i : 'I_(dim 'Hs TH)) :
   {dffun forall j : F, 'I_(dim 'Hs (TF j))}
-  := [ffun j => cast_ord (ihb_dim_cast _) (enum_rank 
+  := [ffun j => cast_ord (ihb_dim_cast _) (enum_rank
     ((enum_val (cast_ord (esym (ihb_dim_cast _)) i)) j))].
 
-Definition idx_dffun (fi : {dffun forall j : F, 'I_(dim 'Hs (TF j))}) : 
+Definition idx_dffun (fi : {dffun forall j : F, 'I_(dim 'Hs (TF j))}) :
   'I_(dim 'Hs TH)
   := cast_ord (ihb_dim_cast _) (enum_rank
     ([ffun i : F => enum_val (cast_ord (esym (ihb_dim_cast _)) (fi i))] : TH)).
@@ -1636,7 +1636,7 @@ by rewrite ffunE /idx_dffuni ffunE cast_ord_comp cast_ord_id enum_rankK.
 Qed.
 Lemma idx_dffunK : cancel idx_dffun idx_dffuni.
 Proof.
-by move=>i; apply/ffunP=>j; rewrite ffunE cast_ord_comp cast_ord_id 
+by move=>i; apply/ffunP=>j; rewrite ffunE cast_ord_comp cast_ord_id
   enum_rankK ffunE enum_valK cast_ord_comp cast_ord_id.
 Qed.
 
@@ -1668,7 +1668,7 @@ rewrite hnormE tentv_dffun_dot sqrt_prod=>[i _|]; last apply eq_bigr=>i _;
 by rewrite dotp_norm ?sqrCK// exprn_ge0.
 Qed.
 
-Lemma t2tv_dffun (t : TH) : 
+Lemma t2tv_dffun (t : TH) :
   ''t = tentv_dffun (fun i => ''(t i)).
 Proof.
 rewrite{1}/tentv_dffun /t2tv/mv2tv; f_equal; apply/matrixP=>i j.
@@ -1678,7 +1678,7 @@ by rewrite big1// =>k _; rewrite enum_ord_eq /idx_dffuni ffunE eqxx.
 by rewrite (bigD1 k)//= {1}/idx_dffuni ffunE cast_ord_comp cast_ord_id enum_rankK nk mul0r.
 Qed.
 
-Lemma tentv_dffun_conj (v : forall i : F, 'Hs (TF i)) : 
+Lemma tentv_dffun_conj (v : forall i : F, 'Hs (TF i)) :
   (tentv_dffun v)^*v = tentv_dffun (fun i=>(v i)^*v).
 Proof.
 apply/h2c_inj/matrixP=>i j; rewrite conjv.unlock !c2hK !mxE rmorph_prod;
@@ -1719,7 +1719,7 @@ HB.instance Definition _ (G : F -> finType) (f : forall i : F, 'PONB(G i;'Hs (TF
 Lemma tentv_dffun_card (G : F -> finType) (f : forall i : F, 'ONB(G i;'Hs (TF i))) :
   #|{dffun forall i : F, G i}| = dim ('Hs TH).
 Proof.
-rewrite -ihb_dim_cast !card_dffun; apply eq_bigr=>i _; 
+rewrite -ihb_dim_cast !card_dffun; apply eq_bigr=>i _;
 by rewrite/= (@onb_card _ _ (f i)) ihb_dim_cast.
 Qed.
 HB.instance Definition _ (G : F -> finType) (f : forall i : F, 'ONB(G i;'Hs (TF i))) :=
@@ -1753,12 +1753,12 @@ apply/h2c_inj/matrixP=>i j; rewrite applyfh mx2hK !c2hK !mxE/=.
 under [RHS]eq_bigr do rewrite applyfh c2hK mxE.
 rewrite big_distr_dffun/= (reindex (@idx_dffun _ _)).
 by exists (@idx_dffuni _ _)=>x _; rewrite ?idx_dffuniK// idx_dffunK.
-apply eq_bigr=>k _; rewrite !mxE -big_split/=; 
+apply eq_bigr=>k _; rewrite !mxE -big_split/=;
 by apply eq_bigr=>l _; rewrite !idx_dffunK.
 Qed.
 
-Lemma tentf_dffun_out (v : forall i : F, 'Hs (TF' i)) (u : forall i : F, 'Hs (TF i)) : 
-  tentf_dffun (fun i=> [> v i ; u i <]) 
+Lemma tentf_dffun_out (v : forall i : F, 'Hs (TF' i)) (u : forall i : F, 'Hs (TF i)) :
+  tentf_dffun (fun i=> [> v i ; u i <])
   = [> tentv_dffun v ; tentv_dffun u <].
 Proof.
 apply/(intro_onb t2tv)=>i.
@@ -1770,7 +1770,7 @@ Qed.
 Lemma tentf_dffun_conj f :
   (tentf_dffun f)^C = tentf_dffun (fun i=> (f i)^C).
 Proof.
-apply/h2mx_inj/matrixP=>i j; rewrite conj_lfun.unlock !mx2hK !mxE rmorph_prod; 
+apply/h2mx_inj/matrixP=>i j; rewrite conj_lfun.unlock !mx2hK !mxE rmorph_prod;
 by apply eq_bigr => k _; rewrite mx2hK !mxE.
 Qed.
 
@@ -1784,14 +1784,14 @@ Local Notation DF x y := (forall i : F, 'Hom[x i, y i]).
 Lemma tentf_dffun_tr TF TF' (f : DF TF TF') :
   (tentf_dffun f)^T = tentf_dffun (fun i=> (f i)^T).
 Proof.
-apply/h2mx_inj/matrixP=>i j; rewrite tr_lfun.unlock !mx2hK !mxE; 
+apply/h2mx_inj/matrixP=>i j; rewrite tr_lfun.unlock !mx2hK !mxE;
 by apply eq_bigr => k _; rewrite mx2hK !mxE.
 Qed.
 
 Lemma tentf_dffun_adj TF TF' (f : DF TF TF') :
   (tentf_dffun f)^A = tentf_dffun (fun i=> (f i)^A).
 Proof.
-rewrite adjfCT tentf_dffun_conj tentf_dffun_tr; 
+rewrite adjfCT tentf_dffun_conj tentf_dffun_tr;
 by under eq_tentf_dffun do rewrite -adjfCT.
 Qed.
 
@@ -1834,7 +1834,7 @@ Lemma tentv_dmv_mlinear TF : mlinear (@tentv_dmv TF).
 Proof.
 move=>i a x v; apply/(intro_onbl t2tv)=>y.
 rewrite/= t2tv_dffun /tentv_dmv linearPr/= !tentv_dffun_dot.
-rewrite [LHS](bigD1 i)//= [X in _ = _ + X](bigD1 i)//= 
+rewrite [LHS](bigD1 i)//= [X in _ = _ + X](bigD1 i)//=
   [in LHS](eq_bigr (fun j=>[< ''(y j); x j >])); last first.
 rewrite [X in _ = _ + _ * X](eq_bigr (fun j=>[< ''(y j); x j >])); last first.
 rewrite mvE !msetii mvE eqxx linearP/= mulrDl -mulrA; do 2 f_equal.
@@ -1849,10 +1849,10 @@ move=>i a x v; apply/(intro_onb t2tv)=>y.
 rewrite/= t2tv_dffun /tentf_dmv lfunE/= lfunE/= !tentf_dffun_apply.
 apply/(intro_onbl t2tv)=>z.
 rewrite/= t2tv_dffun linearPr/= !tentv_dffun_dot.
-rewrite [LHS](bigD1 i)//= [X in _ = _ + X](bigD1 i)//= 
+rewrite [LHS](bigD1 i)//= [X in _ = _ + X](bigD1 i)//=
   [in LHS](eq_bigr (fun j=>[< ''(z j); x j ''(y j) >])); last first.
 rewrite [X in _ = _ + _ * X](eq_bigr (fun j=>[< ''(z j); x j ''(y j) >])); last first.
-rewrite mvE !msetii mvE eqxx lfunE/= lfunE/= linearP/= mulrDl -mulrA; 
+rewrite mvE !msetii mvE eqxx lfunE/= lfunE/= linearP/= mulrDl -mulrA;
 by do 2 f_equal; rewrite [RHS](bigD1 i).
 all: by move=>j nj; move: nj {+}nj; rewrite eq_sym=>nj /negPf nje;
   rewrite ?mset_ne 2?mvE ?mset_ne ?mvE ?addr0 ?nje ?scale1r.
@@ -1860,7 +1860,7 @@ Qed.
 
 End TenDffunMultilinear.
 
-Lemma tentf_dffun1 (F : finType) (TF : forall i : F, ihbFinType) : 
+Lemma tentf_dffun1 (F : finType) (TF : forall i : F, ihbFinType) :
   tentf_dffun (fun i : F=> \1 : 'End[TF i]) = \1.
 Proof.
 apply/(intro_onb t2tv)=>i.
@@ -1871,14 +1871,14 @@ Qed.
 Lemma test (F : finType) (x : F) : #|{: {y : F | y != x}}| = #|F|.-1.
 Proof. by rewrite card_sig -(cardC1 x); apply/eq_card=>i; rewrite inE. Qed.
 
-Definition tentv_dffun_tensU {F : finType} {x : F} {fT : F -> ihbFinType} : 
+Definition tentv_dffun_tensU {F : finType} {x : F} {fT : F -> ihbFinType} :
   'Hom(_, 'Hs (fT x * {dffun forall i : {y : F | y != x}, fT (val i)})%type) :=
-  \sum_(f : {dffun forall i : F, fT i}) 
-    [> tentv ''(f x) (tentv_dffun (fun i : {y : F | y != x} => ''(f (val i)))); 
+  \sum_(f : {dffun forall i : F, fT i})
+    [> tentv ''(f x) (tentv_dffun (fun i : {y : F | y != x} => ''(f (val i))));
     tentv_dffun (fun i => ''(f i)) <].
 
 Definition dffun_ord_recl (F : finType) (x : F) (T : F -> Type) :
-  {dffun forall i : F, T i} -> 
+  {dffun forall i : F, T i} ->
     T x * {dffun forall i : {y : F | y != x}, T (val i)} :=
       (fun f => (f x, [ffun i => f (val i)])).
 Lemma dffun_ord_recl_inj F x T : injective (@dffun_ord_recl F x T).
@@ -1889,7 +1889,7 @@ move: E=>/eqP/eqP E; move: H1=>/ffunP/(_ (exist (fun i => i != x) _ E));
 by rewrite !ffunE/=.
 Qed.
 
-Lemma dffun_ord_recl_bij (F : finType) (x : F) (T : F -> finType) : 
+Lemma dffun_ord_recl_bij (F : finType) (x : F) (T : F -> finType) :
   bijective (@dffun_ord_recl F x T).
 Proof.
 apply/inj_card_bij; first by apply/dffun_ord_recl_inj.
@@ -1900,13 +1900,13 @@ Qed.
 Lemma tentv_dffun_tensU_gios F x T : (@tentv_dffun_tensU F x T) \is gisolf.
 Proof.
 rewrite -gisolf_adj; apply/isolf_giso_dim; last first.
-  by rewrite -!ihb_dim_cast card_prod !card_dffun 
+  by rewrite -!ihb_dim_cast card_prod !card_dffun
     (big_sig _ _ (fun i : F => #|T i|))/= [RHS](bigD1 x).
 apply/isolfP; rewrite adjfK adjf_sum.
 rewrite -tentf11 -(sumonb_out t2tv) -(sumonb_out t2tv) !linear_sumlz/=.
 under eq_bigr do rewrite linear_sumr/=.
-transitivity (\sum_(i : {dffun forall i, T i}) 
-  [> ''(i x) ⊗t tentv_dffun (fun i1 : {j | j != x} => ''(i (val i1))); 
+transitivity (\sum_(i : {dffun forall i, T i})
+  [> ''(i x) ⊗t tentv_dffun (fun i1 : {j | j != x} => ''(i (val i1)));
   ''(i x) ⊗t tentv_dffun (fun i1 : {j | j != x} => ''(i (val i1))) <]).
 apply eq_bigr=>i _; rewrite (bigD1 i)//= big1=>[j/dffun_neqP [k /negPf nji]|].
 by rewrite adj_outp outp_comp tentv_dffun_dot
@@ -1915,34 +1915,34 @@ by rewrite adj_outp addr0// outp_comp ns_dot scale1r.
 under [RHS]eq_bigr do rewrite linear_sumr/=.
 rewrite pair_big_dep/=.
 rewrite (reindex (@dffun_ord_recl _ x T))/=; last first.
-  apply eq_bigr=>i _; rewrite -tentv_out t2tv_dffun; f_equal; f_equal; 
+  apply eq_bigr=>i _; rewrite -tentv_out t2tv_dffun; f_equal; f_equal;
   by apply/eq_tentv_dffun=>j; rewrite ffunE.
 by move: (dffun_ord_recl_bij x T)=>[f Ph Pf]; exists f=>y _; rewrite ?Ph ?Pf.
 Qed.
-HB.instance Definition _ F x T := isGisoLf.Build _ _ 
+HB.instance Definition _ F x T := isGisoLf.Build _ _
   (@tentv_dffun_tensU F x T) (@tentv_dffun_tensU_gios F x T).
 
 Lemma tentv_dffun_consV (F : finType) (x : F) (T : F -> ihbFinType)
-  (f : forall i, 'Hs (T i)) : 
-  tentv_dffun_tensU ^A (tentv (f x) (tentv_dffun 
+  (f : forall i, 'Hs (T i)) :
+  tentv_dffun_tensU ^A (tentv (f x) (tentv_dffun
     [ffun i : {j | j != x} => f (val i)])) = (tentv_dffun f).
 Proof.
-apply/(intro_onbl t2tv)=>i; rewrite /tentv_dffun_tensU adjf_sum/= 
+apply/(intro_onbl t2tv)=>i; rewrite /tentv_dffun_tensU adjf_sum/=
   sum_lfunE dotp_sumr (bigD1 i)//= big1=>[j /negPf nji | ].
 by rewrite adj_dotEr outpE -t2tv_dffun onb_dot nji scale0r dot0p.
-rewrite adj_dotEr outpE -t2tv_dffun ns_dot scale1r addr0 tentv_dot tentv_dffun_dot 
+rewrite adj_dotEr outpE -t2tv_dffun ns_dot scale1r addr0 tentv_dot tentv_dffun_dot
   [in RHS]t2tv_dffun tentv_dffun_dot [RHS](bigD1 x)//= -[in RHS]big_sig.
 by under eq_bigr do rewrite ffunE.
 Qed.
 
-Lemma tentv_dffun_cons (F : finType) x (T : F -> ihbFinType) (f : forall i, 'Hs (T i)) : 
-  tentv_dffun_tensU (tentv_dffun f) = 
+Lemma tentv_dffun_cons (F : finType) x (T : F -> ihbFinType) (f : forall i, 'Hs (T i)) :
+  tentv_dffun_tensU (tentv_dffun f) =
     tentv (f x) (tentv_dffun [ffun i : {j | j != x} => f (val i)]).
 Proof. by rewrite -(tentv_dffun_consV x) gisofKEr. Qed.
 
 Lemma tentf_dffun_consV (F : finType) x (T1 T2 : F -> ihbFinType)
   (f : forall i, 'Hom[T1 i,T2 i]) :
-  tentv_dffun_tensU ^A \o (tentf (f x) (tentf_dffun 
+  tentv_dffun_tensU ^A \o (tentf (f x) (tentf_dffun
     [ffun i : {j | j != x} => f (val i)])) \o tentv_dffun_tensU
    = (tentf_dffun f).
 Proof.
@@ -1954,7 +1954,7 @@ Qed.
 
 Lemma tentf_dffun_cons (F : finType) x (T1 T2 : F -> ihbFinType)
   (f : forall i, 'Hom[T1 i,T2 i]) :
-  tentv_dffun_tensU \o (tentf_dffun f) \o tentv_dffun_tensU ^A = 
+  tentv_dffun_tensU \o (tentf_dffun f) \o tentv_dffun_tensU ^A =
     tentf (f x) (tentf_dffun [ffun i : {j | j != x} => f (val i)]).
 Proof. by rewrite -(tentf_dffun_consV x) !comp_lfunA gisofEr gisofKr comp_lfun1l. Qed.
 
@@ -1967,9 +1967,9 @@ set n := #|F|; have: #|F| = n by [].
 move: n=>n Pn; elim: n F Pn T T' f =>[F PF T T' f|n IH F PF T T' f].
   rewrite /Num.norm/= /trfnorm mx2hK (big_card0 _ PF).
   under eq_mx do rewrite (big_card0 _ PF).
-  have P1: 1 = dim 'Hs {dffun forall i, T i} 
+  have P1: 1 = dim 'Hs {dffun forall i, T i}
     by rewrite -ihb_dim_cast card_dffun (big_card0 _ PF).
-  have P2: 1 = dim 'Hs {dffun forall i, T' i} 
+  have P2: 1 = dim 'Hs {dffun forall i, T' i}
     by rewrite -ihb_dim_cast card_dffun (big_card0 _ PF).
   case: _ / P1; case: _ / P2.
   set t := \matrix_(_,_) _.
@@ -1988,9 +1988,9 @@ set n := #|F|; have: #|F| = n by [].
 move: n=>n Pn; elim: n F Pn T T' f =>[F PF T T' f|n IH F PF T T' f].
   rewrite /i2fnorm mx2hK (big_card0 _ PF).
   under eq_mx do rewrite (big_card0 _ PF).
-  have P1: 1 = dim 'Hs {dffun forall i, T i} 
+  have P1: 1 = dim 'Hs {dffun forall i, T i}
     by rewrite -ihb_dim_cast card_dffun (big_card0 _ PF).
-  have P2: 1 = dim 'Hs {dffun forall i, T' i} 
+  have P2: 1 = dim 'Hs {dffun forall i, T' i}
     by rewrite -ihb_dim_cast card_dffun (big_card0 _ PF).
   case: _ / P1; case: _ / P2.
   set t := \matrix_(_,_) _.
@@ -2013,7 +2013,7 @@ rewrite (onb_trlf (tentvtv_dffun_onbasis _)).
 under [RHS]eq_bigr do rewrite (onb_trlf t2tv).
 rewrite big_distr_dffun/=; apply eq_bigr=>i _.
 by rewrite/tentv_dffun_fun tentf_dffun_apply tentv_dffun_dot.
-Qed. 
+Qed.
 
 Lemma tentf_dffun_ge0 (f : forall i : F, 'End[TF i]) :
   (forall i, 0%:VF ⊑ f i) -> 0%:VF ⊑ tentf_dffun f.
@@ -2052,7 +2052,7 @@ move: E1=>/eqP/eqP; rewrite eq_sym=>P4; rewrite mset_ne ?P4// /fn mvE.
 by case: ltnP=>_; rewrite ?P1//; move: (le_trans (P1 i) (P2 i)).
 apply/mvectorP=>i.
 have P3 (x y : 'I_#|F|) : (x < y)%N -> enum_val x != enum_val y /\ (x < y /\ x < y.+1)%N.
-by move=>H; rewrite (can_eq enum_valK); do ? split=>//; 
+by move=>H; rewrite (can_eq enum_valK); do ? split=>//;
   move: H; rewrite ltn_neqAle ?ltnS=>/andP[].
 case: (ltngtP (enum_rank i) k)=>[/P3|/P3|/val_inj P4];rewrite ?enum_rankK.
 by move=>[]P4[]P5 P6; rewrite mvE mvE mset_ne 1?eq_sym// !mvE P5 P6 addr0.
@@ -2079,13 +2079,13 @@ Lemma tentf_dffun_psd (f : forall i : F, 'F+('Hs (TF i))) : tentf_dffun f \is ps
 Proof. rewrite psdlfE; apply/tentf_dffun_ge0=>i; apply/psdf_ge0. Qed.
 HB.instance Definition _ (f : forall i : F, 'F+('Hs (TF i))) :=
   Herm_isPsdLf.Build ('Hs {dffun forall i : F, TF i}) (tentf_dffun f) (@tentf_dffun_psd f).
-Lemma tentf_dffun_bound1 (TF' : forall i : F, ihbFinType) 
+Lemma tentf_dffun_bound1 (TF' : forall i : F, ihbFinType)
   (f : forall i : F, 'FB1('Hs (TF i), 'Hs (TF' i))) : tentf_dffun f \is bound1lf.
 Proof.
 rewrite bound1lf_i2fnormE tentf_dffun_i2fnorm; apply/prodr_le1=>i _.
 by rewrite normv_ge0/= bound1f_i2fnorm.
 Qed.
-HB.instance Definition _ (TF' : forall i : F, ihbFinType) 
+HB.instance Definition _ (TF' : forall i : F, ihbFinType)
   (f : forall i : F, 'FB1('Hs (TF i), 'Hs (TF' i))) :=
   isBound1Lf.Build ('Hs {dffun forall i : F, TF i}) ('Hs {dffun forall i : F, TF' i})
     (tentf_dffun f) (tentf_dffun_bound1 f).
@@ -2112,22 +2112,22 @@ by under eq_tentf_dffun do rewrite ?hermf_adjE ?projf_idem.
 Qed.
 HB.instance Definition _ (f : forall i : F, 'FP('Hs (TF i))) :=
   Obs_isProjLf.Build ('Hs {dffun forall i : F, TF i}) (tentf_dffun f) (@tentf_dffun_proj f).
-HB.instance Definition _ (f : forall i : F, 'FP1('Hs (TF i))) := 
+HB.instance Definition _ (f : forall i : F, 'FP1('Hs (TF i))) :=
   Proj1Lf.Class (ProjLf.on (tentf_dffun f)) (Den1Lf.on (tentf_dffun f)).
 
-Lemma tentf_dffun_iso (TF' : forall i : F, ihbFinType) 
-  (f : forall i : F, 'FI('Hs (TF i), 'Hs (TF' i))) : 
+Lemma tentf_dffun_iso (TF' : forall i : F, ihbFinType)
+  (f : forall i : F, 'FI('Hs (TF i), 'Hs (TF' i))) :
     tentf_dffun f \is isolf.
 Proof.
 rewrite isolfE tentf_dffun_adj tentf_dffun_comp.
 by under eq_tentf_dffun do rewrite isofE; rewrite tentf_dffun1.
 Qed.
 HB.instance Definition _ TF' (f : forall i : F, 'FI('Hs (TF i), 'Hs (TF' i))) :=
-  Bound1_isIsoLf.Build ('Hs {dffun forall i : F, TF i}) ('Hs {dffun forall i : F, TF' i}) 
+  Bound1_isIsoLf.Build ('Hs {dffun forall i : F, TF i}) ('Hs {dffun forall i : F, TF' i})
     (tentf_dffun f) (tentf_dffun_iso f).
 
-Lemma tentf_dffun_giso (TF' : forall i : F, ihbFinType) 
-  (f : forall i : F, 'FGI('Hs (TF i), 'Hs (TF' i))) : 
+Lemma tentf_dffun_giso (TF' : forall i : F, ihbFinType)
+  (f : forall i : F, 'FGI('Hs (TF i), 'Hs (TF' i))) :
     tentf_dffun f \is gisolf.
 Proof.
 rewrite gisolfE tentf_dffun_adj !tentf_dffun_comp.
@@ -2135,7 +2135,7 @@ under eq_tentf_dffun do rewrite gisofEl; rewrite tentf_dffun1.
 by under eq_tentf_dffun do rewrite gisofEr; rewrite tentf_dffun1 !eqxx.
 Qed.
 HB.instance Definition _ TF' (f : forall i : F, 'FGI('Hs (TF i), 'Hs (TF' i))) :=
-  Iso_isGisoLf.Build ('Hs {dffun forall i : F, TF i}) ('Hs {dffun forall i : F, TF' i}) 
+  Iso_isGisoLf.Build ('Hs {dffun forall i : F, TF i}) ('Hs {dffun forall i : F, TF' i})
     (tentf_dffun f) (tentf_dffun_giso f).
 
 End TentfDffunPred.
@@ -2163,7 +2163,7 @@ Proof. exact: tentv_dffun_norm. Qed.
 Lemma t2tv_ffun (t : TH) : ''t = tentv_ffun (fun i => ''(t i)).
 Proof. exact: t2tv_dffun. Qed.
 
-Lemma tentv_ffun_conj (v : F -> 'Hs T) : 
+Lemma tentv_ffun_conj (v : F -> 'Hs T) :
   (tentv_ffun v)^*v = tentv_ffun (fun i=>(v i)^*v).
 Proof. exact: tentv_dffun_conj. Qed.
 
@@ -2205,8 +2205,8 @@ Lemma tentf_ffun_apply f (v : F -> 'Hs T) :
   tentf_ffun f (tentv_ffun v) = tentv_ffun (fun i=>f i (v i)).
 Proof. exact: tentf_dffun_apply. Qed.
 
-Lemma tentf_ffun_out (v : F -> 'Hs T') (u : F -> 'Hs T) : 
-  tentf_ffun (fun i=> [> v i ; u i <]) 
+Lemma tentf_ffun_out (v : F -> 'Hs T') (u : F -> 'Hs T) :
+  tentf_ffun (fun i=> [> v i ; u i <])
   = [> tentv_ffun v ; tentv_ffun u <].
 Proof. exact: tentf_dffun_out. Qed.
 
@@ -2232,7 +2232,7 @@ Proof. exact: tentf_dffun_adj. Qed.
 Lemma tentf_ffun_comp T1 T2 T3 (f : DF T1 T2) (g : DF T3 T1)  :
   (tentf_ffun f) \o (tentf_ffun g) = tentf_ffun (fun i=> f i \o g i).
 Proof. exact: tentf_dffun_comp. Qed.
-End TentfFfunGen. 
+End TentfFfunGen.
 
 (* provide the interface to mxlinear of mvector *)
 Section TenFfunMultilinear.
@@ -2267,10 +2267,10 @@ Proof. exact: tentf_dmv_mlinear. Qed.
 
 End TenFfunMultilinear.
 
-Definition tentv_ffun_tensU {F : finType} {x : F} {fT : ihbFinType} : 
+Definition tentv_ffun_tensU {F : finType} {x : F} {fT : ihbFinType} :
   'Hom(_, 'Hs (fT * {ffun {y : F | y != x} -> fT})%type) :=
-  \sum_(f : {ffun F -> fT}) 
-    [> tentv ''(f x) (tentv_ffun (fun i : {y : F | y != x} => ''(f (val i)))); 
+  \sum_(f : {ffun F -> fT})
+    [> tentv ''(f x) (tentv_ffun (fun i : {y : F | y != x} => ''(f (val i))));
     tentv_ffun (fun i => ''(f i)) <].
 
 Definition ffun_ord_recl (F : finType) (x : F) (T : Type) :
@@ -2279,34 +2279,34 @@ Definition ffun_ord_recl (F : finType) (x : F) (T : Type) :
 Lemma ffun_ord_recl_inj F x T : injective (@ffun_ord_recl F x T).
 Proof. exact: dffun_ord_recl_inj. Qed.
 
-Lemma ffun_ord_recl_bij (F : finType) (x : F) (T : finType) : 
+Lemma ffun_ord_recl_bij (F : finType) (x : F) (T : finType) :
   bijective (@ffun_ord_recl F x T).
 Proof. exact: dffun_ord_recl_bij. Qed.
 
-HB.instance Definition _ F x T := GisoLf.copy (@tentv_ffun_tensU F x T) 
+HB.instance Definition _ F x T := GisoLf.copy (@tentv_ffun_tensU F x T)
   (@tentv_dffun_tensU F x (fun i : F => T)).
 
 Lemma tentv_ffun_consV (F : finType) (x : F) (T : ihbFinType)
-  (f : F -> 'Hs T) : 
-  tentv_ffun_tensU ^A (tentv (f x) (tentv_ffun 
+  (f : F -> 'Hs T) :
+  tentv_ffun_tensU ^A (tentv (f x) (tentv_ffun
     [ffun i : {j | j != x} => f (val i)])) = (tentv_ffun f).
 Proof. exact: tentv_dffun_consV. Qed.
 
-Lemma tentv_ffun_cons (F : finType) x (T : ihbFinType) (f : F -> 'Hs T) : 
-  tentv_ffun_tensU (tentv_ffun f) = 
+Lemma tentv_ffun_cons (F : finType) x (T : ihbFinType) (f : F -> 'Hs T) :
+  tentv_ffun_tensU (tentv_ffun f) =
     tentv (f x) (tentv_ffun [ffun i : {j | j != x} => f (val i)]).
 Proof. exact: tentv_dffun_cons. Qed.
 
 Lemma tentf_ffun_consV (F : finType) x (T1 T2 : ihbFinType)
   (f : F -> 'Hom[T1, T2]) :
-  tentv_ffun_tensU ^A \o (tentf (f x) (tentf_ffun 
+  tentv_ffun_tensU ^A \o (tentf (f x) (tentf_ffun
     [ffun i : {j | j != x} => f (val i)])) \o tentv_ffun_tensU
    = (tentf_ffun f).
 Proof. exact: tentf_dffun_consV. Qed.
 
 Lemma tentf_ffun_cons (F : finType) x (T1 T2 : ihbFinType)
   (f : F -> 'Hom[T1, T2]) :
-  tentv_ffun_tensU \o (tentf_ffun f) \o tentv_ffun_tensU ^A = 
+  tentv_ffun_tensU \o (tentf_ffun f) \o tentv_ffun_tensU ^A =
     tentf (f x) (tentf_ffun [ffun i : {j | j != x} => f (val i)]).
 Proof. exact: tentf_dffun_cons. Qed.
 

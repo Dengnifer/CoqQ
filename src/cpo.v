@@ -1,6 +1,6 @@
 (*--------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.classical Require Import boolp.
 
 (* -------------------------------------------------------------------- *)

@@ -1,10 +1,10 @@
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order interval_inference.
 From mathcomp.algebra Require Import all_algebra.
 From mathcomp.fingroup Require Import perm.
 From mathcomp.classical Require Import boolp cardinality mathcomp_extra
   classical_sets functions.
-From mathcomp.reals Require Import reals signed prodnormedzmodule.
+From mathcomp.reals Require Import reals prodnormedzmodule.
 From mathcomp.analysis Require Import ereal exp trigo derive sequences.
 From mathcomp.analysis.topology_theory Require Import topology.
 From mathcomp.analysis.normedtype_theory Require Import normedtype.
@@ -31,7 +31,7 @@ Module BiLinearReload.
 Module BilinearWrapExports.
 Module BilinearWrap.
 Section BilinearWrap.
-Variables (R : ringType) (U U' : lmodType R) (V : zmodType) (s s' : R -> V -> V).
+Variables (R : nzRingType) (U U' : lmodType R) (V : zmodType) (s s' : R -> V -> V).
 Notation mapUUV := (@Bilinear.type R U U' V s s').
 Definition map_class := mapUUV.
 Definition map_at_left (a : R) := mapUUV.
@@ -71,8 +71,8 @@ End BilinearWrapExports.
 Export BilinearWrapExports.
 
 Section BidirectionalLinearZ.
-Variable (R : ringType) (U U' : lmodType R) (V : zmodType) (s s' : R -> V -> V).
-Variables (S : ringType) (h h' : GRing.Scale.law S V).
+Variable (R : nzRingType) (U U' : lmodType R) (V : zmodType) (s s' : R -> V -> V).
+Variables (S : nzRingType) (h h' : GRing.Scale.law S V).
 
 Lemma linearZl (z : U') c a (h_c := h c)
   (f : BilinearWrap.map_for_left U U' s s' a h_c) (u : U) :
@@ -100,7 +100,7 @@ Export BiLinearReload.
 
 Section BiLinearComplfun.
 Local Open Scope lfun_scope.
-Variable (R : comRingType) (aT vT rT : vectType R).
+Variable (R : comNzRingType) (aT vT rT : vectType R).
 
 Lemma linear_comp_lfunl f : linear (@comp_lfun _ aT vT rT f).
 Proof. by move=>a u v; rewrite comp_lfunDr comp_lfunZr. Qed.

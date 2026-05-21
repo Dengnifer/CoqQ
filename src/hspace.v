@@ -1,6 +1,6 @@
 (* -------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 From mathcomp.algebra Require Import -(notations)sesquilinear.
 From mathcomp.classical Require Import boolp.
@@ -1422,7 +1422,8 @@ Lemma capOh_sub U V : U `<=` V ->
   ((~` U) `&` V) = supph (V%:VF - U%:VF).
 Proof.
 move=>/supph_sub P; rewrite -[LHS]hsOK [X in ~` X]ocomplI hsOK; apply/eqhP=>x.
-rewrite memhOE hsOK memhOE hs2lfE !hsE/= P /cplmt opprB !addrA [_ + \1]addrC.
+rewrite memhOE hsOK memhOE hs2lfE !hsE/= -[supplf (V%:VF - U%:VF)]hsE.
+rewrite P /cplmt opprB !addrA [_ + \1]addrC.
 rewrite -[supplf _]hsE.
 by rewrite supphP.
 Qed.

@@ -1,4 +1,4 @@
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 (* From mathcomp.real_closed Require Import complex. *)
 From mathcomp.algebra Require Import -(notations)sesquilinear.
@@ -10,8 +10,9 @@ From mathcomp.analysis.topology_theory Require Import topology.
 From mathcomp.analysis.normedtype_theory Require Import normedtype.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
+From Stdlib Require Import EqdepFacts Eqdep_dec.
 Require Import mcextra mcaextra notation prodvect hermitian tensor
-  cpo EqdepFacts Eqdep_dec mxpred extnum ctopology setdec inhabited qtype summable.
+  cpo mxpred extnum ctopology setdec inhabited qtype summable.
 Import Order.TTheory GRing.Theory Num.Theory Num.Def MxLownerOrder.
 Import VectorInternalTheory.
 

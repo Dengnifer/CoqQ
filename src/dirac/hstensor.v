@@ -1,16 +1,16 @@
 (* -------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 From quantum.external Require Import spectral.
 From mathcomp.algebra Require Import -(notations)sesquilinear.
 From mathcomp.classical Require Import boolp.
 From mathcomp.reals Require Import reals.
-From Coq.Bool Require Import Bool.
+From Stdlib.Bool Require Import Bool.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
 From mathcomp.real_closed Require Import mxtens.
-Require Import EqdepFacts Eqdep_dec.
+From Stdlib Require Import EqdepFacts Eqdep_dec.
 (* -------------------------------------------------------------------- *)
 
 Require Import mcextra mcaextra notation hermitian prodvect tensor cpo mxpred extnum ctopology svd mxnorm quantum.
@@ -101,7 +101,7 @@ Variable (I : finType) (E : I -> chsType).
 Variable S : {set I}.
 Local Notation Si := {i : I | i \in S }.
 
-Variant idx : predArgType := 
+Variant idx : predArgType :=
   Idx of mvector (fun i : Si => 'I_(dim (E (val i)))).
 
 Definition idx_val (i : idx) := let: Idx g := i in g.
@@ -119,8 +119,8 @@ HB.instance Definition _ := [Finite of idx by <:].
 
 End IdxDef.
 
-HB.lock Definition idx_of_fun (I : finType) (E : I -> chsType) (S : {set I}) 
-  (F : forall i : {i : I | i \in S }, 'I_(dim (E (val i)))) 
+HB.lock Definition idx_of_fun (I : finType) (E : I -> chsType) (S : {set I})
+  (F : forall i : {i : I | i \in S }, 'I_(dim (E (val i))))
   := Idx (\mvector_ ( i : {i : I | i \in S }) F i).
 Canonical idx_unlockable := Unlockable idx_of_fun.unlock.
 
@@ -145,19 +145,19 @@ End IdxDef1.
 
 Notation "''Idx[' H ]_ S" := (@idx _ H S) (only parsing) : type_scope.
 Notation "''Idx_' S" := 'Idx[_]_S : type_scope.
-Notation "\idx[ H ]_ ( i : S ) E" := 
+Notation "\idx[ H ]_ ( i : S ) E" :=
   ((idx_of_fun (fun i : {i : _ | i \in S } => E)) : @idx _ H S)
   (at level 36, E at level 36, i, S at level 50): ring_scope.
 
-Lemma card_idx (I : finType) (E : I -> chsType) (S : {set I}) : 
+Lemma card_idx (I : finType) (E : I -> chsType) (S : {set I}) :
   #|'Idx[E]_S| = (\prod_(i in S ) dim (E i))%N.
 Proof.
-rewrite card_sub card_mv card_dep_ffun foldrE big_image/= 
+rewrite card_sub card_mv card_dep_ffun foldrE big_image/=
   (big_sig_set _ _ (fun i => #|'I_(dim (E i))|)%N);
 by under eq_bigr do rewrite card_ord.
 Qed.
 
-Definition Hf (I : finType) (E : I -> chsType) (S : {set I}) := 
+Definition Hf (I : finType) (E : I -> chsType) (S : {set I}) :=
     (fun i : {i : I | i \in S } => E (val i)).
 HB.lock
 Definition Hs I E S  := tensor_chsType (@Hf I E S).
@@ -165,10 +165,10 @@ Lemma Hs_dim_cast {I E S} :
   dim (@Hs I E S) = dim (tensor_chsType (@Hf I E S)).
 Proof. by rewrite Hs.unlock. Qed.
 HB.lock
-Definition n2i I E S (i : 'I_(dim (@Hs I E S))) : 'Idx[E]_S := 
+Definition n2i I E S (i : 'I_(dim (@Hs I E S))) : 'Idx[E]_S :=
     (Idx (n2i (cast_ord Hs_dim_cast i))).
 HB.lock
-Definition i2n I E S (i : 'Idx[E]_S) : 'I_(dim (@Hs I E S)) := 
+Definition i2n I E S (i : 'Idx[E]_S) : 'I_(dim (@Hs I E S)) :=
     cast_ord (esym Hs_dim_cast) (i2n (idx_val i)).
 
 Notation "''H[' H ]_ S" := (@Hs _ H S) (only parsing) : type_scope.
@@ -184,9 +184,9 @@ Notation "''FdV_' S" := 'F_(S, set0) : type_scope.
 Notation "''F_' S" := 'F_(S, S) (at level 0, S at level 2) : type_scope.
 Notation "''F_' ( S )" := 'F_S (only parsing) : type_scope.
 
-HB.lock Definition deltav {I : finType} {E : I -> chsType} {S} 
+HB.lock Definition deltav {I : finType} {E : I -> chsType} {S}
   (i : 'Idx[E]_S) := eb (i2n i).
-HB.lock Definition cdv {I : finType} {E : I -> chsType} {S} 
+HB.lock Definition cdv {I : finType} {E : I -> chsType} {S}
   (i : 'Idx[E]_S) (u: 'H_S) := [< deltav i; u >].
 
 (* -------------------------------------------------------------------- *)
@@ -228,7 +228,7 @@ Proof. by rewrite cdv.unlock. Qed.
 
 Lemma cdv_is_linear S (i: idx S) : scalar (cdv i).
 Proof. by move=>a u v; rewrite !cdvE linearP. Qed.
-HB.instance Definition _ S i := GRing.isLinear.Build 
+HB.instance Definition _ S i := GRing.isLinear.Build
   C 'H_S C *%R (cdv i) (@cdv_is_linear S i).
 
 Definition cdv_dv S (i j: idx S) : cdv i (deltav j) = (i == j)%:R.
@@ -247,33 +247,33 @@ Qed.
 Lemma conj_cdv S (u: Hs S) i : cdv i u^*v = (cdv i u)^*.
 Proof. by rewrite !cdvE conjv_dotr conj_dv conj_dotp. Qed.
 
-Lemma adj_cdv S T (f: 'Hom(Hs S, Hs T)) i j : 
+Lemma adj_cdv S T (f: 'Hom(Hs S, Hs T)) i j :
   cdv i (f^A (deltav j)) = (cdv j (f (deltav i)))^*.
 Proof. by rewrite !cdvE adj_dotEr conj_dotp. Qed.
 
 Lemma dot_cdv S (u v: Hs S) : [< u; v >] = \sum_i (cdv i u)^* * (cdv i v).
-Proof. 
+Proof.
 rewrite {1}(dec_dv u) {1}(dec_dv v).
 rewrite dotp_suml; apply eq_bigr=> i _; rewrite dotp_sumr (bigD1 i) //= big1.
 by move=>j /negPf nji; rewrite dotpZl dotpZr dv_dot eq_sym nji !mulr0.
 by rewrite dotpZl dotpZr dv_dot eqxx mulr1 addr0.
 Qed.
 
-Lemma cdvP S (u v: Hs S) : 
+Lemma cdvP S (u v: Hs S) :
   ((@cdv _ _ _)^~ u) =1 ((@cdv _ _ _)^~ v) <-> u = v.
 Proof.
 split; last by move=>->. move=> P; rewrite -intro_ebl => t.
 by move: (P (n2i t)); rewrite !cdvE deltav.unlock !n2iK.
 Qed.
 
-Lemma intro_cdvl S (u v: Hs S) : 
+Lemma intro_cdvl S (u v: Hs S) :
   (forall i, cdv i u = cdv i v) <-> u = v.
 Proof.
 split; last by move=>->. move=> P; rewrite -intro_ebl => t.
 by move: (P (n2i t)); rewrite !cdvE deltav.unlock !n2iK.
 Qed.
 
-Lemma intro_cdvr S (u v: Hs S) : 
+Lemma intro_cdvr S (u v: Hs S) :
   (forall i, [< u ; deltav i >] = [< v ; deltav i >]) <-> u = v.
 Proof.
 split; [| move=>-> //]; rewrite -intro_cdvl=> P t.
@@ -321,11 +321,11 @@ Lemma casths_comp S1 S2 S3 (eq_S1 : S1 = S2) (eq_S2 : S2 = S3) v :
   casths eq_S2 (casths eq_S1 v) = casths (etrans eq_S1 eq_S2) v.
 Proof. by case: S2 / eq_S1 eq_S2; case: S3 /. Qed.
 
-Lemma casthsK S1 S2 (eq_S : S1 = S2) : 
+Lemma casthsK S1 S2 (eq_S : S1 = S2) :
   cancel (casths eq_S) (casths (esym eq_S)).
 Proof. by case: S2 / eq_S. Qed.
 
-Lemma casthsKV S1 S2 (eq_S : S1 = S2) : 
+Lemma casthsKV S1 S2 (eq_S : S1 = S2) :
   cancel (casths (esym eq_S)) (casths eq_S).
 Proof. by case: S2 / eq_S. Qed.
 
@@ -333,10 +333,10 @@ Lemma casths_sym S1 S2 (eq_S : S1 = S2) v1 v2 :
   v1 = casths eq_S v2 -> v2 = casths (esym eq_S) v1.
 Proof. by move/(canLR (casthsK _)). Qed.
 
-Lemma casths_is_linear S1 S2 (eq_S : S1 = S2) : 
+Lemma casths_is_linear S1 S2 (eq_S : S1 = S2) :
   linear (casths eq_S).
 Proof. by move=>a f g; case: S2 / eq_S; rewrite !casths_id. Qed.
-HB.instance Definition _ S1 S2 (eq_S : S1 = S2) := 
+HB.instance Definition _ S1 S2 (eq_S : S1 = S2) :=
   GRing.isLinear.Build C (Hs S1) (Hs S2) *:%R (casths eq_S) (casths_is_linear eq_S).
 
 Lemma deltav_cast S S' (eqS : S = S') (i : idx S) :
@@ -363,7 +363,7 @@ Lemma casths_dot S S' (eqS : S = S') u v:
   [< casths eqS u ; casths eqS v >] = [< u ; v >].
 Proof. by case: S' / eqS; by rewrite !casths_id. Qed.
 
-Definition castlf S T S' T' (eqST : (S = S') * (T = T')) (f : 'Hom(Hs S, Hs T)) : 
+Definition castlf S T S' T' (eqST : (S = S') * (T = T')) (f : 'Hom(Hs S, Hs T)) :
   'Hom(Hs S', Hs T') :=
   let: erefl in _ = T' := eqST.2 return 'Hom(Hs S', Hs T') in
     let: erefl in _ = S' := eqST.1 return 'Hom(Hs S', Hs T) in f.
@@ -374,7 +374,7 @@ Proof. by case: erefl_ST => e_S e_T; rewrite [e_S]eq_axiomK [e_T]eq_axiomK. Qed.
 Lemma castlfE S T S' T' (eqS : (S = S')) (eqT : (T = T')) (f : 'Hom(Hs S, Hs T)) u :
   castlf (eqS, eqT) f u = casths eqT (f (casths (esym eqS) u)).
 Proof.
-by case: S' / eqS u; case: T' / eqT => u; rewrite castlf_id !casths_id. 
+by case: S' / eqS u; case: T' / eqT => u; rewrite castlf_id !casths_id.
 Qed.
 
 Lemma castlf_comp S1 T1 S2 T2 S3 T3 (eq_S1 : S1 = S2) (eq_T1 : T1 = T2)
@@ -398,24 +398,24 @@ Lemma castlf_sym S1 T1 S2 T2 (eq_S : S1 = S2) (eq_T : T1 = T2) A1 A2 :
   A1 = castlf (eq_S, eq_T) A2 <-> A2 = castlf (esym eq_S, esym eq_T) A1.
 Proof. by case: S2 / eq_S A1 A2; case: T2 / eq_T=>??; rewrite !castlf_id; split=>/esym. Qed.
 
-Lemma castlf_is_linear S T S' T' (eqST : (S = S') * (T = T')) : 
+Lemma castlf_is_linear S T S' T' (eqST : (S = S') * (T = T')) :
   linear (castlf eqST).
-Proof. 
+Proof.
 move=>a f g; case: eqST => eqS eqT; case: S' / eqS; case: T' / eqT.
 by rewrite !castlf_id.
 Qed.
-HB.instance Definition _  S T S' T' (eqST : (S = S') * (T = T')) := 
+HB.instance Definition _  S T S' T' (eqST : (S = S') * (T = T')) :=
   GRing.isLinear.Build C 'Hom(Hs S, Hs T) 'Hom(Hs S', Hs T')
     *:%R (castlf eqST) (castlf_is_linear eqST).
 
-Lemma castlf_complfl S T S' T' W (eqST: S = T') (eqTW : T = W) (f: 'Hom(Hs S, Hs T)) 
+Lemma castlf_complfl S T S' T' W (eqST: S = T') (eqTW : T = W) (f: 'Hom(Hs S, Hs T))
   (g: 'Hom(Hs S', Hs T')) :
   castlf (eqST, eqTW) f \o g = castlf (erefl, eqTW) (f \o castlf (erefl _, esym eqST) g).
 Proof.
 by move: f g; case: T' / eqST; case: W / eqTW => f g; rewrite !castlf_id.
 Qed.
 
-Lemma castlf_complfr S T S' T' W (eqST: T' = S) (eqSW : S' = W) (f: 'Hom(Hs S, Hs T)) 
+Lemma castlf_complfr S T S' T' W (eqST: T' = S) (eqSW : S' = W) (f: 'Hom(Hs S, Hs T))
   (g: 'Hom(Hs S', Hs T')) :
   f \o castlf (eqSW, eqST) g = castlf (eqSW, erefl) (castlf (esym eqST, erefl _) f \o g).
 Proof.
@@ -427,23 +427,23 @@ Lemma castlf_complf {S T S' T' W W'} (eqW : W = W') (eqS : S = S') (eqT : T = T'
     castlf (eqS, eqT) (f \o g) = castlf (eqW, eqT) f \o castlf (eqS, eqW) g.
 Proof. by case: W' / eqW; case: S' / eqS; case: T' / eqT; rewrite !castlf_id. Qed.
 
-Lemma castlf_conj S T S' T' (eqST : (S = S') * (T = T')) (f: 'Hom(Hs S, Hs T)) : 
+Lemma castlf_conj S T S' T' (eqST : (S = S') * (T = T')) (f: 'Hom(Hs S, Hs T)) :
   (castlf eqST f)^C = castlf eqST f^C.
 Proof.
 by do [case: eqST; case: S' /; case: T' /] in f *; rewrite !castlf_id.
 Qed.
 
-Lemma castlf_adj S T S' T' (eqS : S = S') (eqT : T = T') (f: 'Hom(Hs S, Hs T)) : 
+Lemma castlf_adj S T S' T' (eqS : S = S') (eqT : T = T') (f: 'Hom(Hs S, Hs T)) :
   (castlf (eqS, eqT) f)^A = castlf (eqT, eqS) f^A.
 Proof. by case: S' / eqS; case: T' / eqT; rewrite !castlf_id. Qed.
 
-Lemma castlf_tr S T S' T' (eqS : S = S') (eqT : T = T') (f: 'Hom(Hs S, Hs T)) : 
+Lemma castlf_tr S T S' T' (eqS : S = S') (eqT : T = T') (f: 'Hom(Hs S, Hs T)) :
   (castlf (eqS, eqT) f)^T = castlf (eqT, eqS) f^T.
 Proof. by case: S' / eqS; case: T' / eqT; rewrite !castlf_id. Qed.
 
 Lemma castlf_outp S S' T T' (eqS : S = S') (eqT : T = T') (v : Hs S) (u : Hs T) :
   castlf (eqS, eqT) [> u ; v <] = [>casths eqT u ; casths eqS v <].
-Proof. by case: S' / eqS u; case: T' / eqT => u; rewrite castlf_id !casths_id. Qed. 
+Proof. by case: S' / eqS u; case: T' / eqT => u; rewrite castlf_id !casths_id. Qed.
 
 Lemma castlf1 S T (eqST : (S = T)) :  (castlf (eqST,eqST) (\1 : 'End(Hs S))) = \1.
 Proof. by case: T / eqST; rewrite castlf_id. Qed.
@@ -456,7 +456,7 @@ apply/intro_cdvl=>i; rewrite !cdvE conjv_dotr conj_dv deltav.unlock eb_mv !mv_do
 by apply eq_bigr=>j _; rewrite !mvE i2nK conjv_dotr conjv_eb.
 Qed. *)
 
-Lemma lfunPD S T (f g : 'Hom(Hs S, Hs T)) : 
+Lemma lfunPD S T (f g : 'Hom(Hs S, Hs T)) :
   (forall i, f (deltav i) = g (deltav i)) <-> f = g.
 Proof.
 split=> [P |-> //]; apply/lfunP=> u; rewrite (dec_dv u) !linear_sum /=.
@@ -465,31 +465,31 @@ Qed.
 
 End SetTensorSpace.
 
-Lemma map_cover (I J : finType) (fs: J -> {set I}) (s : J) : 
+Lemma map_cover (I J : finType) (fs: J -> {set I}) (s : J) :
   fs s :<=: \bigcup_i (fs i).
 Proof. by apply bigcup_sup. Qed.
 
-Definition incl (I: finType) (A B: {set I}) (AsubB : A :<=: B) (a : {i | i \in A}) 
+Definition incl (I: finType) (A B: {set I}) (AsubB : A :<=: B) (a : {i | i \in A})
   : {i : I | i \in B} := exist _ (val a) (subsetP AsubB (val a) (projT2 a)).
 
 Definition flatidx (I: finType) (E : I -> chsType) (J : finType) (fs: J -> {set I})
-  (i: 'Idx[E]_(\bigcup_i (fs i))) : {dffun forall i : J, 'Idx[E]_(fs i)} 
-  := [ffun s : J => \idx[E]_(j : fs s) i (incl (map_cover fs s) j)]. 
+  (i: 'Idx[E]_(\bigcup_i (fs i))) : {dffun forall i : J, 'Idx[E]_(fs i)}
+  := [ffun s : J => \idx[E]_(j : fs s) i (incl (map_cover fs s) j)].
 
-HB.lock Definition injectv (I: finType) (E : I -> chsType) (J : finType) (fs: J -> {set I}) 
+HB.lock Definition injectv (I: finType) (E : I -> chsType) (J : finType) (fs: J -> {set I})
   (x: mvector (fun i: J => 'H[E]_(fs i))) : 'H[E]_(\bigcup_i (fs i))
   := \sum_(e : 'Idx[E]_(\bigcup_i (fs i))) (\prod_i cdv (flatidx e i) (x i) *: deltav e).
 
-Definition applyf (I : finType) (E : I -> chsType) (J: finType) (fs fs': J -> {set I}) 
+Definition applyf (I : finType) (E : I -> chsType) (J: finType) (fs fs': J -> {set I})
   (f : mvector (fun i : J => 'F[E]_((fs i), (fs' i)))) (x : mvector (fun i : J => 'H[E]_(fs i))) :=
   \mvector_(i : J) f i (x i).
 
-Definition injectf_r (I : finType) (E : I -> chsType) (J: finType) 
+Definition injectf_r (I : finType) (E : I -> chsType) (J: finType)
   (fs fs': J -> {set I}) (f : mvector (fun i : J => 'F[E]_((fs i), (fs' i))))
   (x : 'H[E]_(\bigcup_i (fs i))) (b : 'Idx[E]_(\bigcup_i (fs i))) :=
     (cdv b x) *: injectv (applyf f (\mvector_(i : J) deltav (flatidx b i))).
 
-HB.lock Definition injectf_fun (I : finType) (E : I -> chsType) (J: finType) 
+HB.lock Definition injectf_fun (I : finType) (E : I -> chsType) (J: finType)
   (fs fs': J -> {set I}) (f : mvector (fun i : J => 'F[E]_((fs i), (fs' i))))
   (x : 'H[E]_(\bigcup_i (fs i))) : 'H[E]_(\bigcup_i (fs' i)) :=
   \sum_(b : 'Idx[E]_(\bigcup_i (fs i))) injectf_r f x b.
@@ -510,7 +510,7 @@ Notation injectv := (@injectv I E J fs).
 
 Definition disf := forall i j, i != j -> [disjoint fs i & fs j].
 
-Definition setsub (A: {set I}) (a : I) (sub: a \in A) : {i | i \in A} 
+Definition setsub (A: {set I}) (a : I) (sub: a \in A) : {i | i \in A}
   := exist _ a sub.
 
 Lemma preidx_ex (x : {i | i \in bdom}) : {i | val x \in fs i}.
@@ -521,7 +521,7 @@ Definition preidx (j : {i | i \in bdom}) : J := projT1 (preidx_ex j).
 Lemma preidxP (j : {i | i \in bdom}) : val j \in fs (preidx j).
 Proof. by move: (projT2 (preidx_ex j)). Qed.
 
-Lemma preidxU (i : J) (j : {k | k \in fs i}) : disf -> 
+Lemma preidxU (i : J) (j : {k | k \in fs i}) : disf ->
   (preidx (incl (map_cover fs i) j)) = i.
 Proof.
 rewrite /disf=>dis; set k:= (incl (map_cover fs i) j).
@@ -535,16 +535,16 @@ Qed.
 Definition packidx (f: {dffun forall i: J, 'Idx[E]_(fs i)}) : 'Idx[E]_bdom
   := \idx[E]_(j : bdom) f (preidx j) (setsub (preidxP j)).
 
-Lemma packidxE (f : {dffun forall i : J, 'Idx[E]_(fs i)}) : disf -> 
+Lemma packidxE (f : {dffun forall i : J, 'Idx[E]_(fs i)}) : disf ->
   forall (i : J) (j: {k | k \in fs i}), packidx f (incl (map_cover fs i) j) = f i j.
 Proof.
-move=>dis i j; rewrite idxE. 
+move=>dis i j; rewrite idxE.
 move: (preidxU j dis) (preidxP (incl (map_cover fs i) j)) => P.
 rewrite P /=; destruct j => /= Q.
 by rewrite (eq_irrelevance Q i0).
 Qed.
 
-Lemma flatidxE (eAB : 'Idx[E]_bdom) (i : {i | i \in bdom}) : 
+Lemma flatidxE (eAB : 'Idx[E]_bdom) (i : {i | i \in bdom}) :
   eAB i = flatidx eAB (preidx i) (setsub (preidxP i)).
 Proof.
 destruct i; rewrite ffunE idxE/= /incl.
@@ -555,8 +555,8 @@ Lemma flatidxK : cancel flatidx packidx.
 Proof. by move=>e; apply/idxP=>j; rewrite idxE flatidxE. Qed.
 
 Lemma packidxK : disf -> cancel packidx flatidx.
-Proof. 
-by move=>dis e; apply/ffunP=>j; rewrite ffunE; 
+Proof.
+by move=>dis e; apply/ffunP=>j; rewrite ffunE;
   apply/idxP=>k; rewrite idxE packidxE.
 Qed.
 
@@ -580,11 +580,11 @@ suff ->: \prod_(i : J) fk i = 0 by rewrite scale0r.
 by rewrite (bigD1 j)//= /fk nj mul0r.
 Qed.
 
-Lemma big_distr_idx (R: ringType) (F : forall j, 'Idx[E]_(fs j) -> R) : disf -> 
+Lemma big_distr_idx (R: nzRingType) (F : forall j, 'Idx[E]_(fs j) -> R) : disf ->
   \prod_(i : J) (\sum_(j : 'Idx[E]_(fs i)) F i j) =
   \sum_(k : 'Idx[E]_bdom) \prod_(i : J) F i (flatidx k i).
 Proof.
-move=> dis; rewrite big_distr_dffun (reindex (fun x : 'Idx[E]_bdom => 
+move=> dis; rewrite big_distr_dffun (reindex (fun x : 'Idx[E]_bdom =>
   ([ffun i: J => flatidx x i] : {dffun forall i: J, 'Idx[E]_(fs i)}))).
 exists (fun x => packidx x) => -[]; [move=> d _ |move=>f _].
 by apply flatidx_inj => //; rewrite packidxK //; apply/ffunP=> i; rewrite ffunE.
@@ -592,24 +592,24 @@ by rewrite packidxK //; apply/ffunP=> i; rewrite ffunE.
 by rewrite /=; apply eq_bigr=>k _; apply eq_bigr=>i _; rewrite ffunE.
 Qed.
 
-Lemma injectv_dot (x y : mvector (fun i : J => 'H[E]_(fs i))) : 
+Lemma injectv_dot (x y : mvector (fun i : J => 'H[E]_(fs i))) :
   disf -> hdotp x y = [< injectv x ; injectv y >].
 Proof.
 move=> dis; rewrite /hdotp !injectv.unlock dotp_suml.
-rewrite (eq_bigr (fun v=> [< \prod_i cdv (flatidx v i) (x i) *: deltav v; 
+rewrite (eq_bigr (fun v=> [< \prod_i cdv (flatidx v i) (x i) *: deltav v;
           \prod_i cdv (flatidx v i) (y i) *: deltav v >])).
 move=>v _; rewrite dotp_sumr (bigD1 v) //=.
-rewrite -[RHS]addr0; congr (_ + _); rewrite big1 // => i /negPf niv. 
+rewrite -[RHS]addr0; congr (_ + _); rewrite big1 // => i /negPf niv.
 by rewrite dotpZl dotpZr dv_dot eq_sym niv !mulr0.
 rewrite (eq_bigr (fun i=> \sum_j (cdv j (x i))^* * (cdv j (y i)))).
 by move=>i _; rewrite dot_cdv.
-rewrite [\sum_ _ _](eq_bigr (fun i=> \prod_i0 
+rewrite [\sum_ _ _](eq_bigr (fun i=> \prod_i0
     ((cdv (flatidx i i0) (x i0))^* * cdv (flatidx i i0) (y i0)))).
 by move=>i _; rewrite dotpZl dotpZr dv_dot eqxx mulr1 rmorph_prod big_split.
 by rewrite big_distr_idx.
 Qed.
 
-Lemma injectvZi (i : J) (a : C) (x : mvector (fun i : J => 'H[E]_(fs i))) : 
+Lemma injectvZi (i : J) (a : C) (x : mvector (fun i : J => 'H[E]_(fs i))) :
   injectv (a *:_i x) = a *: injectv x.
 Proof.
 rewrite !injectv.unlock scaler_sumr; apply eq_bigr=>e _; rewrite scalerA.
@@ -639,7 +639,7 @@ Proof. by apply/mlinear0/injectv_mlinear. Qed.
 
 Lemma injectv_eq0P (x : mvector (fun i : J => 'H[E]_(fs i))) :
   disf -> reflect (exists i, x i = 0) (injectv x == 0).
-Proof. 
+Proof.
 move=>dis; apply: (iffP eqP) => eq0; last first.
 - by apply: mlinear0 => //; apply/injectv_mlinear.
 apply/'exists_eqP; apply/contra_eqT: eq0 => eq0.
@@ -698,7 +698,7 @@ move=>i _; rewrite mvE {1}(dec_dv (x i)) !linear_sum; apply eq_bigr=> j _.
 by rewrite !linearZ. by rewrite big_distr_idx.
 Qed.
 
-Lemma injectf_delta f b : injectf f (deltav b) = 
+Lemma injectf_delta f b : injectf f (deltav b) =
   injectv (applyf f (\mvector_(i : J) deltav (flatidx b i))).
 Proof.
 rewrite lfunE/= injectf_fun.unlock (bigD1 b)//= /injectf_r cdv_dv eqxx scale1r.
@@ -707,7 +707,7 @@ by rewrite cdv_dv nj scale0r.
 by rewrite sumr_const mul0rn addr0.
 Qed.
 
-Lemma injectfZi (i : J) (a : C) f : 
+Lemma injectfZi (i : J) (a : C) f :
   injectf (a *:_i f) = a *: injectf f.
 Proof.
 apply/lfunPD=> j; rewrite injectf_delta lfunE/= injectf_delta /applyf.
@@ -719,7 +719,7 @@ Lemma injectfDi (i: J) f (v: 'F[E]_(fs i, fs' i)) :
   injectf (f +_i v) = injectf f + injectf (f[<i ← v>]).
 Proof.
 apply/lfunPD=> j; rewrite injectf_delta lfunE/= !injectf_delta /applyf.
-have ->: (\mvector_ (i0 : J) 
+have ->: (\mvector_ (i0 : J)
           f[<i ← v>] i0 ((\mvector_ (i1 : J) deltav (flatidx j i1)) i0)) =
   (\mvector_ (i0 : J) f i0 ((\mvector_ (i1 : J) deltav (flatidx j i1)) i0))
     [<i ← v (deltav (flatidx j i))>].
@@ -759,26 +759,26 @@ Lemma eq_nset0 : forall x y: 'I_(dim ('H[E]_set0)), x = y.
 Proof. by rewrite dim_set0 => x y; rewrite !ord1. Qed.
 
 Lemma idx0E : all_equal_to (@idx0 I E).
-Proof. by move=>x/=; apply/i2n_inj; apply/eq_nset0. Qed. 
+Proof. by move=>x/=; apply/i2n_inj; apply/eq_nset0. Qed.
 
 Lemma subInR A B (i : {i|i \in (A :|: B)}) (NinL : (val i \in A) <> true) : val i \in B.
 Proof. move/negP: NinL; destruct i => /=; by move/setUP: i => [-> |->]. Qed.
 
-Lemma subInL A B (i : {i|i \in (A :|: B)}) (NinR : (val i \in B) <> true) : val i \in A. 
+Lemma subInL A B (i : {i|i \in (A :|: B)}) (NinR : (val i \in B) <> true) : val i \in A.
 Proof. by move/negP: NinR; destruct i => /=; move/setUP: i => [-> |->]. Qed.
 
-Definition idxU A B (eA : idx A) (eB : idx B) : 
-  idx (A :|: B) := \idx[E]_ (i : (A :|: B)) ( 
+Definition idxU A B (eA : idx A) (eB : idx B) :
+  idx (A :|: B) := \idx[E]_ (i : (A :|: B)) (
   match val i \in A =P true with
   | ReflectT E => eA (setsub E)
   | ReflectF E => eB (setsub (subInR E))
   end).
-  
-Lemma idxUEl A B (eA : idx A) (eB : idx B) (dis: [disjoint A & B]) 
+
+Lemma idxUEl A B (eA : idx A) (eB : idx B) (dis: [disjoint A & B])
   (i : {i|i \in A})  : (idxU eA eB) (incl (subsetUl A B) i) = eA i.
 Proof. by rewrite idxE; case: eqP=>p; destruct i=>//=;rewrite (eq_irrelevance i p). Qed.
 
-Lemma idxUEr A B (eA : idx A) (eB : idx B) (dis: [disjoint A & B]) 
+Lemma idxUEr A B (eA : idx A) (eB : idx B) (dis: [disjoint A & B])
   (i : {i|i \in B})  : (idxU eA eB) (incl (subsetUr A B) i) = eB i.
 Proof.
 rewrite idxE; case: eqP; destruct i => /= p.
@@ -794,7 +794,7 @@ Definition idxSl A B (eAB : idx (A :|: B)) : idx A :=
 Definition idxSr A B (eAB : idx (A :|: B)) : idx B :=
   \idx[E]_ (i : B) eAB (incl (subsetUr A B) i).
 
-Lemma idxSE A B (eAB : idx (A :|: B)) (i : {i|i \in (A :|: B)}) 
+Lemma idxSE A B (eAB : idx (A :|: B)) (i : {i|i \in (A :|: B)})
   (dis: [disjoint A & B]) :
   eAB i = match val i \in A =P true with
   | ReflectT E => idxSl eAB (setsub E)
@@ -839,7 +839,7 @@ Qed.
 Definition idxR A B (subST: A :<=: B) (eAB : idx B) : idx A :=
   \idx[E]_ (i : A) eAB (incl subST i).
 
-Lemma idxRA A B C (subST: A :<=: B) (subTW: B :<=: C) (eAB : idx C) : 
+Lemma idxRA A B C (subST: A :<=: B) (subTW: B :<=: C) (eAB : idx C) :
     idxR subST (idxR subTW eAB) = idxR (subset_trans subST subTW) eAB.
 Proof.
 apply/idxP=>i; rewrite !idxE/=; rewrite /incl /=.
@@ -848,15 +848,15 @@ Qed.
 
 Lemma idxR_castL A A' B (eqS: A = A') subST subS'B (eAB : idx B) :
     castidx eqS (idxR subST eAB) = idxR subS'B eAB.
-Proof. 
-case: A' / eqS subS'B => P. 
+Proof.
+case: A' / eqS subS'B => P.
 by rewrite castidx_id (eq_irrelevance subST P).
 Qed.
 
 Lemma idxR_castR A B B' (eqT: B = B') subST subST' (eAB : idx B) :
     (idxR subST' (castidx eqT eAB) : idx A) = idxR subST eAB.
-Proof. 
-case: B' / eqT subST' => P. 
+Proof.
+case: B' / eqT subST' => P.
 by rewrite castidx_id (eq_irrelevance subST P).
 Qed.
 
@@ -868,9 +868,9 @@ Lemma idxSr_idxR A B (i : idx (A :|: B)) :
     idxSr i = idxR (subsetUr A B) i.
 Proof. by []. Qed.
 
-Lemma idxR_id A (eqS: A :<=: A) (eAB : idx A) : 
+Lemma idxR_id A (eqS: A :<=: A) (eAB : idx A) :
     idxR eqS eAB = eAB.
-Proof. 
+Proof.
 rewrite /idxR; apply/idxP=>i; rewrite !idxE /incl; destruct i.
 by congr (eAB (exist _ _ _)); apply eq_irrelevance.
 Qed.
@@ -881,14 +881,14 @@ Definition idxS_idxR := (idxSl_idxR, idxSr_idxR).
 Lemma castidxs0 A (i : idx (A :|: set0)) :
   idxSl i = castidx (setU0 A) i.
 Proof.
-rewrite ?idxS_idxR -[RHS]idxR_id idxR_castR ?setU0// =>H; 
+rewrite ?idxS_idxR -[RHS]idxR_id idxR_castR ?setU0// =>H;
 by f_equal; apply eq_irrelevance.
 Qed.
 
 Lemma castidx0s A (i : idx (set0 :|: A)) :
   idxSr i = castidx (set0U A) i.
 Proof.
-rewrite ?idxS_idxR -[RHS]idxR_id idxR_castR ?set0U// =>H; 
+rewrite ?idxS_idxR -[RHS]idxR_id idxR_castR ?set0U// =>H;
 by f_equal; apply eq_irrelevance.
 Qed.
 
@@ -946,16 +946,16 @@ End SetIndex.
 (* note: tensor is defined for all cases, but only correct if domain are disjoint *)
 
 HB.lock Definition tenv {I : finType} {E : I -> chsType} [A B: {set I}]
-  (u : 'H[E]_A) (v : 'H_B) : 'H_(A :|: B) := 
+  (u : 'H[E]_A) (v : 'H_B) : 'H_(A :|: B) :=
   \sum_(e : 'Idx_(A :|: B)) (cdv (idxSl e) u * cdv (idxSr e) v) *: deltav e.
 
-HB.lock Definition tenvm {I : finType} {E : I -> chsType} [J: finType] 
-  [fs : J -> {set I}] (u : forall i : J, 'H[E]_(fs i)) := 
+HB.lock Definition tenvm {I : finType} {E : I -> chsType} [J: finType]
+  [fs : J -> {set I}] (u : forall i : J, 'H[E]_(fs i)) :=
     injectv (\mvector_(i : J) u i).
 
 (* tenor of lfun over disjoint domain *)
-HB.lock Definition tenfm {I : finType} {E : I -> chsType} [J: finType] 
-  [fs fs' : J -> {set I}] (u: forall i : J, 'F[E]_(fs i, fs' i)) := 
+HB.lock Definition tenfm {I : finType} {E : I -> chsType} [J: finType]
+  [fs fs' : J -> {set I}] (u: forall i : J, 'F[E]_(fs i, fs' i)) :=
     injectf (\mvector_(i : J) u i).
 
 Notation "f ⊗v g" := (tenv f g) : lfun_scope.
@@ -973,19 +973,19 @@ Lemma tenv_dim A B (dis: [disjoint A & B]) :
   (dim (Hs (A :|: B)) = dim (Hs A) * dim (Hs B))%N.
 Proof. by rewrite !dim_setten big_setU. Qed.
 
-Definition tenv_indexl A B (i : 'I_(dim (Hs A) * dim (Hs B))) : 'I_(dim (Hs (A :|: B))) 
+Definition tenv_indexl A B (i : 'I_(dim (Hs A) * dim (Hs B))) : 'I_(dim (Hs (A :|: B)))
   := i2n (idxU (n2i (mxtens_unindex i).1) (n2i (mxtens_unindex i).2)).
 
-Definition tenv_indexr A B (i : 'I_(dim (Hs (A :|: B)))) : 'I_(dim (Hs A) * dim (Hs B)) 
+Definition tenv_indexr A B (i : 'I_(dim (Hs (A :|: B)))) : 'I_(dim (Hs A) * dim (Hs B))
   := mxtens_index (i2n (idxSl (@n2i I E (A :|: B) i)), i2n (idxSr (n2i i))).
 
-Lemma tenv_indexlK {A B} (dis: [disjoint A & B]) : 
+Lemma tenv_indexlK {A B} (dis: [disjoint A & B]) :
   cancel (@tenv_indexl A B) (@tenv_indexr _ _).
 Proof.
 by move=>i; rewrite /tenv_indexl /tenv_indexr/= i2nK idxSUl idxSUr// !n2iK mxtens_unindexK.
 Qed.
 
-Lemma tenv_indexrK {A B} : 
+Lemma tenv_indexrK {A B} :
   cancel (@tenv_indexr A B) (@tenv_indexl A B).
 Proof.
 by move=>i; rewrite /tenv_indexl /tenv_indexr mxtens_indexK/= !i2nK idxUS n2iK.
@@ -1016,13 +1016,13 @@ Lemma tenv_h2cE A B (u : Hs A) (v : Hs B) :
   h2c (u ⊗v v) = tenv_mxU *m (h2c u *t h2c v).
 Proof.
 have P0: mxtens_index (ord0,ord0) = 0 :> 'I_(1 * 1) by rewrite ord1.
-apply/matrixP=>i j; rewrite tenv.unlock [in RHS](dec_dv u) [in RHS](dec_dv v) 
+apply/matrixP=>i j; rewrite tenv.unlock [in RHS](dec_dv u) [in RHS](dec_dv v)
   !linear_sum/= linear_sumlz/= linear_sumr/= !summxE ord1.
 rewrite (bigD1 (n2i i))//= big1=>[k /negPf nki|].
   by rewrite linearZ/= mxE deltav.unlock h2c_eb mxE eqxx andbT
     -(can2_eq (@n2iK _ _ _) (@i2nK _ _ _)) eq_sym nki mulr0.
 rewrite addr0 linearZ/= deltav.unlock h2c_eb n2iK !mxE !eqxx mulr1.
-rewrite (bigD1 (n2i (mxtens_unindex (tenv_indexr i)).1))// 
+rewrite (bigD1 (n2i (mxtens_unindex (tenv_indexr i)).1))//
   !mxtens_indexK i2nK/= [X in _ + X]big1.
   move=>k /negPf nki; rewrite mxE big1//==>l _.
   case: (mxtens_indexP l)=>la lb.
@@ -1044,11 +1044,11 @@ by rewrite addr0 -{3}P0 tensmxE !mxE !eqxx !mulr1 mul1r.
 Qed.
 
 Lemma linear_tenv A B u : linear (@tenv A B u).
-Proof. 
+Proof.
 move=>a v w; rewrite tenv.unlock linear_sum -big_split; apply eq_bigr=>i _.
 by rewrite linearP/= mulrDr scalerDl scalerA mulrA [_ * a]mulrC mulrA.
 Qed.
-HB.instance Definition _ A B u := GRing.isLinear.Build C 'H[E]_B 'H_(A :|: B) 
+HB.instance Definition _ A B u := GRing.isLinear.Build C 'H[E]_B 'H_(A :|: B)
   *:%R (@tenv A B u) (@linear_tenv A B u).
 
 Lemma linear_tenvr A B u : linear ((@tenv A B)^~ u).
@@ -1069,14 +1069,14 @@ Lemma tenvDl A B (w: Hs B) (u v: Hs A) : (u+v) ⊗v w = u ⊗v w + v ⊗v w.
 Proof. exact: linearDl. Qed.
 Lemma tenvZl A B (v: Hs B) (c: C) (u: Hs A) : (c*:u) ⊗v v = c *: (u ⊗v v).
 Proof. exact: linearZl_LR. Qed.
-Lemma tenvPl A B (w: Hs B) (c: C) (u v: Hs A) : 
+Lemma tenvPl A B (w: Hs B) (c: C) (u v: Hs A) :
   (c*:u+v) ⊗v w = c *: (u ⊗v w) + v ⊗v w.
 Proof. exact: linearPl. Qed.
 Lemma tenvMnl A B (v: Hs B) (u: Hs A) n : (u *+ n) ⊗v v = (u ⊗v v) *+ n.
 Proof. exact: linearMnl. Qed.
 Lemma tenvMNnl A B (v: Hs B) (u: Hs A) n : tenv (u *- n) v = (tenv u v) *- n.
 Proof. exact: linearMNnl. Qed.
-Lemma tenv_suml L r (P : pred L) A B (F: L -> Hs A) (u: Hs B) : 
+Lemma tenv_suml L r (P : pred L) A B (F: L -> Hs A) (u: Hs B) :
   (\sum_(i <- r | P i) F i) ⊗v u = \sum_(i <- r | P i) ((F i) ⊗v u).
 Proof. exact: linear_sumlz. Qed.
 Lemma ten0v A B (u: Hs B) : (0: Hs A) ⊗v u = 0.
@@ -1089,27 +1089,27 @@ Lemma tenvDr A B (w: Hs A) (u v: Hs B) : w ⊗v (u+v) = w ⊗v u + w ⊗v v.
 Proof. exact: linearDr. Qed.
 Lemma tenvZr A B (v: Hs A) (c: C) (u: Hs B) : v ⊗v (c*:u) = c *: (v ⊗v u).
 Proof. exact: linearZr. Qed.
-Lemma tenvPr A B (w: Hs A) (c: C) (u v: Hs B) : 
+Lemma tenvPr A B (w: Hs A) (c: C) (u v: Hs B) :
   w ⊗v (c *: u + v) = c *: (w ⊗v u) + (w ⊗v v).
 Proof. exact: linearPr. Qed.
 Lemma tenvMnr A B (v: Hs A) (u: Hs B) n : v ⊗v (u *+ n) = (v ⊗v u) *+ n.
 Proof. exact: linearMnr. Qed.
 Lemma tenvMNnr A B (v: Hs A) (u: Hs B) n : v ⊗v (u *- n) = (v ⊗v u) *- n.
 Proof. exact: linearMNnr. Qed.
-Lemma tenv_sumr L r (P : pred L) A B (u: Hs A) (F: L -> Hs B)  : 
+Lemma tenv_sumr L r (P : pred L) A B (u: Hs A) (F: L -> Hs B)  :
   u ⊗v (\sum_(i <- r | P i) F i) = \sum_(i <- r | P i) (u ⊗v (F i)).
 Proof. exact: linear_sumr. Qed.
 
-Lemma tenv_dot A B (u1 u2 : Hs A) (v1 v2 : Hs B) : 
+Lemma tenv_dot A B (u1 u2 : Hs A) (v1 v2 : Hs B) :
   [disjoint A & B] -> [< u1 ⊗v v1 ; u2 ⊗v v2 >] = [< u1 ; u2>] * [< v1 ; v2 >].
 Proof.
 move=>dis; rewrite !dotp_mulmx !tenv_h2cE -!trace_mx11.
 rewrite adjmxM mulmxA mulmxKtV ?tenv_mxU_unitarymx// ?tenv_dim//.
-by rewrite (adjmx_tens (h2c u1) (h2c v1)) 
+by rewrite (adjmx_tens (h2c u1) (h2c v1))
   (tensmx_mul (h2c u1)^*t (h2c v1)^*t (h2c u2) (h2c v2)) -mxtrace_tens.
 Qed.
 
-Lemma tenv_norm A B (u : Hs A) (v : Hs B) : 
+Lemma tenv_norm A B (u : Hs A) (v : Hs B) :
   [disjoint A & B] -> `|u ⊗v v| = `|u| * `|v|.
 Proof. by move=>P; rewrite !hnormE tenv_dot// sqrtCM// dotp_norm nnegrE exprn_ge0. Qed.
 
@@ -1122,7 +1122,7 @@ by rewrite dotpZl dotpZr dv_dot eq_sym nji !mulr0.
 by rewrite dotpZl dotpZr dv_dot eqxx mulr1 addr0 normCKC.
 Qed.
 
-Lemma cdvT A B u v (i : idx (A :|: B)) : 
+Lemma cdvT A B u v (i : idx (A :|: B)) :
   cdv i (u ⊗v v) = cdv (idxSl i) u * cdv (idxSr i) v.
 Proof.
 rewrite tenv.unlock linear_sum/= (bigD1 i)// big1//=.
@@ -1130,7 +1130,7 @@ by move=>j /negPf nji; rewrite linearZ/= cdv_dv eq_sym nji mulr0.
 by rewrite addr0 linearZ/= cdv_dv eqxx mulr1.
 Qed.
 
-Lemma tenv_norm_le A B (u : Hs A) (v : Hs B) : 
+Lemma tenv_norm_le A B (u : Hs A) (v : Hs B) :
   `|u ⊗v v| <= `|u| * `|v|.
 Proof.
 rewrite !cdv_norm -sqrtCM ?ler_sqrtC ?nnegrE ?mulr_ge0//.
@@ -1159,7 +1159,7 @@ Lemma dv_tensor A B (i : idx A) (j : idx B) :
 Proof. by move=>dis; rewrite dv_split ?idxSUl ?idxSUr. Qed.
 
 Lemma tenv_dv_eq0 A B (i1 : 'Idx[E]_A) (i2 : 'Idx_B) :
-  (idxSl (idxU i1 i2) != i1) || (idxSr (idxU i1 i2) != i2) -> 
+  (idxSl (idxU i1 i2) != i1) || (idxSr (idxU i1 i2) != i2) ->
     deltav i1 ⊗v deltav i2 = 0.
 Proof.
 move=>P0; rewrite tenv.unlock big1// =>i _; rewrite !cdv_dv.
@@ -1174,7 +1174,7 @@ Qed.
 
 Lemma tenv_conj A B (u: Hs A) (v: Hs B) : ((u^*v) ⊗v (v^*v) = (u ⊗v v)^*v)%VF.
 Proof.
-rewrite (dec_dv u) raddf_sum/= !linear_sumlz raddf_sum/=; apply eq_bigr=>i _. 
+rewrite (dec_dv u) raddf_sum/= !linear_sumlz raddf_sum/=; apply eq_bigr=>i _.
 rewrite (dec_dv v) raddf_sum/= linear_sum linear_sumr raddf_sum/=.
 apply eq_bigr=>j _; rewrite !conjvZ !linearZl_LR !linearZr/= !conjvZ.
 congr (_ *: (_ *: _)); rewrite !conj_dv; apply/cdvP=>k.
@@ -1188,20 +1188,20 @@ Lemma tenv_castA S1 S2 S3 (u: 'H[E]_S1) (v: 'H_S2) (w: 'H_S3) :
 Proof.
 apply/cdvP=>/= i; rewrite cdv_castV !cdvT mulrA.
 do ? [apply f_equal2 | apply f_equal] =>//;
-rewrite ?idxSl_idxR ?idxSr_idxR ?idxR_castR -?setUA ?subsetUl ?subsetUr// => H1; 
+rewrite ?idxSl_idxR ?idxSr_idxR ?idxR_castR -?setUA ?subsetUl ?subsetUr// => H1;
 rewrite !idxRA; by do ? [apply f_equal2 | apply eq_irrelevance].
 Qed.
 
-Lemma tenv_castC S1 S2 (u: 'H[E]_S1) (v: 'H_S2) : 
+Lemma tenv_castC S1 S2 (u: 'H[E]_S1) (v: 'H_S2) :
   casths (setUC S1 S2) (u ⊗v v) = (v ⊗v u).
 Proof.
 apply/cdvP=>/= j; rewrite cdv_castV !cdvT mulrC.
-do ? [apply f_equal2 | apply f_equal] =>//; 
+do ? [apply f_equal2 | apply f_equal] =>//;
     rewrite ?idxS_idxR ?idxR_cast ?subsetUl ?subsetUr// => H1;
     by do ? [apply f_equal2 | apply eq_irrelevance].
 Qed.
 
-Lemma tenv_idx0r A (u : Hs A) : 
+Lemma tenv_idx0r A (u : Hs A) :
   u ⊗v (deltav idx0) = casths (esym (setU0 _)) u.
 Proof.
 by apply/cdvP=>i; rewrite cdvT cdv_dv idx0E eqxx mulr1 cdv_castV esymK castidxs0.
@@ -1209,7 +1209,7 @@ Qed.
 
 Lemma tenvm_dim (J: finType) (fs : J -> {set I}) : disf fs ->
   (dim (Hs (\bigcup_i fs i)) = \prod_i dim (Hs (fs i)))%N.
-Proof. 
+Proof.
 move=> dis; rewrite dim_setten partition_disjoint_bigcup//.
 by apply eq_bigr=>i _; rewrite dim_setten.
 Qed.
@@ -1221,7 +1221,7 @@ Lemma dv_splitm (J: finType) (fs : J -> {set I}) (i : idx (\bigcup_i (fs i))) :
 Proof. rewrite tenvm.unlock; exact: deltavm. Qed.
 
 Lemma tenvm_dv_eq0 (J : finType) (A : J -> {set I}) (i : forall j : J,  'Idx[E]_(A j)) :
-  [exists j, flatidx (packidx [ffun j => i j]) j != i j] -> 
+  [exists j, flatidx (packidx [ffun j => i j]) j != i j] ->
     tenvm (fun j => deltav (i j)) = 0.
 Proof.
 move=>/existsP[j0 /negPf Pj0]; apply/eqP.
@@ -1247,10 +1247,10 @@ by under eq_bigr do rewrite !mvE.
 Qed.
 
 Lemma cdv_tm (J: finType) (fs : J -> {set I})
-  (x: forall i : J, Hs (fs i)) e : 
+  (x: forall i : J, Hs (fs i)) e :
   cdv e (tenvm x) = \prod_i cdv (flatidx e i) (x i).
 Proof.
-rewrite tenvm.unlock injectv.unlock linear_sum/= (bigD1 e)//= [X in X + _]linearZ.  
+rewrite tenvm.unlock injectv.unlock linear_sum/= (bigD1 e)//= [X in X + _]linearZ.
 rewrite /= cdv_dv eqxx mulr1 [X in _ + X]big1 ?addr0 =>[i/negPf ni|].
 by rewrite linearZ/= cdv_dv eq_sym ni mulr0.
 by under eq_bigr do rewrite mvE.
@@ -1271,13 +1271,13 @@ Qed.
 Lemma tenvm_conj (J: finType) (fs : J -> {set I}) (x: forall i : J, Hs (fs i)) :
   ((tenvm x)^*v = tenvm (fun i=> (x i)^*v))%VF.
 Proof.
-apply/cdvP=>i; rewrite conj_cdv !cdv_tm rmorph_prod; 
+apply/cdvP=>i; rewrite conj_cdv !cdv_tm rmorph_prod;
 by apply eq_bigr=>j _; rewrite conj_cdv.
 Qed.
 
-Lemma tenvm_recl (n : nat) (dt : n.+1.-tuple {set I}) 
+Lemma tenvm_recl (n : nat) (dt : n.+1.-tuple {set I})
   (u : forall x : 'I_n.+1, Hs (dt ~_ x)) :
-  casths (esym (idx_big_recl_cast dt)) (tenvm u) = 
+  casths (esym (idx_big_recl_cast dt)) (tenvm u) =
     (u ord0 ⊗v tenvm (fun i=> (u (fintype.lift ord0 i)))).
 Proof.
 apply/cdvP=>i; rewrite cdvT cdv_castV esymK !cdv_tm big_ord_recl; f_equal.
@@ -1285,7 +1285,7 @@ by rewrite idx_big_recl0 castidx_comp castidx_id.
 by apply eq_bigr=>/= j _; f_equal; rewrite -idx_big_recl castidx_comp castidx_id.
 Qed.
 
-Lemma tenvmZ (J: finType) (fs : J -> {set I}) (a : forall i : J, C) 
+Lemma tenvmZ (J: finType) (fs : J -> {set I}) (a : forall i : J, C)
   (x: forall i : J, Hs (fs i)) :
     (tenvm (fun i => a i *: x i)) = (\prod_i a i) *: tenvm x.
 Proof.
@@ -1295,7 +1295,7 @@ Qed.
 
 Lemma tenvm_sum (J: finType) (fs : J -> {set I}) (K : J -> finType)
   (x: forall i : J, (K i) -> Hs (fs i)) :
-    (tenvm (fun i => \sum_j x i j)) = 
+    (tenvm (fun i => \sum_j x i j)) =
       \sum_(b : mvector (fun i : J => (K i))) tenvm (fun i => x i (b i)).
 Proof. by rewrite tenvm.unlock (mlinear_sum x (@injectv_mlinear _ _ _ _)). Qed.
 
@@ -1309,38 +1309,38 @@ Lemma idx_card (S : {set L}) :
   #|'Idx[H]_S| = dim 'H[H]_S.
 Proof. by  rewrite card_idx dim_setten. Qed.
 
-HB.instance Definition _ (S : {set L}) := isONB.Build 
+HB.instance Definition _ (S : {set L}) := isONB.Build
   'H[H]_S 'Idx[H]_S deltav (@dv_dot L H S) (idx_card S).
 
-HB.instance Definition _ (S : {set L}) (i : 'Idx[H]_S) := 
+HB.instance Definition _ (S : {set L}) (i : 'Idx[H]_S) :=
   NormalState.copy (deltav i) ((@deltav L H S : 'ONB) i : 'NS).
 
 End DefaultONB.
 
 (* tenor product of linear function, onbasis free *)
-(* note that tenor is defined for all cases, but only correct if domains/codomains 
+(* note that tenor is defined for all cases, but only correct if domains/codomains
    are disjoint *)
-HB.lock Definition ten_lfun_fun {I : finType} {E : I -> chsType} 
-  [S T S' T'] (f: 'F[E]_(S,T)) (g: 'F_(S',T')) (u : 'H_(S :|: S')) := 
+HB.lock Definition ten_lfun_fun {I : finType} {E : I -> chsType}
+  [S T S' T'] (f: 'F[E]_(S,T)) (g: 'F_(S',T')) (u : 'H_(S :|: S')) :=
     \sum_(i : 'Idx_(S :|: S')) cdv i u *:
       ((f (deltav (idxSl i))) ⊗v (g (deltav (idxSr i)))).
 
-Lemma ten_lfun_fun_is_linear {I : finType} {E : I -> chsType} 
+Lemma ten_lfun_fun_is_linear {I : finType} {E : I -> chsType}
   [S T S' T'] (f: 'F[E]_(S,T)) (g: 'F_(S',T')) :
   linear (ten_lfun_fun f g).
 Proof.
 move=>a u v; rewrite ten_lfun_fun.unlock scaler_sumr -big_split /=.
 by apply eq_bigr=>i _; rewrite scalerA -scalerDl linearP.
 Qed.
-HB.instance Definition _ {I : finType} {E : I -> chsType} [S T S' T'] 
-  (f: 'F[E]_(S,T)) (g: 'F_(S',T')):= GRing.isLinear.Build 
+HB.instance Definition _ {I : finType} {E : I -> chsType} [S T S' T']
+  (f: 'F[E]_(S,T)) (g: 'F_(S',T')):= GRing.isLinear.Build
     C 'H_(S :|: S') 'H_(T :|: T') *:%R (ten_lfun_fun f g)
       (ten_lfun_fun_is_linear f g).
-Definition ten_lfun {I : finType} {E : I -> chsType} [S T S' T'] 
+Definition ten_lfun {I : finType} {E : I -> chsType} [S T S' T']
   (f: 'F[E]_(S,T)) (g: 'F_(S',T')) := linfun (ten_lfun_fun f g).
 
 (* with auto-lifting *)
-HB.lock Definition dot_lfun {I : finType} {E : I -> chsType} [S T S' T'] 
+HB.lock Definition dot_lfun {I : finType} {E : I -> chsType} [S T S' T']
   (f: 'F[E]_(S,T)) (g: 'F_(S',T')) :=
     ((ten_lfun f (\1: 'F_(T' :\: S, T' :\: S))) \o castlf (erefl _, (setUDS T' S))
       (ten_lfun g (\1: 'F_(S :\: T', S :\: T'))))%VF.
@@ -1381,31 +1381,31 @@ Proof. by rewrite cdv0E -outpE outp_dv0 lfunE. Qed.
 Lemma sv_normE (v: 'H[E]_set0) :  `|v| = `|cdv idx0 v|.
 Proof. by rewrite {1}(dec_sv v) hnormZ dv_norm mulr1. Qed.
 
-Lemma s2sv_is_additive : additive s2sv.
+Lemma s2sv_is_additive : zmod_morphism s2sv.
 Proof. by move=>u v; rewrite /s2sv scalerDl scaleNr. Qed.
-HB.instance Definition _ := GRing.isAdditive.Build 
+HB.instance Definition _ := GRing.isZmodMorphism.Build
   C 'H[E]_set0 s2sv s2sv_is_additive.
 HB.instance Definition _ := GRing.Linear.copy sv2s (sv2s : {linear _ -> _}).
-Lemma s2sf_is_additive : additive s2sf.
+Lemma s2sf_is_additive : zmod_morphism s2sf.
 Proof. by move=>a b; rewrite /s2sf scalerBl. Qed.
-HB.instance Definition _ := GRing.isAdditive.Build 
+HB.instance Definition _ := GRing.isZmodMorphism.Build
   C 'F[E]_set0 s2sf s2sf_is_additive.
 Lemma sf2s_is_scalar : scalar sf2s.
 Proof. by move=> a x y; rewrite /sf2s lfunE /= scale_lfunE; rewrite linearP. Qed.
-HB.instance Definition _ := GRing.isLinear.Build 
+HB.instance Definition _ := GRing.isLinear.Build
   C 'F[E]_set0 C *%R sf2s sf2s_is_scalar.
 Lemma v2f_is_linear S : linear (@v2f S). Proof. exact: linearPl. Qed.
-HB.instance Definition _ S := GRing.isLinear.Build 
+HB.instance Definition _ S := GRing.isLinear.Build
   C 'H[E]_S 'FV_S *:%R (@v2f S) (@v2f_is_linear S).
 Lemma f2v_is_linear S : linear (@f2v S).
 Proof. by move=>a f g; rewrite /f2v; do ? rewrite lfunE/=. Qed.
-HB.instance Definition _ S := GRing.isLinear.Build 
+HB.instance Definition _ S := GRing.isLinear.Build
   C 'FV_S 'H[E]_S *:%R (@f2v S) (@f2v_is_linear S).
-HB.instance Definition _ S := GRing.Linear.copy 
+HB.instance Definition _ S := GRing.Linear.copy
   (@v2df S) (@v2df S : {linear _ -> _ | _}).
 Lemma df2v_is_antilinear S : antilinear (@df2v S).
 Proof. by move=>a f g; rewrite/df2v linearP/= lfunE/= lfunE. Qed.
-HB.instance Definition _ S := GRing.isLinear.Build 
+HB.instance Definition _ S := GRing.isLinear.Build
   C 'FdV_S 'H[E]_S (conjC \;  *:%R) (@df2v S) (@df2v_is_antilinear S).
 
 Lemma s2svK : cancel s2sv sv2s.
@@ -1418,7 +1418,7 @@ Lemma s2sfK : cancel s2sf sf2s.
 Proof. by move=>a; rewrite/s2sf/sf2s lfunE/= lfunE/= dotpZr dv_dot eqxx mulr1. Qed.
 Lemma sf2sK : cancel sf2s s2sf.
 Proof.
-by move=>a; apply/lfunP=>u; rewrite/s2sf/sf2s lfunE/= lfunE/= 
+by move=>a; apply/lfunP=>u; rewrite/s2sf/sf2s lfunE/= lfunE/=
   -outpE (dec_sv u) linearZl_LR/= outp_dv0 lfunE/= lfunE/= linearZ.
 Qed.
 Lemma s2sf_inj : injective s2sf. Proof. exact (can_inj s2sfK). Qed.
@@ -1481,7 +1481,7 @@ Proof. by rewrite trfAC -df2v_conj df2v_adj. Qed.
 
 (* inner product of scalar vector *)
 Lemma sv_dotp u v : [< u ; v >] = (sv2s u)^* * (sv2s v).
-Proof. 
+Proof.
 by rewrite {1}(dec_sv u) {1}(dec_sv v) !cdvE dotpZl dotpZr dv_dot eqxx mulr1 /sv2s.
 Qed.
 
@@ -1503,7 +1503,7 @@ Proof. by rewrite/f2v outp_compr outpE dv_dot eqxx scale1r. Qed.
 Lemma v2df_comp S T (f : 'F_(S, T)) v : df2v (v2df v \o f) = f^A v.
 Proof. by rewrite outp_compl/df2v adj_outp outpE dv_dot eqxx scale1r. Qed.
 
-Lemma tenf_dv S T S' T' (f: 'F[E]_(S,T)) (g: 'F[E]_(S',T')) i: 
+Lemma tenf_dv S T S' T' (f: 'F[E]_(S,T)) (g: 'F[E]_(S',T')) i:
   (f (deltav (idxSl i))) ⊗v (g (deltav (idxSr i))) = (ten_lfun f g) (deltav i).
 Proof.
 rewrite lfunE/= ten_lfun_fun.unlock (bigD1 i)// big1//=.
@@ -1534,7 +1534,7 @@ rewrite linear_sum /= -big_split; apply eq_bigr=>i _;
 by rewrite !lfunE/= !lfunE/= !linearPl/= scalerDr !scalerA mulrC.
 Qed.
 HB.instance Definition _ S T S' T' := bilinear_isBilinear.Build C 'F[E]_(S,T) 'F[E]_(S',T')
-  'F_(S :|: S', T :|: T') *:%R *:%R (@ten_lfun I E S T S' T') 
+  'F_(S :|: S', T :|: T') *:%R *:%R (@ten_lfun I E S T S' T')
     (@linear_tenfr S T S' T', @linear_tenf S T S' T').
 
 Lemma h2mx_tenf S T S' T' (f: 'F[E]_(S,T)) (g: 'F[E]_(S',T')) :
@@ -1548,7 +1548,7 @@ apply eq_bigr=>[[i1 i2]] _ /=; rewrite !linear_sumr/= linear_sum/= mulmx_suml.
 by rewrite tenf_outp outp.unlock !mx2hK !tenv_h2cE adjmxM mulmxA mulmxACA -tensmx_mul -adjmx_tens.
 Qed.
 
-Lemma tenf_apply S T S' T' (f: 'F[E]_(S,T)) (g: 'F_(S',T')) : 
+Lemma tenf_apply S T S' T' (f: 'F[E]_(S,T)) (g: 'F_(S',T')) :
   [disjoint S & S'] ->
   forall u v, (f \⊗ g) (u ⊗v v) = (f u) ⊗v (g v).
 Proof.
@@ -1561,7 +1561,7 @@ by move=>k /negPf nki; rewrite linearZ/= cdv_dv eq_sym nki mulr0.
 by rewrite idxSUl// idxSUr// linearZ/= cdv_dv eqxx mulr1 addr0 mulrC.
 Qed.
 
-Lemma tenf_comp S T S' T' W W' (f1: 'F[E]_(S,T)) (f2: 'F_(W,S)) 
+Lemma tenf_comp S T S' T' W W' (f1: 'F[E]_(S,T)) (f2: 'F_(W,S))
   (g1: 'F_(S',T')) (g2: 'F_(W',S')) : [disjoint S & S'] ->
   (f1 \o f2) \⊗ (g1 \o g2) = (f1 \⊗ g1) \o (f2 \⊗ g2).
 Proof.
@@ -1575,7 +1575,7 @@ Proof. by apply/lfunPD=>i; rewrite -tenf_dv !conjfE !conj_dv -tenf_dv tenv_conj.
 
 Lemma tenf_adj S T S' T' (f: 'F[E]_(S,T)) (g: 'F_(S',T')) :
   (f \⊗ g)^A = f^A \⊗ g^A.
-Proof. 
+Proof.
 by apply/lfunPD=>i; apply/cdvP=>j; rewrite adj_cdv -!tenf_dv !cdvT !adj_cdv rmorphM.
 Qed.
 
@@ -1596,7 +1596,7 @@ Lemma tenf_i2fnorm S T S' T' (f: 'F[E]_(S,T)) (g: 'F_(S',T')) :
   [disjoint S & S'] -> [disjoint T & T'] ->
   i2fnorm (f \⊗ g) = i2fnorm f * i2fnorm g.
 Proof.
-move=>dS dT; rewrite /Num.norm/= /i2fnorm h2mx_tenf  
+move=>dS dT; rewrite /Num.norm/= /i2fnorm h2mx_tenf
   i2normUr ?i2normUl_cond ?i2norm_tens// ?tenv_dim//.
 all: by apply/tenv_mxU_adj_unitarymx.
 Qed.
@@ -1614,7 +1614,7 @@ move=>a v w; rewrite dot_lfun.unlock linearPl/=.
 by rewrite comp_lfunDl comp_lfunZl.
 Qed.
 HB.instance Definition _ S T S' T' := bilinear_isBilinear.Build C 'F[E]_(S,T) 'F[E]_(S',T')
-  'F_(S' :|: S :\: T', T :|: T' :\: S) *:%R *:%R (@dot_lfun I E S T S' T') 
+  'F_(S' :|: S :\: T', T :|: T' :\: S) *:%R *:%R (@dot_lfun I E S T S' T')
     (@linear_dotfr S T S' T', @linear_dotf S T S' T').
 
 Lemma dotf_conj S T S' T' (f: 'F[E]_(S,T)) (g: 'F_(S',T')) :
@@ -1625,7 +1625,7 @@ Lemma dotf_adj S T S' T' (f: 'F[E]_(S,T)) (g: 'F_(S',T')) :
   (f \· g)^A = g^A \· f^A.
 Proof.
 rewrite dot_lfun.unlock !adjf_comp castlf_adj /= !tenf_adj castlf_complfl castlf_id !adjf1.
-by f_equal; apply/castlf_sym; rewrite castlf_comp castlf_id. 
+by f_equal; apply/castlf_sym; rewrite castlf_comp castlf_id.
 Qed.
 
 Lemma dotf_tr S T S' T' (f: 'F[E]_(S,T)) (g: 'F_(S',T')) :
@@ -1653,27 +1653,27 @@ by apply eq_bigr=>i _; rewrite linearZ.
 Qed.
 
 Lemma tenf_castA S1 T1 S2 T2 S3 T3 (f: 'F[E]_(S1,T1)) (g: 'F_(S2,T2))
-  (h: 'F_(S3,T3)) : 
+  (h: 'F_(S3,T3)) :
  castlf (setUA S1 S2 S3, setUA T1 T2 T3) (f \⊗ (g \⊗ h)) = ((f \⊗ g) \⊗ h).
 Proof.
 apply/lfunPD=>/=i. apply/cdvP=>/= j.
 rewrite castlfE/= cdv_castV deltav_cast -!tenf_dv !cdvT mulrA.
-do ? [apply f_equal2 | apply f_equal] =>//; 
-rewrite ?idxSl_idxR ?idxSr_idxR ?idxR_castR -?setUA ?subsetUl ?subsetUr// => H1; 
+do ? [apply f_equal2 | apply f_equal] =>//;
+rewrite ?idxSl_idxR ?idxSr_idxR ?idxR_castR -?setUA ?subsetUl ?subsetUr// => H1;
 rewrite !idxRA; by do ? [apply f_equal2 | apply eq_irrelevance].
 Qed.
 
-Lemma tenf_castC S T S' T' (f: 'F[E]_(S,T)) (g: 'F_(S',T')) : 
+Lemma tenf_castC S T S' T' (f: 'F[E]_(S,T)) (g: 'F_(S',T')) :
   castlf ((setUC S S'), (setUC T T')) (f \⊗ g) = (g \⊗ f).
 Proof.
 apply/lfunPD=>/=i. apply/cdvP=>/= j.
 rewrite castlfE/= deltav_cast cdv_castV -!tenf_dv !cdvT mulrC.
-do ? [apply f_equal2 | apply f_equal] =>//; 
+do ? [apply f_equal2 | apply f_equal] =>//;
     rewrite ?idxS_idxR ?idxR_cast ?subsetUl ?subsetUr// => H1;
     by do ? [apply f_equal2 | apply eq_irrelevance].
 Qed.
 
-Lemma tenf_cast1r S T (f: 'F[E]_(S,T))  : 
+Lemma tenf_cast1r S T (f: 'F[E]_(S,T))  :
   castlf ((setU0 S),(setU0 T)) (f \⊗ (\1 : 'F_set0)) = f.
 Proof.
 apply/lfunPD=>/=i; rewrite castlfE deltav_cast/= -tenf_dv idx0E castidxs0.
@@ -1683,7 +1683,7 @@ Qed.
 Lemma tenf_v2f S T (u : 'H[E]_S) (v : 'H_T) :
   castlf (setU0 _, erefl) (ten_lfun (v2f u) (v2f v)) = (v2f (tenv u v)).
 Proof.
-by apply/lfunPD=>i; rewrite castlfE/= deltav_cast -tenf_dv 
+by apply/lfunPD=>i; rewrite castlfE/= deltav_cast -tenf_dv
   !idx0E /v2f !outpE dv_dot eqxx !scale1r.
 Qed.
 
@@ -1715,7 +1715,7 @@ Lemma tenv_df2v S T (u : 'FdV[E]_S) (v : 'FdV_T) :
   castlf (erefl, esym (setU0 _)) (v2df (tenv (df2v u) (df2v v))) = (ten_lfun u v).
 Proof. by rewrite -tenf_df2v df2vK castlf_comp castlf_id. Qed.
 
-Lemma tenfmdv (J: finType) (fs fs' : J -> {set I}) 
+Lemma tenfmdv (J: finType) (fs fs' : J -> {set I})
   (f: forall i : J, 'F[E]_(fs i, fs' i)) (i : idx _ (\bigcup_i (fs i))) :
     tenfm f (deltav i)
       = tenvm (fun k : J => f k (deltav (flatidx i k))).
@@ -1728,7 +1728,7 @@ Lemma tenfmP (J: finType) (fs fs' : J -> {set I}) (f g : forall i : J, 'F[E]_(fs
   (forall i, f i = g i) -> tenfm f = tenfm g.
 Proof. by move=>P; apply/lfunPD=>i; rewrite !tenfmdv; apply/tenvmP=>j; rewrite P. Qed.
 
-Lemma tenfm_apply (J: finType) (fs fs' : J -> {set I}) 
+Lemma tenfm_apply (J: finType) (fs fs' : J -> {set I})
   (f: forall i : J, 'F[E]_(fs i, fs' i)) (v : forall i : J, 'H_(fs i)) :
     disf fs ->
     tenfm f (tenvm v) = tenvm (fun k : J => f k (v k)).
@@ -1737,7 +1737,7 @@ move=>dis; rewrite tenfm.unlock tenvm.unlock injectfE//; f_equal.
 by apply/mvectorP=>j; rewrite !mvE.
 Qed.
 
-Lemma tenfm_outp (J: finType) (fs fs' : J -> {set I}) 
+Lemma tenfm_outp (J: finType) (fs fs' : J -> {set I})
   (u : forall i : J, 'H[E]_(fs i)) (v : forall i : J, 'H_(fs' i)) :
   tenfm (fun k : J => [> u k ; v k <]) = [> tenvm u ; tenvm v <].
 Proof.
@@ -1746,7 +1746,7 @@ rewrite linearZ/= -conj_dotp -cdvE !cdv_tm rmorph_prod -big_split/=.
 by apply eq_bigr=>k _; rewrite outpE linearZ/= !cdvE conj_dotp.
 Qed.
 
-Lemma tenfm_adj (J: finType) (fs fs' : J -> {set I}) 
+Lemma tenfm_adj (J: finType) (fs fs' : J -> {set I})
   (f: forall i : J, 'F[E]_(fs i, fs' i)) :
     (tenfm f)^A = tenfm (fun i=>(f i)^A).
 Proof.
@@ -1754,7 +1754,7 @@ apply/lfunPD=>i; apply/cdvP=>j; rewrite adj_cdv !tenfmdv !cdv_tm rmorph_prod.
 by apply eq_bigr=>k _; rewrite adj_cdv.
 Qed.
 
-Lemma tenfm_conj (J: finType) (fs fs' : J -> {set I}) 
+Lemma tenfm_conj (J: finType) (fs fs' : J -> {set I})
   (f: forall i : J, 'F[E]_(fs i, fs' i)) :
     (tenfm f)^C = tenfm (fun i=>(f i)^C).
 Proof.
@@ -1763,17 +1763,17 @@ rewrite conjfE conj_cdv conj_dv !tenfmdv !cdv_tm rmorph_prod.
 by apply eq_bigr=>k _; rewrite conjfE conj_dv conj_cdv.
 Qed.
 
-Lemma tenfm_tr (J: finType) (fs fs' : J -> {set I}) 
+Lemma tenfm_tr (J: finType) (fs fs' : J -> {set I})
   (f: forall i : J, 'F[E]_(fs i, fs' i)) :
     (tenfm f)^T = tenfm (fun i=>(f i)^T).
 Proof. by rewrite trfAC tenfm_adj tenfm_conj; apply/tenfmP=>i; rewrite trfAC. Qed.
 
-Lemma tenfm_recl (n : nat) (dt dt' : n.+1.-tuple {set I}) 
+Lemma tenfm_recl (n : nat) (dt dt' : n.+1.-tuple {set I})
   (f: forall i : 'I_n.+1, 'F[E]_(dt ~_ i, dt' ~_ i)) :
-  castlf (esym (idx_big_recl_cast dt), esym (idx_big_recl_cast dt')) (tenfm f) = 
+  castlf (esym (idx_big_recl_cast dt), esym (idx_big_recl_cast dt')) (tenfm f) =
     (f ord0 \⊗ tenfm (fun i=> (f (fintype.lift ord0 i)))).
 Proof.
-apply/lfunPD=>i; apply/cdvP=>j; rewrite castlfE/= esymK -cdv_cast 
+apply/lfunPD=>i; apply/cdvP=>j; rewrite castlfE/= esymK -cdv_cast
   deltav_cast tenfmdv cdv_tm -tenf_dv cdvT tenfmdv cdv_tm.
   set ci := castidx (idx_big_recl_cast dt) i.
   set cj := castidx (idx_big_recl_cast dt') j.
@@ -1791,7 +1791,7 @@ apply/lfunPD=>i; apply/cdvP=>j; rewrite castlfE/= esymK -cdv_cast
     castidx_comp castidx_id.
 Qed.
 
-Lemma tenfmZ (J: finType) (fs fs' : J -> {set I}) (a : forall i : J, C) 
+Lemma tenfmZ (J: finType) (fs fs' : J -> {set I}) (a : forall i : J, C)
   (x: forall i : J, 'F[E]_(fs i, fs' i)) :
     (tenfm (fun i => a i *: x i)) = (\prod_i a i) *: tenfm x.
 Proof.
@@ -1801,7 +1801,7 @@ Qed.
 
 Lemma tenfm_sum (J: finType) (fs fs': J -> {set I}) (K : J -> finType)
   (x: forall i : J, (K i) -> 'F[E]_(fs i, fs' i)) :
-    (tenfm (fun i => \sum_j x i j)) = 
+    (tenfm (fun i => \sum_j x i j)) =
       \sum_(b : mvector (fun i : J => (K i))) tenfm (fun i => x i (b i)).
 Proof. by rewrite tenfm.unlock (mlinear_sum x (@injectf_mlinear _ _ _ _ _)). Qed.
 
@@ -1875,11 +1875,11 @@ Lemma tenf_sumr f J r (P: pred J) (F: J -> 'F[E]_(S', T')) :
  f \⊗ (\sum_(i <- r | P i) F i) = \sum_(i <- r | P i) (f \⊗ F i).
 Proof. exact: linear_sumr. Qed.
 
-Lemma tenf_comp1r W f (h: 'F_(W,S)) : [disjoint S & S'] -> 
+Lemma tenf_comp1r W f (h: 'F_(W,S)) : [disjoint S & S'] ->
   (f \o h) \⊗ (\1: 'F_S') = (f \⊗ \1) \o (h \⊗ \1).
 Proof. by move=>dis; rewrite -tenf_comp// comp_lfun1l. Qed.
 
-Lemma tenf_comp1l W f (h: 'F_(W,S)) : [disjoint S' & S] -> 
+Lemma tenf_comp1l W f (h: 'F_(W,S)) : [disjoint S' & S] ->
   (\1: 'F_S') \⊗ (f \o h) = (\1 \⊗ f) \o (\1 \⊗ h).
 Proof. by move=>dis; rewrite -tenf_comp// comp_lfun1l. Qed.
 
@@ -1890,34 +1890,34 @@ Lemma dot0f g : (0: 'F_(S,T)) \· g = 0.
 Proof. exact: linear0l. Qed.
 
 Lemma dotfDl g f1 f2 : (f1 + f2) \· g = f1 \· g + f2 \· g.
-Proof. exact: linearDl. Qed. 
+Proof. exact: linearDl. Qed.
 
 Lemma dotfDr f g1 g2 : f \· (g1 + g2) = f \· g1 + f \· g2.
-Proof. exact: linearDr. Qed. 
+Proof. exact: linearDr. Qed.
 
 Lemma dotfNl g f : (- f) \· g = - (f \· g).
-Proof. exact: linearNl. Qed. 
+Proof. exact: linearNl. Qed.
 
 Lemma dotfNr f g : f \· (- g) = - (f \· g).
-Proof. exact: linearNr. Qed. 
+Proof. exact: linearNr. Qed.
 
 Lemma dotfZl g c f : (c *: f) \· g = c *: (f \· g).
-Proof. exact: linearZl_LR. Qed. 
+Proof. exact: linearZl_LR. Qed.
 
 Lemma dotfZr f c g : f \· (c *: g) = c *: (f \· g).
-Proof. exact: linearZr. Qed. 
+Proof. exact: linearZr. Qed.
 
 Lemma dotfBl g f1 f2 : (f1 - f2) \· g = f1 \· g - f2 \· g.
-Proof. exact: linearBl. Qed. 
+Proof. exact: linearBl. Qed.
 
 Lemma dotfBr f g1 g2 : f \· (g1 - g2) = f \· g1 - f \· g2.
-Proof. exact: linearBr. Qed. 
+Proof. exact: linearBr. Qed.
 
 Lemma dotfPl g c f1 f2 : (c *: f1 + f2) \· g = c *: (f1 \· g) + (f2 \· g).
-Proof. exact: linearPl. Qed. 
+Proof. exact: linearPl. Qed.
 
 Lemma dotfPr f c g1 g2 : f \· (c *: g1 + g2) = c *: (f \· g1) + (f \· g2).
-Proof. exact: linearPr. Qed. 
+Proof. exact: linearPr. Qed.
 
 Lemma dotfMnl g f n : (f *+ n) \· g = (f \· g) *+ n.
 Proof. exact: linearMnl. Qed.
@@ -1959,34 +1959,34 @@ by rewrite (eq_irrelevance (etrans _ _) (setUDV T S)) castlf1.
 Qed.
 
 Lemma sdotfDl g f1 f2 : (f1 + f2) \O g = f1 \O g + f2 \O g.
-Proof. exact: linearDl. Qed. 
+Proof. exact: linearDl. Qed.
 
 Lemma sdotfDr f g1 g2 : f \O (g1 + g2) = f \O g1 + f \O g2.
-Proof. exact: linearDr. Qed. 
+Proof. exact: linearDr. Qed.
 
 Lemma sdotfNl g f : (- f) \O g = - (f \O g).
-Proof. exact: linearNl. Qed. 
+Proof. exact: linearNl. Qed.
 
 Lemma sdotfNr f g : f \O (- g) = - (f \O g).
-Proof. exact: linearNr. Qed. 
+Proof. exact: linearNr. Qed.
 
 Lemma sdotfZl g c f : (c *: f) \O g = c *: (f \O g).
-Proof. exact: linearZl_LR. Qed. 
+Proof. exact: linearZl_LR. Qed.
 
 Lemma sdotfZr f c g : f \O (c *: g) = c *: (f \O g).
-Proof. exact: linearZr. Qed. 
+Proof. exact: linearZr. Qed.
 
 Lemma sdotfBl g f1 f2 : (f1 - f2) \O g = f1 \O g - f2 \O g.
-Proof. exact: linearBl. Qed. 
+Proof. exact: linearBl. Qed.
 
 Lemma sdotfBr f g1 g2 : f \O (g1 - g2) = f \O g1 - f \O g2.
-Proof. exact: linearBr. Qed. 
+Proof. exact: linearBr. Qed.
 
 Lemma sdotfPl g c f1 f2 : (c *: f1 + f2) \O g = c *: (f1 \O g) + (f2 \O g).
-Proof. exact: linearPl. Qed. 
+Proof. exact: linearPl. Qed.
 
 Lemma sdotfPr f c g1 g2 : f \O (c *: g1 + g2) = c *: (f \O g1) + (f \O g2).
-Proof. exact: linearPr. Qed. 
+Proof. exact: linearPr. Qed.
 
 Lemma sdotfMnl g f n : (f *+ n) \O g = (f \O g) *+ n.
 Proof. exact: linearMnl. Qed.
@@ -2028,9 +2028,9 @@ Definition Hnd_ten (x y : Hnd) : Hnd := (of_Hnd x) ⊗v (of_Hnd y).
 Inductive Fnd := FND (A B : {set I}) & 'F[H]_(A,B).
 Definition to_Fnd A B (f : 'F[H]_(A,B)) := FND f.
 Coercion to_Fnd : hom >-> Fnd.
-Definition tdom (x : Fnd) := let: FND x _ _ := x in x. 
-Definition tcdom (x : Fnd) := let: FND _ x _ := x in x. 
-Definition of_Fnd (x : Fnd) : 'F[H]_(tdom x, tcdom x) := 
+Definition tdom (x : Fnd) := let: FND x _ _ := x in x.
+Definition tcdom (x : Fnd) := let: FND _ x _ := x in x.
+Definition of_Fnd (x : Fnd) : 'F[H]_(tdom x, tcdom x) :=
   let: FND _ _ f := x in f.
 Coercion of_Fnd : Fnd >-> hom.
 
@@ -2138,7 +2138,7 @@ Notation "\tenv_ ( i <- r | P ) F" :=
 Notation "\tenv_ ( i <- r ) F" :=
   (\big[ @Hnd_ten _ _ / to_Hnd (deltav idx0) ]_(i <- r) F%FND) : fnd_scope.
 Notation "\tenv_ ( m <= i < n | P ) F" :=
-  ((\big[ @Hnd_ten _ _ / to_Hnd (deltav idx0) ]_( m%N <= i < n%N | P%B) F%FND)%BIG) 
+  ((\big[ @Hnd_ten _ _ / to_Hnd (deltav idx0) ]_( m%N <= i < n%N | P%B) F%FND)%BIG)
     : fnd_scope.
 Notation "\tenv_ ( m <= i < n ) F" :=
   ((\big[ @Hnd_ten _ _ / to_Hnd (deltav idx0) ]_(m%N <= i < n%N) F%FND)%BIG) : fnd_scope.
@@ -2147,7 +2147,7 @@ Notation "\tenv_ ( i | P ) F" :=
 Notation "\tenv_ i F" :=
   (\big[ @Hnd_ten _ _ / to_Hnd (deltav idx0) ]_i F%FND) : fnd_scope.
 Notation "\tenv_ ( i : t | P ) F" :=
-  (\big[ @Hnd_ten _ _ / to_Hnd (deltav idx0) ]_(i : t | P%B) F%FND) (only parsing) 
+  (\big[ @Hnd_ten _ _ / to_Hnd (deltav idx0) ]_(i : t | P%B) F%FND) (only parsing)
     : fnd_scope.
 Notation "\tenv_ ( i : t ) F" :=
   (\big[ @Hnd_ten _ _ / to_Hnd (deltav idx0) ]_(i : t) F%FND) (only parsing) : fnd_scope.
@@ -2168,7 +2168,7 @@ Notation "\tenf_ ( i <- r | P ) F" :=
 Notation "\tenf_ ( i <- r ) F" :=
   (\big[ @Fnd_ten _ _ / Fnd1 ]_(i <- r) F%FND) : fnd_scope.
 Notation "\tenf_ ( m <= i < n | P ) F" :=
-  ((\big[ @Fnd_ten _ _ / Fnd1 ]_( m%N <= i < n%N | P%B) F%FND)%BIG) 
+  ((\big[ @Fnd_ten _ _ / Fnd1 ]_( m%N <= i < n%N | P%B) F%FND)%BIG)
     : fnd_scope.
 Notation "\tenf_ ( m <= i < n ) F" :=
   ((\big[ @Fnd_ten _ _ / Fnd1 ]_(m%N <= i < n%N) F%FND)%BIG) : fnd_scope.
@@ -2177,7 +2177,7 @@ Notation "\tenf_ ( i | P ) F" :=
 Notation "\tenf_ i F" :=
   (\big[ @Fnd_ten _ _ / Fnd1 ]_i F%FND) : fnd_scope.
 Notation "\tenf_ ( i : t | P ) F" :=
-  (\big[ @Fnd_ten _ _ / Fnd1 ]_(i : t | P%B) F%FND) (only parsing) 
+  (\big[ @Fnd_ten _ _ / Fnd1 ]_(i : t | P%B) F%FND) (only parsing)
     : fnd_scope.
 Notation "\tenf_ ( i : t ) F" :=
   (\big[ @Fnd_ten _ _ / Fnd1 ]_(i : t) F%FND) (only parsing) : fnd_scope.
@@ -2206,7 +2206,7 @@ Proof. by move=>x y Pxy; inversion Pxy; move: H1=>/inj_existT. Qed.
 Lemma eq_Hnd x y (Hd : vdom x = vdom y) :
   casths Hd x = y -> x = y.
 Proof.
-case: x Hd; case: y=> sx x sy y/= Pv; 
+case: x Hd; case: y=> sx x sy y/= Pv;
 by case: sx / Pv x=>x; rewrite casths_id=>->.
 Qed.
 
@@ -2215,8 +2215,8 @@ Proof. by move=>->. Qed.
 
 Lemma eq_Hnd2 x y (Hd : vdom x = vdom y) :
   x = y -> casths Hd x = y.
-Proof. 
-case: x Hd; case: y=> sx x sy y/= Pv; 
+Proof.
+case: x Hd; case: y=> sx x sy y/= Pv;
 by case: sx / Pv x=>x /to_Hnd_inj; rewrite casths_id.
 Qed.
 
@@ -2257,7 +2257,7 @@ Lemma ten1V : left_id (to_Hnd (deltav idx0)) (@Hnd_ten _ H).
 Proof. by move=>v; rewrite tenVC tenV1. Qed.
 HB.instance Definition _ := Monoid.isComLaw.Build _ _ (@Hnd_ten _ H) tenVA tenVC ten1V.
 
-Lemma tenvm_bij_cast (F G : finType) (f : G -> F) (bf : bijective f) 
+Lemma tenvm_bij_cast (F G : finType) (f : G -> F) (bf : bijective f)
   (dt : F -> {set L}) :
     \bigcup_j (dt (f j)) = \bigcup_i (dt i).
 Proof. by rewrite (reindex f)//; move: bf=>[g fK gK]; exists g=>i _; rewrite ?fK ?gK. Qed.
@@ -2273,11 +2273,11 @@ by rewrite /incl/= (eq_irrelevance  (subsetP p2 _ _)
 (subsetP (subset_trans p1 p2) _ (ssrfun.svalP j))).
 Qed.
 
-Lemma idx_incl_id2 (A B : {set L}) (p1 p2 : A :<=: B) (i : 'Idx[H]_B) 
+Lemma idx_incl_id2 (A B : {set L}) (p1 p2 : A :<=: B) (i : 'Idx[H]_B)
   (j : {i : L | i \in A}) : i (incl p1 j) = i (incl p2 j).
 Proof. by rewrite (eq_irrelevance p1 p2). Qed.
 
-Lemma idx_incl_id1 (B : {set L}) (p1 : B :<=: B) (i : 'Idx[H]_B) 
+Lemma idx_incl_id1 (B : {set L}) (p1 : B :<=: B) (i : 'Idx[H]_B)
   (j : {i : L | i \in B}) : i (incl p1 j) = i j.
 Proof. by case: j=>x p; rewrite /incl (eq_irrelevance  (subsetP p1 _ _) p). Qed.
 
@@ -2285,7 +2285,7 @@ Lemma castidxE (B C : {set L}) (eqBC : B = C) (i : 'Idx[H]_B) (j : {i : L | i \i
   castidx eqBC i j = i (incl (incl_cast (esym eqBC)) j).
 Proof. by case: C / eqBC j=>j; rewrite castidx_id; symmetry; exact: idx_incl_id1. Qed.
 
-Lemma tenvm_bij (F G : finType) (f : G -> F) (bf : bijective f) 
+Lemma tenvm_bij (F G : finType) (f : G -> F) (bf : bijective f)
   (dt : F -> {set L})  (u : forall i : F, 'H[H]_(dt i)) :
     tenvm u = casths (tenvm_bij_cast bf dt) (tenvm (fun i => u (f i))).
 Proof.
@@ -2300,7 +2300,7 @@ Lemma eq_bigcup_cast (F : finType) (s t : F -> {set L}) :
   (forall i, s i = t i) -> \bigcup_i (s i) = \bigcup_i (t i).
 Proof. by move=>P; under eq_bigr do rewrite P. Qed.
 
-Lemma tenvm_cast (F : finType) (s t : F -> {set L}) (PC : forall i, s i = t i) 
+Lemma tenvm_cast (F : finType) (s t : F -> {set L}) (PC : forall i, s i = t i)
   (u : forall i, 'H[H]_(s i)) :
     tenvm (fun i => casths (PC i) (u i)) = casths (eq_bigcup_cast PC) (tenvm u).
 Proof.
@@ -2326,7 +2326,7 @@ under [X in tenvm X]functional_extensionality_dep do rewrite PE.
 rewrite tenvm_cast Hnd_cast.
 move: su {PC} u {PE}; clear; set n := #|J|; move: n.
 elim.
-  move=>su u. rewrite [RHS]big_ord0. 
+  move=>su u. rewrite [RHS]big_ord0.
   have P0 : set0 = \bigcup_i (su ~_ i) by rewrite big_ord0.
   suff ->: tenvm u = casths P0 (deltav idx0) by rewrite Hnd_cast.
   by apply/cdvP=>i; rewrite cdv_tm big_ord0 cdv_castV idx0E cdv_dv eqxx.
@@ -2366,7 +2366,7 @@ Proof. by move=>x y Pxy; inversion Pxy; move: H1=>/inj_existT/inj_existT. Qed.
 Lemma eq_Fnd x y (Hd : tdom x = tdom y) (Hcd : tcdom x = tcdom y) :
   castlf (Hd, Hcd) x = y -> x = y.
 Proof.
-by case: x Hd Hcd; case: y=> sx tx x sy ty y/= Pv1 Pv2; 
+by case: x Hd Hcd; case: y=> sx tx x sy ty y/= Pv1 Pv2;
 case: sx / Pv1 x; case: tx / Pv2=>x; rewrite castlf_id=>->.
 Qed.
 
@@ -2377,7 +2377,7 @@ Proof. by case: x; case: y=>/= x1 y1 h1 x2 y2 h2 P; inversion P. Qed.
 Lemma eq_Fnd2 x y (Hd : (tdom x = tdom y) * (tcdom x = tcdom y)) :
   x = y -> castlf Hd x = y.
 Proof.
-by case: x Hd; case: y=> sx tx x sy ty y/= [] Pv1 Pv2; 
+by case: x Hd; case: y=> sx tx x sy ty y/= [] Pv1 Pv2;
 case: sx / Pv1 x; case: tx / Pv2=>x /to_Fnd_inj; rewrite castlf_id.
 Qed.
 
@@ -2455,12 +2455,12 @@ Lemma to_Fnd_sdotE A1 A2 (f1 : 'F[H]_A1) (f2 : 'F[H]_A2) :
   to_Fnd (f1 \O f2) = Fnd_dot f1 f2.
 Proof. by rewrite sdot_lfun.unlock Fnd_cast to_Fnd_dotE. Qed.
 
-Definition to_FndE := (to_Fnd_adjE, to_Fnd_conjE, to_Fnd_trE, to_Fnd_scaleE, 
+Definition to_FndE := (to_Fnd_adjE, to_Fnd_conjE, to_Fnd_trE, to_Fnd_scaleE,
   to_Fnd_oppE, to_Fnd_compE, to_Fnd_sdotE, to_Fnd_dotE, to_Fnd_tenE).
 
 Ltac to_Fnd := try (apply/to_Fnd_inj); rewrite ?(to_FndE, Fnd_cast).
 
-Definition of_FndE := (of_Fnd_adjE, of_Fnd_conjE, of_Fnd_trE, of_Fnd_scaleE, 
+Definition of_FndE := (of_Fnd_adjE, of_Fnd_conjE, of_Fnd_trE, of_Fnd_scaleE,
   of_Fnd_oppE, of_Fnd_dotE, of_Fnd_tenE).
 
 Lemma of_FndKE x y : x = y <-> to_Fnd (of_Fnd x) = to_Fnd (of_Fnd y).
@@ -2481,7 +2481,7 @@ Qed.
 
 Lemma tenF1P A (x : Fnd) : A = set0 -> (x \⊗ (\1 : 'F[H]_A))%FND = x.
 Proof.
-move: x => [] ? ? x ->; 
+move: x => [] ? ? x ->;
 by rewrite of_FndKE !of_FndE !to_FndK -[in RHS](tenf_cast1r x) Fnd_cast.
 Qed.
 Lemma ten1FP A x : A = set0 -> ((\1 : 'F[H]_A) \⊗ x)%FND = x.
@@ -2493,7 +2493,7 @@ Proof. by move=>x; apply/ten1FP. Qed.
 
 HB.instance Definition _ := Monoid.isComLaw.Build _ _ (@Fnd_ten _ H) tenFA tenFC ten1F.
 
-Lemma tenf_cast1l A B (f: 'F[H]_(A,B))  : 
+Lemma tenf_cast1l A B (f: 'F[H]_(A,B))  :
   castlf ((set0U A),(set0U B)) ((\1 : 'F[H]_set0) \⊗ f) = f.
 Proof. by to_Fnd; rewrite tenFC tenF1. Qed.
 
@@ -2507,15 +2507,15 @@ Proof.
 by rewrite -to_Fnd_dotE dot_lfun.unlock; apply/Fnd_compP; rewrite ?Fnd_cast to_FndE setDv tenF1.
 Qed.
 
-Definition to_FndEV := (to_Fnd_adjE, to_Fnd_conjE, to_Fnd_trE, to_Fnd_scaleE, 
+Definition to_FndEV := (to_Fnd_adjE, to_Fnd_conjE, to_Fnd_trE, to_Fnd_scaleE,
   to_Fnd_oppE, dotF_sdot, dotF_comp, to_Fnd_tenE).
 
 Lemma tenF11 A1 A2 : ((\1 : 'F[H]_A1) \⊗ (\1 : 'F[H]_A2))%FND = (\1 : 'F[H]_(A1 :|: A2)).
 Proof. by rewrite -!to_FndEV tenf11. Qed.
 
-Lemma tenfm_bij (F G : finType) (f : G -> F) (bf : bijective f) 
+Lemma tenfm_bij (F G : finType) (f : G -> F) (bf : bijective f)
   (dt cdt : F -> {set I})  (u : forall i : F, 'F[H]_(dt i, cdt i)) :
-    tenfm u = castlf (tenvm_bij_cast bf dt, tenvm_bij_cast bf cdt) 
+    tenfm u = castlf (tenvm_bij_cast bf dt, tenvm_bij_cast bf cdt)
       (tenfm (fun i => u (f i))).
 Proof.
 apply/lfunPD=>i; rewrite castlfE/= deltav_cast !tenfmdv.
@@ -2524,10 +2524,10 @@ rewrite /flatidx !ffunE; apply/idxP=>k.
 rewrite !idxE castidxE incl_comp; exact: idx_incl_id2.
 Qed.
 
-Lemma tenfm_cast (F : finType) (s1 t1 s2 t2 : F -> {set I}) 
-  (PC1 : forall i, s1 i = s2 i) (PC2 : forall i, t1 i = t2 i) 
+Lemma tenfm_cast (F : finType) (s1 t1 s2 t2 : F -> {set I})
+  (PC1 : forall i, s1 i = s2 i) (PC2 : forall i, t1 i = t2 i)
     (u : forall i, 'F[H]_(s1 i, t1 i)) :
-    tenfm (fun i => castlf (PC1 i, PC2 i) (u i)) = 
+    tenfm (fun i => castlf (PC1 i, PC2 i) (u i)) =
       castlf (eq_bigcup_cast PC1, eq_bigcup_cast PC2) (tenfm u).
 Proof.
 move: PC1 PC2 {+}PC1 {+}PC2 u => /funext -> /funext -> PC1 PC2 u; rewrite castlf_id.
@@ -2554,7 +2554,7 @@ under [X in tenfm X]functional_extensionality_dep do rewrite PE.
 rewrite tenfm_cast Fnd_cast.
 move: su tu {PCs PCt} u {PE}; clear; set n := #|J|; move: n.
 elim.
-  move=>su tu u. rewrite [RHS]big_ord0. 
+  move=>su tu u. rewrite [RHS]big_ord0.
   have P0 (s : 0.-tuple {set I}) : set0 = \bigcup_i (s ~_ i) by rewrite big_ord0.
   suff ->: tenfm u = castlf (P0 su, P0 tu) \1 by rewrite Fnd_cast.
   apply/lfunPD=>i; rewrite tenfmdv; apply/cdvP=>j.
@@ -2574,7 +2574,7 @@ under [X in tenfm X]functional_extensionality_dep do rewrite PE.
 rewrite tenfm_cast Fnd_cast. apply: IH.
 Qed.
 
-Lemma dotFE x1 x2 : (x1 \· x2)%FND = 
+Lemma dotFE x1 x2 : (x1 \· x2)%FND =
   ((x1 \⊗ (\1 : 'F_(tcdom x2 :\: tdom x1))) \· (x2 \⊗ (\1 : 'F_(tdom x1 :\: tcdom x2))) )%FND.
 Proof.
 move: x1 x2 => []?? x1 []?? x2.
@@ -2587,22 +2587,22 @@ Lemma dotFA_cond x1 x2 x3 :
 Proof.
 move: x1 x2 x3 => []A1 B1 x1 []A2 B2 x2 []A3 B3 x3/= P1 P2.
 rewrite -!to_FndE dot_lfun.unlock !tenf_comp1r/=; last first.
-rewrite -comp_lfunA !(to_FndE, Fnd_cast) -?tenFA !tenF11; 
+rewrite -comp_lfunA !(to_FndE, Fnd_cast) -?tenFA !tenF11;
 do ! f_equal; apply Fnd_eq1.
 2,4,5: move: P1 P2; setdec.
 all: move: P1 P2; rewrite -!setI_eq0 =>/eqP/setP P1 /eqP/setP P2.
-all: apply/setP=>x; move: (P1 x) (P2 x); 
-rewrite !inE; case: (x \in A1); case: (x \in A2); 
+all: apply/setP=>x; move: (P1 x) (P2 x);
+rewrite !inE; case: (x \in A1); case: (x \in A2);
 case: (x \in B2); case: (x \in B3) => //=; rewrite ?andbF//.
 Qed.
 
 (* f is square *)
 Lemma dotFsA x1 x2 x3 : tdom x2 = tcdom x2 ->
   (x1 \· (x2 \· x3))%FND = (x1 \· x2 \· x3)%FND.
-Proof. by move: x2=>[]/=?? h P; rewrite dotFA_cond//= P disjointXD. Qed.  
+Proof. by move: x2=>[]/=?? h P; rewrite dotFA_cond//= P disjointXD. Qed.
 
 (* f is square *)
-Lemma dotFA A x (f: 'F[H]_A) y : 
+Lemma dotFA A x (f: 'F[H]_A) y :
   (x \· (f \· y))%FND = (x \· f \· y)%FND.
 Proof. by rewrite dotFsA. Qed.
 
@@ -2617,7 +2617,7 @@ rewrite !(to_FndE, Fnd_cast); f_equal; last rewrite tenFC; f_equal;
 by apply Fnd_eq1; apply/setDidPl=>//; rewrite disjoint_sym.
 Qed.
 
-Lemma dotFC x1 x2 : 
+Lemma dotFC x1 x2 :
   [disjoint tdom x1 & tcdom x2] -> [disjoint tcdom x1 & tdom x2] ->
   (x1 \· x2)%FND = (x2 \· x1)%FND.
 Proof. by move=>P1 P2; rewrite !dotFT// 1?tenFC// disjoint_sym. Qed.
@@ -2634,41 +2634,41 @@ Proof. by apply/dot1FP. Qed.
 Lemma dotIFP A B x : A :\: tcdom x = B :\: tcdom x ->
   ((\1 : 'F[H]_A) \· x)%FND = ((\1 : 'F[H]_B) \· x)%FND.
 Proof.
-move=>P; rewrite dotFE [RHS]dotFE !tenF11; do 2 f_equal; 
+move=>P; rewrite dotFE [RHS]dotFE !tenF11; do 2 f_equal;
 by apply Fnd_eq1=>//=; rewrite setUDS P setUDS.
 Qed.
 Lemma dotFIP A B x : A :\: tdom x = B :\: tdom x ->
   (x \· (\1 : 'F[H]_A))%FND = (x \· (\1 : 'F[H]_B))%FND.
 Proof.
-move=>P; rewrite dotFE [RHS]dotFE !tenF11; do 2 f_equal; 
+move=>P; rewrite dotFE [RHS]dotFE !tenF11; do 2 f_equal;
 by apply Fnd_eq1=>//=; rewrite setUDS P setUDS.
 Qed.
 Lemma dotIF A x :
   ((\1 : 'F[H]_A) \· x)%FND = ((\1 : 'F[H]_(A :\: tcdom x)) \· x)%FND.
 Proof. by apply/dotIFP; rewrite setDDl setUid. Qed.
-Lemma dotFI A x : 
+Lemma dotFI A x :
   (x \· (\1 : 'F[H]_A))%FND = (x \· (\1 : 'F[H]_(A :\: tdom x)))%FND.
 Proof. by apply/dotFIP; rewrite setDDl setUid. Qed.
 
 (* using sdot for quantum operation, measurement, etc... *)
-Lemma sdotFA A1 A2 A3 (f: 'F[H]_A1) (g: 'F[H]_A2) (h: 'F[H]_A3) : 
+Lemma sdotFA A1 A2 A3 (f: 'F[H]_A1) (g: 'F[H]_A2) (h: 'F[H]_A3) :
   (f \O (g \O h)) =c ((f \O g) \O h).
-Proof. by rewrite !to_FndE dotFsA. Qed.  
+Proof. by rewrite !to_FndE dotFsA. Qed.
 
 Lemma sdotFT A B (f: 'F[H]_A) (g: 'F[H]_B) :
   [disjoint A & B] -> to_Fnd (f \O g) = (f \⊗ g)%FND.
-Proof. by move=>P; rewrite !to_FndE dotFT. Qed.  
+Proof. by move=>P; rewrite !to_FndE dotFT. Qed.
 
-Lemma sdotFC A B (f: 'F[H]_A) (g: 'F[H]_B) : 
+Lemma sdotFC A B (f: 'F[H]_A) (g: 'F[H]_B) :
   [disjoint A & B] -> (f \O g) =c (g \O f).
-Proof. by move=>P; rewrite !to_FndE dotFC. Qed.  
+Proof. by move=>P; rewrite !to_FndE dotFC. Qed.
 
 Lemma sdotF1P A B (f: 'F[H]_A) : B = set0 ->
   f \O (\1 : 'F[H]_B) =c f.
-Proof. by move=>P; rewrite to_FndE dotF1P. Qed.  
+Proof. by move=>P; rewrite to_FndE dotF1P. Qed.
 Lemma sdot1FP A B (f: 'F[H]_A) : B = set0 ->
   (\1 : 'F[H]_B) \O f =c f.
-Proof. by move=>P; rewrite to_FndE dot1FP. Qed.  
+Proof. by move=>P; rewrite to_FndE dot1FP. Qed.
 Lemma sdotF1 A (f: 'F[H]_A) : f \O (\1 : 'F_set0) =c f.
 Proof. by apply/sdotF1P. Qed.
 Lemma sdot1F A (f: 'F[H]_A) : (\1 : 'F[H]_set0) \O f =c f.
@@ -2682,10 +2682,10 @@ Lemma sdotIFP A B C (f: 'F[H]_A) : B :\: A = C :\: A ->
 Proof. by move=>P; rewrite !to_FndE; apply/dotIFP. Qed.
 Lemma sdotFI A W (f: 'F[H]_A) :
   f \O (\1 : 'F[H]_W) =c f \O (\1 : 'F[H]_(W :\: A)).
-Proof. by apply/sdotFIP; rewrite setDDl setUid. Qed. 
+Proof. by apply/sdotFIP; rewrite setDDl setUid. Qed.
 Lemma sdotIF A W (f: 'F[H]_A) :
   (\1 : 'F[H]_W) \O f =c (\1 : 'F[H]_(W :\: A)) \O f.
-Proof. by apply/sdotIFP; rewrite setDDl setUid. Qed. 
+Proof. by apply/sdotIFP; rewrite setDDl setUid. Qed.
 
 Lemma sdotFIC A W (f: 'F[H]_A) :
   f \O (\1 : 'F[H]_W) =c (\1 : 'F[H]_W) \O f.
@@ -2693,7 +2693,7 @@ Proof. by rewrite sdotFI sdotFC -?sdotIF// disjointXD. Qed.
 
 Lemma sdotIFT A W (f: 'F[H]_A) :
   to_Fnd ((\1 : 'F[H]_W) \O f) = ((\1 : 'F[H]_(W :\: A)) \⊗ f)%FND.
-Proof. by rewrite sdotIF sdotFT// disjointDX. Qed. 
+Proof. by rewrite sdotIF sdotFT// disjointDX. Qed.
 
 Lemma sdotFIT A W (f: 'F[H]_A) :
   to_Fnd (f \O (\1 : 'F[H]_W)) = (f \⊗ (\1 : 'F[H]_(W :\: A)))%FND.
@@ -2701,7 +2701,7 @@ Proof. by rewrite sdotFI sdotFT// disjointXD. Qed.
 
 Lemma sdotF_comp A (f: 'F[H]_A) (g: 'F[H]_A) :
   f \O g =c f \o g.
-Proof. by rewrite !to_FndE. Qed.  
+Proof. by rewrite !to_FndE. Qed.
 
 End NonDepLfun.
 
@@ -2775,12 +2775,12 @@ Notation "''NS[' H ]_ ( S )" := ('NS[H]_S)    (only parsing) : type_scope.
 Notation "''NS_' S"  := ('NS[_]_S) : type_scope.
 Notation "''NS_' ( S )" := ('NS_S) (only parsing) : type_scope.
 
-Notation "''TN[' H ]_ ( F ; S , T )" := ('TN(F ; 'H[H]_S , 'H[H]_T)) 
+Notation "''TN[' H ]_ ( F ; S , T )" := ('TN(F ; 'H[H]_S , 'H[H]_T))
   (only parsing): type_scope.
 Notation "''TN[' H ]_ ( F ; S )" := ('TN[H]_(F;S,S)) (only parsing): type_scope.
 Notation "''TN_' ( F ; S , T )" := ('TN[_]_(F;S,T)) : type_scope.
 Notation "''TN_' ( F ; S )" := ('TN[_]_(F;S)) : type_scope.
-Notation "''QM[' H ]_ ( F ; S , T )" := ('QM(F ; 'H[H]_S , 'H[H]_T)) 
+Notation "''QM[' H ]_ ( F ; S , T )" := ('QM(F ; 'H[H]_S , 'H[H]_T))
   (only parsing): type_scope.
 Notation "''QM[' H ]_ ( F ; S )" := ('QM[H]_(F;S,S)) (only parsing): type_scope.
 Notation "''QM_' ( F ; S , T )" := ('QM[_]_(F;S,T)) : type_scope.
@@ -2847,21 +2847,21 @@ Context {L: finType} (H: L -> chsType).
 Implicit Type (S T : {set L}).
 
 Lemma trlf_deltavl S T (f : 'F[H]_S) (g : 'F_T) (i j : 'Idx[H]_(S :|: T)) :
-  \Tr ([>deltav i ; deltav j <] \o (f \⊗ g)) = 
+  \Tr ([>deltav i ; deltav j <] \o (f \⊗ g)) =
   \Tr ([>deltav (idxSl i) ; deltav (idxSl j) <] \o f) *
   \Tr ([>deltav (idxSr i) ; deltav (idxSr j) <] \o g).
 Proof. by rewrite !outp_compl !outp_trlf !adj_dotEl -tenf_dv -!cdvE cdvT. Qed.
 
 Lemma trlf_introdvr S T (f1 f2: 'F[H]_(S,T)) :
-  (forall i j, \Tr (f1 \o [>deltav i ; deltav j <]) = 
+  (forall i j, \Tr (f1 \o [>deltav i ; deltav j <]) =
     \Tr (f2 \o [>deltav i ; deltav j <])) <-> (f1 = f2).
 Proof.
-split=>[P|->//]; apply/lfunPD=>i; apply/cdvP=>j. 
+split=>[P|->//]; apply/lfunPD=>i; apply/cdvP=>j.
 by rewrite !cdv.unlock -!outp_trlf -!outp_compr P.
 Qed.
 
 Lemma trlf_introdvl S T (f1 f2: 'F[H]_(S,T)) :
-  (forall i j, \Tr ([>deltav i ; deltav j <] \o f1) = 
+  (forall i j, \Tr ([>deltav i ; deltav j <] \o f1) =
     \Tr ([>deltav i ; deltav j <] \o f2)) <-> (f1 = f2).
 Proof.
 rewrite -trlf_introdvr; split=>P i j; move: (P i j);
@@ -2896,11 +2896,11 @@ Lemma ltf_cast_symV S S' (eqS : S' = S) (f : 'F[H]_S) (g : 'F[H]_S'):
   f ⊏ castlf (eqS,eqS) g = (castlf (esym eqS, esym eqS) f ⊏ g).
 Proof. by case: S / eqS f; rewrite !castlf_id. Qed.
 
-Lemma castlf_le1 S S' (eqS: S = S') (f : 'F[H]_S) : 
+Lemma castlf_le1 S S' (eqS: S = S') (f : 'F[H]_S) :
   castlf (eqS,eqS) f ⊑ \1 = (f ⊑ \1).
 Proof. by case: S' / eqS; rewrite castlf_id. Qed.
 
-Lemma castlf_ge0 S S' (eqS: S = S') (f : 'F[H]_S) : 
+Lemma castlf_ge0 S S' (eqS: S = S') (f : 'F[H]_S) :
   (0 : 'F[H]_S') ⊑ castlf (eqS,eqS) f = ((0 : 'F[H]_S)  ⊑ f).
 Proof. by case: S' / eqS; rewrite castlf_id. Qed.
 
@@ -2914,9 +2914,9 @@ Qed.
 Lemma tenf_eq0 S T (dis : [disjoint S & T]) (f : 'F[H]_S) (g : 'F[H]_T) :
   f \⊗ g == 0 = (f == 0) || (g == 0).
 Proof.
-apply/Coq.Bool.Bool.eq_iff_eq_true; split.
+apply/Stdlib.Bool.Bool.eq_iff_eq_true; split.
 move=>/eqP/lfunP P1. case: eqP=>//=; move=>/eqP/lfun_neq0P[v /negPf Pv].
-apply/eqP/lfunP=>x; apply/intro_dotl=>y; 
+apply/eqP/lfunP=>x; apply/intro_dotl=>y;
 move: (P1 (tenv v x))=>/intro_dotl/(_ (tenv (f v) y))/eqP.
 by rewrite tenf_apply// tenv_dot// !lfunE/= !linear0 mulf_eq0 Pv/==>/eqP.
 by move=>/orP[/eqP->|/eqP->]; rewrite ?linear0l ?linear0r eqxx.
@@ -2926,7 +2926,7 @@ Lemma ptenf_rge0 S T (dis : [disjoint S & T]) (x : 'F[H]_S) (y : 'F[H]_T) :
   (0 : 'F__) ⊏ x -> ((0 : 'F__) ⊑ x \⊗ y) = ((0 : 'F__) ⊑ y).
 Proof.
 move=>/gtf0_pdP[xge0 [v Pv]].
-apply/Coq.Bool.Bool.eq_iff_eq_true; split; last by apply: tenf_ge0=>//.
+apply/Stdlib.Bool.Bool.eq_iff_eq_true; split; last by apply: tenf_ge0=>//.
 move/lef_dot=>P1. apply/lef_dot=>u.
 move: (P1 (tenv v u)).
 by rewrite !tenf_apply// tenv_dot// !lfunE/= !linear0 pmulr_rge0.
@@ -2938,8 +2938,8 @@ Proof.
 by move=>Q; rewrite -tenf_castC lef_cast_symV linear0 ptenf_rge0// disjoint_sym.
 Qed.
 
-HB.instance Definition _ S T dis := isBRegVOrder.Build C 'F[H]_S 'F_T 
-  'F_(S :|: T) (@ten_lfun L H S S T T) (linearBl _) (linearBr _) 
+HB.instance Definition _ S T dis := isBRegVOrder.Build C 'F[H]_S 'F_T
+  'F_(S :|: T) (@ten_lfun L H S S T T) (linearBl _) (linearBr _)
     (@tenf_eq0 S T dis) (ptenf_rge0 dis) (ptenf_lge0 dis).
 
 Lemma ptenf_rgt0 S T (dis : [disjoint S & T]) (x : 'F[H]_S) (y : 'F[H]_T) :
@@ -2961,11 +2961,11 @@ Proof. by move=>p1; apply: (lev_wpbreg2l _ p1). Qed.
 
 End LownerorderTensorLfun.
 
-HB.lock Definition tenso_fun {L : finType} {H : L -> chsType} [S T S' T'] 
+HB.lock Definition tenso_fun {L : finType} {H : L -> chsType} [S T S' T']
   (E : 'SO[H]_(S,T)) (F : 'SO_(S',T')) (x : 'F_(S :|: S')) : 'F_(T :|: T') :=
   \sum_(i : 'Idx_(S :|: S')) \sum_(j : 'Idx_(S :|: S')) (
-    [< deltav i ; x (deltav j) >] *: 
-    ( E [> (deltav (idxSl i)) ; (deltav (idxSl j)) <] \⊗ 
+    [< deltav i ; x (deltav j) >] *:
+    ( E [> (deltav (idxSl i)) ; (deltav (idxSl j)) <] \⊗
       F [> (deltav (idxSr i)) ; (deltav (idxSr j)) <] )).
 
 Lemma tenso_fun_is_linear {L : finType} {H : L -> chsType} [S T S' T']
@@ -2977,7 +2977,7 @@ by rewrite lfunE/= lfunE/= linearP/= scalerA -scalerDl.
 Qed.
 HB.instance Definition _ L H S T S' T' E F := GRing.isLinear.Build C 'F_(S :|: S')
   'F_(T :|: T') *:%R (tenso_fun E F) (@tenso_fun_is_linear L H S T S' T' E F).
-Definition tenso {L H} [S T S' T'] E F := Superop (linfun (@tenso_fun L H S T S' T' E F)). 
+Definition tenso {L H} [S T S' T'] E F := Superop (linfun (@tenso_fun L H S T S' T' E F)).
 
 Notation "f :⊗ g" := (tenso f g) : lfun_scope.
 
@@ -2986,9 +2986,9 @@ Context {L : finType} (H : L -> chsType).
 Implicit Type (S T: {set L}).
 
 Lemma tensodf S T S' T' (E : 'SO[H]_(S,T)) (F : 'SO[H]_(S',T')) i j :
-  E [> (deltav (idxSl i)) ; (deltav (idxSl j)) <] \⊗ 
+  E [> (deltav (idxSl i)) ; (deltav (idxSl j)) <] \⊗
   F [> (deltav (idxSr i)) ; (deltav (idxSr j)) <]
-  = (E :⊗ F) [> deltav i ; deltav j <]. 
+  = (E :⊗ F) [> deltav i ; deltav j <].
 Proof.
 rewrite /tenso/=/fun_of_superof/= lfunE/= tenso_fun.unlock.
 rewrite (bigD1 i)//= (bigD1 j)//= !big1=>[k/negPf nk|k/negPf nk|].
@@ -2997,7 +2997,7 @@ all: rewrite outpE linearZ/= !onb_dot ?nk 1?eq_sym ?nk ?mul0r ?mulr0 ?scale0r//.
 by rewrite !eqxx mulr1 scale1r !addr0.
 Qed.
 
-Lemma tenso_correct S T S' T' (E : 'SO[H]_(S,T)) (F : 'SO[H]_(S',T')) : 
+Lemma tenso_correct S T S' T' (E : 'SO[H]_(S,T)) (F : 'SO[H]_(S',T')) :
   [disjoint S & S'] ->
   forall (u : 'F_S) (v : 'F_S'), (E u) \⊗ (F v) = (tenso E F) (u \⊗ v).
 Proof.
@@ -3012,8 +3012,8 @@ rewrite 5 !linearZ/=; f_equal; rewrite 2 !linearZl_LR linearZ/=; congr (_ *: _).
 by rewrite tenf_outp !dv_tensor//= -tensodf !idxSUl//= !idxSUr//=.
 Qed.
 
-Lemma superopPD S T (A B : 'SO[H]_(S,T)) : 
-  (forall (i j : 'Idx_S), A [> deltav i ; deltav j <] = 
+Lemma superopPD S T (A B : 'SO[H]_(S,T)) :
+  (forall (i j : 'Idx_S), A [> deltav i ; deltav j <] =
     B [> deltav i ; deltav j <]) <-> A = B.
 Proof.
 split=>[P|->//]; apply/superopP=>x; rewrite (onb_lfun2id deltav x).
@@ -3037,7 +3037,7 @@ HB.instance Definition _ S T S' T' := bilinear_isBilinear.Build C 'SO[H]_(S,T)
   'SO_(S',T') 'SO_(S :|: S', T :|: T') *:%R *:%R
     (@tenso L H S T S' T') (@linear_tensor S T S' T', @linear_tenso S T S' T').
 
-Lemma tenso_comp S T S' T' W W' (f1: 'SO[H]_(S,T)) (f2: 'SO[H]_(W,S)) 
+Lemma tenso_comp S T S' T' W W' (f1: 'SO[H]_(S,T)) (f2: 'SO[H]_(W,S))
   (g1: 'SO[H]_(S',T')) (g2: 'SO[H]_(W',S')) : [disjoint S & S'] ->
   (f1 :o f2) :⊗ (g1 :o g2) = (f1 :⊗ g1) :o (f2 :⊗ g2).
 Proof.
@@ -3045,7 +3045,7 @@ move=>dis; apply/superopPD=>i j.
 by rewrite comp_soE -!tensodf !comp_soE -tenso_correct.
 Qed.
 
-Lemma tenso_compr S T S' T' W W' (f1: 'SO[H]_(S,T)) (f2: 'SO[H]_(T,W)) 
+Lemma tenso_compr S T S' T' W W' (f1: 'SO[H]_(S,T)) (f2: 'SO[H]_(T,W))
   (g1: 'SO[H]_(S',T')) (g2: 'SO[H]_(T',W')) : [disjoint T & T'] ->
   (f1 o: f2) :⊗ (g1 o: g2) = (f1 :⊗ g1) o: (f2 :⊗ g2).
 Proof. by move=>dis; rewrite !comp_soErl tenso_comp. Qed.
@@ -3124,19 +3124,19 @@ Lemma tenso_sumr f I r (P: pred I) (E: I -> 'SO[H]_(S', T')) :
  f :⊗ (\sum_(i <- r | P i) E i) = \sum_(i <- r | P i) (f :⊗ E i).
 Proof. exact: linear_sumr. Qed.
 
-Lemma tenso_comp1r W f (h: 'SO[H]_(W,S)) : [disjoint S & S'] -> 
+Lemma tenso_comp1r W f (h: 'SO[H]_(W,S)) : [disjoint S & S'] ->
   (f :o h) :⊗ (\:1 : 'SO[H]_S') = (f :⊗ \:1) :o (h :⊗ \:1).
 Proof. by move=>dis; rewrite -tenso_comp ?comp_so1l//. Qed.
 
-Lemma tenso_comp1l W f (h: 'SO[H]_(W,S)) : [disjoint S' & S] -> 
+Lemma tenso_comp1l W f (h: 'SO[H]_(W,S)) : [disjoint S' & S] ->
   (\:1 : 'SO[H]_S') :⊗ (f :o h) = (\:1 :⊗ f) :o (\:1 :⊗ h).
 Proof. by move=>dis; rewrite -tenso_comp ?comp_so1l//. Qed.
 
-Lemma tenso_compr1r W f (h: 'SO[H]_(T,W)) : [disjoint T & T'] -> 
+Lemma tenso_compr1r W f (h: 'SO[H]_(T,W)) : [disjoint T & T'] ->
   (f o: h) :⊗ (\:1 : 'SO[H]_T') = (f :⊗ \:1) o: (h :⊗ \:1).
 Proof. by move=>dis; rewrite -tenso_compr ?comp_sor1l//. Qed.
 
-Lemma tenso_compr1l W f (h: 'SO[H]_(T,W)) : [disjoint T' & T] -> 
+Lemma tenso_compr1l W f (h: 'SO[H]_(T,W)) : [disjoint T' & T] ->
   (\:1 : 'SO[H]_T') :⊗ (f o: h) = (\:1 :⊗ f) o: (\:1 :⊗ h).
 Proof. by move=>dis; rewrite -tenso_compr ?comp_sor1l//. Qed.
 
@@ -3146,7 +3146,7 @@ Section CastSO.
 Context {L : finType} (H : L -> chsType).
 Implicit Type (S T : {set L}).
 
-Definition castso S T S' T' (eqST : (S = S') * (T = T')) (f : 'SO[H]_(S,T)) : 
+Definition castso S T S' T' (eqST : (S = S') * (T = T')) (f : 'SO[H]_(S,T)) :
   'SO[H]_(S',T') :=
   let: erefl in _ = T' := eqST.2 return 'SO[H]_(S',T') in
     let: erefl in _ = S' := eqST.1 return 'SO[H]_(S',T) in f.
@@ -3156,7 +3156,7 @@ Proof. by case: erefl_ST => e_S e_T; rewrite [e_S]eq_axiomK [e_T]eq_axiomK. Qed.
 
 Lemma castsoE S T S' T' (eqST : (S = S') * (T = T')) (f : 'SO[H]_(S,T)) u :
   castso eqST f u = castlf (eqST.2,eqST.2) (f (castlf (esym eqST.1,esym eqST.1) u)).
-Proof. 
+Proof.
 by do [case: eqST; case: S' /; case: T' /] in f u *; rewrite !castlf_id castso_id.
 Qed.
 
@@ -3185,44 +3185,44 @@ Lemma castso_symV S1 T1 S2 T2 (eq_S : S1 = S2) (eq_T : T1 = T2) A1 A2 :
   A2 = castso (esym eq_S, esym eq_T) A1 -> A1 = castso (eq_S, eq_T) A2.
 Proof. by move/(canLR (castsoKV _ _)). Qed.
 
-Lemma castso_is_linear S T S' T' (eqST : (S = S') * (T = T')) : 
+Lemma castso_is_linear S T S' T' (eqST : (S = S') * (T = T')) :
   linear (@castso _ _ _ _ eqST).
-Proof. 
+Proof.
 move=>a f g; case: eqST => eqS eqT; case: S' / eqS; case: T' / eqT.
 by rewrite !castso_id.
 Qed.
 HB.instance Definition _ S T S' T' eqST := GRing.isLinear.Build C 'SO[H]_(S,T)
   'SO_(S',T') *:%R (castso eqST) (@castso_is_linear S T S' T' eqST).
 
-Lemma castso_compl S T S' T' (eqST: S = T') (f: 'SO[H]_(S,T)) 
+Lemma castso_compl S T S' T' (eqST: S = T') (f: 'SO[H]_(S,T))
   (g: 'SO[H]_(S',T')) :
   castso (eqST, erefl _) f :o g = f :o castso (erefl _, esym eqST) g.
 Proof.
 by move: f g; case: T' / eqST => f g; rewrite !castso_id.
 Qed.
 
-Lemma castso_complV S T S' T' (eqST: T' = S) (f: 'SO[H]_(S,T)) 
+Lemma castso_complV S T S' T' (eqST: T' = S) (f: 'SO[H]_(S,T))
   (g: 'SO[H]_(S',T')) :
   f :o castso (erefl _, eqST) g = castso (esym eqST, erefl _) f :o g.
 Proof.
 by move: f g; case: S / eqST => f g; rewrite !castso_id.
 Qed.
 
-Lemma castso_compr S T S' T' (eqST: T = S') (f: 'SO[H]_(S,T)) 
+Lemma castso_compr S T S' T' (eqST: T = S') (f: 'SO[H]_(S,T))
   (g: 'SO[H]_(S',T')) :
   castso (erefl _, eqST) f o: g = f o: castso (esym eqST, erefl _) g.
 Proof.
 by move: f g; case: S' / eqST => f g; rewrite !castso_id.
 Qed.
 
-Lemma castso_comprV S T S' T' (eqST: S' = T) (f: 'SO[H]_(S,T)) 
+Lemma castso_comprV S T S' T' (eqST: S' = T) (f: 'SO[H]_(S,T))
   (g: 'SO[H]_(S',T')) :
   f o: castso (eqST, erefl _) g = castso (erefl _, esym eqST) f o: g.
 Proof.
 by move: f g; case: T / eqST => f g; rewrite !castso_id.
 Qed.
 
-Lemma compso_cast S W T S' W' T' (A : 'SO[H]_(W,T)) (B : 'SO[H]_(S,W)) 
+Lemma compso_cast S W T S' W' T' (A : 'SO[H]_(W,T)) (B : 'SO[H]_(S,W))
   (eqW : W = W') (eqT: T = T') (eqS: S = S') :
     castso (eqW,eqT) A :o castso (eqS,eqW) B = castso (eqS,eqT) (A :o B).
 Proof. by case: W' / eqW; case: T' /eqT; case: S' /eqS; rewrite !castso_id. Qed.
@@ -3235,7 +3235,7 @@ Lemma compso_castr S W T S' (A : 'SO[H]_(W,T)) (B : 'SO[H]_(S,W)) (eqS: S = S') 
     A :o castso (eqS,erefl) B = castso (eqS,erefl) (A :o B).
 Proof. by case: S' /eqS; rewrite !castso_id. Qed.
 
-Lemma castso_dual S T S' T' (eqST : (S = S') * (T = T')) (f: 'SO[H]_(S,T)) : 
+Lemma castso_dual S T S' T' (eqST : (S = S') * (T = T')) (f: 'SO[H]_(S,T)) :
   (castso eqST f)^*o = castso (eqST.2,eqST.1) f^*o.
 Proof.
 by do [case: eqST; case: S' /; case: T' /] in f *; rewrite !castso_id.
@@ -3273,11 +3273,11 @@ Proof. by case: eqST => eq1 eq2; case: S / eq1 E; case: T / eq2=>E; rewrite !cas
 
 End CastSO.
 
-HB.lock Definition ptraceso_fun {L : finType} {H : L -> chsType} 
+HB.lock Definition ptraceso_fun {L : finType} {H : L -> chsType}
   T [S] (x : 'F[H]_S) : 'F[H]_(S :\: T) :=
     \sum_(k : 'Idx[H]_(S :&: T))
     \sum_(i : 'Idx[H]_(S :\: T)) \sum_(j : 'Idx[H]_(S :\: T))
-    ([< deltav (idxU k i); castlf (esym (setID S T), esym (setID S T)) x (deltav (idxU k j)) >] 
+    ([< deltav (idxU k i); castlf (esym (setID S T), esym (setID S T)) x (deltav (idxU k j)) >]
      *: [>deltav i ; deltav j <]).
 Lemma ptraceso_fun_is_linear L H T S : linear (@ptraceso_fun L H T S).
 Proof.
@@ -3297,29 +3297,29 @@ Context {L : finType} (H : L -> chsType).
 Implicit Type (S T W : {set L}).
 
 Lemma ptraceso_krausso T S : @ptraceso L H T S =
-  krausso (fun i : 'Idx[H]_(S :&: T) => castlf ((setID _ _), set0U _) 
+  krausso (fun i : 'Idx[H]_(S :&: T) => castlf ((setID _ _), set0U _)
     ([> deltav idx0; deltav i <] \⊗ (\1 : 'F_(S :\: T)))).
 Proof.
 move: (disjointID S T)=>dis; apply/superopPD=>i j.
 rewrite /ptraceso{1}/fun_of_superof/= lfunE/= ptraceso_fun.unlock soE.
 apply eq_bigr=>k _.
-rewrite (bigD1 (idxSr (castidx (esym (setID S T)) i)))//= 
+rewrite (bigD1 (idxSr (castidx (esym (setID S T)) i)))//=
   (bigD1 (idxSr (castidx (esym (setID S T)) j)))//= !big1=>[i0/negPf ni|i0/negPf ni|].
 2: rewrite big1// =>j0 _.
 all: rewrite castlf_outp/= !deltav_cast outpE linearZ/= !dv_split
   !idxSUl// !idxSUr// !tenv_dot// !onb_dot.
 1,2: by rewrite ?ni ?[_==i0]eq_sym ?ni ?(mulr0,mul0r) scale0r.
 rewrite !eqxx !mulr1 !addr0 castlf_adj/= tenf_adj adjf1 adj_outp.
-rewrite castlf_complfr [X in X \o _](castlf_complf erefl) castlf_id castlf_complfl 
+rewrite castlf_complfr [X in X \o _](castlf_complf erefl) castlf_id castlf_complfl
   castlf_comp etrans_erefl etrans_ereflV castlf_outp !deltav_cast.
-rewrite !dv_split -tenf_outp castlf_complfl castlf_id -!tenf_comp// 
+rewrite !dv_split -tenf_outp castlf_complfl castlf_id -!tenf_comp//
   comp_lfun1l comp_lfun1r outp_comp linearZl_LR/= outp_comp !dv_dot scalerA mulrC linearZl_LR !linearZ outp_dv0/=.
 by to_Fnd; rewrite ten1F.
 Qed.
 
 Lemma ptraceso_qc T S : @ptraceso L H T S \is cptp.
 Proof.
-apply/cptpP; split; first by rewrite ptraceso_krausso is_cpmap. 
+apply/cptpP; split; first by rewrite ptraceso_krausso is_cpmap.
 move: (disjointID S T)=>dis; apply/tpmapP=>x.
 rewrite (castlf_trlf (esym (setID S T)) x) [X in _ = \Tr X](onb_lfun2id deltav).
 rewrite /ptraceso {1}/fun_of_superof/= lfunE/= ptraceso_fun.unlock.
@@ -3335,13 +3335,13 @@ Qed.
 HB.instance Definition _ T S := isQChannel.Build
   'H[H]_S 'H_(S :\: T) (ptraceso T) (@ptraceso_qc T S).
 
-Lemma castso_krausso S T S' T' (eqST : (S = S') * (T = T')) (F : finType) 
+Lemma castso_krausso S T S' T' (eqST : (S = S') * (T = T')) (F : finType)
   (f : F -> 'F[H]_(S,T)) :
   castso eqST (krausso f) = krausso (fun i=> castlf eqST (f i)).
 Proof. by case: eqST=>eqS eqT; case: S' / eqS; case: T' /eqT. Qed.
 
-Lemma ptraceso_comp T W S : 
-  @ptraceso L H T _ :o @ptraceso L H W S = 
+Lemma ptraceso_comp T W S :
+  @ptraceso L H T _ :o @ptraceso L H W S =
     castso (erefl _, esym (setDDl _ _ _)) (@ptraceso L H (W :|: T) S).
 Proof.
 rewrite !ptraceso_krausso comp_krausso castso_krausso.
@@ -3350,11 +3350,11 @@ suff P2 : [disjoint (S :\: W) :&: T & S :&: W].
 pose h (i : 'Idx[H]__) := (idxSl (castidx (esym P1) i), idxSr (castidx (esym P1) i)).
 pose g i := castidx P1 (idxU i.1 i.2 : 'Idx[H]__).
 have hK : cancel h g by move=>x; rewrite /h /g/= idxUS// castidx_comp castidx_id.
-have gK : cancel g h by move=>x; rewrite /h /g/= castidx_comp castidx_id 
+have gK : cancel g h by move=>x; rewrite /h /g/= castidx_comp castidx_id
   idxSUl// idxSUr// -surjective_pairing.
 have bh : bijective h by exists g.
 apply: (krausso_reindex bh)=>i/=.
-rewrite -{3}[ i](castidxKV P1) -{3}[idx0](castidxKV (setU0 _)) -deltav_cast 
+rewrite -{3}[ i](castidxKV P1) -{3}[idx0](castidxKV (setU0 _)) -deltav_cast
   dv_split -deltav_cast dv_split -castlf_outp -tenf_outp.
 to_Fnd; rewrite !idx0E -tenFA -[RHS]dotFT/=;
 last (rewrite [RHS]dotFE -tenFA tenF11; do ! f_equal; apply Fnd_eq1=>/=).
@@ -3367,7 +3367,7 @@ Section SOTensorTheory.
 Context {L : finType} (H : L -> chsType).
 Implicit Type (S T W : {set L}).
 
-Lemma tenso_krausso S T S' T' (dis : [disjoint S & S']) (F G : finType) 
+Lemma tenso_krausso S T S' T' (dis : [disjoint S & S']) (F G : finType)
   (f : F -> 'F[H]_(S,T)) (g : G -> 'F[H]_(S',T')) :
   krausso f :⊗ krausso g = krausso (fun i : F * G => f i.1 \⊗ g i.2).
 Proof.
@@ -3377,7 +3377,7 @@ rewrite pair_big/=; apply eq_bigr=>[[m n]] _/=.
 by rewrite !tenf_comp// tenf_outp tenf_adj !dv_split.
 Qed.
 
-Lemma tenso_krausso_formso S T S' T' (dis : [disjoint S & S']) (F : finType) 
+Lemma tenso_krausso_formso S T S' T' (dis : [disjoint S & S']) (F : finType)
   (f : F -> 'F[H]_(S,T)) (g : 'F[H]_(S',T')) :
   krausso f :⊗ formso g = krausso (fun i : F => f i \⊗ g).
 Proof.
@@ -3387,7 +3387,7 @@ by exists (fun i=>i.1)=>x//=; case: x=>a b; rewrite ord1/=.
 by apply: (krausso_reindex bh).
 Qed.
 
-Lemma tenso_formso_krausso S T S' T' (dis : [disjoint S & S']) (F : finType) 
+Lemma tenso_formso_krausso S T S' T' (dis : [disjoint S & S']) (F : finType)
   (g : 'F[H]_(S,T)) (f : F -> 'F[H]_(S',T')) :
   formso g :⊗ krausso f = krausso (fun i : F => g \⊗ f i).
 Proof.
@@ -3405,7 +3405,7 @@ by rewrite -tensodf !soE !tenf_comp// tenf_outp tenf_adj !dv_split.
 Qed.
 
 Definition lift_lf S T (sub : S :<=: T) (f : 'F[H]_S) : 'F[H]_T :=
-  castlf (setUD_sub sub, setUD_sub sub) (f \⊗ (\1 : 'F[H]_(T :\: S))). 
+  castlf (setUD_sub sub, setUD_sub sub) (f \⊗ (\1 : 'F[H]_(T :\: S))).
 
 Definition liftso S T (sub : S :<=: T) (E : 'SO[H]_S) : 'SO[H]_T :=
   castso (setUD_sub sub, setUD_sub sub) (E :⊗ (\:1 : 'SO[H]_(T :\: S))).
@@ -3419,7 +3419,7 @@ Proof. by case: eqST => eqS eqT; case: S' / eqS; case: T' / eqT; rewrite castso_
 Lemma castso_cp S T S' T' (eqST : (S = S') * (T = T')) (E: 'CP[H]_(S,T)) :
   castso eqST E \is cpmap.
 Proof. by rewrite castso_cpE is_cpmap. Qed.
-HB.instance Definition _ S T S' T' eqST (E: 'CP[H]_(S,T)) := isCPMap.Build 
+HB.instance Definition _ S T S' T' eqST (E: 'CP[H]_(S,T)) := isCPMap.Build
   'H_S' 'H_T' (castso eqST E) (@castso_cp S T S' T' eqST E).
 
 Lemma castso_tnE S T S' T' (eqST : (S = S') * (T = T')) (E: 'SO[H]_(S,T)) :
@@ -3428,7 +3428,7 @@ Proof. by case: eqST => eqS eqT; case: S' / eqS; case: T' / eqT; rewrite castso_
 Lemma castso_tn S T S' T' (eqST : (S = S') * (T = T')) (E: 'QO[H]_(S,T)) :
   castso eqST E \is tnmap.
 Proof. by rewrite castso_tnE is_tnmap. Qed.
-HB.instance Definition _ S T S' T' eqST (E: 'QO[H]_(S,T)) := CPMap_isTNMap.Build 
+HB.instance Definition _ S T S' T' eqST (E: 'QO[H]_(S,T)) := CPMap_isTNMap.Build
   'H_S' 'H_T' (castso eqST E) (@castso_tn S T S' T' eqST E).
 
 Lemma castso_tpE S T S' T' (eqST : (S = S') * (T = T')) (E: 'SO[H]_(S,T)) :
@@ -3437,7 +3437,7 @@ Proof. by case: eqST => eqS eqT; case: S' / eqS; case: T' / eqT; rewrite castso_
 Lemma castso_tp S T S' T' (eqST : (S = S') * (T = T')) (E: 'QC[H]_(S,T)) :
   castso eqST E \is tpmap.
 Proof. by rewrite castso_tpE is_tpmap. Qed.
-HB.instance Definition _ S T S' T' eqST (E: 'QC[H]_(S,T)) := QOperation_isTPMap.Build 
+HB.instance Definition _ S T S' T' eqST (E: 'QC[H]_(S,T)) := QOperation_isTPMap.Build
   'H_S' 'H_T' (castso eqST E) (@castso_tp S T S' T' eqST E).
 
 Lemma castso_dualtnE S T S' T' (eqST : (S = S') * (T = T')) (E: 'SO[H]_(S,T)) :
@@ -3446,7 +3446,7 @@ Proof. by case: eqST => eqS eqT; case: S' / eqS; case: T' / eqT; rewrite castso_
 Lemma castso_dualtn S T S' T' (eqST : (S = S') * (T = T')) (E: 'DQO[H]_(S,T)) :
   (castso eqST E)^*o \is tnmap.
 Proof. by rewrite castso_dualtnE is_dualtn. Qed.
-HB.instance Definition _ S T S' T' eqST (E: 'DQO[H]_(S,T)) := CPMap_isDTNMap.Build 
+HB.instance Definition _ S T S' T' eqST (E: 'DQO[H]_(S,T)) := CPMap_isDTNMap.Build
   'H_S' 'H_T' (castso eqST E) (@castso_dualtn S T S' T' eqST E).
 
 Lemma castso_dualtpE S T S' T' (eqST : (S = S') * (T = T')) (E: 'SO[H]_(S,T)) :
@@ -3455,14 +3455,14 @@ Proof. by case: eqST => eqS eqT; case: S' / eqS; case: T' / eqT; rewrite castso_
 Lemma castso_dualtp S T S' T' (eqST : (S = S') * (T = T')) (E: 'QU[H]_(S,T)) :
   (castso eqST E)^*o \is tpmap.
 Proof. by rewrite castso_dualtpE is_dualtp. Qed.
-HB.instance Definition _ S T S' T' eqST (E: 'QU[H]_(S,T)) := DualQO_isUnitalMap.Build 
+HB.instance Definition _ S T S' T' eqST (E: 'QU[H]_(S,T)) := DualQO_isUnitalMap.Build
   'H_S' 'H_T' (castso eqST E) (@castso_dualtp S T S' T' eqST E).
 
-Lemma tenso_cp S T S' T' (dis : [disjoint S & S']) 
+Lemma tenso_cp S T S' T' (dis : [disjoint S & S'])
   (E : 'CP[H]_(S,T)) (F : 'CP[H]_(S',T')) : tenso E F \is cpmap.
 Proof. by rewrite krausopE (krausopE F) tenso_krausso// is_cpmap. Qed.
 Canonical tenso_cpType S T S' T' dis E F := CPMap_Build (@tenso_cp S T S' T' dis E F).
-Lemma tenso_qo S T S' T' (disS : [disjoint S & S']) (disT : [disjoint T & T']) 
+Lemma tenso_qo S T S' T' (disS : [disjoint S & S']) (disT : [disjoint T & T'])
   (E : 'QO[H]_(S,T)) (F : 'QO[H]_(S',T')) : tenso E F \is cptn.
 Proof.
 rewrite [X in X :⊗ _](krausopE) [X in _ :⊗ X](krausopE) tenso_krausso//.
@@ -3473,28 +3473,28 @@ rewrite -linear_sumlz/=. apply: lev_pbreg2=>//.
 1,2: by rewrite sumv_ge0//==>i _; rewrite form_gef0.
 all: apply: krausop_tn.
 Qed.
-Canonical tenso_qoType S T S' T' disS disT E F := 
+Canonical tenso_qoType S T S' T' disS disT E F :=
   QOperation_Build (@tenso_qo S T S' T' disS disT E F).
-Lemma tenso_qc S T S' T' (disS : [disjoint S & S']) (disT : [disjoint T & T']) 
+Lemma tenso_qc S T S' T' (disS : [disjoint S & S']) (disT : [disjoint T & T'])
   (E : 'QC[H]_(S,T)) (F : 'QC[H]_(S',T')) : tenso E F \is cptp.
-Proof. 
+Proof.
 rewrite [X in X :⊗ _](krausopE) [X in _ :⊗ X](krausopE) tenso_krausso//.
 apply/krausso_qcP. rewrite /trace_presv -tenf11 pair_bigV/=.
 under eq_bigr do under eq_bigr do rewrite tenf_adj -(tenf_comp _ _ _ _ disT).
 under eq_bigr do rewrite -linear_sumr/= qmeasure_tpE.
 by rewrite -linear_sumlz/= qmeasure_tpE.
 Qed.
-Canonical tenso_qcType S T S' T' disS disT E F := 
+Canonical tenso_qcType S T S' T' disS disT E F :=
   QChannel_Build (@tenso_qc S T S' T' disS disT E F).
-Lemma tenso_dqo S T S' T' (disS : [disjoint S & S']) (disT : [disjoint T & T']) 
+Lemma tenso_dqo S T S' T' (disS : [disjoint S & S']) (disT : [disjoint T & T'])
   (E : 'DQO[H]_(S,T)) (F : 'DQO[H]_(S',T')) : (tenso E F)^*o \is cptn.
 Proof. by rewrite tenso_dual is_cptn. Qed.
-Canonical tenso_dqoType S T S' T' disS disT E F := 
+Canonical tenso_dqoType S T S' T' disS disT E F :=
   DualQO_Build (@tenso_dqo S T S' T' disS disT E F).
-Lemma tenso_qu S T S' T' (disS : [disjoint S & S']) (disT : [disjoint T & T']) 
+Lemma tenso_qu S T S' T' (disS : [disjoint S & S']) (disT : [disjoint T & T'])
   (E : 'QU[H]_(S,T)) (F : 'QU[H]_(S',T')) : (tenso E F)^*o \is cptp.
 Proof. by rewrite tenso_dual is_cptp. Qed.
-Canonical tenso_quType S T S' T' disS disT E F := 
+Canonical tenso_quType S T S' T' disS disT E F :=
   QUnital_Build (@tenso_qu S T S' T' disS disT E F).
 
 Lemma liftso_krausso S T (sub : S :<=: T) (F : finType) (f : F -> 'F[H]_S) :
@@ -3515,22 +3515,22 @@ HB.instance Definition _ S T sub E := isCPMap.Build _ _ _ (@liftso_cp S T sub E)
 Lemma liftso_tn S T (sub : S :<=: T) (E : 'QO[H]_S) :
   liftso sub E \is tnmap.
 Proof. by rewrite is_tnmap// disjointXD. Qed.
-HB.instance Definition _ S T sub (E : 'QO[H]_S) := 
+HB.instance Definition _ S T sub (E : 'QO[H]_S) :=
   CPMap_isTNMap.Build _ _ (liftso sub E) (@liftso_tn S T sub E).
 Lemma liftso_tp S T (sub : S :<=: T) (E : 'QC[H]_S) :
   liftso sub E \is tpmap.
 Proof. by rewrite is_tpmap// disjointXD. Qed.
-HB.instance Definition _ S T sub (E : 'QC[H]_S) := 
+HB.instance Definition _ S T sub (E : 'QC[H]_S) :=
   QOperation_isTPMap.Build _ _ (liftso sub E) (@liftso_tp S T sub E).
 Lemma liftso_dualtn S T (sub : S :<=: T) (E : 'DQO[H]_S) :
   (liftso sub E)^*o \is tnmap.
 Proof. by rewrite is_dualtn// disjointXD. Qed.
-HB.instance Definition _ S T sub (E : 'DQO[H]_S) := 
+HB.instance Definition _ S T sub (E : 'DQO[H]_S) :=
   CPMap_isDTNMap.Build _ _ (liftso sub E) (@liftso_dualtn S T sub E).
 Lemma liftso_dualtp S T (sub : S :<=: T) (E : 'QU[H]_S) :
   (liftso sub E)^*o \is tpmap.
 Proof. by rewrite is_tpmap// disjointXD. Qed.
-HB.instance Definition _ S T sub (E : 'QU[H]_S) := 
+HB.instance Definition _ S T sub (E : 'QU[H]_S) :=
   DualQO_isUnitalMap.Build _ _ (liftso sub E) (@liftso_dualtp S T sub E).
 
 Lemma liftso_is_linear S T (sub : S :<=: T) : linear (liftso sub).
@@ -3549,7 +3549,7 @@ Proof.
 move: (is_cptn (liftso sub (krausso f)))=>/=.
 by rewrite liftso_krausso=>/krausso_qoP.
 Qed.
-HB.instance Definition _ S T (sub : S :<=: T) (F : finType) (f : 'TN[H]_(F;S)) := 
+HB.instance Definition _ S T (sub : S :<=: T) (F : finType) (f : 'TN[H]_(F;S)) :=
   isTraceNincr.Build 'H[H]_T 'H_T F (lift_fun sub f) (lift_fun_tn sub f).
 Lemma lift_fun_tp S T (sub : S :<=: T) (F : finType) (f : 'QM[H]_(F;S)) :
   trace_presv (lift_fun sub f).
@@ -3557,7 +3557,7 @@ Proof.
 move: (is_cptp (liftso sub (krausso f)))=>/=.
 by rewrite liftso_krausso=>/krausso_qcP.
 Qed.
-HB.instance Definition _ S T (sub : S :<=: T) (F : finType) (f : 'QM[H]_(F;S)) := 
+HB.instance Definition _ S T (sub : S :<=: T) (F : finType) (f : 'QM[H]_(F;S)) :=
   TraceNincr_isQMeasure.Build 'H[H]_T 'H_T F (lift_fun sub f) (lift_fun_tp sub f).
 
 (* Lemma lift_lfE S T (sub : S :<=: T) (f: 'F[H]_S) :
@@ -3590,7 +3590,7 @@ Proof. by rewrite /lift_lf tenf11 castlf1. Qed.
 Lemma lift_lf_lef (P Q: 'F_S) :
   (lift_lf sub P ⊑ lift_lf sub Q) = (P ⊑ Q).
 Proof.
-by rewrite /lift_lf lef_cast -subv_ge0 -[RHS]subv_ge0 
+by rewrite /lift_lf lef_cast -subv_ge0 -[RHS]subv_ge0
   -linearBl/= ptenf_lge0// ?disjointXD// ltf01.
 Qed.
 
@@ -3600,7 +3600,7 @@ Proof. by move=>P Q /eqP; rewrite eq_le !lift_lf_lef -eq_le=>/eqP. Qed.
 Lemma lift_lf_cplmt (P: 'F_S) : lift_lf sub (P^⟂) = (lift_lf sub P)^⟂.
 Proof. by rewrite /lift_lf tenfBl linearB/= tenf11 castlf1. Qed.
 
-Lemma lift_lf_ge0 (P: 'F_S) : 
+Lemma lift_lf_ge0 (P: 'F_S) :
   (0 : 'F_S) ⊑ P = ((0 : 'F__) ⊑ lift_lf sub P).
 Proof. by rewrite -lift_lf_lef linear0. Qed.
 
@@ -3616,7 +3616,7 @@ Proof. by rewrite /lift_lf  castlf_tr/= tenf_tr trf1. Qed.
 Lemma lift_lf_conj (P: 'F_S) : lift_lf sub (P^C) = (lift_lf sub P)^C.
 Proof. by rewrite /lift_lf castlf_conj/= tenf_conj conjf1. Qed.
 
-Lemma lift_lf_comp (P Q: 'F_S) : 
+Lemma lift_lf_comp (P Q: 'F_S) :
   lift_lf sub (P \o Q) = lift_lf sub P \o lift_lf sub Q.
 Proof. by rewrite /lift_lf -castlf_complf -tenf_comp ?disjointXD// comp_lfun1l. Qed.
 
@@ -3693,7 +3693,7 @@ case: comparableP=>//.
 by rewrite subr_lt0=>/ltW.
 set e : C := x - y => egt0.
 have P1: y < x - e/2.
-  by rewrite /e mulrBl {1}(splitr x) opprB addrC addrA subrK 
+  by rewrite /e mulrBl {1}(splitr x) opprB addrC addrA subrK
     -ltrBlDl {1}(splitr y) addrK ltr_pM2r ?invr_gt0// -subr_gt0.
 have /P/(lt_le_trans P1): 0 < e / 2 by rewrite divr_gt0.
 by rewrite ltxx.
@@ -3711,7 +3711,7 @@ End lift_lfun.
 Lemma lift_lf2 S T W (sub1 : S :<=: T) (sub2 : T :<=: W) (f : 'F[H]_S) :
   lift_lf sub2 (lift_lf sub1 f) = lift_lf (subset_trans sub1 sub2) f.
 Proof.
-rewrite /lift_lf; to_Fnd; rewrite -tenFA tenF11; f_equal; 
+rewrite /lift_lf; to_Fnd; rewrite -tenFA tenF11; f_equal;
 by apply Fnd_eq1; move: sub1 sub2; setdec.
 Qed.
 
@@ -3728,7 +3728,7 @@ Lemma lift_lf_tenf1l S T W (sub : S :|: T :<=: W) (f : 'F[H]_T) :
   [disjoint S & T] ->
   lift_lf sub (\1 \⊗ f) = lift_lf (subset_trans (subsetUr _ _) sub) f.
 Proof.
-move=>dis; rewrite /lift_lf; to_Fnd; rewrite tenFC tenFA tenF11 tenFC; 
+move=>dis; rewrite /lift_lf; to_Fnd; rewrite tenFC tenFA tenF11 tenFC;
 f_equal; apply Fnd_eq1; rewrite setUC [_ :|: T]setUC -setDDl setUD_sub//.
 by move: dis sub=>/setDidPl{2}<-/subUsetP[] + _; apply/setSD.
 Qed.
@@ -3749,7 +3749,7 @@ Qed.
 
 Lemma lift_lf_UC S T (f : 'F[H]_S) (g : 'F[H]_T) :
   [disjoint S & T] ->
-  lift_lf (subsetUl S T) f \o lift_lf (subsetUr S T) g = 
+  lift_lf (subsetUl S T) f \o lift_lf (subsetUr S T) g =
   lift_lf (subsetUr S T) g \o lift_lf (subsetUl S T) f.
 Proof.
 by move=>dis; rewrite lift_lfEl// lift_lfEr// -!tenf_comp// !comp_lfun1l !comp_lfun1r.
@@ -3767,7 +3767,7 @@ Lemma lift_lf_compC S T W (sub1 : S :<=: W) (sub2 : T :<=: W) (f : 'F[H]_S) (g :
   lift_lf sub1 f \o lift_lf sub2 g = lift_lf sub2 g \o lift_lf sub1 f.
 Proof.
 move=>dis. move: (subUsetPP sub1 sub2)=>P1.
-rewrite (eq_irrelevance sub1 (subset_trans (subsetUl S T) P1)) 
+rewrite (eq_irrelevance sub1 (subset_trans (subsetUl S T) P1))
 (eq_irrelevance sub2 (subset_trans (subsetUr S T) P1)).
 by rewrite -!lift_lf2 -!lift_lf_comp lift_lf_UC.
 Qed.
@@ -3775,7 +3775,7 @@ Qed.
 Lemma lift_lf_sdot S T W (sub1 : S :<=: W) (sub2 : T :<=: W) (P : 'F[H]_S) (Q : 'F[H]_T) :
   lift_lf (subUsetPP sub1 sub2) (P \O Q) = lift_lf sub1 P \o lift_lf sub2 Q.
 Proof.
-rewrite /lift_lf sdot_lfun.unlock dot_lfun.unlock (castlf_complf erefl) 
+rewrite /lift_lf sdot_lfun.unlock dot_lfun.unlock (castlf_complf erefl)
   -[X in (_ \o _) \⊗ X]comp_lfun1l tenf_comp; last first.
 to_Fnd; rewrite -!tenFA !tenF11; do ! f_equal; apply Fnd_eq1.
 all: move: sub1 sub2; setdec.
@@ -3820,7 +3820,7 @@ Qed.
 Lemma tenso_eq0 S T (dis : [disjoint S & T]) (f : 'SO[H]_S) (g : 'SO[H]_T) :
   f :⊗ g == 0 = (f == 0) || (g == 0).
 Proof.
-apply/Coq.Bool.Bool.eq_iff_eq_true; split.
+apply/Stdlib.Bool.Bool.eq_iff_eq_true; split.
 move=>/eqP/superopP P1. case: eqP=>//=; move=>/eqP/so_neq0P[v /negPf Pv].
 apply/eqP/superopP=>x; move: (P1 (v \⊗ x))=>/eqP.
 by rewrite -tenso_correct// !soE tenf_eq0// Pv/==>/eqP.
@@ -3832,7 +3832,7 @@ Qed.
 Lemma ptenso_rge0 S T (dis : [disjoint S & T]) (x : 'SO[H]_S) (y : 'SO[H]_T) :
   (0 : 'SO) ⊏ x -> ((0 : 'SO) ⊑ x :⊗ y) = ((0 : 'SO) ⊑ y).
 Proof.
-rewrite lt_def=>/andP[/so_neq0P[f /eqP Pf] xge0]; 
+rewrite lt_def=>/andP[/so_neq0P[f /eqP Pf] xge0];
 rewrite -eqb_iff; split; last by apply: tenso_ge0.
 have : exists v : 'H_S, x [> v ; v <] != 0.
   rewrite not_existsP=>P.
@@ -3846,7 +3846,7 @@ have : exists v : 'H_S, x [> v ; v <] != 0.
   1: rewrite P4. 2: rewrite P3. 3: rewrite P2. 4: rewrite P1.
   1,2,3,4: by rewrite linear_sum/= big1.
 move=>[v Pv] xyge0.
-pose K i := castlf (set0U T, set0U T) ((v2df (deltav i.2) \⊗ \1) 
+pose K i := castlf (set0U T, set0U T) ((v2df (deltav i.2) \⊗ \1)
   \o (krausop (x :⊗ y) i.1) \o (v2f v \⊗ \1)).
 pose c := sqrtC (\Tr (x [> v ; v <])).
 have P6: 0%:VF ⊏ x [> v; v <].
@@ -3869,19 +3869,19 @@ rewrite linear_sumlz/= linear_sum/= pair_bigV/= exchange_big/=; apply eq_bigr=>i
 under eq_bigr do rewrite /K/= castlf_adj/= -!castlf_complf !adjf_comp !comp_lfunA.
 rewrite -linear_sum/=; f_equal; rewrite -linear_sumlz/=.
 under eq_bigr do rewrite -!comp_lfunA; rewrite -linear_sumr/=.
-suff ->: (\sum_i0 (krausop (x :⊗ y) i0 \o (v2f v \⊗ \1 \o (\1 \⊗ z \o 
+suff ->: (\sum_i0 (krausop (x :⊗ y) i0 \o (v2f v \⊗ \1 \o (\1 \⊗ z \o
   ((v2f v \⊗ \1)^A \o (krausop (x :⊗ y) i0)^A))))) = (x :⊗ y) ([> v; v<] \⊗ z).
-  by rewrite -tenso_correct// tenf_adj -!tenf_comp// 
+  by rewrite -tenso_correct// tenf_adj -!tenf_comp//
   v2df_adj comp_lfun1l adjf1 comp_lfun1r.
 rewrite [RHS]ge0_krausE//; apply eq_bigr=>j _; rewrite !comp_lfunA.
-by f_equal; rewrite -!comp_lfunA; f_equal; rewrite tenf_adj adjf1 -!tenf_comp 
+by f_equal; rewrite -!comp_lfunA; f_equal; rewrite tenf_adj adjf1 -!tenf_comp
   ?disjoint0X// !comp_lfun1l v2f_adj comp_out comp_lfun1r.
 Qed.
 
-Lemma tenso_castC S T S' T' (f: 'SO[H]_(S,T)) (g: 'SO[H]_(S',T')) : 
+Lemma tenso_castC S T S' T' (f: 'SO[H]_(S,T)) (g: 'SO[H]_(S',T')) :
   castso ((setUC S S'), (setUC T T')) (f :⊗ g) = (g :⊗ f).
 Proof.
-apply/superopPD=>i j; rewrite castsoE/= castlf_outp/= 
+apply/superopPD=>i j; rewrite castsoE/= castlf_outp/=
   !deltav_cast -!tensodf tenf_castC; do ? f_equal.
 all: by rewrite idxSl_idxR idxSr_idxR idxR_castR ?subsetUl ?subsetUr// =>P;
   rewrite [X in _ = idxR X _](eq_irrelevance _ P).
@@ -3907,22 +3907,22 @@ Proof. exact: pbregv_lgt0. Qed.
 Lemma liftso_leso S T (sub : S :<=: T) (P Q: 'SO[H]_S) :
   P ⊑ Q = (liftso sub P ⊑ liftso sub Q).
 Proof.
-by rewrite /liftso leso_cast -subv_ge0 -[RHS]subv_ge0 
+by rewrite /liftso leso_cast -subv_ge0 -[RHS]subv_ge0
   -linearBl/= ptenso_lge0// ?disjointXD// ltso01.
 Qed.
 
 Lemma liftso_inj S T (sub : S :<=: T) : injective (liftso sub).
 Proof. by move=>P Q /eqP; rewrite eq_le -!liftso_leso -eq_le=>/eqP. Qed.
 
-Lemma liftso_ge0 S T (sub : S :<=: T) (P: 'SO[H]_S) : 
+Lemma liftso_ge0 S T (sub : S :<=: T) (P: 'SO[H]_S) :
   (0 : 'SO) ⊑ P = ((0 : 'SO) ⊑ liftso sub P).
 Proof. by rewrite (liftso_leso sub) linear0. Qed.
 
-Lemma liftso_le1 S T (sub : S :<=: T) (P: 'SO[H]_S) : 
+Lemma liftso_le1 S T (sub : S :<=: T) (P: 'SO[H]_S) :
   P ⊑ \:1 = (liftso sub P ⊑ \:1).
 Proof. by rewrite (liftso_leso sub) liftso1. Qed.
 
-Lemma liftso_dual S T (sub : S :<=: T) (P: 'SO[H]_S) : 
+Lemma liftso_dual S T (sub : S :<=: T) (P: 'SO[H]_S) :
   (liftso sub P)^*o = liftso sub P^*o.
 Proof. by rewrite /liftso castso_dual/= tenso_dual dualso1. Qed.
 
@@ -3954,7 +3954,7 @@ Qed.
 
 Lemma liftso_UC S T (f : 'SO[H]_S) (g : 'SO[H]_T) :
   [disjoint S & T] ->
-  liftso (subsetUl S T) f :o liftso (subsetUr S T) g = 
+  liftso (subsetUl S T) f :o liftso (subsetUr S T) g =
   liftso (subsetUr S T) g :o liftso (subsetUl S T) f.
 Proof.
 by move=>dis; rewrite liftsoEl ?liftsoEr -?tenso_comp ?comp_so1l ?comp_so1r.
@@ -3974,23 +3974,23 @@ by rewrite -linear_sum/= -lift_lf_le1.
 Qed.
 
 Lemma tenso_castA S1 T1 S2 T2 S3 T3 (f: 'SO[H]_(S1,T1)) (g: 'SO[H]_(S2,T2))
-  (h: 'SO[H]_(S3,T3)) : 
+  (h: 'SO[H]_(S3,T3)) :
  castso (setUA S1 S2 S3, setUA T1 T2 T3) (f :⊗ (g :⊗ h)) = ((f :⊗ g) :⊗ h).
 Proof.
-apply/superopPD=>i j; rewrite castsoE/= castlf_outp/= 
+apply/superopPD=>i j; rewrite castsoE/= castlf_outp/=
   !deltav_cast -!tensodf tenf_castA; do ? f_equal;
-do ? [apply f_equal2 | apply f_equal] =>//; 
-rewrite ?idxSl_idxR ?idxSr_idxR ?idxR_castR -?setUA ?subsetUl ?subsetUr// => H1; 
+do ? [apply f_equal2 | apply f_equal] =>//;
+rewrite ?idxSl_idxR ?idxSr_idxR ?idxR_castR -?setUA ?subsetUl ?subsetUr// => H1;
 rewrite !idxRA; by do ? [apply f_equal2 | apply eq_irrelevance].
 Qed.
 
-Lemma tenso_castl S1 T1 S2 T2 S1' T1' (A : 'SO[H]_(S1,T1)) (B : 'SO[H]_(S2,T2)) 
+Lemma tenso_castl S1 T1 S2 T2 S1' T1' (A : 'SO[H]_(S1,T1)) (B : 'SO[H]_(S2,T2))
   (eqS : S1 = S1') (eqT : T1 = T1') :
-  castso (eqS, eqT) A :⊗ B = 
+  castso (eqS, eqT) A :⊗ B =
     castso (f_equal (@setU _ ^~ _) eqS, f_equal (@setU _ ^~ _) eqT) (A :⊗ B).
 Proof. by case: S1' / eqS; case: T1' / eqT=>/=; rewrite !castso_id. Qed.
 
-Lemma tenso_castr S1 T1 S2 T2 S1' T1' (A : 'SO[H]_(S1,T1)) (B : 'SO[H]_(S2,T2)) 
+Lemma tenso_castr S1 T1 S2 T2 S1' T1' (A : 'SO[H]_(S1,T1)) (B : 'SO[H]_(S2,T2))
   (eqS : S1 = S1') (eqT : T1 = T1') :
   B :⊗ castso (eqS, eqT) A = castso (f_equal (@setU _ _) eqS, f_equal (@setU _ _) eqT) (B :⊗ A).
 Proof. by case: S1' / eqS; case: T1' / eqT=>/=; rewrite !castso_id. Qed.
@@ -4012,7 +4012,7 @@ Lemma liftso_compC S T W (sub1 : S :<=: W) (sub2 : T :<=: W) (f : 'SO[H]_S) (g :
   liftso sub1 f :o liftso sub2 g = liftso sub2 g :o liftso sub1 f.
 Proof.
 move=>dis. move: (subUsetPP sub1 sub2)=>P1.
-rewrite (eq_irrelevance sub1 (subset_trans (subsetUl S T) P1)) 
+rewrite (eq_irrelevance sub1 (subset_trans (subsetUl S T) P1))
 (eq_irrelevance sub2 (subset_trans (subsetUr S T) P1)).
 by rewrite -!liftso2 -!liftso_comp liftso_UC.
 Qed.
@@ -4023,25 +4023,25 @@ Proof. by rewrite /lift_fun; apply/funext=>i; rewrite lift_lf2. Qed.
 
 Lemma lift_lf_id S (sub : S :<=: S) (f : 'F[H]_S) :
   lift_lf sub f = f.
-Proof. 
+Proof.
 by apply/(@lift_lf_inj _ _ sub); rewrite lift_lf2 (eq_irrelevance (_ sub sub) sub).
 Qed.
 
 Lemma liftso_id S (sub : S :<=: S) (E : 'SO[H]_S) :
   liftso sub E = E.
-Proof. 
+Proof.
 by apply/(@liftso_inj _ _ sub); rewrite liftso2 (eq_irrelevance (_ sub sub) sub).
 Qed.
 
 Lemma lift_fun_id S (sub : S :<=: S) (F : finType) (f : F -> 'F[H]_S) :
   lift_fun sub f = f.
-Proof. by rewrite /lift_fun; apply/funext=>i; rewrite lift_lf_id. Qed. 
+Proof. by rewrite /lift_fun; apply/funext=>i; rewrite lift_lf_id. Qed.
 
 Lemma liftso_elemso S T (sub : S :<=: T) (F : finType) (M : F -> 'F[H]_S) i :
   liftso sub (elemso M i) = elemso (lift_fun sub M) i.
 Proof. exact: liftso_formso. Qed.
 
-Lemma liftso_ifso S T (sub : S :<=: T) (F : finType) (M : F -> 'F[H]_S) 
+Lemma liftso_ifso S T (sub : S :<=: T) (F : finType) (M : F -> 'F[H]_S)
   (br : F -> 'SO[H]_S) :
   liftso sub (ifso M br) = ifso (lift_fun sub M) (fun i => liftso sub (br i)).
 Proof.
@@ -4054,7 +4054,7 @@ Lemma liftso_whileso S T (sub : S :<=: T) (M : 'TN[H]_(bool;S)) b (D : 'QO[H]_S)
   liftso sub (whileso M b D) = whileso (lift_fun sub M) b (liftso sub D).
 Proof.
 rewrite whileso.unlock -linear_lim. apply: whileso_is_cvg.
-suff ->: (liftso sub \o whileso_iter M b D)%FUN = 
+suff ->: (liftso sub \o whileso_iter M b D)%FUN =
   whileso_iter (lift_fun sub M) b (liftso sub D) by [].
 apply/funext=>i/=; rewrite !whileso_iter_incrE liftso_comp liftso_elemso; f_equal.
 rewrite linear_sum/=; apply eq_bigr=>j _; case: j=>/= m _.
@@ -4076,7 +4076,7 @@ Definition liftf_lf S f : 'F[H]_setT := lift_lf (sub S) f.
 Definition liftfso S E : 'SO[H]_setT := liftso (sub S) E.
 Definition liftf_fun S (F : finType) (f : F -> 'F[H]_S) := lift_fun (sub S) f.
 
-Lemma liftf_funE S (F : finType) (f : F -> 'F_S) : 
+Lemma liftf_funE S (F : finType) (f : F -> 'F_S) :
   liftf_fun f = (fun i=> liftf_lf (f i)).
 Proof. by []. Qed.
 
@@ -4098,7 +4098,7 @@ HB.instance Definition _ S := GRing.Linear.copy (@liftf_lf S) (@liftf_lf S).
 
 HB.instance Definition _ S (F : finType) (f : 'TN_(F;S)) :=
   TraceNincr.on (liftf_fun f).
-HB.instance Definition _ S (F : finType) (f : 'QM_(F;S)) := 
+HB.instance Definition _ S (F : finType) (f : 'QM_(F;S)) :=
   QMeasure.on (liftf_fun f).
 
 Lemma liftf_lfE S (f: 'F_S) :
@@ -4179,7 +4179,7 @@ Lemma liftf_lf_compC S T (f : 'F_S) (g : 'F_T) :
   [disjoint S & T] -> liftf_lf f \o liftf_lf g = liftf_lf g \o liftf_lf f.
 Proof. exact: lift_lf_compC. Qed.
 
-Lemma liftf_lf_sdot S T (P: 'F_S) (Q: 'F_T) : 
+Lemma liftf_lf_sdot S T (P: 'F_S) (Q: 'F_T) :
   liftf_lf (P \O Q) = liftf_lf P \o liftf_lf Q.
 Proof. by rewrite -lift_lf_sdot subsetTE. Qed.
 
@@ -4267,7 +4267,7 @@ Lemma liftf_lf_cast S T (eqST : S = T) (f : 'F_S) :
   liftf_lf (castlf (eqST,eqST) f) = liftf_lf f.
 Proof. by case: T / eqST; rewrite castlf_id. Qed.
 
-Lemma liftfso_cast S T (eqST : S = T) (f: 'SO_S) : 
+Lemma liftfso_cast S T (eqST : S = T) (f: 'SO_S) :
   liftfso (castso (eqST,eqST) f) = liftfso f.
 Proof. by case: T / eqST; rewrite castso_id. Qed.
 
@@ -4291,13 +4291,13 @@ move=>dis; have ls : S :<=: ~: T by rewrite -disjointX_subset.
 rewrite -(liftfso2 (subsetT _)) [liftso _ E]liftfsoE liftfso_cast -{1}(liftf_lf2 ls).
 set g' := (castlf (esym(setUCr T),esym(setUCr T)) g).
 have Hg: g = liftf_lf g' by rewrite liftf_lf_cast liftf_lf_id.
-rewrite Hg [g'](onb_lfun2id deltav) pair_big/= !linear_sum/= 
+rewrite Hg [g'](onb_lfun2id deltav) pair_big/= !linear_sum/=
   !linear_sumr/= linear_sum/=; apply eq_bigr=>i _.
 rewrite !linearZ/= -!comp_lfunZr linearZ/=; f_equal.
 move: (disjointXC T)=>lt.
 rewrite !dv_split -!tenf_outp -!liftf_lf_compT// [in LHS]liftf_lf_compC//
   comp_lfunA -liftf_lf_comp [in LHS]liftf_lf_compC ?disjointCX//
-   !liftf_lf_compT// !liftfsoEf -!tenso_correct// !soE -!liftf_lf_compT// 
+   !liftf_lf_compT// !liftfsoEf -!tenso_correct// !soE -!liftf_lf_compT//
    liftf_lf_comp !comp_lfunA; f_equal.
 by rewrite liftf_lf2 liftf_lf_compC// disjoint_sym.
 Qed.
@@ -4310,12 +4310,12 @@ move=>dis; have ls : S :<=: ~: T by rewrite -disjointX_subset.
 rewrite -(liftfso2 (subsetT _)) [liftso _ E]liftfsoE liftfso_cast -{1}(liftf_lf2 ls).
 set g' := (castlf (esym(setUCr T),esym(setUCr T)) g).
 have Hg: g = liftf_lf g' by rewrite liftf_lf_cast liftf_lf_id.
-rewrite Hg [g'](onb_lfun2id deltav) pair_big/= !linear_sum/= 
+rewrite Hg [g'](onb_lfun2id deltav) pair_big/= !linear_sum/=
   !linear_sumlz/= linear_sum/=; apply eq_bigr=>i _.
 rewrite !linearZ/= -!comp_lfunZl linearZ/=; f_equal.
 move: (disjointXC T)=>lt.
 by rewrite !dv_split -!tenf_outp -!liftf_lf_compT// -comp_lfunA -liftf_lf_comp
-   !liftf_lf_compT// !liftfsoEf -!tenso_correct// !soE -!liftf_lf_compT// 
+   !liftf_lf_compT// !liftfsoEf -!tenso_correct// !soE -!liftf_lf_compT//
    liftf_lf_comp comp_lfunA liftf_lf2.
 Qed.
 

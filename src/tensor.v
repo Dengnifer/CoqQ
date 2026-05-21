@@ -1,6 +1,6 @@
 (* -------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 From mathcomp.algebra Require Import -(notations)sesquilinear.
 From mathcomp.reals Require Import reals.
@@ -48,15 +48,15 @@ Local Open Scope ffun_scope.
 HB.instance Definition _ (I : finType) (G : nmodType) := 
   @Monoid.isComLaw.Build {ffun I -> G} 0 +%F (@addrA _) (@addrC _) (@add0r _).
 
-HB.instance Definition _ (I : finType) (R : semiRingType) :=
+HB.instance Definition _ (I : finType) (R : nzSemiRingType) :=
   @Monoid.isLaw.Build {ffun I -> R} 1 *%F (@ffun_mulA _ _) (@ffun_mul_1l _ _) (@ffun_mul_1r _ _).
-HB.instance Definition _ (I : finType) (R : comRingType) :=
+HB.instance Definition _ (I : finType) (R : comNzRingType) :=
   @SemiGroup.isCommutativeLaw.Build {ffun I -> R} *%F (@ffun_mulC _ _).
 
-HB.instance Definition _ (I : finType) (R : semiRingType) :=
+HB.instance Definition _ (I : finType) (R : nzSemiRingType) :=
   @Monoid.isMulLaw.Build {ffun I -> R} 0 *%F (@ffun_mul_0l _ _) (@ffun_mul_0r _ _).
 
-HB.instance Definition _ (I : finType) (R : semiRingType) :=
+HB.instance Definition _ (I : finType) (R : nzSemiRingType) :=
   @Monoid.isAddLaw.Build {ffun I -> R} *%F +%F (@ffun_mul_addl _ _) (@ffun_mul_addr _ _).
 
 (* -------------------------------------------------------------------- *)
@@ -125,7 +125,7 @@ apply: (big_morph (fun f : {ffun J -> G} => f j)).
 Qed.
 
 Lemma ffun_prodE
-    (R : ringType) (r : seq I) (P : pred I) (F : I -> {ffun J -> R}) j
+    (R : nzRingType) (r : seq I) (P : pred I) (F : I -> {ffun J -> R}) j
   : (\prod_(i <- r | P i) (F i))%F j = \prod_(i <- r | P i) F i j.
 Proof.
 apply: (big_morph (fun f : {ffun J -> R} => f j)).
@@ -991,7 +991,8 @@ Definition fbasis_seq :=
     [seq fbasis (n2i i) | i: 'I_(dim T)].
 Lemma fbasis_size : size fbasis_seq == dim T.
 Proof. by rewrite size_map size_enum_ord. Qed.
-Definition fbase := nosimpl (Tuple fbasis_size).
+Definition fbase := Tuple fbasis_size.
+Arguments fbase : simpl never.
 Lemma fbasis_seqE (i: 'I_(dim T)) :
   fbase~_ i = fbasis (n2i i).
 Proof.

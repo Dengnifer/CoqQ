@@ -1,40 +1,50 @@
 # Compiling the development
 
-We depend on the following external libraries:
-
-```
-  "coq"                      { = "8.18.0"           }
-  "coq-core"                 { = "8.18.0"           }
-  "coq-elpi"                 { = "2.0.0"            }
-  "dune"                     {>= "3.2" & <= "3.13.0"}
-  "dune-configurator"        { = "3.12.1"           }
-  "coq-hierarchy-builder"    { = "1.7.0"            }
-  "coq-mathcomp-ssreflect"   { = "2.2.0"            }
-  "coq-mathcomp-algebra"     { = "2.2.0"            }
-  "coq-mathcomp-fingroup"    { = "2.2.0"            }
-  "coq-mathcomp-analysis"    { = "1.3.1"            }
-  "coq-mathcomp-real-closed" { = "2.0.0"            }
-  "coq-mathcomp-finmap"      { = "2.1.0"            }
-```
-
-The easiest way to install the above libraries is via [OPAM](https://opam.ocaml.org/doc/Install.html):
+The development is currently set up for Rocq 9.1.1, OCaml 5.2.1, MathComp
+2.5.0, MathComp Analysis 1.16.0, and the released `coq-mathcomp-real-closed`
+2.0.3 package. Use a dedicated opam switch so older CoqQ/Coq 8.18 switches
+remain untouched.
 
 ```bash
-opam switch create \
-    --yes \
-    --deps-only \
-    --repositories=default=https://opam.ocaml.org,coq-released=https://coq.inria.fr/opam/released \
-    .
+opam switch create coqq-rocq91 ocaml-base-compiler.5.2.1
+eval $(opam env --switch=coqq-rocq91)
+
+opam repo add coq-released https://coq.inria.fr/opam/released
+opam repo add rocq-released https://rocq-prover.org/opam/released
+opam repo list --all
+# The coqq-rocq91 switch should use default, coq-released, and rocq-released.
+
+opam update
+opam install -y dune.3.23.1 dune-configurator.3.23.1
+opam install -y coq-core.9.1.1 rocq-core.9.1.1
+opam install -y rocq-elpi.3.3.1 rocq-hierarchy-builder.1.10.2
+opam install -y \
+  rocq-mathcomp-ssreflect.2.5.0 \
+  rocq-mathcomp-algebra.2.5.0 \
+  rocq-mathcomp-field.2.5.0 \
+  rocq-mathcomp-fingroup.2.5.0 \
+  rocq-mathcomp-finmap.2.2.2 \
+  rocq-mathcomp-solvable.2.5.0 \
+  rocq-mathcomp-bigenough.1.0.4 \
+  rocq-mathcomp-classical.1.16.0 \
+  rocq-mathcomp-analysis.1.16.0 \
+  coq-mathcomp-real-closed.2.0.3
 ```
 
-Then, you can compile the development by just typing `make` (or `opam
-config exec -- make` if you used a local opam switch to install the
-dependencies).
+Then install and build CoqQ from this checkout:
 
-Remark: if any unexpected error occurs, please follow the exact version of the 
-above libraries. It's known that dune-configurator >= 3.13.0 will kill the 
-compilation (incompatible with coq.8.18.0 if use `-(notation)` attribute 
-for importing files).
+```bash
+cd CoqQ-rocq
+opam install -y .
+make
+```
+
+Alternatively, install CoqQ directly from GitHub after preparing the switch:
+
+```bash
+opam pin add -y --no-action coq-mathcomp-quantum git+https://github.com/coq-quantum/CoqQ#main
+opam install -y coq-mathcomp-quantum
+```
 
 <br>
 

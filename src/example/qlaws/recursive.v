@@ -1,5 +1,5 @@
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 From mathcomp.finmap Require Import finmap.
 From mathcomp.classical Require Import boolp classical_sets.
@@ -548,7 +548,7 @@ Qed.
 
 Lemma fQOlub_ub : forall c : nat -> fQO, cpo.chain c -> (forall i, (c i <= fQOlub c)%O).
 Proof.
-move=>c Pc n; apply/lefP=>i; rewrite leEsub/= fQOEi//.
+move=>c Pc n; apply/lefP=>i; rewrite -Order.le_val/= fQOEi//.
 pose SOV := quantum_soperop__canonical__extnum_VOrderFinNormedModule
   'H[msys]_setT 'H[msys]_setT.
 apply: (@nondecreasing_cvgn_lev _ _ SOV (fun n => c n i)).
@@ -558,7 +558,7 @@ Qed.
 Lemma fQOlub_least : forall c : nat -> fQO, 
   cpo.chain c -> forall x : fQO, (forall i, (c i <= x)%O) -> (fQOlub c <= x)%O.
 Proof.
-move=>c Pc x Px; apply/lefP=>i; rewrite leEsub/= fQOEi//.
+move=>c Pc x Px; apply/lefP=>i; rewrite -Order.le_val/= fQOEi//.
 pose SOV := quantum_soperop__canonical__extnum_VOrderFinNormedModule
   'H[msys]_setT 'H[msys]_setT.
 apply: (@limn_lev _ _ SOV (x i) (fun n => c n i)).
@@ -577,7 +577,7 @@ split=>/=.
 by move=>c Pc n/=; apply/lefP=>i; apply/fXs_leso.
 move=>c Pc. apply/funext=>i; apply/val_inj=>/=.
 rewrite /lub/= [RHS]fQOEi/=.
-by move=>n; apply/lefP=>j/=; rewrite leEsub/=; apply/fXs_leso.
+by move=>n; apply/lefP=>j/=; rewrite -Order.le_val/=; apply/fXs_leso.
 under eq_fun do rewrite (fQOEi _ Pc)/=.
 symmetry. apply: reps_limn.
 by apply/cpo.chain_homo.
@@ -589,14 +589,14 @@ HB.instance Definition _ := cpo.isScottContinuous.Build
 Lemma qo_fXs_chain : chain (chaini qo_fXs).
 Proof.
 elim=>[|n IH]/=; first by apply/le0c.
-by apply/lefP=>j; rewrite leEsub/=; apply/fXs_leso.
+by apply/lefP=>j; rewrite -Order.le_val/=; apply/fXs_leso.
 Qed.
 
 Lemma qo_fXs_lubE i : fsem (f i) = lub (chaini qo_fXs) i.
 Proof.
 rewrite fsem_repsnE /lub/=/QOCPO.qolub fQOEi.
   elim=>[|n IH]/=; first by apply/le0c.
-  by apply/lefP=>j; rewrite leEsub/=; apply/fXs_leso.
+  by apply/lefP=>j; rewrite -Order.le_val/=; apply/fXs_leso.
 rewrite -[RHS]limn_shiftS/=.
 apply eq_lim=>n; elim: n i=>[//|n IH /= i].
 by rewrite {1}/fXs; f_equal; apply/funext.
@@ -612,7 +612,7 @@ have: qo_fXs (fun i => fsem (c i)) = (fun i => fsem (c i)).
   apply/funext=>i; apply/val_inj=>/=.
   by rewrite [RHS]P1 rep_reps.
 move=>/least_fp_lub_chaini/lefP/(_ j).
-by rewrite leEsub/= -qo_fXs_lubE.
+by rewrite -Order.le_val/= -qo_fXs_lubE.
 Qed.
 
 (* if program c doesn't contain proc call, then syntactic/semantic 
@@ -657,7 +657,7 @@ Add Parametric Relation F f : (@cmd_ F) (eq_fsem f)
 
 Module Export EQ_FSEM.
 Require Import -(notations)Setoid.
-From Coq.Classes Require Import -(notations)Morphisms.
+From Stdlib.Classes Require Import -(notations)Morphisms.
 
 Add Parametric Morphism F f (T : qType) : (@init_ F T)
   with signature respectful (@eq_qreg T)

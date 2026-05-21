@@ -1,5 +1,5 @@
 
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 
 (*****************************************************************************)
@@ -382,7 +382,7 @@ Reserved Notation "''|' x >< z , w ; t |" (at level 2, x at level 60, z, w, t at
 Section test.
 Require Import forms.
 Open Scope ring_scope.
-Variable (R : ringType).
+Variable (R : nzRingType).
 Notation "( x )" := x (in custom reg at level 0).
 Notation "x" := x (in custom reg at level 0, x constr at level 0).
 Notation "x %:R" := (x%:R : R).

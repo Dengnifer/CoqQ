@@ -1,6 +1,6 @@
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
-From Coq.Arith Require Import PeanoNat.
+From Stdlib.Arith Require Import PeanoNat.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

@@ -1,13 +1,13 @@
 (* -------------------------------------------------------------------- *)
 (* Change numClosedFieldType to C *)
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order interval_inference.
 From mathcomp.algebra Require Import all_algebra.
 From mathcomp.fingroup Require Import fingroup perm.
 From mathcomp.finmap Require Import finmap.
 From quantum.external Require Import spectral.
 From mathcomp.classical Require Import boolp classical_sets.
-From mathcomp.reals Require Import reals signed.
+From mathcomp.reals Require Import reals.
 From mathcomp.analysis Require Import sequences exp.
 From mathcomp.analysis.topology_theory Require Import topology.
 From mathcomp.analysis.normedtype_theory Require Import normedtype.
@@ -214,7 +214,7 @@ Lemma lftrace_adj (H: chsType) (f: 'End(H)) : \Tr f^A = (\Tr f)^*.
 Proof. by rewrite /lftrace h2mx_adj mxtrace_adj. Qed.
 
 Lemma lftrace_tr (H: chsType) (f: 'End(H)) : \Tr f^T = (\Tr f).
-Proof. by rewrite /lftrace h2mx_tr mxtrace_tr. Qed. 
+Proof. by rewrite /lftrace h2mx_tr mxtrace_tr. Qed.
 
 Lemma lftrace_conj (H: chsType) (f: 'End(H)) : \Tr f^C = (\Tr f)^*.
 Proof. by rewrite conjfAT lftrace_tr lftrace_adj. Qed.
@@ -232,8 +232,8 @@ Proof.
 rewrite lftrace_baseE dotp_mulmx mxE; apply eq_bigr=>i _.
 by rewrite outpE linearZ/= dotp_ebl dotp_ebr !mxE.
 Qed.
-  
-Lemma intro_eb (H G: chsType) (f g: 'Hom(H,G)) : 
+
+Lemma intro_eb (H G: chsType) (f g: 'Hom(H,G)) :
   (forall i, f (eb i) = g (eb i)) <-> f = g.
 Proof.
 split=>[P|->//]; apply/lfunP=>u; rewrite (dec_eb u) !linear_sum/=.
@@ -243,10 +243,10 @@ Qed.
 (* Definition delta_lf (H G: chsType) i j : 'Hom(H,G) := Hom (delta_mx j i).
 Check delta_lf. *)
 
-Lemma eb_out (H G: chsType) i j : 
+Lemma eb_out (H G: chsType) i j :
   [> eb i ; eb j <] = mx2h (delta_mx i j) :> 'Hom(H,G).
 Proof.
-by apply/intro_eb=>k; rewrite outpE eb_dot applyfh mx2hK 
+by apply/intro_eb=>k; rewrite outpE eb_dot applyfh mx2hK
   h2c_eb mul_delta_mx_cond -[in RHS]scaler_nat linearZ/= c2h_eb.
 Qed.
 
@@ -555,7 +555,7 @@ Lemma isolf_unitary (V : chsType) (A : 'End(V)) :
   A \is isolf -> A \is unitarylf.
 Proof. by []. Qed.
 
-Lemma isolf_le_dim (U V : chsType)  (A : 'Hom(U,V)) : 
+Lemma isolf_le_dim (U V : chsType)  (A : 'Hom(U,V)) :
   A \is isolf -> (dim U <= dim V)%N.
 Proof. by rewrite qualifE=>/unitary_dim. Qed.
 
@@ -563,7 +563,7 @@ Lemma gisolf_unitary (V : chsType) (A : 'End(V)) :
   A \is gisolf -> A \is unitarylf.
 Proof. exact: gisolf_iso. Qed.
 
-Lemma gisolf_eq_dim (U V : chsType) (A : 'Hom(U,V)) : 
+Lemma gisolf_eq_dim (U V : chsType) (A : 'Hom(U,V)) :
   A \is gisolf -> dim U = dim V.
 Proof.
 rewrite qualifE=>/andP[]/mxrank_unitary{6}<-/mxrank_unitary{3}<-.
@@ -592,7 +592,7 @@ Lemma ranklf_Il {U V W : chsType} (A : 'Hom(U,V)) (B : 'Hom(V,W)) :
 Proof.
 rewrite qualifE /lfrank h2mx_comp -mxrank_adj adjmxM=>/mxrank_unitary P1.
 by rewrite mxrankMfree ?mxrank_adj// /row_free P1.
-Qed. 
+Qed.
 
 Lemma rankUlf {U V : chsType} (A : 'Hom(U,V)) (B : 'End(V)) :
   B \is unitarylf -> \Rank (B \o A) = \Rank A.
@@ -607,75 +607,75 @@ HB.mixin Record isNormalLf (V : chsType) (f : 'End(V)) :=
   { is_normallf : f \is normallf}.
 
 #[short(type="normalfType")]
-HB.structure Definition NormalLf (V : chsType) := 
+HB.structure Definition NormalLf (V : chsType) :=
   { f of isNormalLf V f}.
 
 HB.mixin Record Normal_isHermLf (V : chsType) f of NormalLf V f :=
   { is_hermlf : f \is hermlf}.
 
 #[short(type="hermfType")]
-HB.structure Definition HermLf (V : chsType) := 
+HB.structure Definition HermLf (V : chsType) :=
   { f of NormalLf V f & Normal_isHermLf V f}.
 
 HB.mixin Record Herm_isPsdLf (V : chsType) f of HermLf V f :=
   { is_psdlf : f \is psdlf}.
 
 #[short(type="psdfType")]
-HB.structure Definition PsdLf (V : chsType) := 
+HB.structure Definition PsdLf (V : chsType) :=
   { f of HermLf V f & Herm_isPsdLf V f}.
 
 HB.mixin Record isBound1Lf (U V : chsType) (f : 'Hom(U,V)) :=
   { is_bound1lf : f \is bound1lf}.
 
 #[short(type="bound1fType")]
-HB.structure Definition Bound1Lf (U V : chsType) := 
+HB.structure Definition Bound1Lf (U V : chsType) :=
   { f of isBound1Lf U V f}.
 
 #[short(type="obsfType")]
-HB.structure Definition ObsLf (V : chsType) := 
+HB.structure Definition ObsLf (V : chsType) :=
   { f of PsdLf V f & @Bound1Lf V V f}.
 
 HB.mixin Record Obs_isDenLf (V : chsType) f of ObsLf V f :=
   { is_denlf : f \is denlf}.
 
 #[short(type="denfType")]
-HB.structure Definition DenLf (V : chsType) := 
+HB.structure Definition DenLf (V : chsType) :=
   { f of ObsLf V f & Obs_isDenLf V f}.
 
 HB.mixin Record Den_isDen1Lf (V : chsType) f of DenLf V f :=
   { is_den1lf : f \is den1lf}.
 
 #[short(type="den1fType")]
-HB.structure Definition Den1Lf (V : chsType) := 
+HB.structure Definition Den1Lf (V : chsType) :=
   { f of DenLf V f & Den_isDen1Lf V f}.
 
 HB.mixin Record Obs_isProjLf (V : chsType) f of ObsLf V f :=
   { is_projlf : f \is projlf}.
 
 #[short(type="projfType")]
-HB.structure Definition ProjLf (V : chsType) := 
+HB.structure Definition ProjLf (V : chsType) :=
   { f of ObsLf V f & Obs_isProjLf V f}.
 
 #[short(type="proj1fType")]
-HB.structure Definition Proj1Lf (V : chsType) := 
+HB.structure Definition Proj1Lf (V : chsType) :=
   { f of ProjLf V f & Den1Lf V f}.
 
 HB.mixin Record Bound1_isIsoLf (U V : chsType) f of @Bound1Lf U V f :=
   { is_isolf : f \is isolf}.
 
 #[short(type="isofType")]
-HB.structure Definition IsoLf (U V : chsType) := 
+HB.structure Definition IsoLf (U V : chsType) :=
   { f of @Bound1Lf U V f & Bound1_isIsoLf U V f}.
 
 HB.mixin Record Iso_isGisoLf (U V : chsType) f of @IsoLf U V f :=
   { is_gisolf : f \is gisolf}.
 
 #[short(type="gisofType")]
-HB.structure Definition GisoLf (U V : chsType) := 
+HB.structure Definition GisoLf (U V : chsType) :=
   { f of @IsoLf U V f & @Iso_isGisoLf U V f}.
 
 #[non_forgetful_inheritance]
-HB.instance Definition _ (U : chsType) (f : isofType U U) := 
+HB.instance Definition _ (U : chsType) (f : isofType U U) :=
   isNormalLf.Build U f (isolf_normal (@is_isolf _ _ f)).
 
 (*
@@ -683,7 +683,7 @@ HB.instance Definition _ (U : chsType) (f : isofType U U) :=
   covers gisofType U U. Keeping a second direct route makes HB generation
   prohibitively slow on Rocq 9.2 / HB 1.10.
 #[non_forgetful_inheritance]
-HB.instance Definition _ (U : chsType) (f : gisofType U U) := 
+HB.instance Definition _ (U : chsType) (f : gisofType U U) :=
   isNormalLf.Build U f (isolf_normal (@is_isolf _ _ f)).
 *)
 
@@ -708,34 +708,34 @@ Variable (x : 'End(U)) (y : 'Hom(U,V)).
 Definition NormalLf_Build (H : x \is normallf) : normalfType U :=
   NormalLf.Pack (NormalLf.Class (isNormalLf.Axioms_ x H)).
 Definition HermLf_Build (H : x \is hermlf) : hermfType U :=
-  HermLf.Pack (HermLf.Class (Normal_isHermLf.Axioms_ 
+  HermLf.Pack (HermLf.Class (Normal_isHermLf.Axioms_
     (isNormalLf.Axioms_ x (hermlf_normal H)) H)).
 Definition PsdLf_Build (H : x \is psdlf) : psdfType U :=
-  PsdLf.Pack (PsdLf.Class (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_ 
+  PsdLf.Pack (PsdLf.Class (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_
   (isNormalLf.Axioms_ x (psdlf_normal H)) (psdlf_herm H)) H)).
 Definition ObsLf_Build (H : x \is obslf) : obsfType U :=
-  ObsLf.Pack (ObsLf.Class (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_ 
-  (isNormalLf.Axioms_ x (obslf_normal H)) (obslf_herm H)) (obslf_psd H)) 
+  ObsLf.Pack (ObsLf.Class (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_
+  (isNormalLf.Axioms_ x (obslf_normal H)) (obslf_herm H)) (obslf_psd H))
   (isBound1Lf.Axioms_ _ x (obslf_bound1 H))).
 Definition DenLf_Build (H : x \is denlf) : denfType U :=
   DenLf.Pack (DenLf.Class (@Obs_isDenLf.Axioms_ _ _ _ _
-  (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_ (isNormalLf.Axioms_ x 
+  (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_ (isNormalLf.Axioms_ x
   (denlf_normal H)) (denlf_herm H)) (denlf_psd H))
   (isBound1Lf.Axioms_ _ x (denlf_bound1 H)) H)).
 Definition Den1Lf_Build (H : x \is den1lf) : den1fType U :=
   Den1Lf.Pack (Den1Lf.Class (Den_isDen1Lf.Axioms_
   (@Obs_isDenLf.Axioms_ _ _ _ _
-  (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_ (isNormalLf.Axioms_ x 
+  (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_ (isNormalLf.Axioms_ x
   (den1lf_normal H)) (den1lf_herm H)) (den1lf_psd H))
   (isBound1Lf.Axioms_ _ x (den1lf_bound1 H)) (den1lf_den H)) H)).
 Definition ProjLf_Build (H : x \is projlf) : projfType U :=
-  ProjLf.Pack (ProjLf.Class (@Obs_isProjLf.Axioms_ _ _ _ _ 
-  (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_ (isNormalLf.Axioms_ x 
+  ProjLf.Pack (ProjLf.Class (@Obs_isProjLf.Axioms_ _ _ _ _
+  (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_ (isNormalLf.Axioms_ x
   (projlf_normal H)) (projlf_herm H)) (projlf_psd H))
   (isBound1Lf.Axioms_ _ x (projlf_bound1 H)) H)).
 Definition Proj1Lf_Build (H : x \is proj1lf) : proj1fType U :=
-  Proj1Lf.Pack (Proj1Lf.Class (@Obs_isProjLf.Axioms_ _ _ _ _ 
-  (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_ (isNormalLf.Axioms_ x 
+  Proj1Lf.Pack (Proj1Lf.Class (@Obs_isProjLf.Axioms_ _ _ _ _
+  (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_ (isNormalLf.Axioms_ x
   (proj1lf_normal H)) (proj1lf_herm H)) (proj1lf_psd H))
   (isBound1Lf.Axioms_ _ x (proj1lf_bound1 H)) (proj1lf_proj H))
   (Den_isDen1Lf.Axioms_
@@ -743,15 +743,15 @@ Definition Proj1Lf_Build (H : x \is proj1lf) : proj1fType U :=
 Definition Bound1Lf_Build (H : y \is bound1lf) : bound1fType U V :=
   Bound1Lf.Pack (Bound1Lf.Class (isBound1Lf.Axioms_ _ y H)).
 Definition IsoLf_Build (H : y \is isolf) : isofType U V :=
-  IsoLf.Pack (IsoLf.Class (Bound1_isIsoLf.Axioms_ y 
+  IsoLf.Pack (IsoLf.Class (Bound1_isIsoLf.Axioms_ y
   (isBound1Lf.Axioms_ _ y (isolf_bound1 H)) H)).
 Definition GisoLf_Build (H : y \is gisolf) : gisofType U V :=
   GisoLf.Pack (GisoLf.Class (Iso_isGisoLf.Axioms_ _
-  (Bound1_isIsoLf.Axioms_ y (isBound1Lf.Axioms_ _ y 
+  (Bound1_isIsoLf.Axioms_ y (isBound1Lf.Axioms_ _ y
   (gisolf_bound1 H)) (gisolf_iso H)) H)).
 Definition UnitaryLf_Build (H : x \is unitarylf) : gisofType U U :=
   GisoLf.Pack (GisoLf.Class (Iso_isGisoLf.Axioms_ _
-  (Bound1_isIsoLf.Axioms_ x (isBound1Lf.Axioms_ _ x 
+  (Bound1_isIsoLf.Axioms_ x (isBound1Lf.Axioms_ _ x
   (unitarylf_bound1 H)) (unitarylf_iso H)) (unitarylf_giso H))).
 
 Lemma NormalLf_BuildE (H : x \is normallf) : x = NormalLf_Build H.
@@ -783,8 +783,8 @@ End LfBuild.
 
 (* subtype *)
 (* we define all types as a subtype of lfun instead of their hierarchy *)
-Program Definition normalf_subType := 
-  @isSub.Build 'End(U) (fun f => f \is normallf) (normalfType U) 
+Program Definition normalf_subType :=
+  @isSub.Build 'End(U) (fun f => f \is normallf) (normalfType U)
   (@NormalLf.sort U) NormalLf_Build _ (fun _ _ => erefl).
 Next Obligation.
 move=> K X u; move: (@is_normallf _ u) (X _ (@is_normallf _ u)).
@@ -794,20 +794,20 @@ HB.instance Definition _ := normalf_subType.
 HB.instance Definition _ := [Equality of (normalfType U) by <:].
 HB.instance Definition _ := [Choice of (normalfType U) by <:].
 
-Program Definition hermf_subType := @isSub.Build 'End(U) 
-  (fun f => f \is hermlf) (hermfType U) (@HermLf.sort U) 
+Program Definition hermf_subType := @isSub.Build 'End(U)
+  (fun f => f \is hermlf) (hermfType U) (@HermLf.sort U)
   HermLf_Build _ (fun _ _ => erefl).
 Next Obligation.
 move=> K X u; move: (@is_hermlf _ u) (X _ (@is_hermlf _ u)).
-by case: u=>/= u [[Pu1]] [Pu2] Pu3; 
+by case: u=>/= u [[Pu1]] [Pu2] Pu3;
   rewrite /HermLf_Build (eq_irrelevance Pu2 Pu3) (eq_irrelevance (_ _) Pu1).
 Qed.
 HB.instance Definition _ := hermf_subType.
 HB.instance Definition _ := [Equality of (hermfType U) by <:].
 HB.instance Definition _ := [Choice of (hermfType U) by <:].
 
-Program Definition psdf_subType := @isSub.Build 'End(U) 
-  (fun f => f \is psdlf) (psdfType U) (@PsdLf.sort U) 
+Program Definition psdf_subType := @isSub.Build 'End(U)
+  (fun f => f \is psdlf) (psdfType U) (@PsdLf.sort U)
   PsdLf_Build _ (fun _ _ => erefl).
 Next Obligation.
 move=> K X u; move: (@is_psdlf _ u) (X _ (@is_psdlf _ u)).
@@ -819,8 +819,8 @@ HB.instance Definition _ := psdf_subType.
 HB.instance Definition _ := [Equality of (psdfType U) by <:].
 HB.instance Definition _ := [Choice of (psdfType U) by <:].
 
-Program Definition bound1f_subType := 
-  @isSub.Build 'Hom(U,V) (fun f => f \is bound1lf) (bound1fType U V) 
+Program Definition bound1f_subType :=
+  @isSub.Build 'Hom(U,V) (fun f => f \is bound1lf) (bound1fType U V)
   (@Bound1Lf.sort U V) Bound1Lf_Build _ (fun _ _ => erefl).
 Next Obligation.
 move=> K X u; move: (@is_bound1lf _ _ u) (X _ (@is_bound1lf _ _ u)).
@@ -830,8 +830,8 @@ HB.instance Definition _ := bound1f_subType.
 HB.instance Definition _ := [Equality of (bound1fType U V) by <:].
 HB.instance Definition _ := [Choice of (bound1fType U V) by <:].
 
-Program Definition obsf_subType := @isSub.Build 'End(U) 
-  (fun f => f \is obslf) (obsfType U) (@ObsLf.sort U) 
+Program Definition obsf_subType := @isSub.Build 'End(U)
+  (fun f => f \is obslf) (obsfType U) (@ObsLf.sort U)
   ObsLf_Build _ (fun _ _ => erefl).
 Next Obligation.
 move=> K X u.
@@ -847,8 +847,8 @@ HB.instance Definition _ := obsf_subType.
 HB.instance Definition _ := [Equality of (obsfType U) by <:].
 HB.instance Definition _ := [Choice of (obsfType U) by <:].
 
-Program Definition denf_subType := @isSub.Build 'End(U) 
-  (fun f => f \is denlf) (denfType U) (@DenLf.sort U) 
+Program Definition denf_subType := @isSub.Build 'End(U)
+  (fun f => f \is denlf) (denfType U) (@DenLf.sort U)
   DenLf_Build _ (fun _ _ => erefl).
 Next Obligation.
 move=> K X u. move: (@is_denlf _ u) (X _ (@is_denlf _ u)).
@@ -864,8 +864,8 @@ HB.instance Definition _ := denf_subType.
 HB.instance Definition _ := [Equality of (denfType U) by <:].
 HB.instance Definition _ := [Choice of (denfType U) by <:].
 
-Program Definition den1f_subType := @isSub.Build 'End(U) 
-  (fun f => f \is den1lf) (den1fType U) (@Den1Lf.sort U) 
+Program Definition den1f_subType := @isSub.Build 'End(U)
+  (fun f => f \is den1lf) (den1fType U) (@Den1Lf.sort U)
   Den1Lf_Build _ (fun _ _ => erefl).
 Next Obligation.
 move=> K X u. move: (@is_den1lf _ u) (X _ (@is_den1lf _ u)).
@@ -882,8 +882,8 @@ HB.instance Definition _ := den1f_subType.
 HB.instance Definition _ := [Equality of (den1fType U) by <:].
 HB.instance Definition _ := [Choice of (den1fType U) by <:].
 
-Program Definition projf_subType := @isSub.Build 'End(U) 
-  (fun f => f \is projlf) (projfType U) (@ProjLf.sort U) 
+Program Definition projf_subType := @isSub.Build 'End(U)
+  (fun f => f \is projlf) (projfType U) (@ProjLf.sort U)
   ProjLf_Build _ (fun _ _ => erefl).
 Next Obligation.
 move=> K X u. move: (@is_projlf _ u) (X _ (@is_projlf _ u)).
@@ -899,8 +899,8 @@ HB.instance Definition _ := projf_subType.
 HB.instance Definition _ := [Equality of (projfType U) by <:].
 HB.instance Definition _ := [Choice of (projfType U) by <:].
 
-Program Definition proj1f_subType := @isSub.Build 'End(U) 
-  (fun f => f \is proj1lf) (proj1fType U) (@Proj1Lf.sort U) 
+Program Definition proj1f_subType := @isSub.Build 'End(U)
+  (fun f => f \is proj1lf) (proj1fType U) (@Proj1Lf.sort U)
   Proj1Lf_Build _ (fun _ _ => erefl).
 Next Obligation.
 move=> K X u; move: (den1lf_projlf_proj1 (@is_den1lf _ u) (@is_projlf _ u))=>Pu.
@@ -919,8 +919,8 @@ HB.instance Definition _ := proj1f_subType.
 HB.instance Definition _ := [Equality of (proj1fType U) by <:].
 HB.instance Definition _ := [Choice of (proj1fType U) by <:].
 
-Program Definition isof_subType := 
-  @isSub.Build 'Hom(U,V) (fun f => f \is isolf) (isofType U V) 
+Program Definition isof_subType :=
+  @isSub.Build 'Hom(U,V) (fun f => f \is isolf) (isofType U V)
   (@IsoLf.sort U V) IsoLf_Build _ (fun _ _ => erefl).
 Next Obligation.
 move=> K X u; move: (@is_isolf _ _ u) (X _ (@is_isolf _ _ u)).
@@ -933,8 +933,8 @@ HB.instance Definition _ := isof_subType.
 HB.instance Definition _ := [Equality of (isofType U V) by <:].
 HB.instance Definition _ := [Choice of (isofType U V) by <:].
 
-Program Definition gisof_subType := 
-  @isSub.Build 'Hom(U,V) (fun f => f \is gisolf) (gisofType U V) 
+Program Definition gisof_subType :=
+  @isSub.Build 'Hom(U,V) (fun f => f \is gisolf) (gisofType U V)
   (@IsoLf.sort U V) GisoLf_Build _ (fun _ _ => erefl).
 Next Obligation.
 move=> K X u; move: (@is_gisolf _ _ u) (X _ (@is_gisolf _ _ u)).
@@ -1123,18 +1123,18 @@ Arguments is_isolf [U V] s.
 Arguments is_gisolf [U V] s.
 
 Lemma is_obslf (V : chsType) (f : 'FO(V)) : f%:VF \is obslf.
-Proof. by move: (is_psdlf f) (is_bound1lf f); exact: psdlf_bound1lf_obs. Qed. 
+Proof. by move: (is_psdlf f) (is_bound1lf f); exact: psdlf_bound1lf_obs. Qed.
 Lemma is_unitarylf (V : chsType) (f : 'FU(V)) : f%:VF \is unitarylf.
 Proof. by move: (is_isolf f)=>/isolf_unitary. Qed.
 Lemma is_proj1lf (V : chsType) (f : 'FP1(V)) : f%:VF \is proj1lf.
-Proof. by move: (is_den1lf f) (is_projlf f); exact: den1lf_projlf_proj1. Qed.  
+Proof. by move: (is_den1lf f) (is_projlf f); exact: den1lf_projlf_proj1. Qed.
 
 Section LfPredReflect.
 Variable (V: chsType) (A : 'End(V)).
 Implicit Type (U W T: chsType).
 
 Lemma lf_psd_decomp :
-  exists (M1 M2 M3 M4 : 'End(V)) , M1 \is psdlf /\ M2 \is psdlf 
+  exists (M1 M2 M3 M4 : 'End(V)) , M1 \is psdlf /\ M2 \is psdlf
   /\ M3 \is psdlf /\ M4 \is psdlf /\ A = M1 - M2 + 'i *: M3 - 'i *: M4.
 Proof.
 move: (mx_psd_decomp (h2mx A))=>[M1 [M2 [M3 [M4]]]] [P1 [P2 [P3 [P4]]]] P5.
@@ -1184,9 +1184,9 @@ Lemma gisolfP U W (B : 'Hom(U,W)) :
 Proof.
 apply/(iffP (gisolf_isoP _))=>[[/isolfP->/isolfP<-]|[]/isolfP->];
 by rewrite ?adjfK// -{1}[B]adjfK=>/isolfP->.
-Qed.  
+Qed.
 
-Lemma gisolfE (W : chsType) (B : 'Hom(V,W)) : 
+Lemma gisolfE (W : chsType) (B : 'Hom(V,W)) :
   (B \is gisolf) = (B^A \o B == \1) && (B \o B^A == \1).
 Proof. by rewrite gisolf_isoE !isolfE adjfK. Qed.
 
@@ -1199,8 +1199,8 @@ Qed.
 Lemma hermlfE : (A \is hermlf) = (A^A == A).
 Proof. by apply/eqb_iff; split=>[/hermlfP/eqP->|/eqP/hermlfP]. Qed.
 
-Lemma psdlfP : 
-  reflect (forall v, [< v ; A v>] >= 0) (A \is psdlf). 
+Lemma psdlfP :
+  reflect (forall v, [< v ; A v>] >= 0) (A \is psdlf).
 Proof.
 apply (iffP idP); rewrite qualifE.
 move=>/psdmx_dot P v. move: P =>/(_ (h2c v)).
@@ -1218,7 +1218,7 @@ Qed.
 Lemma psdlf_trlf : A \is psdlf -> 0 <= \Tr A.
 Proof. by move/psdlfP=>P; rewrite lftrace_baseE sumr_ge0. Qed.
 
-Lemma denlfP : reflect (A \is psdlf /\ \Tr A <= 1) (A \is denlf). 
+Lemma denlfP : reflect (A \is psdlf /\ \Tr A <= 1) (A \is denlf).
 Proof.
 by rewrite qualifE [_ \is denlf]qualifE /lftrace;
 apply (iffP (denmxP _)).
@@ -1227,8 +1227,8 @@ Qed.
 Lemma denlf_trlf : A \is denlf -> \Tr A <= 1.
 Proof. by move=>/denlfP[]. Qed.
 
-Lemma obslfP : 
-  reflect (A \is psdlf /\ forall u, [<u ; A u>] <= [< u; u >]) (A \is obslf). 
+Lemma obslfP :
+  reflect (A \is psdlf /\ forall u, [<u ; A u>] <= [< u; u >]) (A \is obslf).
 Proof.
 rewrite [X in reflect _ X]qualifE.
 apply (iffP (obsmx_dot _))=>[P|[/psdlfP P1 P2 u]].
@@ -1258,7 +1258,7 @@ Proof. by apply/eqb_iff; rewrite eq_iff; split=>/unitarylfP. Qed.
 Lemma unitarylfEV : (A \is unitarylf) = (A \o A^A == \1).
 Proof. by apply/eqb_iff; rewrite eq_iff; split=>/unitarylfPV. Qed.
 
-Lemma lfun_eq0P U (B : 'End(U)) : 
+Lemma lfun_eq0P U (B : 'End(U)) :
   reflect (forall u, [< u ; B u >] = 0) (B == 0).
 Proof.
 apply/(iffP eqP)=>[-> u|P]; first by rewrite lfunE/= dotp0.
@@ -1275,11 +1275,11 @@ apply/subr0_eq/eqP/lfun_eq0P=>u.
 by rewrite !lfunE/= lfunE/= lfunE/= lfunE/= dotpBr adj_dotEr P addrN.
 Qed.
 
-Lemma unitarylf_dotP : 
-  reflect (forall u, [< A u ; A u>] = [< u; u >]) (A \is unitarylf). 
+Lemma unitarylf_dotP :
+  reflect (forall u, [< A u ; A u>] = [< u; u >]) (A \is unitarylf).
 Proof. exact: isolf_dotP. Qed.
 
-Lemma idemr_01 (T : fieldType) (x : T) : 
+Lemma idemr_01 (T : fieldType) (x : T) :
   (x ^+2 == x) = ((x == 0) || (x == 1)).
 Proof. by rewrite -subr_eq0 -{2}(mul1r x) -mulrBl mulf_eq0 subr_eq0 orbC. Qed.
 
@@ -1292,10 +1292,10 @@ move=>/matrixP P; apply/boolmxP=> i j.
 by move: (P i j)=>/eqP; rewrite mxE -expr2 idemr_01.
 Qed.
 
-Lemma projmxP_id (T : numClosedFieldType) m (B : 'M[T]_m) : 
+Lemma projmxP_id (T : numClosedFieldType) m (B : 'M[T]_m) :
   reflect (B \is hermmx /\ (B *m B = B)) (B \is projmx).
 Proof.
-apply(iffP (projmxP _))=>[[P1 P2]|[P1 P2]]; split=>//; 
+apply(iffP (projmxP _))=>[[P1 P2]|[P1 P2]]; split=>//;
 move: P1=>/hermmx_normal/eigen_dec P1; [|move: P2].
   rewrite P1 !mulmxA mulmxKtV// mulmxACA diag_mx_dmul.
   by do 3 f_equal; apply/boolmx_dmul.
@@ -1407,7 +1407,7 @@ Arguments unitaryf_bij {V u}.
 Lemma hnorm_l2norm (W : chsType) (v : W) :
   `| v | = l2norm (h2c v).
 Proof.
-rewrite /normr/= /hnorm dotp_mulmx mxE l2normE exchange_big big_ord1. 
+rewrite /normr/= /hnorm dotp_mulmx mxE l2normE exchange_big big_ord1.
 by f_equal; apply eq_bigr=>i _; rewrite !mxE normCKC.
 Qed.
 
@@ -1461,7 +1461,7 @@ Proof. by rewrite qualifE=>/projmx_tr. Qed.
 Lemma projf_trlf (A : 'FP(H)) : \Tr A = (\Rank A)%:R.
 Proof. apply/projlf_trlf/is_projlf. Qed.
 
-Lemma proj1lf_rankP (A : 'End(H)) : 
+Lemma proj1lf_rankP (A : 'End(H)) :
   reflect (A \is projlf /\ \Rank A = 1%N) (A \is proj1lf).
 Proof.
 rewrite qualifE /lfrank [X in reflect _ X]qualifE.
@@ -1472,7 +1472,7 @@ Proof. by move=>/proj1lf_rankP[]. Qed.
 Lemma proj1f_rank (P : 'FP1(H)) : \Rank P = 1%N.
 Proof. apply/proj1lf_rank/is_proj1lf. Qed.
 
-Lemma proj1lfP (A : 'End(H)) : 
+Lemma proj1lfP (A : 'End(H)) :
   reflect (A \is projlf /\ \Tr A = 1) (A \is proj1lf).
 Proof.
 apply/(iffP (proj1lf_rankP _))=>[[P1 P2]|[P1/eqP P2]]; split=>//.
@@ -1630,7 +1630,7 @@ Proof. by rewrite conjfAT den1lf_tr den1lf_adj. Qed.
 
 Lemma projlf_adj (A:'End(V)) : A^A \is projlf = (A \is projlf).
 Proof.
-apply/eqb_iff; split=>/projlfP; rewrite ?adjfK=>[[P1 P2]]; apply/projlfP; 
+apply/eqb_iff; split=>/projlfP; rewrite ?adjfK=>[[P1 P2]]; apply/projlfP;
 by split; apply/adjf_inj; rewrite ?adjf_comp ?adjfK.
 Qed.
 Lemma projlf_tr (A:'End(V)) : A^T \is projlf = (A \is projlf).
@@ -1643,12 +1643,12 @@ Proof. by rewrite conjfAT projlf_tr projlf_adj. Qed.
 
 Lemma proj1lf_adj (A:'End(V)) : A^A \is proj1lf = (A \is proj1lf).
 Proof.
-apply/eqb_iff; split=>/proj1lf_rankP P; apply/proj1lf_rankP; 
+apply/eqb_iff; split=>/proj1lf_rankP P; apply/proj1lf_rankP;
 by move: P; rewrite projlf_adj ranklf_adj.
 Qed.
 Lemma proj1lf_tr (A:'End(V)) : A^T \is proj1lf = (A \is proj1lf).
 Proof.
-apply/eqb_iff; split=>/proj1lf_rankP P; apply/proj1lf_rankP; 
+apply/eqb_iff; split=>/proj1lf_rankP P; apply/proj1lf_rankP;
 by move: P; rewrite projlf_tr ranklf_tr.
 Qed.
 Lemma proj1lf_conj (A:'End(V)) : A^C \is proj1lf = (A \is proj1lf).
@@ -1679,7 +1679,7 @@ Proof. by rewrite !gisolf_isoE lfCAC !isolf_conj. Qed.
 Lemma gisolf_tr U W (A : 'Hom(U,W)) : A^T \is gisolf = (A \is gisolf).
 Proof. by rewrite trfAC gisolf_conj gisolf_adj. Qed.
 
-Lemma unitarylf_comp (A B : 'End(V)): 
+Lemma unitarylf_comp (A B : 'End(V)):
   A \is unitarylf -> B \is unitarylf -> A \o B \is unitarylf.
 Proof. exact: isolf_comp. Qed.
 Lemma unitarylf_adj (A:'End(V)) : A^A \is unitarylf = (A \is unitarylf).
@@ -1724,7 +1724,7 @@ HB.instance Definition _ (A : 'FH(V)) := Normal_isHermLf.Build V (A^T) (hermf_tr
 HB.instance Definition _ (A : 'FH(V)) := Normal_isHermLf.Build V (A^C) (hermf_conj A).
 HB.instance Definition _ (A B : 'FH(V)) := isHermLf.Build V (A%:VF + B) (hermfD A B).
 HB.instance Definition _ (A : 'FH(V)) := Normal_isHermLf.Build V (-A%:VF) (hermfN A).
-HB.instance Definition _ I (r : seq I) (P : pred I) (f : I -> 'FH(V)) := 
+HB.instance Definition _ I (r : seq I) (P : pred I) (f : I -> 'FH(V)) :=
   isHermLf.Build V (\sum_(i <- r | P i) (f i)%:VF) (hermf_sum r P f).
 
 (* psdf_add : defined later *)
@@ -1743,7 +1743,7 @@ HB.instance Definition _ (A : 'F+(V)) := Herm_isPsdLf.Build V (A^A) (psdf_adj A)
 HB.instance Definition _ (A : 'F+(V)) := Herm_isPsdLf.Build V (A^T) (psdf_tr A).
 HB.instance Definition _ (A : 'F+(V)) := Herm_isPsdLf.Build V (A^C) (psdf_conj A).
 HB.instance Definition _ (A B : 'F+(V)) := Herm_isPsdLf.Build V (A%:VF + B) (psdfD A B).
-HB.instance Definition _ I (r : seq I) (P : pred I) (f : I -> 'F+(V)) := 
+HB.instance Definition _ I (r : seq I) (P : pred I) (f : I -> 'F+(V)) :=
   Herm_isPsdLf.Build V (\sum_(i <- r | P i) (f i)%:VF) (psdf_sum r P f).
 
 Lemma bound1f_adj U W (B : 'FB1(U,W)) : B^A \is bound1lf.
@@ -1757,7 +1757,7 @@ Proof. by rewrite bound1lf_comp ?is_bound1lf. Qed.
 HB.instance Definition _ U W (B : 'FB1(U,W)) := isBound1Lf.Build W U (B^A) (bound1f_adj B).
 HB.instance Definition _ U W (B : 'FB1(U,W)) := isBound1Lf.Build U W (B^C) (bound1f_conj B).
 HB.instance Definition _ U W (B : 'FB1(U,W)) := isBound1Lf.Build W U (B^T) (bound1f_tr B).
-HB.instance Definition _ U W T (A : 'FB1(U,W)) (B : 'FB1(T,U)) := 
+HB.instance Definition _ U W T (A : 'FB1(U,W)) (B : 'FB1(T,U)) :=
   isBound1Lf.Build _ _ (A \o B) (bound1f_comp A B).
 
 HB.instance Definition _ (A : 'FO(V)) := ObsLf.Class (PsdLf.on (A^A)) (Bound1Lf.on (A^A)).
@@ -1806,7 +1806,7 @@ HB.instance Definition _ (A : 'FP1(V)) := Proj1Lf.Class (ProjLf.on (A^C)) (Den1L
 Lemma proj1f_adj (A : 'FP1(V)) : A^A \is proj1lf. Proof. apply/is_proj1lf. Qed.
 Lemma proj1f_conj (A : 'FP1(V)) : A^C \is proj1lf. Proof. apply/is_proj1lf. Qed.
 Lemma proj1f_tr (A : 'FP1(V)) : A^T \is proj1lf. Proof. apply/is_proj1lf. Qed.
- 
+
 (* HB.instance Definition _ (A : 'FP1(V)) := isProj1Lf.Build V (A^A) (proj1f_adj A).
 HB.instance Definition _ (A : 'FP1(V)) := isProj1Lf.Build V (A^T) (proj1f_tr A).
 HB.instance Definition _ (A : 'FP1(V)) := isProj1Lf.Build V (A^C) (proj1f_conj A). *)
@@ -1816,7 +1816,7 @@ Proof. by rewrite isolf_conj is_isolf. Qed.
 Lemma isof_comp U W T (A : 'FI(U,W)) (B : 'FI(T,U)) : A \o B \is isolf.
 Proof. by rewrite isolf_comp ?is_isolf. Qed.
 HB.instance Definition _ U W (B : 'FI(U,W)) := Bound1_isIsoLf.Build U W (B^C) (isof_conj B).
-HB.instance Definition _ U W T (A : 'FI(U,W)) (B : 'FI(T,U)) := 
+HB.instance Definition _ U W T (A : 'FI(U,W)) (B : 'FI(T,U)) :=
   Bound1_isIsoLf.Build _ _ (A \o B) (isof_comp A B).
 
 Lemma gisof_adj U W (B : 'FGI(U,W)) : B^A \is gisolf.
@@ -1832,7 +1832,7 @@ HB.instance Definition _ U W (B : 'FGI(U,W)) := Iso_isGisoLf.Build W U (B^A) (gi
 HB.instance Definition _ U W (B : 'FGI(U,W)) := Iso_isGisoLf.Build U W (B^C) (gisof_conj B).
 HB.instance Definition _ U W (B : 'FGI(U,W)) := Bound1_isIsoLf.Build W U (B^T) (gisolf_iso (gisof_tr B)).
 HB.instance Definition _ U W (B : 'FGI(U,W)) := Iso_isGisoLf.Build W U (B^T) (gisof_tr B).
-HB.instance Definition _ U W T (A : 'FGI(U,W)) (B : 'FGI(T,U)) := 
+HB.instance Definition _ U W T (A : 'FGI(U,W)) (B : 'FGI(T,U)) :=
   Iso_isGisoLf.Build _ _ (A \o B) (gisof_comp A B).
 
 Lemma unitaryf_comp (A B : 'FU(V)) : A \o B \is unitarylf. Proof. by apply/is_unitarylf. Qed.
@@ -1852,7 +1852,7 @@ Proof. apply/unitarylfPV/is_unitarylf. Qed.
 
 Lemma unitaryf_sym (A : 'FU(V)) u v : (A^A u == v)%VF = (A v == u).
 Proof.
-by apply/eqb_iff; rewrite !eq_iff; split=><-; 
+by apply/eqb_iff; rewrite !eq_iff; split=><-;
 rewrite -comp_lfunE ?unitaryf_form ?unitaryf_formV lfunE.
 Qed.
 
@@ -1956,9 +1956,9 @@ HB.builders Context U u of isNormalState U u.
   HB.instance Definition _ := Partial_isNormalState.Build U u ns_dot.
 HB.end.
 
-Program Definition PartialState_subType (U : chsType) := 
-  @isSub.Build U (fun u => [< u ; u >] <= 1) (psType U) 
-  (@PartialState.sort U) (fun (u : U) (H : [< u ; u >] <= 1) => 
+Program Definition PartialState_subType (U : chsType) :=
+  @isSub.Build U (fun u => [< u ; u >] <= 1) (psType U)
+  (@PartialState.sort U) (fun (u : U) (H : [< u ; u >] <= 1) =>
   PartialState.Pack (PartialState.Class (isPartialState.Axioms_ u H))) _ (fun _ _ => erefl).
 Next Obligation.
 move=> U K X u; move: (@ps_dot _ u) (X _ (@ps_dot _ u)).
@@ -1968,10 +1968,10 @@ HB.instance Definition _ (U : chsType) := @PartialState_subType U.
 HB.instance Definition _ (U : chsType) := [Equality of (psType U) by <:].
 HB.instance Definition _ (U : chsType) := [Choice of (psType U) by <:].
 
-Program Definition NormalState_subType (U : chsType) := 
-  @isSub.Build U (fun u => [< u ; u >] == 1) (nsType U) 
-  (@NormalState.sort U) (fun (u : U) (H : [< u ; u >] == 1) => 
-  NormalState.Pack (NormalState.Class 
+Program Definition NormalState_subType (U : chsType) :=
+  @isSub.Build U (fun u => [< u ; u >] == 1) (nsType U)
+  (@NormalState.sort U) (fun (u : U) (H : [< u ; u >] == 1) =>
+  NormalState.Pack (NormalState.Class
   (Partial_isNormalState.Axioms_ (isPartialState.Axioms_ u _) (eqP H)))) _ (fun _ _ => erefl).
 Next Obligation. by move=>??/eqP->. Qed.
 Next Obligation.
@@ -2000,7 +2000,7 @@ Proof. by rewrite ponb2mx_col enum_rankK. Qed.
 Lemma ponb2mx_unitary : ponb2mx^*t \is unitarymx.
 Proof.
 apply/unitarymxP/matrixP=>j k.
-by rewrite -adjmxE adjmxK mulmx_rowcol -adj_col !ponb2mx_col 
+by rewrite -adjmxE adjmxK mulmx_rowcol -adj_col !ponb2mx_col
   -dotp_mulmx ponb_dot mxE (can_eq enum_valK) eq_sym.
 Qed.
 Lemma ponb_card : (#|F| <= dim H)%N.
@@ -2027,10 +2027,10 @@ HB.instance Definition _ :=
 
 Lemma ponb_ortho_compl i j : [< f i ; ponb_compl j >] = 0.
 Proof.
-rewrite dotp_mulmx /ponb_compl !c2hK row_dsubmx ponb2mx_colV adj_col 
+rewrite dotp_mulmx /ponb_compl !c2hK row_dsubmx ponb2mx_colV adj_col
   {1}(unitary_ext ponb2mx_unitary) row_usubmx adj_row -mulmx_rowcol unitarymxK.
 by apply/schmidt_unitarymx; rewrite subnKC// ponb_card.
-by rewrite mxE eq_lrshift. 
+by rewrite mxE eq_lrshift.
 Qed.
 
 Lemma ponb_ortho_complV i j : [< ponb_compl i ; f j >] = 0.
@@ -2041,12 +2041,12 @@ Lemma ponb_extCE i : ponb_ext (inr i) = ponb_compl i. Proof. by []. Qed.
 
 Lemma ponb_ext_onb i j : [< ponb_ext i ; ponb_ext j >] = (i == j)%:R.
 Proof.
-by case: i; case: j=>i j; rewrite /ponb_ext/= ?ponb_compl_ponb 
+by case: i; case: j=>i j; rewrite /ponb_ext/= ?ponb_compl_ponb
   ?ponb_dot// ?ponb_ortho_compl ?ponb_ortho_complV.
 Qed.
 Lemma ponb_ext_card : #|{: F + 'I_(dim H - #|F|)%N}| = dim H.
 Proof. by rewrite card_sum card_ord addnC subnK// ponb_card. Qed.
-HB.instance Definition _ := isONB.Build H (F + 'I_(dim H - #|F|)%N)%type 
+HB.instance Definition _ := isONB.Build H (F + 'I_(dim H - #|F|)%N)%type
   ponb_ext ponb_ext_onb ponb_ext_card.
 
 End PONBDot.
@@ -2079,7 +2079,7 @@ Proof.
 move: onb2eb_unitary=>/unitarylfP<-. symmetry.
 rewrite onb2eb_adj /eb2onb /onb2eb linear_sumr/=; apply eq_bigr=>i _.
 rewrite (bigD1 i)//= comp_lfunDl linear_sumlz big1/==>[j/negPf nj|];
-by rewrite outp_comp eb_dot -enum_ord_eq cast_ord_comp cast_ord_id enum_rankK 
+by rewrite outp_comp eb_dot -enum_ord_eq cast_ord_comp cast_ord_id enum_rankK
   ?nj ?scale0r// eqxx scale1r addr0.
 Qed.
 
@@ -2100,14 +2100,14 @@ under eq_bigr do rewrite outp_complV.
 by rewrite -linear_sumr/= sumonb_out comp_lfun1r.
 Qed.
 
-Lemma intro_onbl (u v: H) : 
+Lemma intro_onbl (u v: H) :
   (forall i, [< f i ; u >] = [< f i ; v >]) <-> u = v.
 Proof.
 split=>[P|->//]; apply intro_dotl=> t; rewrite (onb_vec t) !dotp_suml.
 by apply eq_bigr=>i _; rewrite !dotpZl P.
 Qed.
 
-Lemma intro_onbr (u v: H) : 
+Lemma intro_onbr (u v: H) :
   (forall i, [< u ; f i >] = [< v ; f i >]) <-> u = v.
 Proof.
 split=>[|->//]; rewrite -intro_onbl=> P t.
@@ -2115,7 +2115,7 @@ by apply (can_inj conjCK); rewrite !conj_dotp.
 Qed.
 
 Lemma onb_trlf x : \Tr x = \sum_i [< f i ; x (f i) >].
-Proof. 
+Proof.
 rewrite {1}(onb_lfun x) linear_sum/=; apply eq_bigr=>i _.
 by rewrite outp_trlf.
 Qed.
@@ -2136,7 +2136,7 @@ Proof. by rewrite -(sumonb_out phi) big_bool. Qed.
 Section ONB2Theory.
 Variable (U V : chsType) (F G : finType) (ou : 'ONB(F;U)) (ov : 'ONB(G;V)).
 
-Lemma onb_lfun2 (E : 'Hom(U,V)) : 
+Lemma onb_lfun2 (E : 'Hom(U,V)) :
   E = \sum_i \sum_j [< ov j ; E (ou i) >] *: [> ov j ; ou i <].
 Proof.
 rewrite [LHS](onb_lfun ou); apply eq_bigr=>i _.
@@ -2144,7 +2144,7 @@ by rewrite {1}(onb_vec ov (E (ou i))) linear_sumlz/=;
 under eq_bigr do rewrite linearZl_LR.
 Qed.
 
-Lemma onb_lfun2id (E : 'End(U)) : 
+Lemma onb_lfun2id (E : 'End(U)) :
   E = \sum_i \sum_j [< ou j ; E (ou i) >] *: [> ou j ; ou i <].
 Proof.
 rewrite [LHS](onb_lfun ou); apply eq_bigr=>i _.
@@ -2158,7 +2158,7 @@ Section DefaultONB.
 
 Lemma eb_card (H : chsType) : #|'I_(dim H) | = dim H.
 Proof. by rewrite card_ord. Qed.
-HB.instance Definition _ (H : chsType) := 
+HB.instance Definition _ (H : chsType) :=
   isONB.Build H 'I_(dim H) (@eb H) (@eb_dot H) (@eb_card H).
 
 End DefaultONB.
@@ -2174,14 +2174,14 @@ Lemma ponb_ns F (f : 'PONB(F;U)) i : [< f i ; f i >] = 1.
 Proof. by rewrite ponb_dot eqxx. Qed.
 
 #[non_forgetful_inheritance]
-HB.instance Definition _ F (f : 'PONB(F;U)) (i : F) := 
+HB.instance Definition _ F (f : 'PONB(F;U)) (i : F) :=
   isNormalState.Build U (f i) (ponb_ns f i).
 
 #[non_forgetful_inheritance]
-HB.instance Definition _ F (f : 'ONB(F;U)) (i : F) := 
+HB.instance Definition _ F (f : 'ONB(F;U)) (i : F) :=
   NormalState.copy (f i) ((f : 'PONB) i : 'NS).
 
-HB.instance Definition _ (i : 'I_(dim U)) := 
+HB.instance Definition _ (i : 'I_(dim U)) :=
   NormalState.copy (eb i) ((eb : 'ONB) i : 'NS).
 
 Lemma zero_ps_subproof : [<0 : U ; 0>] <= 1.
@@ -2195,7 +2195,7 @@ move: (is_bound1lf f)=>/bound1lfP/(_ (v : U)) P1.
 apply/(le_trans P1)/ps_dot.
 Qed.
 
-HB.instance Definition _ (V : chsType) (f : 'FB1(U,V)) (v : 'PS(U)) := 
+HB.instance Definition _ (V : chsType) (f : 'FB1(U,V)) (v : 'PS(U)) :=
   isPartialState.Build V (f (v : U)) (bound1lf_ps f v).
 
 End PartialStateTheory.
@@ -2224,7 +2224,7 @@ Lemma isolf_ns (V : chsType) (f : 'FI(U,V)) :
   [< f (v : U) ; f (v : U) >] = 1.
 Proof. by rewrite -adj_dotEl isofKE ns_dot. Qed.
 
-HB.instance Definition _ (V : chsType) (f : 'FI(U,V)) := 
+HB.instance Definition _ (V : chsType) (f : 'FI(U,V)) :=
   Partial_isNormalState.Build V (f (v : U)) (isolf_ns f).
 
 End NormalizedStateTheory.
@@ -2273,7 +2273,7 @@ Proof. by rewrite addrC /Order.le/= /lef_def opprD addrA addrK. Qed.
 Lemma lef_pscale2lP (e : C) f g : 0 < e -> f ⊑ g -> (e *: f) ⊑ (e *: g).
 Proof. rewrite !lef_h2mx !linearZ/=; exact: lev_pscale2lP. Qed.
 
-Lemma pscalef_lge0 f (a : C) : 
+Lemma pscalef_lge0 f (a : C) :
   (0 : 'End(V)) ⊏ f -> (0 : 'End(V)) ⊑ a *: f = (0 <= a).
 Proof. rewrite lef_h2mx ltf_h2mx linear0 linearZ/=; exact: pscalev_lge0. Qed.
 
@@ -2285,7 +2285,7 @@ Proof. by rewrite {1}/Order.le/=. Qed.
 
 Lemma lef_dot f g : f ⊑ g <-> forall v, [<v ; f v>] <= [<v ; g v >].
 Proof.
-rewrite {1}/Order.le [in X in X <-> _]/= /lef_def. 
+rewrite {1}/Order.le [in X in X <-> _]/= /lef_def.
 split=>[/psdlfP P v|P]; last apply/psdlfP=>v.
 all: by move: (P v); rewrite !lfunE/= !lfunE/= linearB/= subr_ge0.
 Qed.
@@ -2315,7 +2315,7 @@ Lemma gtf0_pd f : reflect (0 ⊑ f /\ exists v, [<v ; f v>] != 0%R) (0 ⊏ f).
 Proof.
 rewrite lt_def; apply/(iffP andP); move=>[P1 P2]; split=>//.
 move: P1=>/eqP; rewrite not_existsP; apply contra_not=>P1.
-move: P2=>/gef0_formV[g Pg]; apply/lfunP=>v; move: (P1 v)=>/negP. 
+move: P2=>/gef0_formV[g Pg]; apply/lfunP=>v; move: (P1 v)=>/negP.
 rewrite negbK Pg lfunE/= -adj_dotEl adjfK dotp_eq0=>/eqP->.
 by rewrite !lfunE/= linear0.
 by move: P2=>[v]; apply contraNN=>/eqP->; rewrite lfunE/= linear0.
@@ -2339,7 +2339,7 @@ Lemma lef01 : 0 ⊑ \1.
 Proof. by apply lef_dot=>v; rewrite !lfunE/= linear0 ge0_dotp. Qed.
 
 Lemma ltf01 : 0 ⊏ \1.
-Proof. by rewrite lt_def lef01 (oner_neq0 ('End(V) : ringType)). Qed.
+Proof. by rewrite lt_def lef01 (oner_neq0 ('End(V) : nzRingType)). Qed.
 
 Lemma lef_adj x y : (x^A ⊑ y^A) = (x ⊑ y).
 Proof. by rewrite -subv_ge0 -psdlfE -linearB/= psdlf_adj psdlfE subv_ge0. Qed.
@@ -2389,7 +2389,7 @@ split; first by move=>H x; apply/H/is_psdlf.
 move=>H x Px; have ->: x = PsdLf_Build Px by apply/val_inj. apply/H.
 Qed.
 
-Lemma trlf_compr_le_nnegz f g : 
+Lemma trlf_compr_le_nnegz f g :
   NnegZProp (fun x : 'End(V) => \Tr (f \o x) <= \Tr (g \o x)).
 Proof.
 by move=>/= c Pc x Px; rewrite -!comp_lfunZr !linearZ/=; apply/ler_wpM2l.
@@ -2407,25 +2407,25 @@ Qed.
 Lemma lef_psdtr f g :
   reflect (forall x, x \is psdlf -> \Tr (f \o x) <= \Tr (g \o x)) (f ⊑ g).
 Proof.
-by apply/(iffP (lef_dentr _ _)); 
+by apply/(iffP (lef_dentr _ _));
   rewrite (denlf_psdlf_eq_nnegz (@trlf_compr_le_nnegz f g)).
 Qed.
 
-Lemma lef_obstr f g : 
+Lemma lef_obstr f g :
   reflect (forall x, x \is obslf -> \Tr (f \o x) <= \Tr (g \o x))	(f ⊑ g).
 Proof.
 apply/(iffP idP)=>[/lef_psdtr P x /obslf_psd/P//|P].
 by apply/lef_dentr=>x /denlf_obs/P.
 Qed.
 
-Lemma lef_trden f g : 
+Lemma lef_trden f g :
   reflect (forall x : 'FD(V), \Tr (f \o x) <= \Tr (g \o x)) (f ⊑ g).
 Proof.
 apply/(iffP (lef_dentr _ _))=>[H x|H x P].
 by apply/H/is_denlf. by move: (H (HB.pack x (isDenLf.Build _ x P))).
 Qed.
 
-Lemma lef_trobs f g : 
+Lemma lef_trobs f g :
   reflect (forall x : 'FO(V), \Tr (f \o x) <= \Tr (g \o x)) (f ⊑ g).
 Proof.
 apply/(iffP (lef_obstr _ _))=>[H x|H x P].
@@ -2454,7 +2454,7 @@ by rewrite -normr_eq0 hnormE -adj_dotEl -comp_lfunE P1 lfunE/= linear0l sqrtC0.
 Qed.
 
 Lemma formV_eq0 (f : 'Hom(U,V)) : f \o f^A == 0 = (f == 0).
-Proof. 
+Proof.
 apply/eqb_iff; rewrite !eq_iff; split=>[P1|->]; last by rewrite comp_lfun0l.
 apply/adjf_inj/lfunP=>v; rewrite raddf0 lfunE/=; apply/eqP.
 by rewrite -normr_eq0 hnormE adj_dotEl -comp_lfunE P1 lfunE/= linear0 sqrtC0.
@@ -2488,7 +2488,7 @@ Lemma obslfE (f: 'End(U)) :
   f \is obslf = (((0 : 'End(U)) ⊑ f) && (f ⊑ \1)).
 Proof. by rewrite !lef_h2mx qualifE obsmx_psd_eq !le_lownerE h2mx1 linear0 subr0. Qed.
 
-Lemma psdlf_TrM (f g: 'End(U)) : 
+Lemma psdlf_TrM (f g: 'End(U)) :
   f \is psdlf -> g \is psdlf -> 0%:R <= \Tr (f \o g).
 Proof.
 rewrite !psdlfE=>/gef0_formV[h ->] /(lef_formV h)/lef_trlf.
@@ -2496,27 +2496,27 @@ by rewrite comp_lfun0r comp_lfun0l linear0 [\Tr (_ \o h^A)]lftraceC comp_lfunA.
 Qed.
 
 Lemma denf_ges0 (x : 'FD(U)) : (0%:VF : 'FD) ⊑ x.
-Proof. by rewrite leEsub/= -psdlfE; apply/denlf_psd/is_denlf. Qed.
+Proof. by rewrite -Order.le_val/= -psdlfE; apply/denlf_psd/is_denlf. Qed.
 
 Lemma denf_ge0 (x : 'FD(U)) : (0 : 'End(U)) ⊑ x.
-Proof. by move: (denf_ges0 x); rewrite leEsub. Qed.
+Proof. by move: (denf_ges0 x); rewrite -Order.le_val. Qed.
 
 Lemma denf_le1 (x : 'FD(U)) : (x : 'End(U)) ⊑ \1.
-Proof. 
+Proof.
 rewrite lefE; apply/psdlfP=>u.
 rewrite lfunE/= lfunE/= lfunE/= linearB/= subr_ge0.
-by move: (is_denlf x)=>/denlf_obs/obslfP[_ P]. 
+by move: (is_denlf x)=>/denlf_obs/obslfP[_ P].
 Qed.
 
 Lemma obsf_ges0 (x : 'FO(U)) : (0%:VF : 'FO) ⊑ x.
-Proof. by rewrite leEsub/= -psdlfE; apply/obslf_psd/is_obslf. Qed.
+Proof. by rewrite -Order.le_val/= -psdlfE; apply/obslf_psd/is_obslf. Qed.
 
 Lemma obsf_ge0 (x : 'FO(U)) : (0 : 'End(U)) ⊑ x.
-Proof. by move: (obsf_ges0 x); rewrite leEsub. Qed.
+Proof. by move: (obsf_ges0 x); rewrite -Order.le_val. Qed.
 
 Lemma obsf_les1 (x : 'FO(U)) : x ⊑ \1.
 Proof.
-rewrite leEsub/= lefE; move: (is_obslf x)=>/obslfP[_ P].
+rewrite -Order.le_val/= lefE; move: (is_obslf x)=>/obslfP[_ P].
 by apply/psdlfP=>u; rewrite lfunE/= !lfunE/= linearB/= subr_ge0 P.
 Qed.
 
@@ -2526,11 +2526,11 @@ Proof. by rewrite obslfE=>/andP[]. Qed.
 Lemma obsf_le1 (x : 'FO(U)) : (x : 'End(U)) ⊑ \1.
 Proof. apply/obslf_le1/is_obslf. Qed.
 
-Lemma obslf_lefP (A : 'End(U)) : 
+Lemma obslf_lefP (A : 'End(U)) :
   reflect (0%:VF ⊑ A /\ (A ⊑ \1)) (A \is obslf).
 Proof. by rewrite obslfE; apply/(iffP andP). Qed.
 
-Lemma lfun_neq0P (V : chsType) (f : 'Hom(U,V)) : 
+Lemma lfun_neq0P (V : chsType) (f : 'Hom(U,V)) :
   reflect (exists v, [< f v ; f v >] != 0) (f != 0).
 Proof.
 apply/(iffP negP); rewrite not_existsP; apply contra_not.
@@ -2559,8 +2559,8 @@ Section Outp.
 Variable (H : chsType).
 
 Lemma outp_ge0 (v : H) : (0 : 'End(H)) ⊑ [> v ; v <].
-Proof. 
-apply/lef_dot=>u; rewrite lfunE/= linear0 outpE 
+Proof.
+apply/lef_dot=>u; rewrite lfunE/= linear0 outpE
   linearZ/= -conj_dotp -normCKC exprn_ge0//.
 Qed.
 Lemma outp_psd (v : H) : [> v ; v <] \is psdlf.
@@ -2574,7 +2574,7 @@ HB.instance Definition _ (v : 'PS(H)) := isBound1Lf.Build
   H H [> v ; v <] (obslf_bound1 (denlf_obs (@outp_den v))).
 HB.instance Definition _ (v : 'PS(H)) :=
   ObsLf.Class (PsdLf.on [> v ; v <]) (Bound1Lf.on [> v ; v <]).
-HB.instance Definition _ (v : 'PS(H)) := Obs_isDenLf.Build 
+HB.instance Definition _ (v : 'PS(H)) := Obs_isDenLf.Build
   H [> v ; v <] (@outp_den v).
 
 Lemma outp_proj1 (v : 'NS(H)) : [> v; v <] \is proj1lf.
@@ -2582,9 +2582,9 @@ Proof.
 apply/proj1lfP; split; last by rewrite outp_trlf ns_dot.
 by apply/projlfP; rewrite adj_outp outp_comp ns_dot scale1r.
 Qed.
-HB.instance Definition _ (v : 'NS(H)) := Obs_isProjLf.Build 
+HB.instance Definition _ (v : 'NS(H)) := Obs_isProjLf.Build
   H [> v ; v <] (proj1lf_proj (@outp_proj1 v)).
-HB.instance Definition _ (v : 'NS(H)) := Den_isDen1Lf.Build 
+HB.instance Definition _ (v : 'NS(H)) := Den_isDen1Lf.Build
   H [> v ; v <] (proj1lf_den1 (@outp_proj1 v)).
 
 Lemma outp_le1 (v : H) : [< v ; v >] <= 1 -> [> v; v <] ⊑ \1.
@@ -2600,14 +2600,14 @@ End Outp.
 Lemma sumponb_out (U : chsType) (F : finType) (p : 'PONB(F;U)) :
   \sum_i [> p i ; p i <] <= \1.
 Proof.
-by rewrite -(sumonb_out (ponb_ext p)) big_sumType/= levDl sumv_ge0// =>??; 
+by rewrite -(sumonb_out (ponb_ext p)) big_sumType/= levDl sumv_ge0// =>??;
 rewrite outp_ge0.
 Qed.
 
 Section SuperOperatorDef.
 Variable (U V: chsType).
 
-Variant superop : predArgType := 
+Variant superop : predArgType :=
   Superop of 'Hom('End(U),'End(V)).
 
 Definition so_val A := let: Superop g := A in g.
@@ -2621,7 +2621,7 @@ Coercion fun_of_superof : superop >-> Funclass.
 End SuperOperatorDef.
 
 Fact superop_key : unit. Proof. by []. Qed.
-HB.lock 
+HB.lock
 Definition superof_of_fun (U V : chsType) (k : unit) (F : 'Hom('End(U),'End(V))) :=
   @Superop U V F.
 Canonical superof_unlockable := Unlockable superof_of_fun.unlock.
@@ -2653,14 +2653,14 @@ Qed.
 
 Lemma superop_is_linear (A: SO) : linear A.
 Proof. by move=>a x y; rewrite /fun_of_superof/= linearP. Qed.
-HB.instance Definition _ (A : SO) := 
+HB.instance Definition _ (A : SO) :=
   GRing.isLinear.Build C 'End(U) 'End(V) _ A (@superop_is_linear A).
 
 Lemma so_psdP (u v : SO) : (forall x, x \is psdlf -> u x = v x) <-> u = v.
 Proof.
 split=>[P|->//]. apply/superopP=>x.
 move: (lf_psd_decomp x)=>[f1 [f2 [f3 [f4]]]] [/P P1] [/P P2] [/P P3] [/P P4]->.
-do ! (rewrite linearD/= [RHS]linearD/=; congr (_ + _)); 
+do ! (rewrite linearD/= [RHS]linearD/=; congr (_ + _));
 [by [] | by  rewrite !linearN/= P2 | by rewrite !linearZ/= P3 |
 by rewrite !linearN/=; congr (- _); rewrite !linearZ/= P4].
 (* time by rewrite !linearD/= !linearN/= !linearZ/= P1 P2 P3 P4. *)
@@ -2674,7 +2674,7 @@ rewrite (lfun_sum_delta x) !linear_sum/=. apply eq_bigr=>i _.
 rewrite !linear_sum/=. apply eq_bigr=>j _. by rewrite !linearZ/= P.
 Qed.
 
-Lemma eq_so k (F1 F2 : 'Hom('End(U), 'End(V))) : 
+Lemma eq_so k (F1 F2 : 'Hom('End(U), 'End(V))) :
   (F1 =1 F2) -> superof_of_fun k F1 = superof_of_fun k F2.
 Proof. by move=> eq_F; apply/superopP => i; rewrite !superopE eq_F. Qed.
 
@@ -2702,7 +2702,7 @@ Proof. by apply/val_inj; rewrite /= !soK scalerDr. Qed.
 Lemma scalesoA (x y : C) A : scaleso x (scaleso y A) = scaleso (x * y) A.
 Proof. by apply/val_inj; rewrite /= !soK scalerA. Qed.
 
-HB.instance Definition _ := 
+HB.instance Definition _ :=
   GRing.Zmodule_isLmodule.Build C SO scalesoA scale1so scalesoDr scalesoDl.
 
 (* Lemma soconstruct_is_linear : linear Superop.
@@ -2726,9 +2726,9 @@ Section CompSuperopDef.
 
 Definition idso (T:chsType) : 'SO(T):= SOType \1%VF.
 
-Definition comp_so (U V W : chsType) (A : 'SO(U,V)) (B : 'SO(W,U)) := 
+Definition comp_so (U V W : chsType) (A : 'SO(U,V)) (B : 'SO(W,U)) :=
     SOType ((so_val A) \o (so_val B))%VF.
-Definition comp_sor (U V W : chsType) (A : 'SO(U,V)) (B : 'SO(V,W)) := 
+Definition comp_sor (U V W : chsType) (A : 'SO(U,V)) (B : 'SO(V,W)) :=
     SOType ((so_val B) \o (so_val A))%VF.
 
 End CompSuperopDef.
@@ -2737,19 +2737,19 @@ Arguments idso {T}.
 Notation "\:1" := (@idso _) : lfun_scope.
 Notation "E ':o' F" := (comp_so E F) : lfun_scope.
 Notation "E 'o:' F" := (comp_sor E F) : lfun_scope.
-Lemma comp_soElr (U V W : chsType) (f : 'SO(U,V)) (g : 'SO(W,U)) : 
-  (f :o g) = g o: f. 
+Lemma comp_soElr (U V W : chsType) (f : 'SO(U,V)) (g : 'SO(W,U)) :
+  (f :o g) = g o: f.
 Proof. by []. Qed.
-Lemma comp_soErl (U V W : chsType) (f : 'SO(U,V)) (g : 'SO(V,W)) : 
-  (f o: g) = g :o f. 
+Lemma comp_soErl (U V W : chsType) (f : 'SO(U,V)) (g : 'SO(V,W)) :
+  (f o: g) = g :o f.
 Proof. by []. Qed.
 
-Notation "\compl_ ( i <- r | P ) F" := 
+Notation "\compl_ ( i <- r | P ) F" :=
   (\big[ (@comp_so _ _ _) / (@idso _) ]_(i <- r | P%B) F%VF ) : lfun_scope.
 Notation "\compl_ ( i <- r ) F" :=
   (\big[ (@comp_so _ _ _) / (@idso _) ]_(i <- r) F%VF) : lfun_scope.
 Notation "\compl_ ( m <= i < n | P ) F" :=
-  ((\big[ (@comp_so _ _ _) / (@idso _) ]_( m%N <= i < n%N | P%B) F%VF)%BIG) 
+  ((\big[ (@comp_so _ _ _) / (@idso _) ]_( m%N <= i < n%N | P%B) F%VF)%BIG)
     : lfun_scope.
 Notation "\compl_ ( m <= i < n ) F" :=
   ((\big[ (@comp_so _ _ _) / (@idso _) ]_(m%N <= i < n%N) F%VF)%BIG) : lfun_scope.
@@ -2758,7 +2758,7 @@ Notation "\compl_ ( i | P ) F" :=
 Notation "\compl_ i F" :=
   (\big[ (@comp_so _ _ _) / (@idso _) ]_i F%VF) : lfun_scope.
 Notation "\compl_ ( i : t | P ) F" :=
-  (\big[ (@comp_so _ _ _) / (@idso _) ]_(i : t | P%B) F%VF) (only parsing) 
+  (\big[ (@comp_so _ _ _) / (@idso _) ]_(i : t | P%B) F%VF) (only parsing)
     : lfun_scope.
 Notation "\compl_ ( i : t ) F" :=
   (\big[ (@comp_so _ _ _) / (@idso _) ]_(i : t) F%VF) (only parsing) : lfun_scope.
@@ -2771,12 +2771,12 @@ Notation "\compl_ ( i 'in' A | P ) F" :=
 Notation "\compl_ ( i 'in' A ) F" :=
   (\big[ (@comp_so _ _ _) / (@idso _) ]_(i in A) F%VF) : lfun_scope.
 
-Notation "\compr_ ( i <- r | P ) F" := 
+Notation "\compr_ ( i <- r | P ) F" :=
   (\big[ (@comp_sor _ _ _) / (@idso _) ]_(i <- r | P%B) F%VF ) : lfun_scope.
 Notation "\compr_ ( i <- r ) F" :=
   (\big[ (@comp_sor _ _ _) / (@idso _) ]_(i <- r) F%VF) : lfun_scope.
 Notation "\compr_ ( m <= i < n | P ) F" :=
-  ((\big[ (@comp_sor _ _ _) / (@idso _) ]_( m%N <= i < n%N | P%B) F%VF)%BIG) 
+  ((\big[ (@comp_sor _ _ _) / (@idso _) ]_( m%N <= i < n%N | P%B) F%VF)%BIG)
     : lfun_scope.
 Notation "\compr_ ( m <= i < n ) F" :=
   ((\big[ (@comp_sor _ _ _) / (@idso _) ]_(m%N <= i < n%N) F%VF)%BIG) : lfun_scope.
@@ -2785,7 +2785,7 @@ Notation "\compr_ ( i | P ) F" :=
 Notation "\compr_ i F" :=
   (\big[ (@comp_sor _ _ _) / (@idso _) ]_i F%VF) : lfun_scope.
 Notation "\compr_ ( i : t | P ) F" :=
-  (\big[ (@comp_sor _ _ _) / (@idso _) ]_(i : t | P%B) F%VF) (only parsing) 
+  (\big[ (@comp_sor _ _ _) / (@idso _) ]_(i : t | P%B) F%VF) (only parsing)
     : lfun_scope.
 Notation "\compr_ ( i : t ) F" :=
   (\big[ (@comp_sor _ _ _) / (@idso _) ]_(i : t) F%VF) (only parsing) : lfun_scope.
@@ -2891,9 +2891,9 @@ Proof. exact: linearPr. Qed.
 
 End CompSuperop.
 
-HB.instance Definition _ (U : chsType) := Monoid.isLaw.Build 
+HB.instance Definition _ (U : chsType) := Monoid.isLaw.Build
   'SO(U) \:1 (@comp_so U U U) (@comp_soA U U U U) (@comp_so1l U U) (@comp_so1r U U).
-HB.instance Definition _ (U : chsType) := Monoid.isLaw.Build 
+HB.instance Definition _ (U : chsType) := Monoid.isLaw.Build
   'SO(U) \:1 (@comp_sor U U U) (@comp_sorA U U U U) (@comp_sor1l U U) (@comp_sor1r U U).
 
 Lemma comp_soACA (U1 U2 U3 U4 U5 : chsType) (A: 'SO(U4,U5)) (B: 'SO(U3,U4))
@@ -2906,11 +2906,11 @@ Lemma comp_sorACA (U1 U2 U3 U4 U5 : chsType) (A: 'SO(U1,U2)) (B: 'SO(U2,U3))
   A o: B o: C o: D = A o: (B o: C) o: D.
 Proof. by rewrite !comp_sorA. Qed.
 
-Definition krausso_fun (U V: chsType) (F : finType) (f : F -> 'Hom(U,V)) := 
+Definition krausso_fun (U V: chsType) (F : finType) (f : F -> 'Hom(U,V)) :=
   (fun x : 'End(U) => \sum_i ((f i) \o x \o (f i)^A)).
 HB.lock Definition krausso U V F f := SOType (linfun (@krausso_fun U V F f)).
 
-Definition ifso_fun (U V W : chsType) (F : finType) (f : F -> 'Hom(U,V)) 
+Definition ifso_fun (U V W : chsType) (F : finType) (f : F -> 'Hom(U,V))
   (br : forall (i : F), 'SO(V,W)) :=
     (fun x : 'End(U) => \sum_i (br i ((f i) \o x \o (f i)^A))).
 HB.lock Definition ifso U V W F f br := SOType (linfun (@ifso_fun U V W F f br)).
@@ -2919,18 +2919,18 @@ Section KrausIfSuperop.
 Variable (U V W: chsType).
 
 Lemma krausso_fun_is_linear F f : linear (@krausso_fun U V F f).
-Proof. 
+Proof.
 move=>a x y; rewrite /krausso_fun linear_sum -big_split/=.
 by apply eq_bigr=>i _; rewrite linearPr linearPl.
 Qed.
-HB.instance Definition _ F f := GRing.isLinear.Build C 'End(U) 'End(V) 
+HB.instance Definition _ F f := GRing.isLinear.Build C 'End(U) 'End(V)
   *:%R (@krausso_fun U V F f) (@krausso_fun_is_linear F f).
 
 Lemma kraussoE F f x : (@krausso U V F f) x = \sum_i ((f i) \o x \o (f i)^A).
 Proof. by rewrite krausso.unlock superopE lfunE/=. Qed.
 
 Lemma krausso_reindex (I J : finType) (h : J -> I) F G :
-  bijective h -> (forall j, F (h j) = G j ) -> 
+  bijective h -> (forall j, F (h j) = G j ) ->
     @krausso U V I F = @krausso U V J G.
 Proof.
 move=>[g hK gK] P1; apply/superopP=>x.
@@ -2940,18 +2940,18 @@ Qed.
 
 Definition formso (f : 'Hom(U,V)) := krausso (fun _ : 'I_1 =>f).
 
-Lemma formsoE f x : (formso f) x = f \o x \o f^A. 
+Lemma formsoE f x : (formso f) x = f \o x \o f^A.
 Proof. by rewrite kraussoE big_ord1. Qed.
 
 Lemma formso0 : (formso 0) = 0.
 Proof. by apply/superopP=>x; rewrite formsoE abort_soE !comp_lfun0l. Qed.
 
 Lemma ifso_fun_is_linear F f br : linear (@ifso_fun U V W F f br).
-Proof. 
+Proof.
 move=>a x y; rewrite /ifso_fun linear_sum/= -big_split/=.
 by apply eq_bigr=>i _; rewrite linearPr linearPl linearP.
 Qed.
-HB.instance Definition _ F f br := GRing.isLinear.Build C 'End(U) 'End(W) 
+HB.instance Definition _ F f br := GRing.isLinear.Build C 'End(U) 'End(W)
   *:%R (@ifso_fun U V W F f br) (@ifso_fun_is_linear F f br).
 
 Lemma ifsoE F f br x : (@ifso U V W F f br) x = \sum_i (br i ((f i) \o x \o (f i)^A)).
@@ -2964,7 +2964,7 @@ Section KrausSuperopExtra.
 Lemma formso1 (U : chsType) : formso (\1 : 'End(U)) = \:1.
 Proof. by apply/superopP=>x; rewrite formsoE adjf1 id_soE comp_lfun1l comp_lfun1r. Qed.
 
-Lemma comp_krausso (U V W : chsType) (F G : finType) (f : F -> 'Hom(U,V)) 
+Lemma comp_krausso (U V W : chsType) (F G : finType) (f : F -> 'Hom(U,V))
   (g : G -> 'Hom(W,U)) :
   krausso f :o krausso g = krausso (fun i : F * G => f i.1 \o g i.2).
 Proof.
@@ -2973,7 +2973,7 @@ under eq_bigr do rewrite linear_sumr linear_sumlz/=.
 by rewrite pair_big/=; apply eq_bigr=>i _; rewrite adjf_comp !comp_lfunA.
 Qed.
 
-Lemma compr_krausso (U V W : chsType) (F G : finType) (f : F -> 'Hom(U,V)) 
+Lemma compr_krausso (U V W : chsType) (F G : finType) (f : F -> 'Hom(U,V))
   (g : G -> 'Hom(V, W)) :
   krausso f o: krausso g = krausso (fun i : F * G => g i.2 \o f i.1).
 Proof.
@@ -2982,14 +2982,14 @@ under eq_bigr do rewrite linear_sumr linear_sumlz/=.
 by rewrite exchange_big pair_big/=; apply eq_bigr=>i _; rewrite adjf_comp !comp_lfunA.
 Qed.
 
-Lemma ifso_krausso (U V W : chsType) (F : finType) (f : F -> 'Hom(U,V)) 
+Lemma ifso_krausso (U V W : chsType) (F : finType) (f : F -> 'Hom(U,V))
   (G : F -> finType) (br : forall (i : F), G i -> 'Hom(V,W)) :
-  ifso f (fun i=>krausso (br i)) = 
+  ifso f (fun i=>krausso (br i)) =
   krausso (fun i : {i : F & G i} => br (tag i) (tagged i) \o f (tag i)).
 Proof.
 apply/superopP=>x. rewrite ifsoE !kraussoE.
 under eq_bigr do rewrite kraussoE.
-by rewrite sig_big_dep/=; apply eq_bigr=>i _; rewrite adjf_comp !comp_lfunA. 
+by rewrite sig_big_dep/=; apply eq_bigr=>i _; rewrite adjf_comp !comp_lfunA.
 Qed.
 
 Lemma krausso_ord (U V : chsType) (F : finType) (f : F -> 'Hom(U,V)) :
@@ -2999,9 +2999,9 @@ apply/superopP=>x; rewrite !kraussoE; apply: reindex.
 by exists enum_rank=>a _; rewrite ?enum_rankK// enum_valK.
 Qed.
 
-Lemma addso_krausso (U V : chsType) (F G : finType) (f : F -> 'Hom(U,V)) 
+Lemma addso_krausso (U V : chsType) (F G : finType) (f : F -> 'Hom(U,V))
   (g : G -> 'Hom(U,V)) :
-  krausso f + krausso g = krausso (fun i : F + G => 
+  krausso f + krausso g = krausso (fun i : F + G =>
   match i with inl j => f j | inr k => g k end).
 Proof. by apply/superopP=>x; rewrite add_soE !kraussoE big_sumType/=. Qed.
 
@@ -3015,7 +3015,7 @@ Qed.
 
 End KrausSuperopExtra.
 
-Definition soE := (comp_soE, scale_soE, opp_soE, add_soE, sum_soE, abort_soE, 
+Definition soE := (comp_soE, scale_soE, opp_soE, add_soE, sum_soE, abort_soE,
   id_soE, superopE, formsoE, kraussoE).
 
 Section SOVectType.
@@ -3033,13 +3033,13 @@ HB.instance Definition _ := Lmodule_hasFinDim.Build C 'SO(U,V) so_vect_iso.
 
 End SOVectType.
 
-Definition trace_nincr (U V : chsType) (F:finType) (f : F -> 'Hom(U,V)) 
+Definition trace_nincr (U V : chsType) (F:finType) (f : F -> 'Hom(U,V))
   := (\sum_i ((f i)^A \o (f i)) ⊑ \1)%VF.
 
-Definition trace_presv (U V : chsType) (F:finType) (f : F -> 'Hom(U,V)) 
+Definition trace_presv (U V : chsType) (F:finType) (f : F -> 'Hom(U,V))
   := (\sum_i ((f i)^A \o (f i)) == \1)%VF.
 
-Lemma trace_presv_nincr (U V : chsType) (F:finType) (f : F -> 'Hom(U,V)) : 
+Lemma trace_presv_nincr (U V : chsType) (F:finType) (f : F -> 'Hom(U,V)) :
   trace_presv f -> trace_nincr f.
 Proof. by rewrite /trace_presv /trace_nincr=>/eqP->. Qed.
 
@@ -3064,7 +3064,7 @@ Notation "[ 'TN' 'of' f ]" := (@TraceNincr.clone _ _ _ f _) : form_scope.
 End TraceNincrExports.
 HB.export TraceNincrExports.
 
-HB.mixin Record TraceNincr_isQMeasure (U V : chsType) (F : finType) 
+HB.mixin Record TraceNincr_isQMeasure (U V : chsType) (F : finType)
   f of isTraceNincr U V F f := {
   is_qmeasure : trace_presv f;
 }.
@@ -3074,7 +3074,7 @@ HB.structure Definition QMeasure (U V : chsType) (F : finType) :=
   { f of @TraceNincr U V F f & TraceNincr_isQMeasure U V F f}.
 
 HB.factory Record isQMeasure (U V : chsType) (F : finType) (f : F -> 'Hom(U,V)) := {
-  is_qmeasure : trace_presv f; 
+  is_qmeasure : trace_presv f;
 }.
 HB.builders Context U V F f of isQMeasure U V F f.
   HB.instance Definition _ := isTraceNincr.Build U V F f (trace_presv_nincr is_qmeasure).
@@ -3100,7 +3100,7 @@ Variable (U V : chsType) (F : finType) (f : F -> 'Hom(U,V)).
 Definition TraceNincr_Build (H : trace_nincr f) :=
   TraceNincr.Pack (TraceNincr.Class (isTraceNincr.Axioms_ V F f H)).
 Definition QMeasure_Build (H : trace_presv f) :=
-  QMeasure.Pack (QMeasure.Class (TraceNincr_isQMeasure.Axioms_ F f 
+  QMeasure.Pack (QMeasure.Class (TraceNincr_isQMeasure.Axioms_ F f
     (isTraceNincr.Axioms_ V F f (trace_presv_nincr H)) H)).
 
 Lemma TraceNincr_BuildE (tn : trace_nincr f) : f = TraceNincr_Build tn.
@@ -3115,11 +3115,11 @@ HB.lock Definition so2choi (U V: chsType) (E : 'SO(U,V)) : 'M[C]_(dim U * dim V,
   \sum_i\sum_j (delta_mx i j *t h2mx (E (delta_lf i j))).
 Definition choi2so_fun (U V: chsType) (M : 'M[C]_(dim U * dim V)) : 'End(U) -> 'End(V) :=
   (fun x => mx2h (ptrace1 (M *m ((h2mx x)^T *t 1%:M)))).
-HB.lock Definition choi2so (U V: chsType) (M : 'M[C]_(dim U * dim V)) := 
+HB.lock Definition choi2so (U V: chsType) (M : 'M[C]_(dim U * dim V)) :=
   SOType (linfun (choi2so_fun M)).
 HB.lock Definition choi2kraus (U V: chsType) (A : 'M[C]_(dim U * dim V)) k
- := mx2h (castmx (mul1n _, erefl _) 
-  (\sum_i (delta_mx 0 i *t 1%:M) *m (sqrtC (eigenval A k) *: (eigenvec A k)) 
+ := mx2h (castmx (mul1n _, erefl _)
+  (\sum_i (delta_mx 0 i *t 1%:M) *m (sqrtC (eigenval A k) *: (eigenvec A k))
     *m (delta_mx (0 : 'I_1) i))).
 
 Section SOChoiMatrix.
@@ -3150,7 +3150,7 @@ Qed.
 
 Lemma choi2so_fun_is_linear M : linear (@choi2so_fun U V M).
 Proof. by move=>a x y; rewrite /choi2so_fun !linearP/= linearPl/= !linearP. Qed.
-HB.instance Definition _ M := GRing.isLinear.Build C 'End(U) 'End(V) *:%R 
+HB.instance Definition _ M := GRing.isLinear.Build C 'End(U) 'End(V) *:%R
   (@choi2so_fun U V M) (@choi2so_fun_is_linear M).
 
 Lemma choi2so_soE M x :
@@ -3172,7 +3172,7 @@ move=>/matrixP/(_ c d).
 have P: forall G, ptrace1 (G *m ((delta_mx a b)^T *t 1%:M)) c d
                 = G (mxtens_index (a, c)) (mxtens_index (b, d)) :> C.
 move=>G; rewrite trmx_delta /ptrace1 castmxE/= !mxtens_1index (bigD1 a)//= big1.
-by move=>i /negPf nia; rewrite -!mulmxA/= tensmx_mul 
+by move=>i /negPf nia; rewrite -!mulmxA/= tensmx_mul
   mul_delta_mx_cond eq_sym nia mulr0n linear0l !mulmx0.
 by rewrite addr0 -!mulmxA tensmx_mul mul_delta_mx mulmx1 ord1
   tens_delta_mx1_mulEl tens_delta_mx1_mulEr eqxx !mul1r.
@@ -3188,12 +3188,12 @@ move=>a x y; rewrite so2choi.unlock.
 do 2 (rewrite linear_sum -big_split; apply eq_bigr=>? _).
 by rewrite !soE/= linearP linearPr.
 Qed.
-HB.instance Definition _ := GRing.isLinear.Build C 'SO(U,V) 
+HB.instance Definition _ := GRing.isLinear.Build C 'SO(U,V)
   'M[C]_(dim U * dim V) *:%R so2choi so2choi_is_linear.
 
 Lemma choi2so_is_linear : linear choi2so.
 Proof. apply: (can2_linear so2choiK choi2soK). Qed.
-HB.instance Definition _ := GRing.isLinear.Build C 'M[C]_(dim U * dim V) 
+HB.instance Definition _ := GRing.isLinear.Build C 'M[C]_(dim U * dim V)
   'SO(U,V) *:%R choi2so choi2so_is_linear.
 
 Lemma so2choi_bij : bijective so2choi.
@@ -3231,7 +3231,7 @@ Proof. by rewrite [_ \is cpmap]qualifE; apply/(iffP idP). Qed.
 sum_k sum_ij (xjk *: |i><k|) *t (E |i><j| *m y)
 sum_k sum_ij xij *: <k| E |i><j| *m y |k>
 *)
-Lemma tr_choi_sep E (x: 'End(U)) (y: 'End(V)) : 
+Lemma tr_choi_sep E (x: 'End(U)) (y: 'End(V)) :
 \tr (so2choi E *m (h2mx (x^T) *t (h2mx y))) = \Tr (E x \o y).
 Proof.
 rewrite so2choi.unlock linear_sumlz/= linear_sum/=.
@@ -3243,26 +3243,26 @@ apply eq_bigr=>i _. rewrite /= linear_sum linear_sumlz linear_sum/=.
 apply eq_bigr=>j _. rewrite linearZ/= linearZl/= linearZ/=.
 congr (_ * _); rewrite /mxtrace (bigD1 j)// big1/= =>[k /negPf nk|].
 by rewrite delta_mx_mulEr eq_sym nk mul0r.
-by rewrite applyfh dotp_mulmx c2hK !h2c_eb adjmx_delta !delta_mx_mulEr 
+by rewrite applyfh dotp_mulmx c2hK !h2c_eb adjmx_delta !delta_mx_mulEr
   delta_mx_mulEl !eqxx h2mx_tr mxE !mul1r addr0.
 Qed.
 
-Lemma tnmapP (A : 'SO(U,V)) : 
+Lemma tnmapP (A : 'SO(U,V)) :
   reflect (forall x : 'FD, \Tr (A x) <= \Tr x) (A \is tnmap).
 Proof.
 rewrite qualifE -[ptrace2 _]mx2hK -h2mx1 -lef_h2mx.
 apply/(iffP (lef_trden _ _))=>P x; move: (P x^T);
-rewrite comp_lfun1l -[A _]comp_lfun1r -tr_choi_sep 
+rewrite comp_lfun1l -[A _]comp_lfun1r -tr_choi_sep
   h2mx1 tr_ptrace2 ptrace2_mulmxI lftrace_tr;
 by apply: le_trans; rewrite ?trfK /lftrace h2mx_comp mx2hK.
 Qed.
 
-Lemma tpmapP (A : 'SO(U,V)) : 
+Lemma tpmapP (A : 'SO(U,V)) :
   reflect (forall x, \Tr (A x) = \Tr x) (A \is tpmap).
 Proof.
 rewrite qualifE -[ptrace2 _]mx2hK -h2mx1 (inj_eq h2mx_inj).
 apply/(iffP (trlf_intror _ _))=>P x; move: (P x^T);
-rewrite comp_lfun1l -[A _]comp_lfun1r -tr_choi_sep 
+rewrite comp_lfun1l -[A _]comp_lfun1r -tr_choi_sep
   h2mx1 tr_ptrace2 ptrace2_mulmxI lftrace_tr=><-;
 by rewrite ?trfK /lftrace h2mx_comp mx2hK.
 Qed.
@@ -3298,10 +3298,10 @@ Lemma cpmap_tnmap_cptn A : A \is cpmap -> A \is tnmap -> A \is cptn.
 Proof. by move=>??; apply/cptnP. Qed.
 
 Lemma krausso2choiE (F: finType) (f : F -> 'Hom(U,V)) :
-let A k := \sum_i (delta_mx i (0:'I_1) *t (h2mx (f k) *m (delta_mx i (0:'I_1)))) 
+let A k := \sum_i (delta_mx i (0:'I_1) *t (h2mx (f k) *m (delta_mx i (0:'I_1))))
   in \sum_k ((A k) *m (A k)^*t) = so2choi (krausso f).
 Proof.
-rewrite so2choi.unlock/=; under [RHS]eq_bigr do (under eq_bigr do rewrite soE 
+rewrite so2choi.unlock/=; under [RHS]eq_bigr do (under eq_bigr do rewrite soE
   linear_sum linear_sumr; rewrite exchange_big/=).
 rewrite exchange_big. apply eq_bigr=>k _.
 rewrite linear_sumlz/=. apply eq_bigr=>i _.
@@ -3310,7 +3310,7 @@ rewrite adjmx_tens tensmx_mul adjmxM !adjmx_delta mulmxA mulmxACA !mul_delta_mx.
 by rewrite !h2mx_comp adj_lfun.unlock delta_lfE !mx2hK.
 Qed.
 
-Lemma krausso2choi_psd (F: finType) (f : F -> 'Hom(U,V)) : 
+Lemma krausso2choi_psd (F: finType) (f : F -> 'Hom(U,V)) :
   so2choi (krausso f) \is psdmx.
 Proof. by rewrite -krausso2choiE; apply/psdmx_sum=>k _; apply form_psd. Qed.
 
@@ -3349,20 +3349,20 @@ congr (_ *m _ ^*t); [do 2 f_equal|]; apply/matrix_tenP=>a b c d;
 rewrite castmxE !cast_ord_id  summxE choi2kraus.unlock;
 set v := (sqrtC (spectral_diag (so2choi E) 0 k) *: row k (spectralmx (so2choi E))).
 all: under eq_bigr do rewrite mx2hK tensmxE delta_mx_mulEl/=;
-  rewrite (bigD1 a)//= [X in _ + X]big1=>[i /negPf ni|]; 
+  rewrite (bigD1 a)//= [X in _ + X]big1=>[i /negPf ni|];
   first by rewrite mxE [a == i]eq_sym ni mul0r.
 all: rewrite !castmxE/= !cast_ord_id summxE (bigD1 a)// big1/==>[i /negPf ni|];
   first by rewrite delta_mx_mulEl ni mul0r.
 all: have <-: mxtens_index (0,b) = (cast_ord (esym (mul1n (dim V))) b)
   by apply/ord_inj; rewrite /= mul0n add0n.
 all: rewrite delta_mx_mulEl !ord1 [in LHS]mxE !eqxx !mul1r !addr0 [LHS]mxE
-  (bigD1 (mxtens_index (a,b)))//= big1; first by move=>i; 
+  (bigD1 (mxtens_index (a,b)))//= big1; first by move=>i;
   rewrite -(mxtens_unindexK i) tensmxE (inj_eq (can_inj (@mxtens_indexK _ _)))=>
   /pair_neq/=[P|P]; rewrite !mxE [b == _]eq_sym P/= ?(mul0r, mulr0).
 all: by rewrite tensmxE !mxE !eqxx !mul1r addr0.
 Qed.
 
-Lemma choimx_preserve_order E F : 
+Lemma choimx_preserve_order E F :
   (so2choi E ⊑ so2choi F) -> (forall x, x \is psdlf -> E x ⊑ F x).
 Proof.
 rewrite le_lownerE -linearB/= =>/psdmx_form [B PB].
@@ -3371,7 +3371,7 @@ rewrite -subr_ge0 -linearB/= -linearBl/= -opp_soE -add_soE -tr_choi_sep.
 have: (h2mx x^T *t h2mx y) \is psdmx.
 apply psdmx_tens. rewrite ?h2mx_tr psdmx_tr.
 move: Px. 2: move: Py. 1,2: by rewrite qualifE.
-by move=>/psdmx_form [A ->]; rewrite PB mulmxA 
+by move=>/psdmx_form [A ->]; rewrite PB mulmxA
   mxtrace_mulC !mulmxA -mulmxA -{2}(adjmxK A) -adjmxM form_tr_ge0.
 Qed.
 
@@ -3406,7 +3406,7 @@ Lemma ltso_mx E F : E ⊏ F = (so2choi E ⊏ so2choi F).
 Proof. by rewrite !lt_def leso_mx (inj_eq so2choi_inj). Qed.
 
 Lemma leso_add2rP (G E F : 'SO(U,V)) : E ⊑ F -> (E + G) ⊑ (F + G).
-Proof. 
+Proof.
 rewrite addrC !leso_mx -subv_ge0 -[in X in _ -> X]subv_ge0.
 by rewrite !linearD/= addrA addrK.
 Qed.
@@ -3414,7 +3414,7 @@ Qed.
 Lemma leso_pscale2lP (e : C) E F : 0 < e -> E ⊑ F -> (e *: E) ⊑ (e *: F).
 Proof. rewrite !leso_mx !linearZ/=; exact: lev_pscale2lP. Qed.
 
-Lemma pscaleso_lge0 E (a : C) : 
+Lemma pscaleso_lge0 E (a : C) :
   (0 : 'SO(U,V)) ⊏ E -> (0 : 'SO(U,V)) ⊑ a *: E = (0 <= a).
 Proof. rewrite leso_mx ltso_mx linear0 linearZ/=; exact: pscalev_lge0. Qed.
 
@@ -3432,7 +3432,7 @@ Arguments tpmap {U V}.
 Arguments cptn {U V}.
 Arguments cptp {U V}.
 Arguments so2choi_bij {U V}.
-Arguments choi2so_bij {U V}. 
+Arguments choi2so_bij {U V}.
 
 Reserved Notation "E '^*o' " (at level 8).
 
@@ -3484,7 +3484,7 @@ Proof. exact: dualso_krausso. Qed.
 
 Lemma dualso_is_linear : linear (@dualso U V).
 Proof. by move=>a x y; rewrite dualso.unlock !linearP/=. Qed.
-HB.instance Definition _ := GRing.isLinear.Build 
+HB.instance Definition _ := GRing.isLinear.Build
   C 'SO(U,V) 'SO(V,U) *:%R (@dualso U V) dualso_is_linear.
 
 End DualSO.
@@ -3492,7 +3492,7 @@ End DualSO.
 Lemma dualso_cpE U V (E : 'SO(U,V)) : E ^*o \is cpmap = (E \is cpmap).
 Proof.
 apply/eqb_iff; split; first rewrite -{2}(dualsoK E).
-all: move=>/cpmapP/krausso2choiK<-; rewrite dualso_krausso; 
+all: move=>/cpmapP/krausso2choiK<-; rewrite dualso_krausso;
 apply/cpmapP/krausso2choi_psd.
 Qed.
 
@@ -3504,7 +3504,7 @@ HB.mixin Record isCPMap (U V : chsType) (f : 'SO(U,V)) :=
   { is_cpmap : f \is cpmap}.
 
 #[short(type="cpType")]
-HB.structure Definition CPMap (U V : chsType) := 
+HB.structure Definition CPMap (U V : chsType) :=
   { f of isCPMap U V f}.
 
 Notation "''CP' ( S , T )" := (cpType S T) : type_scope.
@@ -3523,7 +3523,7 @@ HB.mixin Record CPMap_isTNMap (U V : chsType) f of @CPMap U V f :=
   { is_tnmap : f \is tnmap}.
 
 #[short(type="qoType")]
-HB.structure Definition QOperation (U V : chsType) := 
+HB.structure Definition QOperation (U V : chsType) :=
   { f of @CPMap U V f & CPMap_isTNMap U V f}.
 
 Notation cptnType := qoType (only parsing).
@@ -3543,7 +3543,7 @@ HB.mixin Record QOperation_isTPMap (U V : chsType) f of @QOperation U V f :=
   { is_tpmap : f \is tpmap}.
 
 #[short(type="qcType")]
-HB.structure Definition QChannel (U V : chsType) := 
+HB.structure Definition QChannel (U V : chsType) :=
   { f of @QOperation U V f & QOperation_isTPMap U V f}.
 
 Notation cptpType := qcType (only parsing).
@@ -3563,7 +3563,7 @@ HB.mixin Record CPMap_isDTNMap (U V : chsType) f of @CPMap U V f :=
   { is_dualtn : f^*o \is tnmap}.
 
 #[short(type="dualqoType")]
-HB.structure Definition DualQO (U V : chsType) := 
+HB.structure Definition DualQO (U V : chsType) :=
   { f of @CPMap U V f & CPMap_isDTNMap U V f}.
 
 Notation "''DQO' ( S , T )" := (dualqoType S T) : type_scope.
@@ -3582,7 +3582,7 @@ HB.mixin Record DualQO_isUnitalMap (U V : chsType) f of @DualQO U V f :=
   { is_dualtp : f^*o \is tpmap}.
 
 #[short(type="quType")]
-HB.structure Definition QUnital (U V : chsType) := 
+HB.structure Definition QUnital (U V : chsType) :=
   { f of @DualQO U V f & DualQO_isUnitalMap U V f}.
 
 Notation "''QU' ( S , T )" := (quType S T) : type_scope.
@@ -3651,13 +3651,13 @@ Variable (U V : chsType) (f : 'SO(U,V)).
 Definition CPMap_Build (H : f \is cpmap) :=
   CPMap.Pack (CPMap.Class (isCPMap.Axioms_ V f H)).
 Definition QOperation_Build (H : f \is cptn) :=
-  QOperation.Pack (QOperation.Class (CPMap_isTNMap.Axioms_ f 
+  QOperation.Pack (QOperation.Class (CPMap_isTNMap.Axioms_ f
     (isCPMap.Axioms_ V f (cptn_cpmap H))  (cptn_tnmap H)) ).
 Definition QChannel_Build (H : f \is cptp) :=
-  QChannel.Pack (QChannel.Class (QOperation_isTPMap.Axioms_ _ (CPMap_isTNMap.Axioms_ f 
+  QChannel.Pack (QChannel.Class (QOperation_isTPMap.Axioms_ _ (CPMap_isTNMap.Axioms_ f
   (isCPMap.Axioms_ V f (cptp_cpmap H))  (cptn_tnmap (cptp_cptn H))) (cptp_tpmap H) ) ).
 Definition DualQO_Build (H : f^*o \is cptn) :=
-  DualQO.Pack (DualQO.Class (CPMap_isDTNMap.Axioms_ f (isCPMap.Axioms_ 
+  DualQO.Pack (DualQO.Class (CPMap_isDTNMap.Axioms_ f (isCPMap.Axioms_
   V f (dualso_cpP (cptn_cpmap H))) (cptn_tnmap H))).
 Definition QUnital_Build (H : f^*o \is cptp) :=
   QUnital.Pack (QUnital.Class (DualQO_isUnitalMap.Axioms_ _
@@ -3678,9 +3678,9 @@ End SOBuild.
 
 (* subtype *)
 (* we define all types as a subtype of lfun instead of their hierarchy *)
-Program Definition cpmap_subType (U V : chsType) := 
-  @isSub.Build 'SO(U,V) (fun f => f \is cpmap) (cpType U V) 
-  (@CPMap.sort U V) (fun (x : 'SO(U,V)) (H : x \is cpmap) => 
+Program Definition cpmap_subType (U V : chsType) :=
+  @isSub.Build 'SO(U,V) (fun f => f \is cpmap) (cpType U V)
+  (@CPMap.sort U V) (fun (x : 'SO(U,V)) (H : x \is cpmap) =>
   CPMap_Build H) _ (fun _ _ => erefl).
 Next Obligation.
 move=> U V K X u; move: (@is_cpmap _ _ u) (X _ (@is_cpmap _ _ u)).
@@ -3690,57 +3690,57 @@ HB.instance Definition _ (U V : chsType) := @cpmap_subType U V.
 HB.instance Definition _ (U V : chsType) := [Equality of (cpType U V) by <:].
 HB.instance Definition _ (U V : chsType) := [Choice of (cpType U V) by <:].
 
-Program Definition qoperation_subType (U V : chsType) := 
-  @isSub.Build 'SO(U,V) (fun f => f \is cptn) (qoType U V) 
-  (@QOperation.sort U V) (fun (x : 'SO(U,V)) (H : x \is cptn) => 
+Program Definition qoperation_subType (U V : chsType) :=
+  @isSub.Build 'SO(U,V) (fun f => f \is cptn) (qoType U V)
+  (@QOperation.sort U V) (fun (x : 'SO(U,V)) (H : x \is cptn) =>
   QOperation_Build H) _ (fun _ _ => erefl).
 Next Obligation.
 move=> U V K X u; move: (@is_tnmap _ _ u) (@is_cpmap _ _ u)=>P1 P2.
 move: (X _ (cpmap_tnmap_cptn P2 P1)); case: u P1 P2=>/= u [[Pu1]] [Pu2] Pu3 Pu4.
-by rewrite /QOperation_Build (eq_irrelevance (cptn_cpmap _) Pu1) 
+by rewrite /QOperation_Build (eq_irrelevance (cptn_cpmap _) Pu1)
   (eq_irrelevance (cptn_tnmap _) Pu2).
 Qed.
 HB.instance Definition _ (U V : chsType) := @qoperation_subType U V.
 HB.instance Definition _ (U V : chsType) := [Equality of (qoType U V) by <:].
 HB.instance Definition _ (U V : chsType) := [Choice of (qoType U V) by <:].
 
-Program Definition qchannel_subType (U V : chsType) := 
-  @isSub.Build 'SO(U,V) (fun f => f \is cptp) (qcType U V) 
-  (@QChannel.sort U V) (fun (x : 'SO(U,V)) (H : x \is cptp) => 
+Program Definition qchannel_subType (U V : chsType) :=
+  @isSub.Build 'SO(U,V) (fun f => f \is cptp) (qcType U V)
+  (@QChannel.sort U V) (fun (x : 'SO(U,V)) (H : x \is cptp) =>
   QChannel_Build H) _ (fun _ _ => erefl).
 Next Obligation.
 move=> U V K X u; move: (@is_tpmap _ _ u) (@is_cpmap _ _ u)=>P1 P2.
 move: (X _ (cpmap_tpmap_cptp P2 P1));
 case: u P1 P2=>/= u [[Pu1]] [Pu2] [Pu3] Pu4 Pu5.
-by rewrite /QChannel_Build (eq_irrelevance (cptp_cpmap _) Pu1) 
+by rewrite /QChannel_Build (eq_irrelevance (cptp_cpmap _) Pu1)
   (eq_irrelevance (cptn_tnmap _) Pu2) (eq_irrelevance (cptp_tpmap _) Pu3).
 Qed.
 HB.instance Definition _ (U V : chsType) := @qchannel_subType U V.
 HB.instance Definition _ (U V : chsType) := [Equality of (qcType U V) by <:].
 HB.instance Definition _ (U V : chsType) := [Choice of (qcType U V) by <:].
 
-Program Definition dualqo_subType (U V : chsType) := 
-  @isSub.Build 'SO(U,V) (fun f => f^*o \is cptn) (dualqoType U V) 
-  (@DualQO.sort U V) (fun (x : 'SO(U,V)) (H : x^*o \is cptn) => 
+Program Definition dualqo_subType (U V : chsType) :=
+  @isSub.Build 'SO(U,V) (fun f => f^*o \is cptn) (dualqoType U V)
+  (@DualQO.sort U V) (fun (x : 'SO(U,V)) (H : x^*o \is cptn) =>
   DualQO_Build H) _ (fun _ _ => erefl).
 Next Obligation.
 move=> U V K X u. move: (@is_cpmap _ _ u) (@is_dualtn _ _ u); rewrite -dualso_cpE=>P1 P2.
 move: (X _ (cpmap_tnmap_cptn P1 P2)); case: u P1 P2=>/= u [[Pu1]] [Pu2] Pu3 Pu4.
-by rewrite /DualQO_Build (eq_irrelevance (dualso_cpP _) Pu1) 
+by rewrite /DualQO_Build (eq_irrelevance (dualso_cpP _) Pu1)
   (eq_irrelevance (cptn_tnmap _) Pu2).
 Qed.
 HB.instance Definition _ (U V : chsType) := @dualqo_subType U V.
 HB.instance Definition _ (U V : chsType) := [Equality of (dualqoType U V) by <:].
 HB.instance Definition _ (U V : chsType) := [Choice of (dualqoType U V) by <:].
 
-Program Definition qunital_subType (U V : chsType) := 
-  @isSub.Build 'SO(U,V) (fun f => f^*o \is cptp) (quType U V) 
-  (@QUnital.sort U V) (fun (x : 'SO(U,V)) (H : x^*o \is cptp) => 
+Program Definition qunital_subType (U V : chsType) :=
+  @isSub.Build 'SO(U,V) (fun f => f^*o \is cptp) (quType U V)
+  (@QUnital.sort U V) (fun (x : 'SO(U,V)) (H : x^*o \is cptp) =>
   QUnital_Build H) _ (fun _ _ => erefl).
 Next Obligation.
 move=> U V K X u; move: (@is_cpmap _ _ u) (@is_dualtp _ _ u); rewrite -dualso_cpE=>P1 P2.
 move: (X _ (cpmap_tpmap_cptp P1 P2)); case: u P1 P2=>/= u [[Pu1]] [Pu2] [Pu3] Pu4 Pu5.
-by rewrite /QUnital_Build (eq_irrelevance (dualso_cpP  _) Pu1) 
+by rewrite /QUnital_Build (eq_irrelevance (dualso_cpP  _) Pu1)
   (eq_irrelevance (cptn_tnmap _) Pu2) (eq_irrelevance (cptp_tpmap _) Pu3).
 Qed.
 HB.instance Definition _ (U V : chsType) := @qunital_subType U V.
@@ -3778,7 +3778,7 @@ Proof. exact: normvMn. Qed.
 Lemma trfnormN (f: F) : trfnorm (- f) = trfnorm f.
 Proof. exact: normvN. Qed.
 
-HB.instance Definition _ := @Num.Zmodule_isNormed.Build C F 
+HB.instance Definition _ := @Num.Zmodule_isNormed.Build C F
   trfnorm trfnorm_triangle trfnorm0_eq0 trfnormMn trfnormN.
 
 Lemma trfnormE f : trfnorm f = `|f|. Proof. by []. Qed.
@@ -3849,7 +3849,7 @@ Proof. by rewrite -bound1lf_i2fnormE is_bound1lf. Qed.
 
 Lemma i2fnorm_iso U V  (f : 'Hom(U,V)) :
   f \is isolf -> i2fnorm f = 1.
-Proof. 
+Proof.
 rewrite qualifE /i2fnorm -i2norm_adjmx=>Pf.
 by rewrite i2norm_unitary// ?gtn_eqF// dim_proper.
 Qed.
@@ -3864,15 +3864,15 @@ by apply: (le_trans (i2fnormP _ _)); rewrite i2fnorm_adj i2fnorm_isof mul1r.
 Qed.
 
 (* TODO : generalize *)
-Lemma isof_dot U V  (f : 'FI(U,V)) u : 
+Lemma isof_dot U V  (f : 'FI(U,V)) u :
   [< f u; f u >] = [< u; u >].
 Proof. by apply/isolf_dotP/is_isolf. Qed.
 
-Lemma isofA_dot U V  (f : 'FI(U,V)) u : 
+Lemma isofA_dot U V  (f : 'FI(U,V)) u :
   [< f^A u; f^A u >] <= [< u; u >].
 Proof. by move: (isofEr_le1 f)=>/lef_dot/(_ u); rewrite !lfunE/= -adj_dotEl. Qed.
 
-Lemma gisofA_dot U V  (f : 'FGI(U,V)) u : 
+Lemma gisofA_dot U V  (f : 'FGI(U,V)) u :
   [< f^A u; f^A u >] = [< u; u >].
 Proof. exact: isof_dot. Qed.
 
@@ -3888,15 +3888,15 @@ Lemma trfnorm_tr U V (f : 'Hom(U,V)) :
   `| (f^T)%VF | = `| f |.
 Proof. by rewrite /Num.norm/= /trfnorm tr_lfun.unlock mx2hK trnorm_trmx. Qed.
 
-Lemma trfnormMl U V W  (f : 'Hom(U,V)) (g : 'Hom(W,U)) : 
+Lemma trfnormMl U V W  (f : 'Hom(U,V)) (g : 'Hom(W,U)) :
   `|f \o g| <= `|f| * i2fnorm g.
 Proof. rewrite/Num.norm/=/trfnorm/=h2mx_comp; exact: trnormMl. Qed.
 
-Lemma trfnormMr U V W  (f : 'Hom(U,V)) (g : 'Hom(W,U)) : 
+Lemma trfnormMr U V W  (f : 'Hom(U,V)) (g : 'Hom(W,U)) :
   `|f \o g| <= i2fnorm f * `|g|.
 Proof. rewrite/Num.norm/=/trfnorm/=h2mx_comp; exact: trnormMr. Qed.
 
-Lemma trfnormM U V W  (f : 'Hom(U,V)) (g : 'Hom(W,U)) : 
+Lemma trfnormM U V W  (f : 'Hom(U,V)) (g : 'Hom(W,U)) :
   `|f \o g| <= `|f| * `|g|.
 Proof. apply/(le_trans (trfnormMl _ _))/ler_wpM2l=>//; apply/i2norm_trnorm. Qed.
 
@@ -3918,37 +3918,37 @@ Lemma trfnormP U V  (f : 'Hom(U,V)) x :
   `|f x| <= `| f | * `|x|.
 Proof.
 rewrite !hnorm_l2norm applyfh c2hK -!fbnorm_l2norm.
-apply: (le_trans (fbnormMr _ _)). 
+apply: (le_trans (fbnormMr _ _)).
 rewrite ler_wpM2r// ?fbnorm_ge0//; exact: i2fnorm_trfnorm.
 Qed.
 
-Lemma i2fnorm_unitary U  (f : 'End(U)) : 
+Lemma i2fnorm_unitary U  (f : 'End(U)) :
   f \is unitarylf -> i2fnorm f = 1.
 Proof. exact: i2fnorm_iso. Qed.
 
 Lemma i2fnorm1 U  : i2fnorm (\1 : 'End(U)) = 1.
 Proof. apply: i2fnorm_isof. Qed.
 
-Lemma trfnorm_iso U V  (f : 'Hom(U,V)) : 
+Lemma trfnorm_iso U V  (f : 'Hom(U,V)) :
   f \is isolf -> `| f | = (dim U)%:R.
 Proof.
 move=>Pf; move: (isolf_le_dim Pf) => /minn_idPl P1.
-move: Pf; rewrite qualifE -trfnorm_adj /Num.norm/= 
+move: Pf; rewrite qualifE -trfnorm_adj /Num.norm/=
   /trfnorm adj_lfun.unlock mx2hK schnorm.unlock.
 move=>/svd_d_unitary->; rewrite l1normE big_ord1.
 under eq_bigr do rewrite mxE normr1.
 by rewrite sumr_const !card_ord P1.
 Qed.
 
-Lemma trfnorm_isof U V  (f : 'FI(U,V)) : 
+Lemma trfnorm_isof U V  (f : 'FI(U,V)) :
   `| f%:VF | = (dim U)%:R.
 Proof. by apply/trfnorm_iso/is_isolf. Qed.
 
-Lemma trfnorm_gisof U V  (f : 'FGI(U,V)) : 
+Lemma trfnorm_gisof U V  (f : 'FGI(U,V)) :
   `| f%:VF | = (dim V)%:R.
 Proof. by rewrite -trfnorm_adj; apply/trfnorm_iso/is_isolf. Qed.
 
-Lemma trfnorm_unitary U  (f : 'End(U)) : 
+Lemma trfnorm_unitary U  (f : 'End(U)) :
   f \is unitarylf -> `| f | = (dim U)%:R.
 Proof. exact: trfnorm_iso. Qed.
 
@@ -3966,7 +3966,7 @@ Variable (U : chsType).
 Lemma trlf_trfnorm (f : 'End(U)) : `|\Tr f| <= `|f|.
 Proof. by rewrite/lftrace/Num.norm/=/trfnorm; exact: trnorm_ge_tr. Qed.
 
-Lemma psd_trfnorm (f: 'End(U)) : 
+Lemma psd_trfnorm (f: 'End(U)) :
   f \is psdlf -> `|f| = \Tr f.
 Proof. by rewrite qualifE /Num.norm/=/trfnorm/lftrace; apply: psdmx_trnorm. Qed.
 
@@ -4103,17 +4103,17 @@ Proof.
 move=>Pa1 Pa2 Pb1 Pb2.
 have: b1 * a2 >=< b2 * a1.
 by rewrite comparablerE realB// realM// gtr0_real.
-rewrite comparable_le_max; 
+rewrite comparable_le_max;
   first by rewrite comparablerE realB// realM// realV gtr0_real.
 move=>/orP[] P; apply/orP. left. 2: right.
-all: rewrite ler_pdivrMr ?addr_gt0// -mulrA mulrC 
+all: rewrite ler_pdivrMr ?addr_gt0// -mulrA mulrC
   -mulrA ler_pdivlMl// mulrDr mulrDl ?lerD2r ?lerD2l//.
 Qed.
 
 Lemma divf_ave_le_max (T : numFieldType) (I : eqType) (r : seq I)
                       (P : pred I) (F G : I -> T) :
   (forall i, P i -> F i \is Num.real) -> (forall i, P i -> G i > 0) ->
-    (\sum_(i <- r | P i) F i) / (\sum_(i <- r | P i) G i) 
+    (\sum_(i <- r | P i) F i) / (\sum_(i <- r | P i) G i)
       <= \big[maxr/0]_(i <- r | P i) (F i / G i).
 Proof.
 move=>P1 P2; elim: r=>[|a l IH]; first by rewrite !big_nil.
@@ -4130,7 +4130,7 @@ have P3: G a <= 0 by rewrite -oppr_ge0 -P1; apply sumr_ge0=>i/P2/ltW.
 by move: (lt_le_trans (P2 _ E) P3); rewrite ltxx.
 rewrite P3 !addr0 comparable_le_max ?lexx//; apply/real_comparable.
 2: apply/bigmax_real=>// b Pb.
-all: rewrite realM// ?realV. 
+all: rewrite realM// ?realV.
 1,3: by apply/P1. all: by apply/gtr0_real/P2.
 Qed.
 
@@ -4142,7 +4142,7 @@ Section InducedTraceNorm.
 Variable (U V : chsType).
 Implicit Type (f g : 'SO(U,V)).
 
-Definition itnorm_set f : set C := 
+Definition itnorm_set f : set C :=
     [set x : C | exists y, `|y| = 1 /\ x = `|f y|].
 Definition itnorm_set_ns f : set C :=
     [set x : C | exists v : U, `|v| = 1 /\ x = `|f [> v ; v <]|].
@@ -4166,11 +4166,11 @@ exists (c * trsfnorm f)=>e; rewrite/itnorm_set/==>[[x []Px ->]].
 by apply: (le_trans (Pc x)); rewrite Px mulr1.
 Qed.
 
-Lemma itnorm_set_psd_sub_itnorm_set f : 
+Lemma itnorm_set_psd_sub_itnorm_set f :
   (itnorm_set_psd f `<=` itnorm_set f)%classic.
 Proof. by move=>x[v [_ [Pv ->]]]; exists v; split. Qed.
 
-Lemma itnorm_set_ns_sub_itnorm_set_psd f : 
+Lemma itnorm_set_ns_sub_itnorm_set_psd f :
   (itnorm_set_ns f `<=` itnorm_set_psd f)%classic.
 Proof.
 move=>x[v [Pv ->]]; exists [> v ; v <]; split; first by apply/is_psdlf.
@@ -4180,7 +4180,7 @@ Qed.
 Lemma itnorm_set_ns_has_sup f : has_sup (itnorm_set_ns f).
 Proof.
 split; last first.
-move: (itnorm_set_has_sup f)=>[] _ [e Pe]; exists e=>x Px; 
+move: (itnorm_set_has_sup f)=>[] _ [e Pe]; exists e=>x Px;
 by apply/Pe/itnorm_set_psd_sub_itnorm_set/itnorm_set_ns_sub_itnorm_set_psd.
 exists (`|f [> chs_default_vect ; chs_default_vect <]|).
 by exists chs_default_vect; rewrite ns_norm.
@@ -4189,7 +4189,7 @@ Qed.
 Lemma itnorm_set_psd_has_sup f : has_sup (itnorm_set_psd f).
 Proof.
 split; last first.
-move: (itnorm_set_has_sup f)=>[] _ [e Pe]; exists e=>x Px; 
+move: (itnorm_set_has_sup f)=>[] _ [e Pe]; exists e=>x Px;
 by apply/Pe/itnorm_set_psd_sub_itnorm_set.
 apply: (subset_nonempty (@itnorm_set_ns_sub_itnorm_set_psd f)).
 by move: (itnorm_set_ns_has_sup f)=>[].
@@ -4224,7 +4224,7 @@ Qed.
 Lemma itnorm_triangle f g : itnorm (f + g) <= itnorm f + itnorm g.
 Proof.
 apply: (csup_least_ubound (itnorm_set_has_sup _))=>x[]/= y[]Py ->.
-rewrite soE; apply/(le_trans (ler_normD _ _))/lerD; 
+rewrite soE; apply/(le_trans (ler_normD _ _))/lerD;
 by apply/(le_trans (@itnormPB _ _)); rewrite Py mulr1.
 Qed.
 
@@ -4243,7 +4243,7 @@ apply: (csup_upper_bound (itnorm_set_has_sup _)).
 by exists y; split=>//; rewrite soE /normr/= normvZ/=.
 Qed.
 
-HB.instance Definition _ := isVNorm.Build C 'SO(U,V) 
+HB.instance Definition _ := isVNorm.Build C 'SO(U,V)
   itnorm itnorm_triangle itnorm0_eq0 itnormZ.
 
 Lemma itnormMn f n : itnorm (f *+ n) = itnorm f *+ n.
@@ -4252,7 +4252,7 @@ Proof. exact: normvMn. Qed.
 Lemma itnormN f : itnorm (- f) = itnorm f.
 Proof. exact: normvN. Qed.
 
-HB.instance Definition _ := @Num.Zmodule_isNormed.Build C 'SO(U,V) 
+HB.instance Definition _ := @Num.Zmodule_isNormed.Build C 'SO(U,V)
   itnorm itnorm_triangle itnorm0_eq0 itnormMn itnormN.
 
 Lemma itnormE f : itnorm f = `|f|. Proof. by []. Qed.
@@ -4279,32 +4279,32 @@ move: Px2; rewrite linearZ/= normvZ/= ger0_norm ?invr_ge0 ?normv_ge0// /normr/==
 by rewrite mulrC mulfK// normv_eq0.
 Qed.
 
-Lemma itnorm_def f (e : C) : 
-  (forall x, `|f x| <= e * `|x|) -> (exists x, x != 0 /\ `|f x| = e * `|x|) 
+Lemma itnorm_def f (e : C) :
+  (forall x, `|f x| <= e * `|x|) -> (exists x, x != 0 /\ `|f x| = e * `|x|)
     -> `|f| = e.
 Proof. by move=>??; apply/le_anti/andP; split; [apply: itnorm_ler|apply: itnorm_ger]. Qed.
 
-Lemma trfnorm_existsr (W T: chsType) (A : 'Hom(W,T)) : exists2 B : 'Hom(T,W), 
+Lemma trfnorm_existsr (W T: chsType) (A : 'Hom(W,T)) : exists2 B : 'Hom(T,W),
   i2fnorm B = 1 & `|A| = `|\Tr(A \o B) |.
 Proof.
-clear. 
+clear.
 move: (trnorm_exists (castmx (esym dim_proper_cast, esym dim_proper_cast) (h2mx A)))=>[B0].
 pose B1 := (castmx (dim_proper_cast, dim_proper_cast) B0).
-have ->: B0 = (castmx (esym dim_proper_cast, esym dim_proper_cast) B1). 
+have ->: B0 = (castmx (esym dim_proper_cast, esym dim_proper_cast) B1).
   by rewrite/B1 castmx_comp castmx_id.
 move: B1=>B1; rewrite castmx_mul !castmx_funE/==>PB1 PB2.
 exists (mx2h B1); first by rewrite /i2fnorm mx2hK.
 by rewrite/lftrace h2mx_comp mx2hK mxtrace_mulC PB2.
 Qed.
 
-Lemma trfnorm_lbound (W T: chsType) (A : 'Hom(W,T)) (B : 'Hom(T,W)) : 
+Lemma trfnorm_lbound (W T: chsType) (A : 'Hom(W,T)) (B : 'Hom(T,W)) :
   i2fnorm B = 1 -> `|\Tr(A \o B) | <= `|A|.
 Proof.
 rewrite /i2fnorm /lftrace h2mx_comp {2}/normr/= /trfnorm=>PB.
 by apply/(le_trans (trnormM_gel _ _)); rewrite PB mulr1.
 Qed.
 
-Lemma mulmx_diag_colrow (T : comRingType) m n p 
+Lemma mulmx_diag_colrow (T : comNzRingType) m n p
   (A : 'M[T]_(m,n)) (B : 'M[T]_(n,p)) (D : 'rV_n) :
     A *m diag_mx D *m B = \sum_i D 0 i *: (col i A *m row i B).
 Proof.
@@ -4341,22 +4341,22 @@ have: `|f y|^+2 <= `|\Tr (f (mx2h yl) \o (mx2h xr)) | * `|\Tr (f (mx2h yr) \o (m
   under [in X in _ <= _ * X]eq_bigr do
     rewrite !h2mx_comp mx2hK mx2hK h2mx_adj mAE /yr /xl.
   have RE1 m n B (Uy Vy : 'M[C]_m) Y (Ux Vx : 'M[C]_n) X :
-    \tr (B *m (Uy *m diag_mx (svds_d Y) *m Vy^*t) *m 
-    B^*t *m (Ux *m diag_mx (svds_d X) *m Vx^*t)) = \sum_k 
+    \tr (B *m (Uy *m diag_mx (svds_d Y) *m Vy^*t) *m
+    B^*t *m (Ux *m diag_mx (svds_d X) *m Vx^*t)) = \sum_k
     (sqrtC ((svds_d X) 0 k.1 * (svds_d Y) 0 k.2) * (row k.1 Vx^*t *m B *m col k.2 Uy) 0 0) *
     (sqrtC ((svds_d X) 0 k.1 * (svds_d Y) 0 k.2) * (row k.1 Ux^*t *m B *m col k.2 Vy) 0 0)^*.
       rewrite [Uy *m _ *m _]mulmx_diag_colrow [Ux *m _ *m _]mulmx_diag_colrow.
       rewrite !linear_sumr/= linear_sum;
       rewrite [in RHS]pair_bigV/=; apply eq_bigr =>i0 _.
       rewrite !mulmx_suml linear_sum/=; apply eq_bigr =>i1 _.
-      rewrite linearZ/= linearZr/= linearZ/= 2!linearZl_LR/= linearZ/= mulrA !mulmxA 
+      rewrite linearZ/= linearZr/= linearZ/= 2!linearZl_LR/= linearZ/= mulrA !mulmxA
         mxtrace_mulC !mulmxA -mulmxA -mulmxA [X in _ *m X]mulmxA trace_mx11 mxE big_ord1.
       rewrite conjcM !mulrA. f_equal.
       rewrite [RHS]mulrC mulrA; f_equal.
       rewrite -normCKC ger0_norm ?sqrtCK// sqrtC_ge0 mulr_ge0//;
       apply/svd_diag_ge0/svds_d_svd_diag.
       by rewrite -mxE_adj !adjmxM adj_row adj_col adjmxK mulmxA.
-  time under eq_bigr do rewrite RE1. rewrite pair_big.
+  under eq_bigr do rewrite RE1. rewrite pair_big.
   apply: (le_trans (Cauchy_Schwarz_C _ _ _ _)).
   have Pe (a b : C) : a = b -> a <= b by move=>->.
   apply/Pe; f_equal; under [in RHS]eq_bigr do rewrite RE1; rewrite pair_big ger0_norm.
@@ -4367,21 +4367,21 @@ move=>P; rewrite -(@ler_pXn2r _ 2)// ?nnegrE ?Py2//.
   apply: (le_trans (y := `|f [> u1; u1 <]|))=>//.
   apply: (csup_upper_bound (itnorm_set_psd_has_sup f)).
   by exists [> u1; u1 <]; do ! split.
-apply/(le_trans P); rewrite expr2 ler_pM//; 
-  (apply: (le_trans (trfnorm_lbound _ _)); 
+apply/(le_trans P); rewrite expr2 ler_pM//;
+  (apply: (le_trans (trfnorm_lbound _ _));
     first by rewrite /i2fnorm mx2hK /xr/xl i2normUr// i2normUl// -i2norm_svds);
-  apply: (csup_upper_bound (itnorm_set_psd_has_sup f)); 
-  [exists (mx2h yl) | exists (mx2h yr)]; 
-  (do ! split; first by rewrite qualifE mx2hK /yr; 
+  apply: (csup_upper_bound (itnorm_set_psd_has_sup f));
+  [exists (mx2h yl) | exists (mx2h yr)];
+  (do ! split; first by rewrite qualifE mx2hK /yr;
     apply/nneg_form/svd_diag_nneg/svds_d_svd_diag);
-  by rewrite /yl/yr/normr/=/trfnorm mx2hK 
+  by rewrite /yl/yr/normr/=/trfnorm mx2hK
     trnormUr ?trnormUl -?trnorm_svds ?trmxC_unitary ?svd_pE.
 Qed.
 
 Lemma unitary_rowMcol (T : numClosedFieldType) m (u : 'M[T]_m) i :
   u \is unitarymx -> (row i u^*t *m col i u) 0 0 = 1.
 Proof.
-by move=>/unitarymxPV/matrixP/(_ i i); rewrite -{2}[u]adjmxK dot_dotmxE 
+by move=>/unitarymxPV/matrixP/(_ i i); rewrite -{2}[u]adjmxK dot_dotmxE
   dotmxE -adjmxE adj_row adjmxK=>->; rewrite mxE eqxx.
 Qed.
 
@@ -4407,14 +4407,14 @@ have P4 j : 0 <= spectral_diag (h2mx x) 0 j.
 pose v i := c2h (col i (eigenmx (h2mx x))).
 have Pv j : `|v j| = 1 by
   rewrite hnormE dotp_mulmx /v c2hK adj_col unitary_rowMcol// sqrtC1.
-have Px: `|f x| <= \sum_(i | spectral_diag (h2mx x) 0 i != 0) 
+have Px: `|f x| <= \sum_(i | spectral_diag (h2mx x) 0 i != 0)
   spectral_diag (h2mx x) 0 i * `|f [> v i ; v i <]|.
   rewrite -{1}[x]h2mxK {1}P2 mulmx_diag_colrow !linear_sum/=.
   apply: (le_trans (ler_norm_sum _ _ _));
   rewrite [X in _ <= X]big_mkcond; apply ler_sum=>j _.
   case: eqP=>[->| _ ]; first by rewrite scale0r !linear0/= normr0.
   rewrite/= !linearZ/= /normr/= normvZ/= ler_pM=>[// | | | | //].
-  apply/trnorm_ge0. rewrite ger0_norm//. 
+  apply/trnorm_ge0. rewrite ger0_norm//.
   by rewrite/normr/= outp.unlock/v c2hK adj_col.
 rewrite Px3; apply: (le_trans Px). rewrite -[X in X <= _]mulr1 -invr1 -Px2 P3.
 apply: (le_trans (divf_ave_le_max _ _ _)).
@@ -4424,7 +4424,7 @@ case: bigmax_eq_elemP.
   apply: (le_trans (y := `|f [> u1; u1 <]|))=>//.
   apply: (csup_upper_bound (itnorm_set_ns_has_sup f)).
   exists u1; do ! split; by rewrite ns_norm.
-move=>j _ Pj; rewrite mulrC mulKf//.  
+move=>j _ Pj; rewrite mulrC mulKf//.
 apply: (csup_upper_bound (itnorm_set_ns_has_sup f)).
 by exists (v j); do ! split.
 Qed.
@@ -4439,7 +4439,7 @@ Qed.
 
 Lemma itnorm_def_psd f (e : C) : (f \is cpmap) ->
      (forall x, x \is psdlf -> `|f x| <= e * `|x|)
-  -> (exists x, x != 0 /\ `|f x| = e * `|x|) 
+  -> (exists x, x != 0 /\ `|f x| = e * `|x|)
   -> `|f| = e.
 Proof.
 by move=>???; apply/le_anti/andP; split;
@@ -4454,7 +4454,7 @@ by apply: (csup_least_ubound (itnorm_set_ns_has_sup _))=>?[]/= y[]Py ->; apply/P
 Qed.
 
 Lemma itnorm_def_ns f (e : C) : (f \is cpmap) ->
-  (forall u, `|u| = 1 -> `|f [> u ; u <]| <= e ) -> (exists x, x != 0 /\ `|f x| = e * `|x|) 
+  (forall u, `|u| = 1 -> `|f [> u ; u <]| <= e ) -> (exists x, x != 0 /\ `|f x| = e * `|x|)
     -> `|f| = e.
 Proof. by move=>???; apply/le_anti/andP; split; [apply: itnorm_ler_ns|apply: itnorm_ger]. Qed.
 
@@ -4644,11 +4644,11 @@ Proof. apply: (bijective_to_mx_continuous _ h2c_bij); exact: linearP. Qed.
 Lemma c2h_continuous V : continuous (@c2h V).
 Proof. apply: (bijective_of_mx_continuous _ c2h_bij); exact: linearP. Qed.
 
-Lemma h2c_cvgnE V (u : nat -> V) (a : V): 
+Lemma h2c_cvgnE V (u : nat -> V) (a : V):
   u @ \oo --> a = ((h2c \o u)%FUN @ \oo --> h2c a).
 Proof. apply: (bijective_to_mx_cvgnE _ h2c_bij); exact: linearP. Qed.
 
-Lemma c2h_cvgnE V (u : nat -> 'M__) (a : 'M__) : 
+Lemma c2h_cvgnE V (u : nat -> 'M__) (a : 'M__) :
   u @ \oo --> a = ((@c2h V \o u)%FUN @ \oo --> c2h a).
 Proof. apply: (bijective_of_mx_cvgnE _ c2h_bij); exact: linearP. Qed.
 
@@ -4658,11 +4658,11 @@ Proof. apply: (bijective_to_mx_is_cvgnE _ h2c_bij); exact: linearP. Qed.
 Lemma c2h_is_cvgnE V (u : nat -> 'M__) : cvgn u = cvgn (@c2h V \o u)%FUN.
 Proof. apply: (bijective_of_mx_is_cvgnE _ c2h_bij). exact: linearP. Qed.
 
-Lemma h2c_limnE V (u : nat -> V) : 
+Lemma h2c_limnE V (u : nat -> V) :
   cvgn u -> limn (h2c \o u)%FUN = h2c (limn u).
 Proof. apply: (bijective_to_mx_limnE _ h2c_bij); exact: linearP. Qed.
 
-Lemma c2h_limnE V (u : nat -> 'M__) : 
+Lemma c2h_limnE V (u : nat -> 'M__) :
   cvgn u -> limn (@c2h V \o u)%FUN = c2h (limn u).
 Proof. apply: (bijective_of_mx_limnE _ c2h_bij); exact: linearP. Qed.
 
@@ -4680,12 +4680,12 @@ Lemma closed_gef0 : closed [set x : 'End(U) | (0 : 'End(U)) ⊑ x].
 Proof.
 rewrite (_ : mkset _ = h2mx @^-1` [set y | (0 : 'M__) ⊑ y]).
 by apply/funext=>y/=; rewrite lef_h2mx linear0.
-apply: closed_comp=>[x _|]; [apply: h2mx_continuous | apply: cmxclosed_ge].
+apply: preimage_closed=>[x _|]; [apply: h2mx_continuous | apply: cmxclosed_ge].
 Qed.
 
-HB.instance Definition lfun_vorderFinNormedModMixin := 
+HB.instance Definition lfun_vorderFinNormedModMixin :=
   FinNormedModule_isVOrderFinNormedModule.Build C 'End(U) closed_gef0.
-Canonical quantum_lfun__canonical__extnum_VOrderFinNormedModule := 
+Canonical quantum_lfun__canonical__extnum_VOrderFinNormedModule :=
   @VOrderFinNormedModule.Pack C ('End(U) : vorderType C)
     (FinNormedModule.class ('End(U) : finNormedModType C))
     erefl (fun _ => erefl) (fun _ _ => erefl) (fun _ _ => erefl)
@@ -4701,14 +4701,14 @@ Lemma closed_lef (g : 'End(U)) : closed [set f : 'End(U) | f ⊑ g].
 Proof.
 rewrite (_ : mkset _ = h2mx @^-1` [set y | y ⊑ h2mx g]).
 by apply/funext=>y/=; rewrite lef_h2mx.
-apply: closed_comp=>[x _|]; [apply: h2mx_continuous | apply: cmxclosed_le].
+apply: preimage_closed=>[x _|]; [apply: h2mx_continuous | apply: cmxclosed_le].
 Qed.
 
 Lemma closed_gef (g : 'End(U)) : closed [set f : 'End(U) | g ⊑ f].
 Proof.
 rewrite (_ : mkset _ = h2mx @^-1` [set y | h2mx g ⊑ y]).
 by apply/funext=>y/=; rewrite lef_h2mx.
-apply: closed_comp=>[x _|]; [apply: h2mx_continuous | apply: cmxclosed_ge].
+apply: preimage_closed=>[x _|]; [apply: h2mx_continuous | apply: cmxclosed_ge].
 Qed.
 
 Lemma closed_psdlf : closed [set f : 'End(U) | f \is psdlf].
@@ -4771,7 +4771,7 @@ Definition oflub (u : nat -> 'FO(V)) : 'FO(V) :=
   end.
 
 Lemma chaindf2f (u : nat -> 'FD(V)) : chain u -> nondecreasing_seq (df2f \o u).
-Proof. by move=>/chain_homo P m n Pmn; move: (P _ _ Pmn); rewrite leEsub. Qed.
+Proof. by move=>/chain_homo P m n Pmn; move: (P _ _ Pmn); rewrite -Order.le_val. Qed.
 
 Lemma chaindf_lb (u : nat -> 'FD(V)) : lbounded_by (0:'End(V))%VF (df2f \o u).
 Proof. move=>i; apply: denf_ge0. Qed.
@@ -4780,7 +4780,7 @@ Lemma chaindf_ub (u : nat -> 'FD(V)) : ubounded_by (\1:'End(V))%VF (df2f \o u).
 Proof. by move=>i; apply: denf_le1. Qed.
 
 Lemma chainof2f (u : nat -> 'FO(V)) : chain u -> nondecreasing_seq (of2f \o u).
-Proof. by move=>/chain_homo P m n Pmn; move: (P _ _ Pmn); rewrite leEsub. Qed.
+Proof. by move=>/chain_homo P m n Pmn; move: (P _ _ Pmn); rewrite -Order.le_val. Qed.
 
 Lemma chainof_lb (u : nat -> 'FO(V)) : lbounded_by (0:'End(V))%VF (of2f \o u).
 Proof. by move=>i; apply: obsf_ge0. Qed.
@@ -4788,21 +4788,21 @@ Proof. by move=>i; apply: obsf_ge0. Qed.
 Lemma chainof_ub (u : nat -> 'FO(V)) : ubounded_by (\1:'End(V))%VF (of2f \o u).
 Proof. by move=>i; apply: obsf_le1. Qed.
 
-Lemma limn_denlf (u : nat -> 'FD(V)) : 
+Lemma limn_denlf (u : nat -> 'FD(V)) :
   cvgn (df2f \o u) -> [set x | x \is denlf] (limn (df2f \o u)).
 Proof.
 move=>P; apply: (@closed_cvg _ _ _ eventually_filter (df2f \o u) _ _ _ _)=>//.
 apply closed_denlf. by apply: nearW=>x; rewrite /=/df2f is_denlf.
 Qed.
 
-Lemma limn_obslf (u : nat -> 'FO(V)) : 
+Lemma limn_obslf (u : nat -> 'FO(V)) :
   cvgn (of2f \o u) -> [set x | x \is obslf] (limn (of2f \o u)).
 Proof.
 move=>P; apply: (@closed_cvg _ _ _ eventually_filter (of2f \o u) _ _ _ _)=>//.
 apply closed_obslf. by apply: nearW=>x; rewrite /=/of2f is_obslf.
 Qed.
 
-Lemma dflub_lub : forall c : nat -> 'FD(V), chain c -> (forall i, c i ⊑ dflub c) 
+Lemma dflub_lub : forall c : nat -> 'FD(V), chain c -> (forall i, c i ⊑ dflub c)
   /\ (forall x, (forall i, c i ⊑ x) -> dflub c ⊑ x).
 Proof.
 move=>c Pc. move: (chaindf2f Pc) (chaindf_ub c)=>P1 P2.
@@ -4810,20 +4810,20 @@ pose LFV := quantum_lfun__canonical__extnum_VOrderFinNormedModule V.
 move: (@vnondecreasing_is_cvgn _ _ LFV _ _ P1 P2)=>P3.
 move: (@nondecreasing_cvgn_lev _ _ LFV _ P1 P3)=>P4.
 rewrite /dflub; case: eqP=>P5; last by exfalso; apply P5; apply limn_denlf.
-split. by move=>i; rewrite leEsub/= P4.
-move=>x Px; rewrite leEsub/=.
+split. by move=>i; rewrite -Order.le_val/= P4.
+move=>x Px; rewrite -Order.le_val/=.
 apply: (@limn_lev _ _ LFV (df2f x) (df2f \o c) P3)=>i.
-by move: (Px i); rewrite leEsub.
+by move: (Px i); rewrite -Order.le_val.
 Qed.
 
 Lemma dflub_ub : forall c : nat -> 'FD(V), chain c -> (forall i, c i ⊑ dflub c).
 Proof. by move=>c /dflub_lub=>[[P1]]. Qed.
 
-Lemma dflub_least : forall c : nat -> 'FD(V), 
+Lemma dflub_least : forall c : nat -> 'FD(V),
   chain c -> forall x, (forall i, c i ⊑ x) -> dflub c ⊑ x.
 Proof. by move=>c /dflub_lub=>[[_ ]]. Qed.
 
-Lemma oflub_lub : forall c : nat -> 'FO(V), chain c -> (forall i, c i ⊑ oflub c) 
+Lemma oflub_lub : forall c : nat -> 'FO(V), chain c -> (forall i, c i ⊑ oflub c)
   /\ (forall x, (forall i, c i ⊑ x) -> oflub c ⊑ x).
 Proof.
 move=>c Pc. move: (chainof2f Pc) (chainof_ub c)=>P1 P2.
@@ -4831,25 +4831,25 @@ pose LFV := quantum_lfun__canonical__extnum_VOrderFinNormedModule V.
 move: (@vnondecreasing_is_cvgn _ _ LFV _ _ P1 P2)=>P3.
 move: (@nondecreasing_cvgn_lev _ _ LFV _ P1 P3)=>P4.
 rewrite /oflub; case: eqP=>P5; last by exfalso; apply P5; apply limn_obslf.
-split. by move=>i; rewrite leEsub/= P4.
-move=>x Px; rewrite leEsub.
+split. by move=>i; rewrite -Order.le_val/= P4.
+move=>x Px; rewrite -Order.le_val.
 apply: (@limn_lev _ _ LFV (of2f x) (of2f \o c) P3)=>i.
-by move: (Px i); rewrite leEsub.
+by move: (Px i); rewrite -Order.le_val.
 Qed.
 
 Lemma oflub_ub : forall c : nat -> 'FO(V), chain c -> (forall i, c i ⊑ oflub c).
 Proof. by move=>c /oflub_lub=>[[P1]]. Qed.
 
-Lemma oflub_least : forall c : nat -> 'FO(V), 
+Lemma oflub_least : forall c : nat -> 'FO(V),
   chain c -> forall x, (forall i, c i ⊑ x) -> oflub c ⊑ x.
 Proof. by move=>c /oflub_lub=>[[_ ]]. Qed.
 
 End LfunCPO.
 
 Module Import Exports.
-HB.instance Definition _ (V : chsType) := isCpo.Build ring_display 
+HB.instance Definition _ (V : chsType) := isCpo.Build ring_display
   'FD(V) (@denf_ges0 V) (@dflub_ub V) (@dflub_least V).
-HB.instance Definition _ (V : chsType) := isCpo.Build ring_display 
+HB.instance Definition _ (V : chsType) := isCpo.Build ring_display
   'FO(V) (@obsf_ges0 V) (@oflub_ub V) (@oflub_least V).
 End Exports.
 
@@ -4886,9 +4886,9 @@ by apply/funext=>y/=; rewrite leso_mx linear0.
 apply: closed_to_mx_linear. apply: cmxclosed_ge.
 Qed.
 
-HB.instance Definition superop_vorderFinNormedModMixin := 
+HB.instance Definition superop_vorderFinNormedModMixin :=
   FinNormedModule_isVOrderFinNormedModule.Build C 'SO(U,V) closed_geso0.
-Canonical quantum_soperop__canonical__extnum_VOrderFinNormedModule := 
+Canonical quantum_soperop__canonical__extnum_VOrderFinNormedModule :=
   @VOrderFinNormedModule.Pack C ('SO(U,V) : vorderType C)
     (FinNormedModule.class ('SO(U,V) : finNormedModType C))
     erefl (fun _ => erefl) (fun _ _ => erefl) (fun _ _ => erefl)
@@ -4897,9 +4897,9 @@ Canonical quantum_soperop__canonical__extnum_VOrderFinNormedModule :=
 (* qo is a closed set among all super operators *)
 Lemma closed_isqo : closed [set f : 'SO(U,V) | f \is cptn].
 Proof.
-rewrite (_ : mkset _ = (so2choi @^-1` [set y | (0 : 'M__) ⊑ y]) `&` 
+rewrite (_ : mkset _ = (so2choi @^-1` [set y | (0 : 'M__) ⊑ y]) `&`
   (so2choi @^-1` [set y | ptrace2 y ⊑ 1%:M])).
-apply/funext=>y/=; rewrite qualifE qualifE propeqE [y \is tnmap]qualifE 
+apply/funext=>y/=; rewrite qualifE qualifE propeqE [y \is tnmap]qualifE
   /Order.le/= /lownerle subr0; split=>[/andP//|[->->//]].
 apply closedI; apply: closed_to_mx_linear. apply: cmxclosed_ge.
 move: (@cmxclosed_le _ _ (1%:M : 'M[C]_(dim U))).
@@ -4921,7 +4921,7 @@ by apply/(le_lt_trans (lerB_dist _ _)); rewrite -normrN opprB.
 Unshelve. end_near.
 Qed.
 
-Lemma bilinear_continuousP {K : numFieldType} {U V W : normedModType K} 
+Lemma bilinear_continuousP {K : numFieldType} {U V W : normedModType K}
   (f : U -> V -> W) :
   (forall a b c, f a b - f a c = f a (b - c)) ->
   (forall a b c, f a c - f b c = f (a - b) c) ->
@@ -5003,7 +5003,7 @@ Lemma so_is_cvg {FF} f x :
 Proof.
 by move=>??; apply/cvg_ex;
 exists (lim (f @ F) (lim (x @ F))); apply: so_cvg.
-Qed.  
+Qed.
 
 Lemma so_is_cvgl {FF} y f :
   cvg (f @ F) -> cvg ((fun i => f i y) @ F).
@@ -5013,7 +5013,7 @@ Lemma so_is_cvgr {FF} g x :
   cvg (x @ F) -> cvg ((fun i => g (x i)) @ F).
 Proof. by move=>P; apply: so_is_cvg=>//; apply: is_cvg_cst. Qed.
 
-Lemma so_lim {PF} f x : cvg (f @ F) -> cvg (x @ F) -> 
+Lemma so_lim {PF} f x : cvg (f @ F) -> cvg (x @ F) ->
   lim ((fun i => f i (x i)) @ F) = lim (f @ F) (lim (x @ F)).
 Proof. by move=>??; apply: cvg_lim=>//; apply: so_cvg. Qed.
 
@@ -5021,7 +5021,7 @@ Lemma so_liml {PF} y f : cvg (f @ F) ->
   lim ((fun i => f i y) @ F) = lim (f @ F) y.
 Proof. by move=>?; apply: cvg_lim=>//; apply: so_cvgl. Qed.
 
-Lemma so_limr {PF} g x : cvg (x @ F) -> 
+Lemma so_limr {PF} g x : cvg (x @ F) ->
   lim ((fun i => g (x i)) @ F) = g (lim (x @ F)).
 Proof. by move=>?; apply: cvg_lim=>//; apply: so_cvgr. Qed.
 End SO.
@@ -5049,7 +5049,7 @@ Lemma lfun_is_cvg {FF} f x :
 Proof.
 by move=>??; apply/cvg_ex;
 exists (lim (f @ F) (lim (x @ F))); apply: lfun_cvg.
-Qed.  
+Qed.
 
 Lemma lfun_is_cvgl {FF} y f :
   cvg (f @ F) -> cvg ((fun i => f i y) @ F).
@@ -5059,7 +5059,7 @@ Lemma lfun_is_cvgr {FF} g x :
   cvg (x @ F) -> cvg ((fun i => g (x i)) @ F).
 Proof. by move=>P; apply: lfun_is_cvg=>//; apply: is_cvg_cst. Qed.
 
-Lemma lfun_lim {PF} f x : cvg (f @ F) -> cvg (x @ F) -> 
+Lemma lfun_lim {PF} f x : cvg (f @ F) -> cvg (x @ F) ->
   lim ((fun i => f i (x i)) @ F) = lim (f @ F) (lim (x @ F)).
 Proof. by move=>??; apply: cvg_lim=>//; apply: lfun_cvg. Qed.
 
@@ -5067,7 +5067,7 @@ Lemma lfun_liml {PF} y f : cvg (f @ F) ->
   lim ((fun i => f i y) @ F) = lim (f @ F) y.
 Proof. by move=>?; apply: cvg_lim=>//; apply: lfun_cvgl. Qed.
 
-Lemma lfun_limr {PF} g x : cvg (x @ F) -> 
+Lemma lfun_limr {PF} g x : cvg (x @ F) ->
   lim ((fun i => g (x i)) @ F) = g (lim (x @ F)).
 Proof. by move=>?; apply: cvg_lim=>//; apply: lfun_cvgr. Qed.
 End LFun.
@@ -5096,7 +5096,7 @@ Proof.
 by move=>??; apply/cvg_ex;
 exists (lim (f @ F) :o (lim (x @ F)));
 apply: so_comp_cvg.
-Qed.  
+Qed.
 
 Lemma so_comp_is_cvgl {FF} y f :
   cvg (f @ F) -> cvg ((fun i => f i :o y) @ F).
@@ -5106,7 +5106,7 @@ Lemma so_comp_is_cvgr {FF} g x :
   cvg (x @ F) -> cvg ((fun i => g :o (x i)) @ F).
 Proof. by move=>P; apply: so_comp_is_cvg=>//; apply: is_cvg_cst. Qed.
 
-Lemma so_comp_lim {PF} f x : cvg (f @ F) -> cvg (x @ F) -> 
+Lemma so_comp_lim {PF} f x : cvg (f @ F) -> cvg (x @ F) ->
   lim ((fun i => f i :o x i) @ F) = lim (f @ F) :o (lim (x @ F)).
 Proof. by move=>??; apply: cvg_lim=>//; apply: so_comp_cvg. Qed.
 
@@ -5114,7 +5114,7 @@ Lemma so_comp_liml {PF} y f : cvg (f @ F) ->
   lim ((fun i => f i :o y) @ F) = lim (f @ F) :o y.
 Proof. by move=>?; apply: cvg_lim=>//; apply: so_comp_cvgl. Qed.
 
-Lemma so_comp_limr {PF} g x : cvg (x @ F) -> 
+Lemma so_comp_limr {PF} g x : cvg (x @ F) ->
   lim ((fun i => g :o (x i)) @ F) = g :o (lim (x @ F)).
 Proof. by move=>?; apply: cvg_lim=>//; apply: so_comp_cvgr. Qed.
 End SO_comp.
@@ -5142,7 +5142,7 @@ Lemma so_compr_is_cvg {FF} f x :
 Proof.
 by move=>??; apply/cvg_ex; exists (lim (f @ F) o: (lim (x @ F)));
 apply: so_compr_cvg.
-Qed.  
+Qed.
 
 Lemma so_compr_is_cvgl {FF} y f :
   cvg (f @ F) -> cvg ((fun i => f i o: y) @ F).
@@ -5152,7 +5152,7 @@ Lemma so_compr_is_cvgr {FF} g x :
   cvg (x @ F) -> cvg ((fun i => g o: (x i)) @ F).
 Proof. by move=>P; apply: so_compr_is_cvg=>//; apply: is_cvg_cst. Qed.
 
-Lemma so_compr_lim {PF} f x : cvg (f @ F) -> cvg (x @ F) -> 
+Lemma so_compr_lim {PF} f x : cvg (f @ F) -> cvg (x @ F) ->
   lim ((fun i => f i o: x i) @ F) = lim (f @ F) o: (lim (x @ F)).
 Proof. by move=>??; apply: cvg_lim=>//; apply: so_compr_cvg. Qed.
 
@@ -5160,7 +5160,7 @@ Lemma so_compr_liml {PF} y f : cvg (f @ F) ->
   lim ((fun i => f i o: y) @ F) = lim (f @ F) o: y.
 Proof. by move=>?; apply: cvg_lim=>//; apply: so_compr_cvgl. Qed.
 
-Lemma so_compr_limr {PF} g x : cvg (x @ F) -> 
+Lemma so_compr_limr {PF} g x : cvg (x @ F) ->
   lim ((fun i => g o: (x i)) @ F) = g o: (lim (x @ F)).
 Proof. by move=>?; apply: cvg_lim=>//; apply: so_compr_cvgr. Qed.
 End SO_compr.
@@ -5188,7 +5188,7 @@ Lemma lfun_comp_is_cvg {FF} f x :
 Proof.
 by move=>??; apply/cvg_ex; exists (lim (f @ F) \o (lim (x @ F)));
 apply: lfun_comp_cvg.
-Qed.  
+Qed.
 
 Lemma lfun_comp_is_cvgl {FF} y f :
   cvg (f @ F) -> cvg ((fun i => f i \o y) @ F).
@@ -5198,7 +5198,7 @@ Lemma lfun_comp_is_cvgr {FF} g x :
   cvg (x @ F) -> cvg ((fun i => g \o (x i)) @ F).
 Proof. by move=>P; apply: lfun_comp_is_cvg=>//; apply: is_cvg_cst. Qed.
 
-Lemma lfun_comp_lim {PF} f x : cvg (f @ F) -> cvg (x @ F) -> 
+Lemma lfun_comp_lim {PF} f x : cvg (f @ F) -> cvg (x @ F) ->
   lim ((fun i => f i \o x i) @ F) = lim (f @ F) \o (lim (x @ F)).
 Proof. by move=>??; apply: cvg_lim=>//; apply: lfun_comp_cvg. Qed.
 
@@ -5206,7 +5206,7 @@ Lemma lfun_comp_liml {PF} y f : cvg (f @ F) ->
   lim ((fun i => f i \o y) @ F) = lim (f @ F) \o y.
 Proof. by move=>?; apply: cvg_lim=>//; apply: lfun_comp_cvgl. Qed.
 
-Lemma lfun_comp_limr {PF} g x : cvg (x @ F) -> 
+Lemma lfun_comp_limr {PF} g x : cvg (x @ F) ->
   lim ((fun i => g \o (x i)) @ F) = g \o (lim (x @ F)).
 Proof. by move=>?; apply: cvg_lim=>//; apply: lfun_comp_cvgr. Qed.
 End Lfun_comp.
@@ -5248,7 +5248,7 @@ Qed.
 
 Lemma qm_trlf (F : finType) (A : 'QM(F;U,V)) x :
   \sum_i \Tr (A i \o x \o (A i)^A) = \Tr x.
-Proof. 
+Proof.
 under eq_bigr do rewrite lftraceC comp_lfunA.
 by rewrite -linear_sum/= -linear_sumlz/= qmeasure_tpE comp_lfun1l.
 Qed.
@@ -5256,14 +5256,14 @@ Definition tp_trlf := qm_trlf.
 
 Lemma is_cptn (x : 'QO(U,V)) : (x : 'SO) \is cptn.
 Proof. apply/cptnP; split. apply/is_cpmap. apply/is_tnmap. Qed.
-  
+
 Lemma is_cptp (x : 'QC(U,V)) : (x : 'SO) \is cptp.
 Proof. apply/cptpP; split. apply/is_cpmap. apply/is_tpmap. Qed.
 
 (* dualso property cp - cp  qo <-> dqo  qc <-> qu *)
 Lemma dualso_cp (E : 'CP(U,V)) : E ^*o \is cpmap.
 Proof. by rewrite dualso_cpE is_cpmap. Qed.
-HB.instance Definition _ (E : 'CP(U,V)) := 
+HB.instance Definition _ (E : 'CP(U,V)) :=
   isCPMap.Build V U E^*o (dualso_cp E).
 Lemma dualso_dualtn (E : 'QO(U,V)) : (E^*o)^*o \is tnmap.
 Proof. by rewrite dualsoK is_tnmap. Qed.
@@ -5295,11 +5295,11 @@ Proof. apply: krausso_cp. Qed.
 HB.instance Definition _ f := isCPMap.Build U V (formso f) (formso_cp f).
 Lemma formso_tn (f : 'FB1(U,V)) : formso f \is tnmap.
 Proof. by rewrite krausso_tnE /trace_nincr big_ord1 bound1f_form_le1. Qed.
-HB.instance Definition _ (f : 'FB1(U,V)) := 
+HB.instance Definition _ (f : 'FB1(U,V)) :=
   CPMap_isTNMap.Build U V (formso f) (formso_tn f).
 Lemma formso_tp (f : 'FI(U,V)) : formso f \is tpmap.
 Proof. by rewrite krausso_tpE /trace_presv big_ord1 isofE eqxx. Qed.
-HB.instance Definition _ (f : 'FI(U,V)) := 
+HB.instance Definition _ (f : 'FI(U,V)) :=
   QOperation_isTPMap.Build U V (formso f) (formso_tp f).
 Lemma formso_dualtn (f : 'FB1(U,V)) : (formso f)^*o \is tnmap.
 Proof. by rewrite formso_dual krausso_tnE /trace_nincr big_ord1 adjfK bound1f_formV_le1. Qed.
@@ -5330,7 +5330,7 @@ HB.instance Definition _ F (f : 'QM(F;U,V)) :=
 
 Lemma krausopE (x : 'CP(U,V)) : x = krausso (krausop x) :> 'SO.
 Proof.
-by apply/val_inj; rewrite krausop.unlock/= !krausso2choiK//; 
+by apply/val_inj; rewrite krausop.unlock/= !krausso2choiK//;
   apply: cpmapP; apply/is_cpmap.
 Qed.
 
@@ -5340,15 +5340,15 @@ Proof. by rewrite {1}krausopE kraussoE. Qed.
 
 Lemma krausop_tn (x : 'QO(U,V)) : trace_nincr (krausop x).
 Proof. by rewrite krausso_qoP -krausopE is_cptn. Qed.
-HB.instance Definition _ (x : 'QO(U,V)) := isTraceNincr.Build 
+HB.instance Definition _ (x : 'QO(U,V)) := isTraceNincr.Build
   U V 'I_(dim U * dim V) (krausop x) (krausop_tn x).
 
 Lemma krausop_tp (x : 'QC(U,V)) : trace_presv (krausop x).
 Proof. by rewrite krausso_qcP -krausopE is_cptp. Qed.
-HB.instance Definition _ (x : 'QC(U,V)) := TraceNincr_isQMeasure.Build 
+HB.instance Definition _ (x : 'QC(U,V)) := TraceNincr_isQMeasure.Build
   U V 'I_(dim U * dim V) (krausop x) (krausop_tp x).
 
-Lemma cp_isqcP (E: 'CP(U,V)) : 
+Lemma cp_isqcP (E: 'CP(U,V)) :
   reflect (forall x, \Tr (E x) = \Tr x) ((E : 'SO) \is cptp).
 Proof. by apply/(iffP (cptpP _))=>[[ _ /tpmapP//]|/tpmapP->]; rewrite is_cpmap. Qed.
 
@@ -5440,7 +5440,7 @@ Qed.
 Lemma geso0_cpP (E : 'SO(U,V)) :
   ((0 : 'SO) ⊑ E) <-> (E \is cpmap).
 Proof.
-by rewrite leso_mx linear0 le_lownerE subr0; 
+by rewrite leso_mx linear0 le_lownerE subr0;
   split=>[?|/cpmapP//]; apply/cpmapP.
 Qed.
 
@@ -5459,7 +5459,7 @@ Qed.
 Lemma leqoP (E F : 'QO(U,V)) :
   reflect (exists W : 'QO(U,V), (W : 'SO) + E = F) (E ⊑ F).
 Proof.
-rewrite leEsub/= -subv_ge0 geso0_cpE; apply/(iffP idP)=>[P1|[W PW]].
+rewrite -Order.le_val/= -subv_ge0 geso0_cpE; apply/(iffP idP)=>[P1|[W PW]].
 have P2: (F : 'SO) - (E : 'SO) \is cptn.
   apply/cptnP; split=>//; apply/tnmapP=>x.
   rewrite !soE linearB/= -[\Tr x]subr0 lerB//.
@@ -5478,7 +5478,7 @@ exact: cp_ge0.
 Qed.
 
 (* choinorm *)
-Lemma choinorm_ge0_add (f g : 'SO(U,V)) : 
+Lemma choinorm_ge0_add (f g : 'SO(U,V)) :
   ((0 : 'SO) ⊑ f) -> ((0 : 'SO) ⊑ g) ->
   choinorm (f + g) = choinorm f + choinorm g.
 Proof.
@@ -5487,7 +5487,7 @@ rewrite/choinorm linearD/= !psdmx_trnorm ?linearD/= ?mulrDl.
 apply: psdmxD; [apply: Pf | apply: Pg]. apply: Pf. apply: Pg. by [].
 Qed.
 
-Lemma choinorm_cp_add (f g : 'CP(U,V)) : 
+Lemma choinorm_cp_add (f g : 'CP(U,V)) :
   choinorm ((f : 'SO) + g) = choinorm f + choinorm g.
 Proof. apply: choinorm_ge0_add; apply/geso0_cpP/is_cpmap. Qed.
 
@@ -5498,7 +5498,7 @@ Proof.
 move=>PF.
 elim: r=>[|a r IH]; first by rewrite !big_nil normv0.
 rewrite !big_cons; case: (P a)=>//; rewrite choinorm_ge0_add ?IH//.
-apply: sumv_ge0=>i _. apply: PF. 
+apply: sumv_ge0=>i _. apply: PF.
 Qed.
 
 Lemma choinorm_cp_sum (I : Type) (r : seq I) (P : pred I) (F : I -> 'CP(U,V)) :
@@ -5508,7 +5508,7 @@ Proof. by apply: choinorm_ge0_sum=>i; apply/geso0_cpP/is_cpmap. Qed.
 Lemma choinorm_ge0_le (f g : 'SO(U,V)) : ((0 : 'SO) ⊑ f) ->
   f ⊑ g -> choinorm f <= choinorm g.
 Proof.
-by move=>P1; rewrite -subv_ge0=>P2; 
+by move=>P1; rewrite -subv_ge0=>P2;
   rewrite -[g](addrNK f) choinorm_ge0_add// lerDr normv_ge0.
 Qed.
 
@@ -5628,7 +5628,7 @@ Definition unitarysoE := formsoE.
 Lemma unitaryso1 (U : chsType) : unitaryso (\1 : 'End(U)) = \:1.
 Proof. by apply/superopP=>x; rewrite formsoE/= comp_lfun1l adjf1 comp_lfun1r soE. Qed.
 
-Lemma dualso_unitary U (f : 'FU(U)) : 
+Lemma dualso_unitary U (f : 'FU(U)) :
   dualso (unitaryso f) = unitaryso (f^A).
 Proof. by rewrite /unitaryso dualso_formso. Qed.
 
@@ -5639,18 +5639,18 @@ Lemma initialso_tn U (v : 'PS(U)) : (@initialso U v) \is tnmap.
 Proof.
 apply/tnmapP=>x; rewrite soE linear_sum/=.
 under eq_bigr do rewrite lftraceC comp_lfunA adj_outp outp_comp linearZl/= linearZ/=.
-by rewrite -mulr_sumr -linear_sum/= -linear_sumlz/= sumonb_out 
+by rewrite -mulr_sumr -linear_sum/= -linear_sumlz/= sumonb_out
   comp_lfun1l ler_piMl// ?ps_dot// psdf_trlf.
 Qed.
-HB.instance Definition _ U (v : 'PS(U)) := CPMap_isTNMap.Build U U 
+HB.instance Definition _ U (v : 'PS(U)) := CPMap_isTNMap.Build U U
   (initialso v) (initialso_tn v).
 Lemma initialso_qc U (v : 'NS(U)) : (@initialso U v) \is tpmap.
 Proof.
-apply/tpmapP=>x; rewrite soE linear_sum/=. 
+apply/tpmapP=>x; rewrite soE linear_sum/=.
 under eq_bigr do rewrite lftraceC comp_lfunA adj_outp outp_comp ns_dot scale1r.
 by rewrite -linear_sum/= -linear_sumlz/= sumonb_out comp_lfun1l.
 Qed.
-HB.instance Definition _ U (v : 'NS(U)) := QOperation_isTPMap.Build U U 
+HB.instance Definition _ U (v : 'NS(U)) := QOperation_isTPMap.Build U U
   (initialso v) (initialso_qc v).
 
 Lemma initialsoE U (v : U) x : initialso v x = \Tr x *: [> v ; v <].
@@ -5679,10 +5679,10 @@ Lemma ifso_cp U V W (F : finType) (f : F -> 'Hom(U, V)) (br : F -> 'CP(V, W)) :
   ifso f br \is cpmap.
 Proof.
 have ->: (fun x : F => br x : 'SO) = (fun x : F => krausso (krausop (br x))).
-apply/funext=>i; exact: krausopE. 
+apply/funext=>i; exact: krausopE.
 by rewrite ifso_krausso is_cpmap.
 Qed.
-HB.instance Definition _ U V W (F : finType) f (br : F -> 'CP(V,W)) := 
+HB.instance Definition _ U V W (F : finType) f (br : F -> 'CP(V,W)) :=
   isCPMap.Build U W (ifso f br) (@ifso_cp U V W F f br).
 
 Lemma ifso_tn U V W (F : finType) (f : 'TN(F;U,V)) (br : F -> 'QO(V, W)) :
@@ -5692,7 +5692,7 @@ apply/tnmapP=>x; apply: (le_trans _ (tn_trlf_psd f (is_psdlf x))).
 rewrite ifsoE linear_sum/= ler_sum// =>i _.
 by apply/qo_trlfE; move: (is_psdlf x); rewrite !psdlfE; exact: gef0_formfV.
 Qed.
-HB.instance Definition _ U V W (F : finType) (f : 'TN(F;U,V)) (br : F -> 'QO(V, W)) := 
+HB.instance Definition _ U V W (F : finType) (f : 'TN(F;U,V)) (br : F -> 'QO(V, W)) :=
   CPMap_isTNMap.Build U W (ifso f br) (@ifso_tn U V W F f br).
 
 Lemma ifso_tp U V W (F : finType) (f : 'QM(F;U,V)) (br : F -> 'QC(V, W)) :
@@ -5701,7 +5701,7 @@ Proof.
 apply/tpmapP=>x; rewrite -[RHS](tp_trlf f) ifsoE linear_sum/=.
 apply eq_bigr =>i _; apply/qc_trlfE.
 Qed.
-HB.instance Definition _ U V W (F : finType) (f : 'QM(F;U,V)) (br : F -> 'QC(V, W)) := 
+HB.instance Definition _ U V W (F : finType) (f : 'QM(F;U,V)) (br : F -> 'QC(V, W)) :=
   QOperation_isTPMap.Build U W (ifso f br) (@ifso_tp U V W F f br).
 
 Lemma dualso_comp U V W (E : 'SO(U,V)) (F : 'SO(W,U)) :
@@ -5722,7 +5722,7 @@ Qed.
 Lemma comp_so_cp U V W (E: 'CP(U,V)) (F: 'CP(W,U)) :
   E :o F \is cpmap.
 Proof. by rewrite krausopE (krausopE F) comp_krausso is_cpmap. Qed.
-HB.instance Definition _ U V W (E: 'CP(U,V)) (F: 'CP(W,U)) := 
+HB.instance Definition _ U V W (E: 'CP(U,V)) (F: 'CP(W,U)) :=
   isCPMap.Build W V (E :o F) (comp_so_cp E F).
 Lemma comp_so_tn U V W (E: 'QO(U,V)) (F: 'QO(W,U)) :
   E :o F \is tnmap.
@@ -5730,53 +5730,53 @@ Proof.
 apply/tnmapP=>x; apply: (le_trans _ (qo_trlfE F (is_psdlf x))).
 by rewrite comp_soE qo_trlfE// cp_psdP ?is_psdlf.
 Qed.
-HB.instance Definition _ U V W (E: 'QO(U,V)) (F: 'QO(W,U)) := 
+HB.instance Definition _ U V W (E: 'QO(U,V)) (F: 'QO(W,U)) :=
   CPMap_isTNMap.Build W V (E :o F) (comp_so_tn E F).
 Lemma comp_so_tp U V W (E: 'QC(U,V)) (F: 'QC(W,U)) :
   E :o F \is tpmap.
 Proof. by apply/tpmapP=>x; rewrite comp_soE !qc_trlfE. Qed.
-HB.instance Definition _ U V W (E: 'QC(U,V)) (F: 'QC(W,U)) := 
+HB.instance Definition _ U V W (E: 'QC(U,V)) (F: 'QC(W,U)) :=
   QOperation_isTPMap.Build W V (E :o F) (comp_so_tp E F).
 Lemma comp_so_dualtn U V W (E: 'DQO(U,V)) (F: 'DQO(W,U)) :
   (E :o F)^*o \is tnmap.
 Proof. by rewrite dualso_comp is_tnmap. Qed.
-HB.instance Definition _ U V W (E: 'DQO(U,V)) (F: 'DQO(W,U)) := 
+HB.instance Definition _ U V W (E: 'DQO(U,V)) (F: 'DQO(W,U)) :=
   CPMap_isDTNMap.Build W V (E :o F) (comp_so_dualtn E F).
 Lemma comp_so_dualtp U V W (E: 'QU(U,V)) (F: 'QU(W,U)) :
   (E :o F)^*o \is tpmap.
 Proof. by rewrite dualso_comp is_tpmap. Qed.
-HB.instance Definition _ U V W (E: 'QU(U,V)) (F: 'QU(W,U)) := 
+HB.instance Definition _ U V W (E: 'QU(U,V)) (F: 'QU(W,U)) :=
   DualQO_isUnitalMap.Build W V (E :o F) (comp_so_dualtp E F).
 
 Lemma comp_sor_cp U V W (E: 'CP(U,V)) (F: 'CP(V,W)) :
   E o: F \is cpmap.
 Proof. by rewrite comp_soErl is_cpmap. Qed.
-HB.instance Definition _ U V W (E: 'CP(U,V)) (F: 'CP(V,W)) := 
+HB.instance Definition _ U V W (E: 'CP(U,V)) (F: 'CP(V,W)) :=
   isCPMap.Build U W (E o: F) (comp_sor_cp E F).
 Lemma comp_sor_tn U V W (E: 'QO(U,V)) (F: 'QO(V,W)) :
   E o: F \is tnmap.
 Proof. by rewrite comp_soErl is_tnmap. Qed.
-HB.instance Definition _ U V W (E: 'QO(U,V)) (F: 'QO(V,W)) := 
+HB.instance Definition _ U V W (E: 'QO(U,V)) (F: 'QO(V,W)) :=
   CPMap_isTNMap.Build U W (E o: F) (comp_sor_tn E F).
 Lemma comp_sor_tp U V W (E: 'QC(U,V)) (F: 'QC(V,W)) :
   E o: F \is tpmap.
 Proof. by rewrite comp_soErl is_tpmap. Qed.
-HB.instance Definition _ U V W (E: 'QC(U,V)) (F: 'QC(V,W)) := 
+HB.instance Definition _ U V W (E: 'QC(U,V)) (F: 'QC(V,W)) :=
   QOperation_isTPMap.Build U W (E o: F) (comp_sor_tp E F).
 Lemma comp_sor_dualtn U V W (E: 'DQO(U,V)) (F: 'DQO(V,W)) :
   (E o: F)^*o \is tnmap.
 Proof. by rewrite dualso_compr is_tnmap. Qed.
-HB.instance Definition _ U V W (E: 'DQO(U,V)) (F: 'DQO(V,W)) := 
+HB.instance Definition _ U V W (E: 'DQO(U,V)) (F: 'DQO(V,W)) :=
   CPMap_isDTNMap.Build U W (E o: F) (comp_sor_dualtn E F).
 Lemma comp_sor_dualtp U V W (E: 'QU(U,V)) (F: 'QU(V,W)) :
   (E o: F)^*o \is tpmap.
 Proof. by rewrite dualso_compr is_tpmap. Qed.
-HB.instance Definition _ U V W (E: 'QU(U,V)) (F: 'QU(V,W)) := 
+HB.instance Definition _ U V W (E: 'QU(U,V)) (F: 'QU(V,W)) :=
   DualQO_isUnitalMap.Build U W (E o: F) (comp_sor_dualtp E F).
 
 Lemma comp_so_ge0 (U V W : chsType) (h : 'SO(U,V)) (g : 'SO(W,U)) :
   0 <= h -> 0 <= g -> 0 <= h :o g.
-Proof. 
+Proof.
 by rewrite !geso0_cpE=>Ph Pg; rewrite (CPMap_BuildE Ph) (CPMap_BuildE Pg) is_cpmap.
 Qed.
 
@@ -5806,7 +5806,7 @@ apply/lef_psdtr; last by apply is_psdlf.
 apply: (le_trans _ (is_trnincr (s := f))); rewrite (bigD1 i)//= levDl sumv_ge0// =>j _.
 by rewrite form_gef0.
 Qed.
-HB.instance Definition _ U V (F : finType) (f : 'TN(F;U,V)) i := 
+HB.instance Definition _ U V (F : finType) (f : 'TN(F;U,V)) i :=
   isQOperation.Build U V (elemso f i) (elemso_qo f i).
 
 Lemma elemso_sum U V (F : finType) (f : F -> 'Hom(U,V)) :
@@ -5870,7 +5870,7 @@ Proof. by []. Qed.
 
 Lemma addso_cp U V (E F : 'CP(U,V)) : (E : 'SO) + F \is cpmap.
 Proof. by rewrite krausopE (krausopE F) addso_krausso is_cpmap. Qed.
-HB.instance Definition _ U V (E F : 'CP(U,V)) := isCPMap.Build U V 
+HB.instance Definition _ U V (E F : 'CP(U,V)) := isCPMap.Build U V
   ((E : 'SO) + F) (addso_cp E F).
 
 Lemma sumso_cp U V F (r : seq F) (P : pred F) (f : F -> 'CP(U,V)) :
@@ -5879,10 +5879,10 @@ Proof.
 elim: r=>[|x r IH]; first by rewrite big_nil is_cpmap.
 by rewrite big_cons; case: (P x)=>[|//]; rewrite (CPMap_BuildE IH) is_cpmap.
 Qed.
-HB.instance Definition _ U V F (r : seq F) (P : pred F) (f : F -> 'CP(U,V)) := 
+HB.instance Definition _ U V F (r : seq F) (P : pred F) (f : F -> 'CP(U,V)) :=
   isCPMap.Build U V (\sum_(i <- r | P i) (f i : 'SO)) (sumso_cp r P f).
 
-(* since the projection is bigop, and we already define the sum, the 
+(* since the projection is bigop, and we already define the sum, the
    canonical will be ignored, i.e., HB instance won't work *)
 Lemma complso_cp U F (r : seq F) (P : pred F) (f : F -> 'CP(U)) :
   \compl_(i <- r | P i) (f i) \is cpmap.
@@ -5940,7 +5940,7 @@ by rewrite big_cons; case: (P x)=>[|//]; rewrite (QOperation_BuildE IH) is_cptn.
 Qed.
 Definition comprso_qoE U F r P f := QOperation_BuildE (@comprso_qo U F r P f).
 (* qo is ok, but cp won't work *)
-HB.instance Definition _ U F (r : seq F) (P : pred F) (f : F -> 'QO(U)) := 
+HB.instance Definition _ U F (r : seq F) (P : pred F) (f : F -> 'QO(U)) :=
   isQOperation.Build U U (\compr_(i <- r | P i) (f i)) (comprso_qo r P f).
 
 Lemma comprso_qc U F (r : seq F) (P : pred F) (f : F -> 'QC(U)) :
@@ -5951,7 +5951,7 @@ by rewrite big_cons; case: (P x)=>[|//]; rewrite (QChannel_BuildE IH) is_cptp.
 Qed.
 Definition comprso_qcE U F r P f := QChannel_BuildE (@comprso_qc U F r P f).
 (* qc is ok, but cp won't work *)
-HB.instance Definition _ U F (r : seq F) (P : pred F) (f : F -> 'QC(U)) := 
+HB.instance Definition _ U F (r : seq F) (P : pred F) (f : F -> 'QC(U)) :=
   QOperation_isTPMap.Build U U (\compr_(i <- r | P i) (f i)) (cptp_tpmap (comprso_qc r P f)).
 
 Lemma comprso_dqo U F (r : seq F) (P : pred F) (f : F -> 'DQO(U)) :
@@ -5961,7 +5961,7 @@ elim: r=>[|x r IH]; first by rewrite big_nil is_cptn.
 by rewrite big_cons; case: (P x)=>[|//]; rewrite (DualQO_BuildE IH) is_cptn.
 Qed.
 Definition comprso_dqoE U F r P f := DualQO_Build (@comprso_dqo U F r P f).
-HB.instance Definition _ U F (r : seq F) (P : pred F) (f : F -> 'DQO(U)) := 
+HB.instance Definition _ U F (r : seq F) (P : pred F) (f : F -> 'DQO(U)) :=
   isDualQO.Build U U (\compr_(i <- r | P i) (f i)) (comprso_dqo r P f).
 
 Lemma comprso_qu U F (r : seq F) (P : pred F) (f : F -> 'QU(U)) :
@@ -5971,7 +5971,7 @@ elim: r=>[|x r IH]; first by rewrite big_nil is_cptp.
 by rewrite big_cons; case: (P x)=>[|//]; rewrite (QUnital_BuildE IH) is_cptp.
 Qed.
 Definition comprso_quE U F r P f := QUnital_Build (@comprso_qu U F r P f).
-HB.instance Definition _ U F (r : seq F) (P : pred F) (f : F -> 'QU(U)) := 
+HB.instance Definition _ U F (r : seq F) (P : pred F) (f : F -> 'QU(U)) :=
   DualQO_isUnitalMap.Build U U (\compr_(i <- r | P i) (f i)) (cptp_tpmap (comprso_qu r P f)).
 
 End QOConstruct.
@@ -5991,7 +5991,7 @@ Proof. by rewrite lt_def qc_neq0 cp_geso0. Qed.
 Lemma idso_neq0 U : (\:1 : 'SO(U)) != 0. Proof. exact: qc_neq0. Qed.
 Lemma ltso01 U : (0 : 'SO(U)) ⊏ \:1. Proof. exact: qc_gt0. Qed.
 
-Lemma so_neq0P U V (E : 'SO(U,V)) : 
+Lemma so_neq0P U V (E : 'SO(U,V)) :
   reflect (exists f, E f != 0) (E != 0).
 Proof.
 apply/(iffP negP); rewrite not_existsP; apply contra_not.
@@ -5999,7 +5999,7 @@ by move=>P; apply/eqP/superopP=>u; move: (P u)=>/negP; rewrite negbK soE=>/eqP.
 by move=>/eqP-> x; rewrite soE/= eqxx.
 Qed.
 
-Lemma psdlf_decomp U (f : 'End(U)): f \is psdlf -> 
+Lemma psdlf_decomp U (f : 'End(U)): f \is psdlf ->
   exists (v : 'I_(dim U) -> U), f = \sum_i [> v i ; v i <].
 Proof.
 rewrite qualifE=>/diag_decomp_absorb.
@@ -6033,13 +6033,13 @@ Section QOQMDenObs.
 Implicit Type (U V: chsType).
 
 Lemma qoge0 U V (E: 'QO(U,V)) : ((0 : 'SO) : 'QO) ⊑ E.
-Proof. by rewrite leEsub/= cp_geso0. Qed.
+Proof. by rewrite -Order.le_val/= cp_geso0. Qed.
 
 Lemma cp_psdlf U V (E : 'CP(U,V)) (x : 'F+(U)) : E x \is psdlf.
 Proof. apply/cp_psdP/is_psdlf. Qed.
 HB.instance Definition _ U V (E : 'CP(U,V)) (x : 'F+(U)) :=
   isHermLf.Build V (E x) (psdlf_herm (cp_psdlf E x)).
-HB.instance Definition _ U V (E : 'CP(U,V)) (x : 'F+(U)) := 
+HB.instance Definition _ U V (E : 'CP(U,V)) (x : 'F+(U)) :=
   Herm_isPsdLf.Build V (E x) (cp_psdlf E x).
 
 Lemma dqo_obslf U V (E : 'DQO(U,V)) (O : 'FO(U)) : E O \is obslf.
@@ -6075,7 +6075,7 @@ Lemma elem_sum_trlfE U V (F: finType) (M : 'QM(F;U,V)) x :
   \sum_i \Tr (elemso M i x) = \Tr x.
 Proof. by rewrite -linear_sum/= -sum_soE elemso_sum qc_trlfE. Qed.
 
-Lemma qo_ubound (U V: chsType) (E: 'QO(U,V)) : 
+Lemma qo_ubound (U V: chsType) (E: 'QO(U,V)) :
   (E : 'SO) ⊑ (choi2so (dim U)%:R%:M)%VF.
 Proof.
 move: (is_cptn E)=>/cptnP[P1 P2].
@@ -6108,11 +6108,11 @@ Proof. by move=>/chain_homo P m n Pmn; move: (P _ _ Pmn). Qed.
 Lemma chainqo_lb (u : nat -> 'QO(U,V)) : lbounded_by (0:'SO(U,V)) (qosort \o u).
 Proof. by move=>i/=; rewrite cp_geso0. Qed.
 
-Lemma chainqo_ub (u : nat -> 'QO(U,V)) : 
+Lemma chainqo_ub (u : nat -> 'QO(U,V)) :
   ubounded_by (choi2so (dim U)%:R%:M)%VF (qosort \o u).
 Proof. move=>i/=; apply qo_ubound. Qed.
 
-Lemma lim_qo (u : nat -> 'QO(U,V)) : 
+Lemma lim_qo (u : nat -> 'QO(U,V)) :
   cvgn (qosort \o u) -> [set x : 'SO(U,V) | x \is cptn] (limn (qosort \o u)).
 Proof.
 move=>P; apply: (@closed_cvg _ _ _ eventually_filter (qosort \o u) _ _ _ _)=>//.
@@ -6127,26 +6127,26 @@ pose SOV := quantum_soperop__canonical__extnum_VOrderFinNormedModule U V.
 by apply: (@vnondecreasing_is_cvgn _ _ SOV _ _ P1 P2).
 Qed.
 
-Lemma qolub_lub : forall c : nat -> 'QO(U,V), chain c -> (forall i, c i ⊑ qolub c) 
+Lemma qolub_lub : forall c : nat -> 'QO(U,V), chain c -> (forall i, c i ⊑ qolub c)
   /\ (forall x, (forall i, c i ⊑ x) -> qolub c ⊑ x).
 Proof.
 move=>c Pc. move: (chainqomap Pc) (chainqo_cvg Pc)=>P1 P3.
 pose SOV := quantum_soperop__canonical__extnum_VOrderFinNormedModule U V.
 move: (@nondecreasing_cvgn_lev _ _ SOV _ P1 P3)=>P4.
 rewrite /qolub; case: eqP=>P5; last by exfalso; apply P5; apply lim_qo.
-split. by move=>i; rewrite leEsub/= P4.
-move=>x Px. rewrite leEsub/=.
+split. by move=>i; rewrite -Order.le_val/= P4.
+move=>x Px. rewrite -Order.le_val/=.
 by apply: (@limn_lev _ _ SOV (qosort x) (qosort \o c) P3)=>i; move: (Px i).
 Qed.
 
 Lemma qolub_ub : forall c : nat -> 'QO(U,V), chain c -> (forall i, c i ⊑ qolub c).
 Proof. by move=>c /qolub_lub=>[[P1]]. Qed.
 
-Lemma qolub_least : forall c : nat -> 'QO(U,V), 
+Lemma qolub_least : forall c : nat -> 'QO(U,V),
   chain c -> forall x, (forall i, c i ⊑ x) -> qolub c ⊑ x.
 Proof. by move=>c /qolub_lub=>[[_ ]]. Qed.
 
-Definition qo_cpoMixin := isCpo.Build ring_display 'QO(U,V) 
+Definition qo_cpoMixin := isCpo.Build ring_display 'QO(U,V)
   (@qoge0 U V) qolub_ub qolub_least.
 
 End QOCPOProof.
@@ -6155,7 +6155,7 @@ Module Exports.
 
 HB.instance Definition _ (U V : chsType) := (@qo_cpoMixin U V).
 
-Lemma qolubE (U V : chsType) : forall c : nat -> 'QO(U,V), 
+Lemma qolubE (U V : chsType) : forall c : nat -> 'QO(U,V),
   chain c -> limn ((@QOperation.sort U V) \o c)%FUN = lub c.
 Proof.
 move=>c Pc. rewrite /lub/= /qolub. case: eqP=>//.
@@ -6183,7 +6183,7 @@ Local Open Scope lfun_scope.
 Fixpoint whileso_incr (M: bool -> 'End(U)) (b : bool) (D: 'SO(U)) (n : nat) :=
   match n with
   | O => \:1
-  | S n => (whileso_incr M b D n) :o (D :o (elemso M b)) 
+  | S n => (whileso_incr M b D n) :o (D :o (elemso M b))
   end.
 
 Lemma whileso_incrED (M: bool -> 'End(U)) b (D: 'SO(U)) n :
@@ -6205,7 +6205,7 @@ Lemma whileso_iter_incrEx (M: bool -> 'End(U)) b (D: 'SO(U)) (n: nat) x :
 Proof.
 elim: n x=>[x|n IH x]; first by rewrite big_ord0 linear0 /= soE.
 rewrite (ifso_boolE b) eqxx neqb -/whileso_iter !comp_soE soE big_ord_recl /= IH.
-rewrite -linearD/= soE addrC. do 2 f_equal. 
+rewrite -linearD/= soE addrC. do 2 f_equal.
 apply eq_bigr=>i _. by rewrite !comp_soE.
 Qed.
 
@@ -6214,12 +6214,12 @@ Lemma whileso_iter_incrE (M: bool -> 'End(U)) b (D: 'SO(U)) (n: nat) :
 Proof. by apply/superopP=>x; rewrite soE sum_soE whileso_iter_incrEx. Qed.
 
 Lemma whileso_iterEx (M: bool -> 'End(U)) b (D: 'SO(U)) (n: nat) x :
-  whileso_iter M b D n.+1 x = whileso_iter M b D n x + 
+  whileso_iter M b D n.+1 x = whileso_iter M b D n x +
     ((elemso M (~~b)) :o (whileso_incr M b D n)) x.
 Proof. by rewrite !whileso_iter_incrEx big_ord_recr/= linearD comp_soE. Qed.
 
 Lemma whileso_iterE (M: bool -> 'End(U)) b (D: 'SO(U)) (n: nat) :
-  whileso_iter M b D n.+1 = whileso_iter M b D n + 
+  whileso_iter M b D n.+1 = whileso_iter M b D n +
     ((elemso M (~~b)) :o (whileso_incr M b D n)).
 Proof. by apply/superopP=>x; rewrite soE whileso_iterEx. Qed.
 
@@ -6266,15 +6266,15 @@ CPMap_isTNMap.Build U U (whileso_iter M b D n) (whileso_iter_tn M b D n).
 Lemma whileso_iter_chain (M: bool -> 'End(U)) b (D: 'CP(U)) : chain (whileso_iter M b D).
 Proof. by rewrite /chain=>i; rewrite whileso_iterE levDl; apply/cp_geso0. Qed.
 
-Lemma whileso_iter_homo (M: bool -> 'End(U)) b (D: 'CP(U)) : 
+Lemma whileso_iter_homo (M: bool -> 'End(U)) b (D: 'CP(U)) :
   nondecreasing_seq (whileso_iter M b D).
 Proof. by apply/chain_homo/whileso_iter_chain. Qed.
 
-Lemma whileso_iter_ub (M: 'TN(bool;U)) b (D: 'QO(U)) : 
+Lemma whileso_iter_ub (M: 'TN(bool;U)) b (D: 'QO(U)) :
   ubounded_by (choi2so (dim U)%:R%:M) (whileso_iter M b D).
 Proof. by move=>i; apply/qo_ubound. Qed.
 
-Lemma whileso_is_cvg (M: 'TN(bool;U)) b (D: 'QO(U)) : 
+Lemma whileso_is_cvg (M: 'TN(bool;U)) b (D: 'QO(U)) :
   cvgn (whileso_iter M b D).
 Proof.
 pose SOV := quantum_soperop__canonical__extnum_VOrderFinNormedModule U U.
@@ -6282,7 +6282,7 @@ apply: (@vnondecreasing_is_cvgn _ _ SOV _ _
   (whileso_iter_homo _ b _) (whileso_iter_ub M b D)).
 Qed.
 
-Lemma whileso_cvgn (M: 'TN(bool;U)) b (D: 'QO(U)) : 
+Lemma whileso_cvgn (M: 'TN(bool;U)) b (D: 'QO(U)) :
   (whileso_iter M b D @ \oo --> whileso M b D)%classic.
 Proof. by rewrite whileso.unlock; exact: whileso_is_cvg. Qed.
 
@@ -6295,7 +6295,7 @@ apply: (@closed_cvg _ _ _ eventually_filter (whileso_iter M b D) _ _ _ _)=>//.
 apply closed_isqo. by apply: nearW=>x/=; apply is_cptn.
 by apply whileso_is_cvg.
 Qed.
-HB.instance Definition _ (M: 'TN(bool;U)) b (D: 'QO(U)) := 
+HB.instance Definition _ (M: 'TN(bool;U)) b (D: 'QO(U)) :=
   isQOperation.Build U U (whileso M b D) (whileso_qo M b D).
 
 Lemma whileso_ub (M: 'TN(bool;U)) b (D: 'QO(U)) i : whileso_iter M b D i ⊑ whileso M b D.
@@ -6316,7 +6316,7 @@ apply: (@limn_lev _ _ SOV x (whileso_iter M b D) (@whileso_is_cvg M b D))=>i.
 exact: Px.
 Qed.
 
-Lemma whileso_lim (M: bool -> 'End(U)) b (D: 'SO(U)) : 
+Lemma whileso_lim (M: bool -> 'End(U)) b (D: 'SO(U)) :
   limn (whileso_iter M b D) = whileso M b D.
 Proof. by rewrite whileso.unlock. Qed.
 
@@ -6325,7 +6325,7 @@ End QOWhile.
 Section QOWhileRanking.
 Variable (U: chsType) (M: 'TN(bool;U)) (b: bool) (D: 'QO(U)).
 
-Definition ranking_function (P: 'FO(U)) 
+Definition ranking_function (P: 'FO(U))
 (t : C -> 'FD(U) -> nat) :=
   forall e, e > 0 ->
   (forall x : 'FD(U), (t e ((D :o elemso M b) x : 'FD) <= t e x)%N /\
@@ -6339,7 +6339,7 @@ rewrite comp_lfunA lftraceC. apply/psdlf_trlf.
 by rewrite psdlfE -{2}(adjfK f') -comp_lfunA -adjf_comp comp_lfunA formV_gef0.
 Qed.
 
-Lemma nat_well_founded (tt : nat -> nat) : 
+Lemma nat_well_founded (tt : nat -> nat) :
   (forall n : nat, (tt n.+1 < tt n)%N) -> False.
 Proof.
 move=>H.
@@ -6349,7 +6349,7 @@ move=>P1. move: (leq_ltn_trans P1 (H _))=> P3.
 move: {+}P3=>/ltnW/IH P2. move: (leq_trans P3 P2)=>P4.
 rewrite -(leq_add2r 1) addn1. apply (leq_trans (H _)).
 apply (leq_trans P2).
-rewrite -addn1 -subnA. by rewrite addn1. 
+rewrite -addn1 -subnA. by rewrite addn1.
 rewrite -leq_psubRL//. by rewrite addn1 subn1.
 move: (leq0n (tt (tt 0%N)))=>/P. rewrite subnn leqn0=>/eqP P1.
 move: (H (tt 0%N)). by rewrite P1.
@@ -6387,7 +6387,7 @@ Qed.
 Lemma nat_hausdorff : hausdorff_space nat.
 Proof. exact: discrete_hausdorff. Qed.
 
-Lemma minpred4 (P : nat -> bool) m : 
+Lemma minpred4 (P : nat -> bool) m :
   (forall n, (m <= n)%N -> P n) -> limn (minpred P) = minpred P m.
 Proof.
 move=>H.
@@ -6419,10 +6419,10 @@ move=>H n. apply contraNT. rewrite -leqNgt. apply (minpred2 H).
 Qed.
 
 Lemma rankingP (P: 'FO(U)) :
-  (exists t, ranking_function P t) <-> 
+  (exists t, ranking_function P t) <->
   (forall x : 'FD(U), (fun n=>\Tr (P \o (whileso_incr M b D n) x)) @ \oo --> 0)%classic.
 Proof.
-have P0 : forall n (y : 'FD(U)), (whileso_incr M b D n.+1 y) = 
+have P0 : forall n (y : 'FD(U)), (whileso_incr M b D n.+1 y) =
   (D :o elemso M b) (whileso_incr M b D n y : 'FD) :> 'FD.
 by move=>n y; apply/val_inj; rewrite /= -whileso_incrED whileso_incrE soE.
 split.
@@ -6435,7 +6435,7 @@ pose t1 n := t e (whileso_incr M b D n y : 'FD).
 have Pt1 n : (t1 n.+1 <= t1 n)%N by rewrite /t1 P0 P11.
 have Pt2 : forall m n, (n >= m -> t1 n <= t1 m)%N.
 move=>m n /subnK => <-. elim: (n - m)%N => //= l ih.
-rewrite addSn. apply: (leq_trans _ ih). apply Pt1. 
+rewrite addSn. apply: (leq_trans _ ih). apply Pt1.
 pose tt n := (t1 (h n)).
 have Pc: forall n, (tt n.+1 < tt n)%N.
 move=>n. rewrite /tt.
@@ -6451,7 +6451,7 @@ exists (fun c x => (limn (minpred (Q c x)))).
 split.
 all: move: (H1 x); rewrite ccvgn_limnP=>/(_ _ H)[N Pn];
 have P1: (forall n, (N <= n)%N -> Q e x n)
-by move=>n len; move: (Pn n len); rewrite /Q subr0 -[X in _ -> X < _]ger0_norm// 
+by move=>n len; move: (Pn n len); rewrite /Q subr0 -[X in _ -> X < _]ger0_norm//
 ?trlfM_ge0//=; [apply/obsf_ge0 | apply/denf_ge0].
 all: have P3 n : Q e x n.+1 = (Q e ((D :o elemso M b) x : 'FD) n)
 by rewrite /Q whileso_incrED/= soE.
@@ -6463,14 +6463,14 @@ apply (minpred3 P1). rewrite /Q -real_leNgt/= ?soE//.
 by apply gtr0_real. by apply ger0_real; apply: (le_trans _ P4); apply/ltW.
 have P7 : forall n m, (n <= m = (n.+1 <= m.+1))%N. by [].
 suff P6: limn (minpred (Q e x)) = (limn (minpred (Q e x))).-1.+1.
-rewrite P6/= -P7.  
+rewrite P6/= -P7.
 apply/minpredP=>n. rewrite -P3 -ltnS -P6. apply P2.
 rewrite  -[_.-1.+1]addn1 -subn1 subnK//.
 Qed.
 
 End QOWhileRanking.
-(* for quantum programs, we mostly work while. 
-Instead of introducing the completeNormedModType of lfun, 
+(* for quantum programs, we mostly work while.
+Instead of introducing the completeNormedModType of lfun,
 we provide a some lemmas to lim while *)
 
 Section QOWhileLim.
@@ -6488,12 +6488,12 @@ Lemma while_sf_lim (U: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) (f: 'End(U) -> 
   scalar f -> limn (fun n=>f ((whileso_iter M b D n) x)) = f (whileso M b D x).
 Proof. move=>P. apply/cvg_lim. apply/Chausdorff. by apply/while_sf_cvg. Qed.
 
-Lemma while_sf_ge_near (U: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
+Lemma while_sf_ge_near (U: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   (f: 'End(U) -> C) (c: nat -> C) x :
   scalar f -> cvgn c -> (\forall n \near \oo, c n <= f ((whileso_iter M b D n) x))
   -> limn c <= f (whileso M b D x).
 Proof.
-by move=>sf cc Pn; rewrite -while_sf_lim//; 
+by move=>sf cc Pn; rewrite -while_sf_lim//;
 apply/ler_climn_near=>[//||//]; apply/while_sf_is_cvg.
 Qed.
 
@@ -6506,7 +6506,7 @@ move=>sf cc Pn; rewrite -while_sf_lim//;
 apply/ler_climn=>[//||//]; by apply/while_sf_is_cvg.
 Qed.
 
-Lemma while_sf_ge_cst_near (U: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
+Lemma while_sf_ge_cst_near (U: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   (f: 'End(U) -> C) c x :
   scalar f -> (\forall n \near \oo, c <= f ((whileso_iter M b D n) x))
   -> c <= f (whileso M b D x).
@@ -6515,7 +6515,7 @@ have: ((fun n:nat=>c) @ \oo --> c)%classic by apply: cvg_cst.
 rewrite ccvgn_limnE=>[[{5}<- P1]] P2 P3; by apply while_sf_ge_near.
 Qed.
 
-Lemma while_sf_ge_cst (U: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
+Lemma while_sf_ge_cst (U: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   (f: 'End(U) -> C) c x :
   scalar f -> (forall n, c <= f ((whileso_iter M b D n) x))
   -> c <= f (whileso M b D x).
@@ -6524,7 +6524,7 @@ have: ((fun n:nat=>c) @ \oo --> c)%classic by apply: cvg_cst.
 rewrite ccvgn_limnE=>[[{4}<- P1]] P2 P3; by apply while_sf_ge.
 Qed.
 
-Lemma while_sf_le_near (U: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
+Lemma while_sf_le_near (U: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   (f: 'End(U) -> C) (c: nat -> C) x :
   scalar f -> cvgn c
   -> (\forall n \near \oo, f ((whileso_iter M b D n) x) <= c n)
@@ -6534,7 +6534,7 @@ move=>sf cc Pn; rewrite -while_sf_lim//.
 by apply/ler_climn_near=>[|//|//]; apply/while_sf_is_cvg.
 Qed.
 
-Lemma while_sf_le (U: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
+Lemma while_sf_le (U: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   (f: 'End(U) -> C) (c: nat -> C) x :
   scalar f -> cvgn c -> (forall n, f ((whileso_iter M b D n) x) <= c n)
   -> f (whileso M b D x) <= limn c.
@@ -6543,7 +6543,7 @@ move=>sf cc Pn; rewrite -while_sf_lim//;
 apply/ler_climn=>[|//|//]; by apply/while_sf_is_cvg.
 Qed.
 
-Lemma while_sf_le_cst_near (U: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
+Lemma while_sf_le_cst_near (U: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   (f: 'End(U) -> C) c x :
   scalar f -> (\forall n \near \oo, f ((whileso_iter M b D n) x) <= c)
   -> f (whileso M b D x) <= c.
@@ -6552,7 +6552,7 @@ have: ((fun n:nat=>c) @ \oo --> c)%classic by apply: cvg_cst.
 rewrite ccvgn_limnE=>[[{5}<- P1]] P2 P3; by apply while_sf_le_near.
 Qed.
 
-Lemma while_sf_le_cst (U: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
+Lemma while_sf_le_cst (U: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   (f: 'End(U) -> C) c x :
   scalar f -> (forall n, f ((whileso_iter M b D n) x) <= c)
   -> f (whileso M b D x) <= c.
@@ -6561,9 +6561,9 @@ have: ((fun n:nat=>c) @ \oo --> c)%classic by apply: cvg_cst.
 rewrite ccvgn_limnE=>[[{4}<- P1]] P2 P3; by apply while_sf_le.
 Qed.
 
-Lemma while_sf_eq_near (U: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
+Lemma while_sf_eq_near (U: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   (f g : 'End(U) -> C) m x c :
-  scalar f -> scalar g -> (\forall n \near \oo, 
+  scalar f -> scalar g -> (\forall n \near \oo,
     f ((whileso_iter M b D n) x) + c = g ((whileso_iter M b D (n+m)%N) x))
   -> f (whileso M b D x) + c = g (whileso M b D x).
 Proof.
@@ -6574,7 +6574,7 @@ move: (@while_sf_cvg _ M b D _ x sg).
 by rewrite -(cvg_shiftn m)=>/(cvg_lim (@Chausdorff _)).
 Qed.
 
-Lemma while_lf_cvg (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
+Lemma while_lf_cvg (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   (f: 'Hom('End(U), 'End(V))) x :
   ((fun n=>f ((whileso_iter M b D n) x)) @ \oo --> f (whileso M b D x))%classic.
 Proof.
@@ -6582,17 +6582,17 @@ apply: continuous_cvg. apply: linear_continuous.
 apply: so_cvgl. apply whileso_cvgn.
 Qed.
 
-Lemma while_lf_is_cvg (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
+Lemma while_lf_is_cvg (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   (f: 'Hom('End(U), 'End(V))) x :
   cvgn (fun n=>f ((whileso_iter M b D n) x)).
 Proof. by apply/cvg_ex; exists (f (whileso M b D x)); apply while_lf_cvg. Qed.
 
-Lemma while_lf_lim (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
+Lemma while_lf_lim (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   (f: 'Hom('End(U), 'End(V))) x :
   limn (fun n=>f ((whileso_iter M b D n) x)) = f (whileso M b D x).
 Proof. apply/cvg_lim. apply/norm_hausdorff. by apply/while_lf_cvg. Qed.
 
-Lemma while_lf_ge_near (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
+Lemma while_lf_ge_near (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   (f: 'Hom('End(U), 'End(V))) (c: nat -> 'End(V)) x :
   cvgn c -> (\forall n \near \oo, c n ⊑ f ((whileso_iter M b D n) x))
   -> limn c ⊑ f (whileso M b D x).
@@ -6605,7 +6605,7 @@ apply: (@lev_limn_near _ _ LFV c
 exact: Pn.
 Qed.
 
-Lemma while_lf_ge (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
+Lemma while_lf_ge (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   (f: 'Hom('End(U), 'End(V))) (c: nat -> 'End(V)) x :
   cvgn c -> (forall n, c n ⊑ f ((whileso_iter M b D n) x))
   -> limn c ⊑ f (whileso M b D x).
@@ -6618,7 +6618,7 @@ apply: (@lev_limn _ _ LFV c
 exact: Pn.
 Qed.
 
-Lemma while_lf_ge_cst_near (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
+Lemma while_lf_ge_cst_near (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   (f: 'Hom('End(U), 'End(V))) c x :
   (\forall n \near \oo, c ⊑ f ((whileso_iter M b D n) x))
   -> c ⊑ f (whileso M b D x).
@@ -6628,7 +6628,7 @@ rewrite cvgn_limnE. apply: norm_hausdorff.
 move=>[{5}<- P1] P3; by apply while_lf_ge_near.
 Qed.
 
-Lemma while_lf_ge_cst (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
+Lemma while_lf_ge_cst (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   (f: 'Hom('End(U), 'End(V))) c x :
   (forall n, c ⊑ f ((whileso_iter M b D n) x))
   -> c ⊑ f (whileso M b D x).
@@ -6638,7 +6638,7 @@ rewrite cvgn_limnE. apply norm_hausdorff.
 move=>[{4}<- P1] P3; by apply while_lf_ge.
 Qed.
 
-Lemma while_lf_le_near (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
+Lemma while_lf_le_near (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   (f: 'Hom('End(U), 'End(V))) (c: nat -> 'End(V)) x :
   cvgn c -> (\forall n \near \oo, f ((whileso_iter M b D n) x) ⊑ c n)
   -> f (whileso M b D x) ⊑ limn c.
@@ -6651,7 +6651,7 @@ apply: (@lev_limn_near _ _ LFV
 exact: Pn.
 Qed.
 
-Lemma while_lf_le (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
+Lemma while_lf_le (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   (f: 'Hom('End(U), 'End(V))) (c: nat -> 'End(V)) x :
   cvgn c -> (forall n, f ((whileso_iter M b D n) x) ⊑ c n)
   -> f (whileso M b D x) ⊑ limn c.
@@ -6664,7 +6664,7 @@ apply: (@lev_limn _ _ LFV
 exact: Pn.
 Qed.
 
-Lemma while_lf_le_cst_near (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
+Lemma while_lf_le_cst_near (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   (f: 'Hom('End(U), 'End(V))) c x :
   (\forall n \near \oo, f ((whileso_iter M b D n) x) ⊑ c)
   -> f (whileso M b D x) ⊑ c.
@@ -6674,7 +6674,7 @@ rewrite cvgn_limnE. apply norm_hausdorff.
 move=>[{5}<- P1] P2; by apply while_lf_le_near.
 Qed.
 
-Lemma while_lf_le_cst (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
+Lemma while_lf_le_cst (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   (f: 'Hom('End(U), 'End(V))) c x :
   (forall n, f ((whileso_iter M b D n) x) ⊑ c)
   -> f (whileso M b D x) ⊑ c.
@@ -6684,7 +6684,7 @@ rewrite cvgn_limnE. apply norm_hausdorff.
 move=>[{4}<- P1] P2; by apply while_lf_le.
 Qed.
 
-Lemma while_lf_eq_near (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
+Lemma while_lf_eq_near (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   (f g : 'Hom('End(U), 'End(V))) m x c :
   (\forall n \near \oo, f ((whileso_iter M b D n) x) + c = g ((whileso_iter M b D (n+m)%N) x))
   -> f (whileso M b D x) + c = g (whileso M b D x).
@@ -6696,7 +6696,7 @@ move: (@while_lf_cvg _ _ M b D g x).
 by rewrite -(cvg_shiftn m)=>/(cvg_lim (@norm_hausdorff _ _)).
 Qed.
 
-Lemma whileso_fixpoint (U: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) : 
+Lemma whileso_fixpoint (U: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) :
   whileso M b D = ifso M (fun b'=> if b' == b then whileso M b D :o D
   else idso).
 Proof.
@@ -6706,9 +6706,9 @@ apply/eqP. rewrite eq_le. apply/andP. split.
 2: rewrite -levBrDr.
 all: rewrite -[X in X ⊑ _]id_lfunE;
   apply/while_lf_le_cst=>n; rewrite lfunE/=.
-case: n=>[|n]; first by rewrite /= soE addv_ge0=>[||//]; 
+case: n=>[|n]; first by rewrite /= soE addv_ge0=>[||//];
   [apply/cp_ge0/cp_ge0/cp_ge0 | apply/cp_ge0].
-2: move: (whileso_ub M b D n.+1)=>/leso_preserve_order/(_ Px); 
+2: move: (whileso_ub M b D n.+1)=>/leso_preserve_order/(_ Px);
   rewrite levBrDr; apply le_trans.
 all: rewrite /= (ifso_boolE b) eqxx neqb !comp_soE soE levD2r.
 2: by apply lexx.
@@ -6761,28 +6761,28 @@ apply: so_comp_cvg. apply: nbhs_filter. apply: IH. apply: cvg_id.
 apply: cvg_cst. apply: nbhs_filter.
 Qed.
 
-Lemma whileso_iter_cvg (U : chsType) (M : bool -> 'End(U)) b n 
+Lemma whileso_iter_cvg (U : chsType) (M : bool -> 'End(U)) b n
   (T : Type) (F : set_system T) {FF : Filter F} (f : T -> 'SO) (g : 'SO) :
   f @ F --> g -> (fun i => @whileso_iter U M b (f i) n) @ F --> whileso_iter M b g n.
 Proof.
-move=>P; have Pi i : whileso_iter M b (f i) n = 
+move=>P; have Pi i : whileso_iter M b (f i) n =
   ((@whileso_iter U M b ^~ n) \o f)%FUN i by [].
 under eq_cvg do rewrite Pi.
 apply: (continuous_cvg FF _ P). apply: whileso_iter_continuous.
 Qed.
 
-Lemma whileso_iter_is_cvg (U : chsType) (M : bool -> 'End(U)) b n 
+Lemma whileso_iter_is_cvg (U : chsType) (M : bool -> 'End(U)) b n
   (T : Type) (F : set_system T) {FF : Filter F} (f : T -> 'SO) :
    cvg (f @ F) -> cvg ((fun i => @whileso_iter U M b (f i) n) @ F).
 Proof.
-by move=>?; apply/cvg_ex; 
+by move=>?; apply/cvg_ex;
   exists (whileso_iter M b (lim (f @ F)) n); apply: whileso_iter_cvg.
 Qed.
 
-Lemma whileso_iter_limn (U : chsType) (M : bool -> 'End(U)) b n 
+Lemma whileso_iter_limn (U : chsType) (M : bool -> 'End(U)) b n
   (T : Type) (F : set_system T) {PF : ProperFilter F} (f : T -> 'SO) :
   cvg (f @ F)%classic ->
-    (lim ((fun i => @whileso_iter U M b (f i) n) @ F) = 
+    (lim ((fun i => @whileso_iter U M b (f i) n) @ F) =
       whileso_iter M b (lim (f @ F)) n)%classic.
 Proof.
 by move=>?; apply: cvg_lim=>[//|]; apply: whileso_iter_cvg.
@@ -6809,7 +6809,7 @@ Proof. by rewrite -cplmt1 cplmtK. Qed.
 
 (* canonical structures *)
 Lemma cplmt_obs (P : 'FO(U)) : cplmt P \is obslf.
-Proof. 
+Proof.
 by move: (is_obslf P); rewrite !obslfE subv_ge0 levBlDr levDl=>/andP[->->].
 Qed.
 HB.instance Definition _ (P : 'FO(U)) :=
@@ -6825,15 +6825,15 @@ Lemma cplmt_proj (P : 'FP(U)) : cplmt P \is projlf.
 Proof.
 apply/projlfP; split. apply/hermlfP/obslf_herm/is_obslf.
 rewrite /cplmt linearBl/= !linearBr/= !comp_lfun1l comp_lfun1r.
-by move: (is_projlf P)=>/projlfP[_ ->]; rewrite addrN subr0.  
+by move: (is_projlf P)=>/projlfP[_ ->]; rewrite addrN subr0.
 Qed.
 HB.instance Definition _ (P : 'FP(U)) := Obs_isProjLf.Build U (cplmt P) (cplmt_proj P).
 
-Lemma cplmt_dualC (E: 'QC(U)) (P:'FO(U)) : 
+Lemma cplmt_dualC (E: 'QC(U)) (P:'FO(U)) :
   cplmt (E^*o P) = E^*o (cplmt P).
 Proof. by rewrite /cplmt linearB/= qu1_eq1. Qed.
 Lemma cplmt_lef (P Q : 'End(U)) : P ⊑ Q = (cplmt Q ⊑ cplmt P).
-Proof. by rewrite levBlDl addrA levBrDl levD2r. Qed. 
+Proof. by rewrite levBlDl addrA levBrDl levD2r. Qed.
 
 End ComplementObs.
 
@@ -6976,7 +6976,7 @@ move=>/(formlf_lef N) P; apply: (le_trans P).
 by rewrite formlf1E bound1f_formV_le1.
 Qed.
 
-Lemma formlf_sum_bound1 (U V : chsType) (F : finType) (N : 'TN(F;U,V)) 
+Lemma formlf_sum_bound1 (U V : chsType) (F : finType) (N : 'TN(F;U,V))
   (W X : chsType) (A : 'FB1(V,W)) (B : 'FB1(X,U)) (C : F -> 'FB1(X)) :
     (forall i j, i != j -> (N i)^A \o N j = 0) ->
     (\sum_i (N i \o (N i)^A) <= \1) ->
@@ -6990,7 +6990,7 @@ rewrite -linear_sumlz/= -formlf_comp formlf1EV.
 apply: (le_trans (formlf_lef _ (bound1f_form_le1 A))).
 under eq_bigr do rewrite -formlf_comp formlfE.
 rewrite formlf_sum_diag.
-by move=>i j /Pij nij; rewrite comp_lfun1r adjf_comp adjfK 
+by move=>i j /Pij nij; rewrite comp_lfun1r adjf_comp adjfK
   comp_lfunA [LHS]comp_lfunACA nij comp_lfun0r comp_lfun0l.
 apply/(le_trans _ PN)/lev_sum=>i _.
 rewrite -formlf1E -comp_lfunA -formlf_comp; apply/formlf_lef.
@@ -7037,7 +7037,7 @@ apply/lef_trden; rewrite -subv_ge0; apply: (le_trans (y := M0^A \o M0)).
 apply: form_gef0. by rewrite levBrDr.
 Qed.
 
-#[local] Lemma M01_trlf (x : 'FD) (E : 'SO) (H : E \is tnmap) : 
+#[local] Lemma M01_trlf (x : 'FD) (E : 'SO) (H : E \is tnmap) :
   \Tr (formso M0 x + E (formso M1 x)) <= \Tr x.
 Proof.
 apply: (le_trans (y := \Tr (formso M0 x + formso M1 x))).
@@ -7074,14 +7074,14 @@ rewrite -geso0_cpE; apply: (le_trans (y := whilegso_iter f 0)).
 by rewrite /whilegso_iter big_ord0. by apply/whilegso_iter_homo/leq0n.
 Qed.
 
-Lemma whilegso_iter_ub f (fQO : forall i, f i \is cptn) : 
+Lemma whilegso_iter_ub f (fQO : forall i, f i \is cptn) :
   ubounded_by (choi2so (dim U)%:R%:M) (whilegso_iter f).
 Proof.
 by move=>i; rewrite (QOperation_BuildE (whilegso_iter_cptn i fQO));
 apply/qo_ubound.
 Qed.
 
-Lemma whilegso_is_cvgn f (fQO : forall i, f i \is cptn) : 
+Lemma whilegso_is_cvgn f (fQO : forall i, f i \is cptn) :
   cvgn (whilegso_iter f).
 Proof.
 pose SOV := quantum_soperop__canonical__extnum_VOrderFinNormedModule U U.
@@ -7089,7 +7089,7 @@ by apply: (@vnondecreasing_is_cvgn _ _ SOV _ _
   (whilegso_iter_homo fQO) (whilegso_iter_ub fQO)).
 Qed.
 
-Lemma whilegso_cptn f (fQO : forall i, f i \is cptn) : 
+Lemma whilegso_cptn f (fQO : forall i, f i \is cptn) :
   limn (whilegso_iter f) \is cptn.
 Proof.
 suff : [set x : 'SO(U) | x \is cptn]%classic (limn (whilegso_iter f)) by [].
@@ -7098,7 +7098,7 @@ apply closed_isqo. by apply: nearW=>x/=; apply (whilegso_iter_cptn x fQO).
 by apply whilegso_is_cvgn.
 Qed.
 
-Lemma whilegso_ub f (fQO : forall i, f i \is cptn) n : 
+Lemma whilegso_ub f (fQO : forall i, f i \is cptn) n :
   whilegso_iter f n ⊑ limn (whilegso_iter f).
 Proof.
 pose SOV := quantum_soperop__canonical__extnum_VOrderFinNormedModule U U.
@@ -7107,7 +7107,7 @@ move: (@nondecreasing_cvgn_lev _ _ SOV _
 exact: (P n).
 Qed.
 
-Lemma whilegso_least f (fQO : forall i, f i \is cptn) x : 
+Lemma whilegso_least f (fQO : forall i, f i \is cptn) x :
   (forall i, whilegso_iter f i ⊑ x) -> limn (whilegso_iter f) ⊑ x.
 Proof.
 move=>Px.

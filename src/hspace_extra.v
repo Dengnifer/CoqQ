@@ -1,5 +1,5 @@
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 From mathcomp.classical Require Import boolp classical_sets.
 From mathcomp.algebra Require Import -(notations)sesquilinear.
@@ -13,8 +13,8 @@ Require Import mcextra mcaextra notation quantum
 
 From quantum Require Import hermitian prodvect tensor mxpred
   cpo extnum ctopology.
-From Coq.Program Require Import Equality.
-From Coq.Strings Require Import String.
+From Stdlib.Program Require Import Equality.
+From Stdlib.Strings Require Import String.
 
 (****************************************************************************)
 (*  Extra of hspace.v, formalizing infinite caps and cups of Hilbert        *)

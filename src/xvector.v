@@ -1,5 +1,5 @@
 (* -------------------------------------------------------------------- *)
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 
 (* -------------------------------------------------------------------- *)

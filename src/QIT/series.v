@@ -1,5 +1,5 @@
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.boot Require Import bigop.
 From mathcomp.algebra Require Import all_algebra.
 From mathcomp.algebra Require Import -(notations)sesquilinear.
@@ -11,8 +11,9 @@ From mathcomp.analysis.topology_theory Require Import topology.
 From mathcomp.analysis.normedtype_theory Require Import normedtype.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
+From Stdlib Require Import EqdepFacts Eqdep_dec.
 Require Import mcextra mcaextra notation prodvect hermitian tensor
- cpo EqdepFacts Eqdep_dec mxpred extnum ctopology setdec quantum summable.
+ cpo mxpred extnum ctopology setdec quantum summable.
 
 (****************************************************************************)
 (*                       Module for Generalized Series                      *)
@@ -532,7 +533,8 @@ Local Notation "x \o*x y" := (fun i => (y i) *x x)
 Local Notation "x \*ox y" := (fun i => x *x (y i))
                                       (at level 45, left associativity).
 
-Definition expx x n := nosimpl (@iterop H n mulx x idm).
+Definition expx x n := @iterop H n mulx x idm.
+Arguments expx : simpl never.
 
 Local Notation "1" := idm.
 Local Notation "x ^x n" := (expx x n) (at level 29, left associativity).
@@ -745,7 +747,8 @@ have ->: [series (n`!%:R^-1 *: ^ n [A, B])]_n
 ((expM_coeff A (s-k)%N) \o (B \o (expM_coeff (-A) k)))]_n by
   apply: funext => n;
   rewrite /series /= big_mkord;
-  under eq_bigr do rewrite -sum_xcom;
+  apply: eq_bigr => s _;
+  rewrite -sum_xcom;
   under eq_bigr do rewrite ?chsf_compE.
 apply: (mlim_seriesM _ (v := fun i => B \o (expM_coeff (-A)) i));
 first exact: normed_expM_is_cvg.

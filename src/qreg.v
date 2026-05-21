@@ -1,5 +1,5 @@
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 From mathcomp.finmap Require Import finmap.
 From quantum.external Require Import complex.
@@ -7,8 +7,8 @@ From mathcomp.classical Require Import boolp classical_sets.
 From mathcomp.reals Require Import reals.
 (* From mathcomp.real_closed Require Import complex. *)
 Require Import mcextra mcaextra notation quantum ctopology inhabited autonat summable.
-From Coq.Program Require Import Equality.
-From Coq.Strings Require Import String.
+From Stdlib.Program Require Import Equality.
+From Stdlib.Strings Require Import String.
 Require Import Relation_Definitions Setoid.
 
 Import Order.LTheory GRing.Theory Num.Theory GenTree.
@@ -512,10 +512,11 @@ HB.instance Definition _ := @gen_choiceMixin cmem.
 Definition cmget := (fun m => let: CMem m := m in m).
 Coercion cmget : cmem >-> Funclass.
 
-Definition cmset := nosimpl (fun (m : cmem) {T : cType} x v =>
+Definition cmset := (fun (m : cmem) {T : cType} x v =>
   CMem (fun U y =>
     orapp (m U y) (fun eqT : T = U => 
       if x == y then cast_ctype eqT v else m U y))).
+Arguments cmset : simpl nomatch.
     (* match T =P U with
     | ReflectT eqT =>
       if x == y then (let: erefl in _ = U := eqT return eval_ctype U in v)
@@ -660,21 +661,24 @@ HB.instance Definition _ := Countable.copy qvar (can_type qvar_to_stringK).
 (* disjointness of qvar; here we treat qvar as variables                     *)
 (* rather than concrete constructions from string                            *)
 Definition qvar_diff_rec (x y : qvar) : bool := x != y.
-Definition qvar_diff := nosimpl qvar_diff_rec.
+Definition qvar_diff := qvar_diff_rec.
+Arguments qvar_diff : simpl nomatch.
 
 Fixpoint qvar_dis_sub_rec (x : qvar) (s : seq qvar) : bool :=
     match s with
     | [::] => true
     | h :: t => qvar_diff x h && (qvar_dis_sub_rec x t)
     end.
-Definition qvar_dis_sub := nosimpl qvar_dis_sub_rec.
+Definition qvar_dis_sub := qvar_dis_sub_rec.
+Arguments qvar_dis_sub : simpl nomatch.
 
 Fixpoint qvar_dis_rec (s : seq qvar) : bool :=
     match s with
     | [::] => true
     | h :: t => (qvar_dis_sub h t) && (qvar_dis_rec t)
     end.
-Definition qvar_dis := nosimpl qvar_dis_rec.
+Definition qvar_dis := qvar_dis_rec.
+Arguments qvar_dis : simpl nomatch.
 
 End QuantumRegister.
 
@@ -814,7 +818,8 @@ Definition index_fst_rec (s : qreg_index) :=
   | pair_index s1 s2 => s1
   | _ => fault_index
   end.
-Definition index_fst := nosimpl index_fst_rec.
+Definition index_fst := index_fst_rec.
+Arguments index_fst : simpl nomatch.
 Lemma index_fstE : index_fst = index_fst_rec. Proof. by []. Qed.
 
 Definition index_snd_rec (s : qreg_index) :=
@@ -823,7 +828,8 @@ Definition index_snd_rec (s : qreg_index) :=
   | pair_index s1 s2 => s2
   | _ => fault_index
   end.
-Definition index_snd := nosimpl index_snd_rec.
+Definition index_snd := index_snd_rec.
+Arguments index_snd : simpl nomatch.
 Lemma index_sndE : index_snd = index_snd_rec. Proof. by []. Qed.
 
 Definition index_ffuni_rec (s : qreg_index) {n} (i : 'I_n) :=
@@ -833,7 +839,8 @@ Definition index_ffuni_rec (s : qreg_index) {n} (i : 'I_n) :=
       orapp fault_index (fun E : n = n' => s' (cast_ord E i))
   | _ => fault_index
   end.
-Definition index_ffuni := nosimpl index_ffuni_rec.
+Definition index_ffuni := index_ffuni_rec.
+Arguments index_ffuni : simpl nomatch.
 Lemma index_ffuniE : index_ffuni = index_ffuni_rec. Proof. by []. Qed.
 
 Definition index_tuplei_rec (s : qreg_index) {n} (i : 'I_n) :=
@@ -843,7 +850,8 @@ Definition index_tuplei_rec (s : qreg_index) {n} (i : 'I_n) :=
       orapp fault_index (fun E : n = n' => s' (cast_ord E i))
   | _ => fault_index
   end.
-Definition index_tuplei := nosimpl index_tuplei_rec.
+Definition index_tuplei := index_tuplei_rec.
+Arguments index_tuplei : simpl nomatch.
 Lemma index_tupleiE : index_tuplei = index_tuplei_rec. Proof. by []. Qed.
 
 End qreg_index.
@@ -1260,9 +1268,10 @@ Fixpoint qi2seq_rec (s : qreg_index) : seq basic_index :=
   | ffun_index n _ f => flatten [seq qi2seq_rec (f i) | i : 'I_n]
   end.
 
-Definition qi2seq := nosimpl qi2seq_rec.
-Definition qr2seq {T} (x : qreg T) := nosimpl
-  (qi2seq (index_of_qreg x)).
+Definition qi2seq := qi2seq_rec.
+Arguments qi2seq : simpl nomatch.
+Definition qr2seq {T} (x : qreg T) := qi2seq (index_of_qreg x).
+Arguments qr2seq : simpl nomatch.
 
 Lemma pmap_flatten {S T : Type} (f : T -> option S) ss :
   pmap f (flatten ss) = flatten (map (pmap f) ss).
@@ -1374,18 +1383,30 @@ elim=>[||n|??||????||].
   by rewrite/=; f_equal; apply/funext=>i; move: (projT2 (P2 i)).
 Qed.
 
+Lemma ffun_index_recE n t (s : 'I_n -> qreg_index) (i : 'I_n) :
+  index_ffuni_rec (ffun_index t s) i = s i.
+Proof.
+by rewrite /= /orapp;
+case: eqP=>// P; rewrite cast_ord_id.
+Qed.
+
 Lemma ffun_indexE n t (s : 'I_n -> qreg_index) (i : 'I_n) :
   index_ffuni (ffun_index t s) i = s i.
 Proof.
-by rewrite/index_ffuni/=/orapp;
+by rewrite /index_ffuni ffun_index_recE.
+Qed.
+
+Lemma tuple_index_recE n t (s : 'I_n -> qreg_index) (i : 'I_n) :
+  index_tuplei_rec (tuple_index t s) i = s i.
+Proof.
+by rewrite /= /orapp;
 case: eqP=>// P; rewrite cast_ord_id.
 Qed.
 
 Lemma tuple_indexE n t (s : 'I_n -> qreg_index) (i : 'I_n) :
   index_tuplei (tuple_index t s) i = s i.
 Proof.
-by rewrite/index_tuplei/=/orapp;
-case: eqP=>// P; rewrite cast_ord_id.
+by rewrite /index_tuplei tuple_index_recE.
 Qed.
 
 Lemma qtype_of_pair T1 T2 (x : qreg_index) :
@@ -1415,7 +1436,7 @@ case: x=>//; ltest.
 - by move=>x s/= P i; rewrite qtype_of_index_rec_rcons P orapp_id.
 - move=>m T' q/=; case E: [forall _, _] =>// /esym Pv i.
   inversion Pv; case: m / H0 q E Pv; case: T' / H1=>q /forallP/(_ i)/eqP<- _.
-  by rewrite tuple_indexE.
+  by rewrite /index_tuplei /= /orapp; case: eqP=>// P; rewrite cast_ord_id.
 Qed.
 
 Lemma qi2seq_of_tuple n T (x : qreg_index) :
@@ -1428,7 +1449,8 @@ move=>P; move: P (qtype_of_tuple P); case: x=>[||||] =>/=; ltest.
   by under [X in _ = flatten X]eq_map do rewrite P2.
 - move=>m T' q; case: [forall _, _] =>// /esym Pv; inversion Pv.
   case: m / H0 q Pv => q _ _; rewrite /qi2seq/=; f_equal.
-  by under [RHS]eq_map do rewrite tuple_indexE.
+  apply/eq_map=>i; rewrite /qi2seq /index_tuplei /= /orapp.
+  by case: eqP=>// P; rewrite cast_ord_id.
 Qed.
 
 Lemma qtype_of_ffun n (T : 'I_n -> qType) (x : qreg_index) :
@@ -1440,7 +1462,7 @@ case: x=>//; ltest.
   rewrite qtype_of_index_rec_rcons P orapp_id cast_ord_id.
 - move=>m T' q/=; case E: [forall _, _] =>// /esym Pv i; inversion Pv.
   case: m / H0 T' q E Pv H1=>T' q /forallP/(_ i)/eqP P1 _ /inj_existT ->.
-  by rewrite ffun_indexE.
+  by rewrite /index_ffuni /= /orapp; case: eqP=>// P; rewrite cast_ord_id.
 Qed.
 
 Lemma qi2seq_of_ffun n (T : 'I_n -> qType) (x : qreg_index) :
@@ -1453,7 +1475,8 @@ move=>P; move: P (qtype_of_ffun P); case: x=>[||||] =>/=; ltest.
   by under [X in _ = flatten X]eq_map do rewrite P2.
 - move=>m T' q; case: [forall _, _] =>// /esym Pv; inversion Pv.
   case: m / H0 T' q Pv H1=>T' q _ _ _; rewrite /qi2seq/=; f_equal.
-  by under [RHS]eq_map do rewrite ffun_indexE.
+  apply/eq_map=>i; rewrite /qi2seq /index_ffuni /= /orapp.
+  by case: eqP=>// P; rewrite cast_ord_id.
 Qed.
 
 Lemma size_qi2seq T (x : qreg_index) : 
@@ -1490,9 +1513,10 @@ Lemma of_qregTK (x : qregT) : to_qregT (of_qregT x) = x.
 Proof. by case x. Qed. *)
 
 (* two qregs have the same index *)
-Definition eq_qreg T (q1 q2 : qreg T) := nosimpl (qr2seq q1 = qr2seq q2).
+Definition eq_qreg T (q1 q2 : qreg T) := qr2seq q1 = qr2seq q2.
+Arguments eq_qreg : simpl nomatch.
 Infix "=r" := eq_qreg (at level 70).
-(* Definition eq_qregT (q1 q2 : qregT) := nosimpl (qr2seq q1 = qr2seq q2).
+(* Definition eq_qregT (q1 q2 : qregT) := qr2seq q1 = qr2seq q2.
 Infix "=rt" := eq_qregT (at level 70). *)
 
 Lemma eq_qreg_trans T : 
@@ -1569,7 +1593,8 @@ Qed.
 
 (* a valid qreg has every basic element uniq *)
 Definition valid_qreg_rec T (x : qreg T) := uniq (qr2seq x).
-Definition valid_qreg := nosimpl valid_qreg_rec.
+Definition valid_qreg := valid_qreg_rec.
+Arguments valid_qreg : simpl nomatch.
 (* two qreg are disjoint iff their basic elements are distinct *)
 Definition disjoint_qreg_rec Tx Ty (x : qreg Tx) (y : qreg Ty) :=
   [disjoint (qr2seq x) & (qr2seq y)].
@@ -1578,9 +1603,11 @@ Definition disjoint_qreg := disjoint_qreg_rec.
 (* define on the index *)
 Definition disjoint_qregI_rec (x y : qreg_index) :=
   [disjoint (qi2seq x) & (qi2seq y)].
-Definition disjoint_qregI := nosimpl disjoint_qregI_rec.
+Definition disjoint_qregI := disjoint_qregI_rec.
+Arguments disjoint_qregI : simpl nomatch.
 Definition valid_qregI_rec (x : qreg_index) := uniq (qi2seq x).
-Definition valid_qregI := nosimpl valid_qregI_rec.
+Definition valid_qregI := valid_qregI_rec.
+Arguments valid_qregI : simpl nomatch.
 
 (* fset_qreg ; use lock without unlockable here to avoid any possible unlock *)
 Fact fset_qreg_key : unit. Proof. by []. Qed.
@@ -2107,7 +2134,8 @@ Fixpoint eval_index_rec (x : qreg_index) (s : seq qnat) :=
   | qnat_tuplei _ i :: t => eval_index_rec (index_tuplei x i) t
   | qnat_ffuni _ i :: t => eval_index_rec (index_ffuni x i) t
   end.
-Definition eval_index := nosimpl eval_index_rec.
+Definition eval_index := eval_index_rec.
+Arguments eval_index : simpl nomatch.
 
 Lemma eval_indexE1 T1 T2 (x : qreg (T1 * T2)) :
   qreg_fst x = eval_index x [:: qnat_fst] :> qreg_index.
@@ -3242,21 +3270,24 @@ Canonical qvar_name_countType := Eval hnf in CountType qvar_name qvar_name_count
 (* disjointness of qvar; here we treat qvar as variables                     *)
 (* rather than concrete constructions from string                            *)
 Definition qvar_diff_rec (x y : qvar_name) : bool := x != y.
-Definition qvar_diff := nosimpl qvar_diff_rec.
+Definition qvar_diff := qvar_diff_rec.
+Arguments qvar_diff : simpl nomatch.
 
 Fixpoint qvar_dis_sub_rec (x : qvar_name) (s : seq qvar_name) : bool :=
     match s with
     | [::] => true
     | h :: t => qvar_diff x h && (qvar_dis_sub_rec x t)
     end.
-Definition qvar_dis_sub := nosimpl qvar_dis_sub_rec.
+Definition qvar_dis_sub := qvar_dis_sub_rec.
+Arguments qvar_dis_sub : simpl nomatch.
 
 Fixpoint qvar_dis_rec (s : seq qvar_name) : bool :=
     match s with
     | [::] => true
     | h :: t => (qvar_dis_sub h t) && (qvar_dis_rec t)
     end.
-Definition qvar_dis := nosimpl qvar_dis_rec.
+Definition qvar_dis := qvar_dis_rec.
+Arguments qvar_dis : simpl nomatch.
 
 End QVarName.
 

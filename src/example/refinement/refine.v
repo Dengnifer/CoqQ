@@ -1,5 +1,5 @@
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 From mathcomp.classical Require Import boolp classical_sets.
 From mathcomp.algebra Require Import -(notations)sesquilinear.
@@ -14,8 +14,8 @@ From quantum Require Import prodvect tensor mxpred cpo extnum
   ctopology qreg qmem.
 From quantum.dirac Require Import hstensor.
 From quantum.example.refinement Require Import language.
-From Coq.Program Require Import Equality.
-From Coq.Strings Require Import String.
+From Stdlib.Program Require Import Equality.
+From Stdlib.Strings Require Import String.
 
 (************************************************************************)
 (*                   Formalization of Section 5                         *)

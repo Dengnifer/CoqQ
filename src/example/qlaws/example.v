@@ -1,5 +1,5 @@
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 
 Require Import mcextra mcaextra notation convex.
@@ -68,7 +68,7 @@ do ! apply eq_nchoice.
   rewrite unit_sequ/=.
   (* identify that [q2] *= ''X \o ''X =u uskip ; proposition 4.2 (2) *)
   rewrite uskip_eqP/= ?PauliX_id//.
-  (* qif is idempotent ; proposition 4.1 (3) *)
+  (* qif is idempotent_op ; proposition 4.1 (3) *)
   rewrite qif_idemB.
   (* circuit uskip is the same as program skip *)
   rewrite uskip_skip.
@@ -102,7 +102,7 @@ do ! apply eq_nchoice.
   rewrite !uskipIx !uskipxI.
   (* commutative of disjoint circuits; proposition 4.2 (4) *)
   rewrite sequC.
-  (* qif is idempotent ; proposition 4.1 (3) *)
+  (* qif is idempotent_op ; proposition 4.1 (3) *)
   rewrite qif_idemB.
   (* commutative of disjoint circuits; proposition 4.2 (4) *)
   rewrite sequC.

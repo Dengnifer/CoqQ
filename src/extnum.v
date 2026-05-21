@@ -1,14 +1,14 @@
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order interval_inference.
 From mathcomp.algebra Require Import all_algebra.
 From mathcomp.classical Require Import boolp cardinality mathcomp_extra
   classical_sets functions.
-From mathcomp.reals Require Import reals signed prodnormedzmodule.
+From mathcomp.reals Require Import reals prodnormedzmodule.
 From mathcomp.analysis Require Import ereal sequences.
 From mathcomp.analysis.topology_theory Require Import topology function_spaces.
 From mathcomp.analysis.normedtype_theory Require Import normedtype.
 From mathcomp.algebra Require Import -(notations)sesquilinear.
-From Coq.Bool Require Import Bool.
+From Stdlib.Bool Require Import Bool.
 Require Import mcextra mcaextra notation mxpred.
 
 (******************************************************************************)
@@ -83,7 +83,7 @@ Lemma lim_eq {T: Type} {V : ptopologicalType} {F : set_system T} (u v : T -> V) 
 Proof. by move=>/funext->. Qed.
 
 Section TrivialMatrixFun.
-Implicit Type (R: ringType).
+Implicit Type (R: nzRingType).
 
 Lemma mxf_dim0n R T p : all_equal_to ((fun=>0) : T -> 'M[R]_(0,p)).
 Proof. by move=>h/=; apply/funext=>i; rewrite mx_dim0E. Qed.
@@ -367,12 +367,12 @@ Qed.
 
 End mxvec_continuous.
 
-Lemma normv_snum_subproof (R : numDomainType) (V : lmodType R) (nv : vnorm V) 
-  (x : V) : Signed.spec 0 ?=0 >=0 (nv x).
-Proof. by rewrite /= normv_ge0. Qed.
+Lemma normv_nngnum_subproof (R : numDomainType) (V : lmodType R)
+  (nv : vnorm V) (x : V) : 0 <= nv x.
+Proof. exact: normv_ge0. Qed.
 
-Canonical normv_snum (R : numDomainType) (V : lmodType R) (nv : vnorm V) 
-  (x : V) := Signed.mk (normv_snum_subproof nv x).
+Canonical normv_nngnum (R : numDomainType) (V : lmodType R) (nv : vnorm V)
+  (x : V) := NngNum (normv_nngnum_subproof nv x).
 
 (* non-degenerated, at least 1*1 dim *)
 Section MxNormFieldND.
@@ -674,9 +674,9 @@ Local Notation c2r := (@c2r R C).
 Lemma r2c_inj : injective r2c. Proof. exact: (can_inj r2cK). Qed.
 Lemma c2r_continuous : continuous c2r.
 Proof. exact: Aux_c2r_continuous. Qed.
-Lemma c2r_is_additive : additive c2r.
+Lemma c2r_is_additive : zmod_morphism c2r.
 Proof. by move=>a b; rewrite -[in RHS]mulN1r [RHS]addrC -c2rP rmorphN1 mulN1r addrC. Qed.
-HB.instance Definition _ := GRing.isAdditive.Build C R c2r c2r_is_additive.
+HB.instance Definition _ := GRing.isZmodMorphism.Build C R c2r c2r_is_additive.
 Lemma r2c0 : r2c 0 = 0. Proof. exact: rmorph0. Qed.
 Lemma r2c1 : r2c 1 = 1. Proof. by exact: rmorph1. Qed.
 Lemma c2r0 : c2r 0 = 0. Proof. exact: raddf0. Qed.
@@ -928,8 +928,8 @@ Variable (R: realType) (C: extNumType R).
 Lemma etclosed_ge (y:C) : closed [set x : C | y <= x].
 Proof.
 rewrite (_ : mkset _ = (fun x=>x-y) @^-1` ([set` Num.real] `&` c2r @^-1` [set x | 0 <= x ])).
-apply: closed_comp=>[x _|]; first by apply: addl_continuous.
-apply: closedI. apply/etclosed_real. apply: closed_comp=>[x _|].
+apply: preimage_closed=>[x _|]; first by apply: addl_continuous.
+apply: closedI. apply/etclosed_real. apply: preimage_closed=>[x _|].
 apply: c2r_continuous. apply/closed_ge.
 rewrite predeqE=>x; rewrite/= -[y <= x]subr_ge0; split=>[P1|[P1]].
 by rewrite ger0_real// c2r_ge0. by rewrite -(@ler_r2c _ C) c2rK// r2c0.
@@ -938,7 +938,7 @@ Qed.
 Lemma etclosed_le (y : C) : closed [set x : C | x <= y].
 Proof.
 rewrite (_ : mkset _ = (fun x=>-x) @^-1` [set x | -y <= x ]).
-apply: closed_comp=>[x _|]; first by apply: opp_continuous.
+apply: preimage_closed=>[x _|]; first by apply: opp_continuous.
 apply: etclosed_ge.
 by rewrite predeqE=>x; rewrite/= lerN2.
 Qed.
@@ -1749,7 +1749,7 @@ Qed.
 Lemma mxclosed_comp m n p q (f : 'M[C]_(m,n) -> 'M[C]_(p,q))
   (A : set 'M[C]_(p,q)) :
   linear f -> closed A -> closed (f @^-1` A).
-Proof. by move=>lf; apply closed_comp=>x _; apply (mxlinear_continuous lf). Qed.
+Proof. by move=>lf; apply preimage_closed=>x _; apply (mxlinear_continuous lf). Qed.
 
 Lemma mxopen_comp m n p q (f : 'M[C]_(m,n) -> 'M[C]_(p,q))
   (A : set 'M[C]_(p,q)) :
@@ -1800,7 +1800,7 @@ Qed.
 Lemma mxcclosed_comp m n (f : 'M[C]_(m,n) -> C)
   (A : set C) :
   scalar f -> closed A -> closed (f @^-1` A).
-Proof. by move=>lf; apply closed_comp=>x _; apply (mxscalar_continuous lf). Qed.
+Proof. by move=>lf; apply preimage_closed=>x _; apply (mxscalar_continuous lf). Qed.
 
 Lemma mxcopen_comp m n (f : 'M[C]_(m,n) -> C)
   (A : set C) :
@@ -2036,7 +2036,7 @@ Implicit Type (u v : M^nat).
 
 Lemma submx_ge0 (x y : M) : ((0 : M) ⊑ x - y) = (y ⊑ x).
 Proof. 
-apply/Coq.Bool.Bool.eq_iff_eq_true; split=>[/(@lemx_add2r y)|/(@lemx_add2r (-y))];
+apply/Stdlib.Bool.Bool.eq_iff_eq_true; split=>[/(@lemx_add2r y)|/(@lemx_add2r (-y))];
 by rewrite ?addrNK ?add0r// addrN.
 Qed.
 
@@ -2065,10 +2065,10 @@ by rewrite propeqE; split => bu i; move: (bu i);
   rewrite {2}/GRing.opp/= lemx_opp2.
 Qed.
 
-(* different canonical route. prevent eq_op porderType ringType *)
+(* different canonical route. prevent eq_op porderType nzRingType *)
 Lemma ltmx_def (x y : M) : (x ⊏ y) = (y != x) && (x ⊑ y).
 Proof.
-rewrite lt_def; congr (~~ _ && _); apply/Coq.Bool.Bool.eq_iff_eq_true.
+rewrite lt_def; congr (~~ _ && _); apply/Stdlib.Bool.Bool.eq_iff_eq_true.
 split=>/eqP/=->; by rewrite eqxx.
 Qed.
 
@@ -3321,7 +3321,7 @@ Proof. move=>lf; rewrite (linearlfE lf); exact: linear_of_mx_continuous. Qed.
 
 Lemma closed_linearP {U V} (f : U -> V) (A : set V) :
   linear f -> closed A -> closed (f @^-1` A).
-Proof. by move=>lf; apply closed_comp=>x _; apply linear_continuousP. Qed.
+Proof. by move=>lf; apply preimage_closed=>x _; apply linear_continuousP. Qed.
 
 Lemma open_linearP {U V} (f : U -> V) (A : set V) :
   linear f -> open A -> open (f @^-1` A).
@@ -3337,7 +3337,7 @@ Proof. apply open_linearP; exact: linearP. Qed.
 
 Lemma closed_to_mx_linearP {U} m n (f : U -> 'M[C]_(m,n)) (A : set 'M[C]_(m,n)):
   linear f -> closed A -> closed (f @^-1` A).
-Proof. by move=>lf; apply closed_comp=>x _; apply linear_to_mx_continuousP. Qed.
+Proof. by move=>lf; apply preimage_closed=>x _; apply linear_to_mx_continuousP. Qed.
 
 Lemma closed_to_mx_linear {U} m n (f : {linear U -> 'M[C]_(m,n)}) (A : set 'M[C]_(m,n)):
   closed A -> closed (f @^-1` A).
@@ -3353,7 +3353,7 @@ Proof. apply open_to_mx_linearP; exact: linearP. Qed.
 
 Lemma closed_of_mx_linearP {U} m n (f : 'M[C]_(m,n) -> U) (A : set U):
   linear f -> closed A -> closed (f @^-1` A).
-Proof. by move=>lf; apply closed_comp=>x _; apply linear_of_mx_continuousP. Qed.
+Proof. by move=>lf; apply preimage_closed=>x _; apply linear_of_mx_continuousP. Qed.
 
 Lemma closed_of_mx_linear {U} m n (f : {linear 'M[C]_(m,n) -> U}) (A : set U):
   closed A -> closed (f @^-1` A).
@@ -3495,7 +3495,7 @@ Lemma v2r_closed_gemx0: closed [set x : M | (0 : M) ⊑m x].
 Proof.
 rewrite (_ : mkset _ = r2v @^-1`
   vfinset [set x : V | (0 : V) ⊑ x]).
-apply: closed_comp=>[? _|]; [apply: r2v_continuous | apply: closed_gev0].
+apply: preimage_closed=>[? _|]; [apply: r2v_continuous | apply: closed_gev0].
 by rewrite predeqE {1}/Order.le/= /v2r_vorderle linear0
   VOrderFinNormedModule.fin_zeroE.
 Qed.
@@ -3737,7 +3737,7 @@ apply: (subclosed_compact _ (compact_norm_le (V := VF) (e := 1)))=>[|?/=[] _ ->/
 rewrite (_ : mkset _ = [set x : VF | (0 : V) ⊑ (x : V)] `&`
   (fun x : VF => `|x|) @^-1` [set x : C | x = 1]).
 apply: closedI. apply: closed_gev0.
-apply: closed_comp=>[? _ |]; [apply: norm_continuous | apply: closed_eq].
+apply: preimage_closed=>[? _ |]; [apply: norm_continuous | apply: closed_eq].
 by apply/funext=>x /=.
 Qed.
 

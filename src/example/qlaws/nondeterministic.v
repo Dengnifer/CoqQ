@@ -1,5 +1,5 @@
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 From mathcomp.finmap Require Import finmap.
 From mathcomp.classical Require Import boolp classical_sets.
@@ -655,7 +655,7 @@ End fsem.
 
 Module Export EQ_FSEM.
 Require Import -(notations)Setoid.
-From Coq.Classes Require Import -(notations)Morphisms.
+From Stdlib.Classes Require Import -(notations)Morphisms.
 Local Notation "R ==> R'" := (respectful R R')
   (at level 55, right associativity) : signature_scope.
 
@@ -1709,7 +1709,7 @@ Instance refine_anti_instance : Antisymmetric _ eq_fsem refine_cmd := refine_cmd
 (* move *)
 Section Refinement.
 Require Import -(notations)Setoid.
-From Coq.Classes Require Import -(notations)Morphisms.
+From Stdlib.Classes Require Import -(notations)Morphisms.
 Local Notation "R ==> R'" := (respectful R R')
   (at level 55, right associativity) : signature_scope.
 

@@ -1,5 +1,5 @@
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 From mathcomp.finmap Require Import finmap.
 From mathcomp.classical Require Import boolp.
@@ -12,8 +12,8 @@ Require Import mcextra mcaextra notation quantum inhabited autonat.
 From quantum Require Import hermitian qreg prodvect tensor mxpred
   orthomodular hspace hspace_extra.
 From quantum.dirac Require Import hstensor dirac.
-From Coq.Program Require Import Equality.
-From Coq.Strings Require Import String.
+From Stdlib.Program Require Import Equality.
+From Stdlib.Strings Require Import String.
 Require Import Relation_Definitions Setoid.
 
 (*****************************************************************************)
@@ -1337,7 +1337,8 @@ move=>P; move: P (qtype_of_tuple P); case: x=>//; ltest.
 - by move=>x s /= P1 P2; rewrite P1/= P1 eqxx; 
     under [in RHS]eq_fun do rewrite P2.
 - move=>m T' q/=; case: [forall _, _] =>// /esym Pv; move: q; inversion Pv.
-  by move=>? _;  under [in RHS]eq_fun do rewrite tuple_indexE.
+  move=>? _; congr cnf_tuple; apply/funext=>i.
+  by rewrite /index_tuplei /= /orapp; case: eqP=>// P; rewrite cast_ord_id.
 Qed.
 
 Lemma cnf_qi_ffun n (T : 'I_n -> qType) (x : qreg_index) :
@@ -1348,7 +1349,8 @@ move=>P; move: P (qtype_of_ffun P); case: x=>//; ltest.
 - by move=>x s /= P1 P2; rewrite P1/= P1 eqxx; 
     under [in RHS]eq_fun do rewrite P2.
 - move=>m T' q/=; case: [forall _, _] =>// /esym Pv; move: q; inversion Pv.
-  by move=>? _;  under [in RHS]eq_fun do rewrite ffun_indexE.
+  move=>? _; congr cnf_ffun; apply/funext=>i.
+  by rewrite /index_ffuni /= /orapp; case: eqP=>// P; rewrite cast_ord_id.
 Qed.
 
 Lemma eq_cnf T (x y : qreg_index) : 
@@ -1398,7 +1400,7 @@ Proof.
 elim: x; first by move=>/= x; rewrite big_ord0 /qi2seq/= !inE.
 - move=>x s; move: (optionP (qtype_of_index (prime_index x s)))=>[[T/= Ps]|/=];
   last by rewrite /qi2seq/==>-> i; rewrite/= big_ord0 !inE.
-  rewrite Ps /qi2seq/= Ps; elim: T s Ps =>[||n|T _||T1 _ T2 _||].
+  rewrite Ps /qi2seq/=; elim: T s Ps =>[||n|T _||T1 _ T2 _||].
   1-4,6: move=>s PT; rewrite/= PT eqxx /pair_to_basic_index/=; 
     (have P1: is_basic_index x s by rewrite/is_basic_index/= PT);
     by rewrite !orappE=> i; rewrite !inE.
@@ -1614,7 +1616,8 @@ Definition tv2v_fun_def (T : qType) (x : qreg T)
   (v : 'Ht T) : 'H[msys]_(mset x) :=
   \sum_(i : evalQT T)  [< ''i ; v >] *: 
     oapp (@deltav _ _ _) 0 (idx_proj (cast_qtype (esym (ty_qregK x)) i)).
-Definition tv2v_fun := nosimpl tv2v_fun_def.
+Definition tv2v_fun := tv2v_fun_def.
+Arguments tv2v_fun : simpl never.
 Fact tv2v_key : unit. Proof. by []. Qed.
 Definition tv2v := locked_with tv2v_key tv2v_fun.
 Lemma tv2v_unfold : tv2v = tv2v_fun_def.
@@ -2455,7 +2458,7 @@ Proof.
 rewrite (onb_vec t2tv u)/= !linear_sum/=; apply eq_bigr=>i _.
 rewrite !linearZ/=; f_equal.
 rewrite [i ]surjective_pairing -tentv_t2tv swaptfEtv tketTC.
-by [].
+by rewrite !eq_qrE.
 Qed.
 Lemma tketT_swapV T1 T2 (x : qreg (T1 * T2)) (u : 'Ht (T1 * T2)) :
   '| u; x > = '|swaptf u ; (x.2,x.1) >.
@@ -2474,7 +2477,7 @@ Lemma tlinT_swap T1 T2 T3 T4 (x1 : qreg (T2 * T1)) (x2 : qreg (T4 * T3))
 Proof.
 rewrite (onb_lfun2 t2tv t2tv f) pair_big/= linear_sumr linear_sumlz !linear_sum/=.
 apply eq_bigr=>[][][]i1 i2[]j1 j2 _; rewrite linearZr linearZl/= !linearZ/=; f_equal.
- by rewrite outp_compr outp_compl swaptf_adj -!tentv_t2tv !swaptfEtv -!tentv_out tlinTC.
+ by rewrite outp_compr outp_compl swaptf_adj -!tentv_t2tv !swaptfEtv -!tentv_out tlinTC !eq_qrE.
 Qed.
 Lemma tlinT_swapV T1 T2 T3 T4 (x1 : qreg (T1 * T2)) (x2 : qreg (T3 * T4)) 
   (f : 'Hom{T1 * T2, T3 * T4}) :

@@ -1,5 +1,5 @@
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 From mathcomp.classical Require Import boolp classical_sets functions.
 From mathcomp.algebra Require Import -(notations)sesquilinear.
@@ -175,7 +175,7 @@ Proof.
 rewrite global_hoare.unlock; case: pt; 
   first by move=>/lef_trden P1 /lef_trden P2 IH x;
   apply/(le_trans (P1 x))/(le_trans (IH x)); apply: P2. 
-rewrite !leEsub/= cplmt_lef=>/lef_trden P1.
+rewrite -Order.le_val -Order.le_val/= cplmt_lef=>/lef_trden P1.
 rewrite cplmt_lef=>/lef_trden P2 IH x; 
 apply/(le_trans _ (P1 x))/(le_trans _ (IH x)).
 by move: (P2 (fsem c x)).
@@ -985,7 +985,7 @@ move: (memh_proj (~` <[u]>)%HS v). rewrite memhOE hsOK -/v2 hline_def hsE/=
   -[[<_;u>]]conj_dotp=>/eqP->; rewrite conjC0//.
 have: (fsem c) ^*o (liftf_lf [> v; v <]) = (fsem c) ^*o (liftf_lf [> v1; v1 <]).
 rewrite dv outpDl !outpDr !linearD/= -addrA. apply/subr0_eq.
-rewrite addrC !addrA addNr add0r !krausE !big1/= ?addr0//.
+rewrite addrAC addrN add0r !krausE !big1/= ?addr0//.
 1,2,3: move=>i _; rewrite P5 -!comp_lfunA -adjf_comp ?(P6 i v2 v2o).
 1,3: by rewrite raddf0 !comp_lfun0r. by rewrite comp_lfunA (P6 i v2 v2o) comp_lfun0l.
 rewrite /v1 Pul outpE outpZl outpZr scalerA -normCK !linearZ/= P2=>P7 x.

@@ -1,12 +1,12 @@
 (* -------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 From mathcomp.algebra Require Import -(notations)sesquilinear.
 From quantum.external Require Import spectral.
 From mathcomp.classical Require Import boolp.
 From mathcomp.reals Require Import reals.
-From Coq.Bool Require Import Bool.
+From Stdlib.Bool Require Import Bool.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
 
@@ -85,7 +85,7 @@ Section DiracDef.
 Variable L : finType.
 Variable H : L -> chsType.
 
-Variant dirac : predArgType := 
+Variant dirac : predArgType :=
   Dirac of {dffun forall d : {set L} * {set L}, 'F[H]_(d.1,d.2)}.
 
 Definition dirac_val u := let: Dirac t := u in t.
@@ -100,9 +100,9 @@ HB.instance Definition _ := [Choice of dirac by <:].
 End DiracDef.
 
 Fact dirac_key : unit. Proof. by []. Qed.
-HB.lock 
-Definition dirac_of_fun (L : finType) (H : L -> chsType) (k : unit) 
-  (F : forall (i j : {set L}), 'F[H]_(i,j)) := 
+HB.lock
+Definition dirac_of_fun (L : finType) (H : L -> chsType) (k : unit)
+  (F : forall (i j : {set L}), 'F[H]_(i,j)) :=
     @Dirac L H [ffun i => F i.1 i.2].
 Canonical dirac_unlockable := Unlockable dirac_of_fun.unlock.
 
@@ -133,7 +133,7 @@ Notation "''D[' H ]" := (@dirac _ H) (only parsing) : type_scope.
 Notation "''D'" := (@dirac _ _) : type_scope.
 Notation "\dirac_ ( i , j ) E" := (dirac_of_fun dirac_key (fun i j => E%VF)) : dirac_scope.
 
-(* Dirac : ringType with + and tensor (!!not com)*)
+(* Dirac : nzRingType with + and tensor (!!not com)*)
 (* Dirac : vectType, so we can talk about its completeness, but not used now *)
 Section DiracAlgebra.
 Context {L : finType} {H : L -> chsType}.
@@ -222,8 +222,8 @@ End DiracAlgebra.
 (* We define the basic constructors *)
 (* lind ketd brad numd conjd trd adjd muld dotd tend *)
 (* we prevent any possible unfolding of them *)
-HB.lock 
-Definition lind {L : finType} {H : L -> chsType} [S T] (f: 'F[H]_(S,T)) : 'D[H] := 
+HB.lock
+Definition lind {L : finType} {H : L -> chsType} [S T] (f: 'F[H]_(S,T)) : 'D[H] :=
   \dirac_(i,j)
     match S =P i , T =P j return 'F[H]_(i,j) with
     | ReflectT eqi, ReflectT eqj => castlf (eqi, eqj) f
@@ -245,10 +245,10 @@ HB.lock
 Definition muld  {L : finType} {H : L -> chsType} (e1 e2 : 'D[H]) : 'D[H] :=
   \dirac_(i , j) \sum_(k : {set L}) (e1 k j \o e2 i k : 'F[H]_(i,j)).
 HB.lock
-Definition dotd  {L : finType} {H : L -> chsType} (e1 e2 : 'D[H]) : 'D[H] := 
+Definition dotd  {L : finType} {H : L -> chsType} (e1 e2 : 'D[H]) : 'D[H] :=
   \sum_d11 \sum_d12 \sum_d21 \sum_d22 lind (e1 d11 d12 \· e2 d21 d22).
 HB.lock
-Definition tend  {L : finType} {H : L -> chsType} (e1 e2 : 'D[H]) : 'D[H] := 
+Definition tend  {L : finType} {H : L -> chsType} (e1 e2 : 'D[H]) : 'D[H] :=
   \sum_d11 \sum_d12 \sum_d21 \sum_d22 lind (e1 d11 d12 \⊗ e2 d21 d22).
 
 Fact tends_key : unit. Proof. by []. Qed.
@@ -259,15 +259,15 @@ Lemma bigtend_unfold {L : finType} {H : L -> chsType} : @bigtend L H = id.
 Proof. by rewrite /bigtend unlock. Qed.
 Lemma bigdotd_unfold {L : finType} {H : L -> chsType} : @bigdotd L H = id.
 Proof. by rewrite /bigdotd unlock. Qed.
-Definition bigd := (@bigtend_unfold, @bigdotd_unfold). 
+Definition bigd := (@bigtend_unfold, @bigdotd_unfold).
 
-HB.lock 
+HB.lock
 Definition d2v {L : finType} {H : L -> chsType} S (e : 'D[H]) : 'H[H]_S := f2v (e set0 S).
-HB.lock 
+HB.lock
 Definition d2dv {L : finType} {H : L -> chsType} S (e : 'D[H]) : 'H[H]_S := df2v (e S set0).
-HB.lock 
+HB.lock
 Definition d2f {L : finType} {H : L -> chsType} S T (e : 'D[H]) : 'F[H]_(S,T) := e S T.
-HB.lock 
+HB.lock
 Definition d2c {L : finType} {H : L -> chsType} (e : 'D[H]) := sf2s (e set0 set0).
 
 Notation "':1'"  := (@numd _ _ 1) : dirac_scope.
@@ -291,7 +291,7 @@ Notation "\ten_ ( i <- r | P ) F" :=
 Notation "\ten_ ( i <- r ) F" :=
   (bigtend (\big[ ⊗%D / :1 ]_(i <- r) F%D)) : dirac_scope.
 Notation "\ten_ ( m <= i < n | P ) F" :=
-  (bigtend ((\big[ ⊗%D / :1 ]_( m%N <= i < n%N | P%B) F%D)%BIG)) 
+  (bigtend ((\big[ ⊗%D / :1 ]_( m%N <= i < n%N | P%B) F%D)%BIG))
     : dirac_scope.
 Notation "\ten_ ( m <= i < n ) F" :=
   (bigtend ((\big[ ⊗%D / :1 ]_(m%N <= i < n%N) F%D)%BIG)) : dirac_scope.
@@ -300,7 +300,7 @@ Notation "\ten_ ( i | P ) F" :=
 Notation "\ten_ i F" :=
   (bigtend (\big[ ⊗%D / :1 ]_i F%D)) : dirac_scope.
 Notation "\ten_ ( i : t | P ) F" :=
-  (bigtend (\big[ ⊗%D / :1 ]_(i : t | P%B) F%D)) (only parsing) 
+  (bigtend (\big[ ⊗%D / :1 ]_(i : t | P%B) F%D)) (only parsing)
     : dirac_scope.
 Notation "\ten_ ( i : t ) F" :=
   (bigtend (\big[ ⊗%D / :1 ]_(i : t) F%D)) (only parsing) : dirac_scope.
@@ -318,7 +318,7 @@ Notation "\dot_ ( i <- r | P ) F" :=
 Notation "\dot_ ( i <- r ) F" :=
   (bigdotd (\big[ ·%D / :1 ]_(i <- r) F%D)) : dirac_scope.
 Notation "\dot_ ( m <= i < n | P ) F" :=
-  (bigdotd ((\big[ ·%D / :1 ]_( m%N <= i < n%N | P%B) F%D)%BIG)) 
+  (bigdotd ((\big[ ·%D / :1 ]_( m%N <= i < n%N | P%B) F%D)%BIG))
     : dirac_scope.
 Notation "\dot_ ( m <= i < n ) F" :=
   (bigdotd ((\big[ ·%D / :1 ]_(m%N <= i < n%N) F%D)%BIG)) : dirac_scope.
@@ -327,7 +327,7 @@ Notation "\dot_ ( i | P ) F" :=
 Notation "\dot_ i F" :=
   (bigdotd (\big[ ·%D / :1 ]_i F%D)) : dirac_scope.
 Notation "\dot_ ( i : t | P ) F" :=
-  (bigdotd (\big[ ·%D / :1 ]_(i : t | P%B) F%D)) (only parsing) 
+  (bigdotd (\big[ ·%D / :1 ]_(i : t | P%B) F%D)) (only parsing)
     : dirac_scope.
 Notation "\dot_ ( i : t ) F" :=
   (bigdotd (\big[ ·%D / :1 ]_(i : t) F%D)) (only parsing) : dirac_scope.
@@ -343,41 +343,41 @@ Notation "\dot_ ( i 'in' A ) F" :=
 Section DiracBigLock.
 Context {L : finType} (H : L -> chsType).
 
-Lemma bigtendlr (I J : Type) (ri : seq I) (Pi : pred I) (Fi : I -> 'D[H]) 
-  (rj : seq J) (Pj : pred J) (Fj : J -> 'D): 
+Lemma bigtendlr (I J : Type) (ri : seq I) (Pi : pred I) (Fi : I -> 'D[H])
+  (rj : seq J) (Pj : pred J) (Fj : J -> 'D):
     bigtend ((\big[⊗%D/:1]_(i <- ri | Pi i) Fi i) \⊗
-    (\big[@tend _ _ /:1]_(j <- rj | Pj j) Fj j)) = 
+    (\big[@tend _ _ /:1]_(j <- rj | Pj j) Fj j)) =
     (\ten_(i <- ri | Pi i) Fi i) \⊗ (\ten_(j <- rj | Pj j) Fj j) .
 Proof. by rewrite bigd. Qed.
 
-Lemma bigtendr (I : Type) (r : seq I) (P : pred I) (e1 : 'D[H]) (F : I -> 'D): 
+Lemma bigtendr (I : Type) (r : seq I) (P : pred I) (e1 : 'D[H]) (F : I -> 'D):
   bigtend (e1 \⊗ (\big[⊗%D/:1]_(j <- r | P j) F j)) = e1 \⊗ (\ten_(i <- r | P i) F i).
 Proof. by rewrite bigd. Qed.
 
-Lemma bigtendl (I : Type) (r : seq I) (P : pred I) (e1 : 'D[H]) (F : I -> 'D[H]): 
+Lemma bigtendl (I : Type) (r : seq I) (P : pred I) (e1 : 'D[H]) (F : I -> 'D[H]):
   bigtend ((\big[⊗%D/:1]_(j <- r | P j) F j) \⊗ e1) = (\ten_(i <- r | P i) F i) \⊗ e1.
 Proof. by rewrite bigd. Qed.
 
-Lemma bigtendE (I : Type) (r : seq I) (P : pred I) (F : I -> 'D[H]): 
+Lemma bigtendE (I : Type) (r : seq I) (P : pred I) (F : I -> 'D[H]):
   \big[⊗%D/:1]_(j <- r | P j) F j = \ten_(i <- r | P i) F i.
 Proof. by rewrite bigd. Qed.
 
-Lemma bigdotdlr (I J : Type) (ri : seq I) (Pi : pred I) (Fi : I -> 'D[H]) 
-  (rj : seq J) (Pj : pred J) (Fj : J -> 'D[H]): 
-  bigdotd (dotd (\big[·%D/:1]_(i <- ri | Pi i) Fi i) 
-  (\big[·%D/:1]_(j <- rj | Pj j) Fj j)) = 
+Lemma bigdotdlr (I J : Type) (ri : seq I) (Pi : pred I) (Fi : I -> 'D[H])
+  (rj : seq J) (Pj : pred J) (Fj : J -> 'D[H]):
+  bigdotd (dotd (\big[·%D/:1]_(i <- ri | Pi i) Fi i)
+  (\big[·%D/:1]_(j <- rj | Pj j) Fj j)) =
   (\dot_(i <- ri | Pi i) Fi i) \· (\dot_(j <- rj | Pj j) Fj j) .
 Proof. by rewrite bigd. Qed.
 
-Lemma bigdotdr (I : Type) (r : seq I) (P : pred I) (e1 : 'D[H]) (F : I -> 'D[H]): 
+Lemma bigdotdr (I : Type) (r : seq I) (P : pred I) (e1 : 'D[H]) (F : I -> 'D[H]):
   bigdotd (dotd e1 (\big[·%D/:1]_(j <- r | P j) F j)) = dotd e1 (\dot_(i <- r | P i) F i).
 Proof. by rewrite bigd. Qed.
 
-Lemma bigdotdl (I : Type) (r : seq I) (P : pred I) (e1 : 'D[H]) (F : I -> 'D[H]): 
+Lemma bigdotdl (I : Type) (r : seq I) (P : pred I) (e1 : 'D[H]) (F : I -> 'D[H]):
   bigdotd (dotd (\big[·%D/:1]_(j <- r | P j) F j) e1) = dotd (\dot_(i <- r | P i) F i) e1.
 Proof. by rewrite bigd. Qed.
 
-Lemma bigdotdE (I : Type) (r : seq I) (P : pred I) (F : I -> 'D[H]): 
+Lemma bigdotdE (I : Type) (r : seq I) (P : pred I) (F : I -> 'D[H]):
   \big[·%D/:1]_(j <- r | P j) F j = \dot_(i <- r | P i) F i.
 Proof. by rewrite bigd. Qed.
 
@@ -389,11 +389,11 @@ End DiracBigLock.
 (* after using bigop theory, first run this to lock back *)
 (* Ltac bigdE := rewrite ?bigd; rewrite ?bigd_locklr. *)
 (* move *)
-Lemma exchange_bigR (R : Type) (idx : R) (op : Monoid.com_law idx) 
-  (I J K : Type) (rI : seq I) (rJ : seq J) (rK : seq K) (P : pred I) 
-    (Q : pred J) (S : pred K) (F : I -> J -> K -> R) : 
-    \big[op/idx]_(i <- rI | P i) \big[op/idx]_(j <- rJ | Q j) 
-        \big[op/idx]_(k <- rK | S k) F i j k = \big[op/idx]_(j <- rJ | Q j) 
+Lemma exchange_bigR (R : Type) (idx : R) (op : Monoid.com_law idx)
+  (I J K : Type) (rI : seq I) (rJ : seq J) (rK : seq K) (P : pred I)
+    (Q : pred J) (S : pred K) (F : I -> J -> K -> R) :
+    \big[op/idx]_(i <- rI | P i) \big[op/idx]_(j <- rJ | Q j)
+        \big[op/idx]_(k <- rK | S k) F i j k = \big[op/idx]_(j <- rJ | Q j)
             \big[op/idx]_(k <- rK | S k) \big[op/idx]_(i <- rI | P i) F i j k.
 Proof. by rewrite exchange_big; apply eq_bigr=>i Pi; apply exchange_big. Qed.
 
@@ -402,7 +402,7 @@ Context {L : finType} {H : L -> chsType}.
 
 Lemma lind_cast S T S' T' (eqST: (S = S') * (T = T')) (f: 'F[H]_(S,T)) :
   lind (castlf eqST f) = lind f.
-Proof. by case: eqST => eqS eqT; case: S' / eqS; case: T' / eqT; rewrite castlf_id. Qed. 
+Proof. by case: eqST => eqS eqT; case: S' / eqS; case: T' / eqT; rewrite castlf_id. Qed.
 Lemma ketd_cast S S' (eqS : S = S') (v : 'H[H]_S) :
   '| casths eqS v > = '| v >.
 Proof. by case: S' / eqS; rewrite casths_id. Qed.
@@ -448,42 +448,42 @@ move=>a x y; apply/diracP=>i j; rewrite lind.unlock !diracE.
 case: eqP=>p1; first case: eqP=>p2;
 by rewrite ?linearP// scaler0 addr0.
 Qed.
-HB.instance Definition _ S T := GRing.isLinear.Build C 
+HB.instance Definition _ S T := GRing.isLinear.Build C
   'F[H]_(S,T) 'D[H] *:%R (@lind _ H S T) (@lind_is_linear S T).
 
 Lemma ketd_is_linear S : linear (@ketd _ H S).
 Proof. by move=>a x y; rewrite ketd.unlock !linearP. Qed.
-HB.instance Definition _ S := GRing.isLinear.Build C 
+HB.instance Definition _ S := GRing.isLinear.Build C
   'H[H]_S 'D[H] *:%R (@ketd _ H S) (@ketd_is_linear S).
 
 Lemma brad_is_antilinear S : linear_for (conjC \; *:%R) (@brad _ H S).
 Proof. by move=>a x y; rewrite brad.unlock !linearP. Qed.
-HB.instance Definition _ S := GRing.isLinear.Build C 
+HB.instance Definition _ S := GRing.isLinear.Build C
   'H[H]_S 'D[H] (conjC \; *:%R) (@brad _ H S) (@brad_is_antilinear S).
 
-Lemma numd_is_additive : additive (@numd _ H).
+Lemma numd_is_additive : zmod_morphism (@numd _ H).
 Proof. by move=>x y; rewrite numd.unlock raddfB linearB. Qed.
-HB.instance Definition _ := GRing.isAdditive.Build C
+HB.instance Definition _ := GRing.isZmodMorphism.Build C
   'D[H] (@numd _ H) numd_is_additive.
 
 Lemma d2f_is_linear S T : linear (@d2f _ H S T).
 Proof. by move=>a x y; rewrite d2f.unlock !diracE. Qed.
-HB.instance Definition _ S T := GRing.isLinear.Build C 
+HB.instance Definition _ S T := GRing.isLinear.Build C
   'D[H] 'F[H]_(S,T) *:%R (@d2f _ H S T) (@d2f_is_linear S T).
 
 Lemma d2v_is_linear S : linear (@d2v _ H S).
 Proof. by move=>a x y; rewrite d2v.unlock !diracE linearP. Qed.
-HB.instance Definition _ S := GRing.isLinear.Build C 
+HB.instance Definition _ S := GRing.isLinear.Build C
   'D[H] 'H[H]_S *:%R (@d2v _ H S) (@d2v_is_linear S).
 
 Lemma d2dv_is_antilinear S : linear_for (conjC \; *:%R) (@d2dv _ H S).
 Proof. by move=>a x y; rewrite d2dv.unlock !diracE linearP. Qed.
-HB.instance Definition _ S := GRing.isLinear.Build C 
+HB.instance Definition _ S := GRing.isLinear.Build C
   'D[H] 'H[H]_S (conjC \; *:%R) (@d2dv _ H S) (@d2dv_is_antilinear S).
 
 Lemma d2c_is_scalar : scalar (@d2c _ H).
 Proof. by move=>a x y; rewrite d2c.unlock !diracE linearP. Qed.
-HB.instance Definition _ S := GRing.isLinear.Build C 
+HB.instance Definition _ S := GRing.isLinear.Build C
   'D[H] C *%R (@d2c _ H) d2c_is_scalar.
 
 Lemma lind_dec (f : 'D[H]) : \sum_i lind (f i.1 i.2) = f.
@@ -497,7 +497,7 @@ Lemma addd_correct S T (f g: 'F[H]_(S,T)) :
   '[ f ] + '[ g ] = '[ f + g ].
 Proof. by rewrite linearD. Qed.
 
-Lemma oppd_correct S T (f : 'F[H]_(S,T)) : 
+Lemma oppd_correct S T (f : 'F[H]_(S,T)) :
   - '[ f ] = '[ - f ].
 Proof. by rewrite linearN. Qed.
 
@@ -518,11 +518,11 @@ case E1: (d2 == T); last by rewrite/= ![_ _ _ d2]lind_eq0r ?E1// comp_lfun0l add
 move: E E1=>/eqP->/eqP->; by rewrite !lind_id addr0.
 Qed.
 
-Lemma tend_pairE (e1 e2 : 'D[H]) : 
+Lemma tend_pairE (e1 e2 : 'D[H]) :
   e1 \⊗ e2 = \sum_d1 \sum_d2 lind (e1 d1.1 d1.2 \⊗ e2 d2.1 d2.2).
 Proof. by rewrite tend.unlock pair_big; apply eq_bigr=>d1 _; rewrite pair_big. Qed.
 
-Lemma dotd_pairE (e1 e2 : 'D[H]) : 
+Lemma dotd_pairE (e1 e2 : 'D[H]) :
   e1 \· e2 = \sum_d1 \sum_d2 lind (e1 d1.1 d1.2 \· e2 d2.1 d2.2).
 Proof. by rewrite dotd.unlock pair_big; apply eq_bigr=>d1 _; rewrite pair_big. Qed.
 
@@ -539,8 +539,8 @@ Qed.
 Lemma dotd_correct S T S' T' (f: 'F[H]_(S,T)) (g: 'F[H]_(S', T')) :
     '[ f ] \· '[ g ] = '[ f \· g ].
 Proof.
-apply/diracP=>d1 d2; rewrite dotd_pairE. 
-rewrite (bigD1 (S,T))//= (bigD1 (S',T'))//= !big1=>[[i1 i2]/=P|[i1 i2]/=P|]. 
+apply/diracP=>d1 d2; rewrite dotd_pairE.
+rewrite (bigD1 (S,T))//= (bigD1 (S',T'))//= !big1=>[[i1 i2]/=P|[i1 i2]/=P|].
 by rewrite [lind g _ _]lind_eq0p// dotf0 linear0.
 by rewrite big1=>[j _|]; rewrite 1?lind_eq0p// ?dot0f ?linear0// diracE.
 by rewrite !addr0 !lind_id.
@@ -576,8 +576,8 @@ move/negbT: E=>E; rewrite !lind_eq0p// ?linear0//.
 by move: E; apply contraNN=>/eqP P; inversion P.
 Qed.
 
-Definition dirac_correct := (addd_correct, oppd_correct, 
-  scaled_correct, muld_correct, tend_correct, dotd_correct, 
+Definition dirac_correct := (addd_correct, oppd_correct,
+  scaled_correct, muld_correct, tend_correct, dotd_correct,
   conjd_correct, adjd_correct, trd_correct ).
 
 Lemma lind_eqFnd S T S' T' (f: 'F[H]_(S,T)) (g: 'F_(S',T')) :
@@ -602,7 +602,7 @@ Ltac to_Fnd := try (match goal with
   | [ |- _ ] => apply/to_Hnd_inj
   end); rewrite ?(to_FndE, Fnd_cast, to_Fnd_tens, to_HndE, Hnd_cast, to_Hnd_tens).
 
-(* we locally use ringType (+ , \⊗) to ease the proof of theorems *)
+(* we locally use nzRingType (+ , \⊗) to ease the proof of theorems *)
 Section DiracTheory.
 Context {L : finType} (H : L -> chsType).
 Implicit Type (e x y z: 'D[H]) (a b c : C) (S T : {set L}).
@@ -653,7 +653,7 @@ rewrite  (eq_bigr (fun d1 => \sum_d0 \sum_d3 \sum_d2
 1,2: by move=>i _; rewrite exchange_bigR/= exchange_bigR/=; apply eq_bigr=>j _;
 rewrite dirac_sumE 1 ?linear_sumlz/= 2 ?linear_sum/=; apply eq_bigr=>k _;
 rewrite dirac_sumE 1 ?linear_sumlz/= 2 ?linear_sum/=; apply eq_bigr.
-rewrite [RHS]exchange_bigR/=; apply eq_bigr=>[[i1 i2]] _; 
+rewrite [RHS]exchange_bigR/=; apply eq_bigr=>[[i1 i2]] _;
 apply eq_bigr=>[[j1 j2]] _; apply eq_bigr=>[[k1 k2]] _.
 rewrite (bigD1 (j1 :|: k1, j2 :|: k2))// big1/=.
 2: rewrite (bigD1 (i1 :|: j1, i2 :|: j2))// big1/=.
@@ -686,7 +686,7 @@ move=>a v w. rewrite !tend_pairE linear_sum -big_split/=; apply eq_bigr=>i _/=.
 rewrite linear_sum -big_split; apply eq_bigr=>j _/=.
 by rewrite !diracE !linearP/=.
 Qed.
-HB.instance Definition _ f := GRing.isLinear.Build 
+HB.instance Definition _ f := GRing.isLinear.Build
   C 'D[H] 'D[H] *:%R (@tend _ H f) (@linear_tend f).
 Lemma linear_tendr f : linear ((@tend _ H)^~ f).
 Proof. by move=>a v w; rewrite tendC linearP/= ![f \⊗ _]tendC. Qed.
@@ -702,7 +702,7 @@ Proof. by rewrite -!tendA (tendCA y). Qed.
 
 Lemma ten0d : left_zero 0 ⊗%D. Proof. exact: linear0l. Qed.
 Lemma tend0 : right_zero 0 ⊗%D. Proof. exact: linear0r. Qed.
-Lemma tendDl : left_distributive ⊗%D +%R. 
+Lemma tendDl : left_distributive ⊗%D +%R.
 Proof. by move=>x y z; rewrite linearDl. Qed.
 Lemma tendDr : right_distributive ⊗%D +%R.
 Proof. by move=>x y z; rewrite linearD. Qed.
@@ -729,20 +729,20 @@ Lemma tend_suml z I r (P : pred I) E :
 Proof. exact: linear_sumlz. Qed.
 Lemma tendZl z a : {morph ⊗%D^~ z : x / a *: x}. Proof. exact: linearZl_LR. Qed.
 Lemma tendPl z a : {morph ⊗%D^~ z : u v / a *: u + v}. Proof. exact: linearPl. Qed.
-Lemma tendZlr x y a b : (a *: x) \⊗ (b *: y) = a *: (b *: (x \⊗ y)). 
+Lemma tendZlr x y a b : (a *: x) \⊗ (b *: y) = a *: (b *: (x \⊗ y)).
 Proof. exact: linearZlr. Qed.
-Lemma tendZrl x y a b : (a *: x) \⊗ (b *: y) = b *: (a *: (x \⊗ y)). 
+Lemma tendZrl x y a b : (a *: x) \⊗ (b *: y) = b *: (a *: (x \⊗ y)).
 Proof. exact: linearZrl. Qed.
 
 Lemma oned_neq0 : (:1 : 'D[H]) != 0.
 Proof.
 apply/eqP=> /diracP/(_ set0 set0)/eqP.
-by rewrite numd1I lind_id diracE (@oner_eq0 ('F[H]_set0 : ringType)).
+by rewrite numd1I lind_id diracE (@oner_eq0 ('F[H]_set0 : nzRingType)).
 Qed.
 
 Definition tend_comRingMixin :=
-  GRing.Zmodule_isComRing.Build 'D[H] tendA tendC ten1d tendDl oned_neq0.
-Definition tend_ringType : ringType := 
+  GRing.Zmodule_isComNzRing.Build 'D[H] tendA tendC ten1d tendDl oned_neq0.
+Definition tend_ringType : nzRingType :=
   HB.pack 'D[H] tend_comRingMixin.
 
 Lemma muldA : associative o%D.
@@ -751,7 +751,7 @@ move=>x y z; rewrite muld.unlock.
 apply/diracP=>i j; rewrite !diracE.
 under eq_bigr do rewrite !diracE linear_sumr/=.
 rewrite exchange_big/=. apply eq_bigr=>k _.
-rewrite diracE/= linear_sumlz/=. 
+rewrite diracE/= linear_sumlz/=.
 by under eq_bigr do rewrite comp_lfunA.
 Qed.
 
@@ -761,7 +761,7 @@ move=>a v w; apply/diracP=>i j; rewrite muld.unlock.
 rewrite !diracE !linear_sum/= -big_split; apply eq_bigr=>k _/=.
 by rewrite !diracE linearPr/=.
 Qed.
-HB.instance Definition _ f := GRing.isLinear.Build 
+HB.instance Definition _ f := GRing.isLinear.Build
   C 'D[H] 'D[H] *:%R (@muld _ H f) (@linear_muld f).
 Lemma linear_muldr f : linear ((@muld _ H)^~ f).
 Proof.
@@ -774,7 +774,7 @@ HB.instance Definition _ := bilinear_isBilinear.Build C 'D[H] 'D[H] 'D[H]
 
 Lemma mul0d : left_zero 0 o%D. Proof. exact: linear0l. Qed.
 Lemma muld0 : right_zero 0 o%D. Proof. exact: linear0r. Qed.
-Lemma muldDl : left_distributive o%D +%R. 
+Lemma muldDl : left_distributive o%D +%R.
 Proof. by move=>x y z; rewrite linearDl. Qed.
 Lemma muldDr : right_distributive o%D +%R.
 Proof. by move=>x y z; rewrite linearD. Qed.
@@ -799,9 +799,9 @@ Lemma muld_suml z I r (P : pred I) E :
 Proof. exact: linear_sumlz. Qed.
 Lemma muldZl z a : {morph o%D^~ z : x / a *: x}. Proof. exact: linearZl_LR. Qed.
 Lemma muldPl z a : {morph o%D^~ z : u v / a *: u + v}. Proof. exact: linearPl. Qed.
-Lemma muldZlr x y a b : (a *: x) \o (b *: y) = a *: (b *: (x \o y)). 
+Lemma muldZlr x y a b : (a *: x) \o (b *: y) = a *: (b *: (x \o y)).
 Proof. exact: linearZlr. Qed.
-Lemma muldZrl x y a b : (a *: x) \o (b *: y) = b *: (a *: (x \o y)). 
+Lemma muldZrl x y a b : (a *: x) \o (b *: y) = b *: (a *: (x \o y)).
 Proof. exact: linearZrl. Qed.
 
 Lemma dot1d : left_id :1 ·%D.
@@ -814,7 +814,7 @@ Qed.
 
 Lemma dotd1 : right_id :1 ·%D.
 Proof.
-move=>f; rewrite dotd_pairE exchange_big (bigD1 (set0,set0))//= 
+move=>f; rewrite dotd_pairE exchange_big (bigD1 (set0,set0))//=
   [X in _ + X]big1/==>[[i1 i2] ni0|].
 by rewrite big1// =>j _; rewrite /= numd1I lind_eq0p// dotf0 linear0.
 rewrite addr0 -[RHS]lind_dec; apply eq_bigr=>[[i1 i2]] _/=.
@@ -827,7 +827,7 @@ move=>a v w; rewrite !dotd_pairE linear_sum -big_split; apply eq_bigr=>i _/=.
 rewrite linear_sum -big_split; apply eq_bigr=>j _/=.
 by rewrite !diracE !linearP/=.
 Qed.
-HB.instance Definition _ f := GRing.isLinear.Build 
+HB.instance Definition _ f := GRing.isLinear.Build
   C 'D[H] 'D[H] *:%R (@dotd _ H f) (@linear_dotd f).
 Lemma linear_dotdr f : linear ((@dotd _ H)^~ f).
 Proof.
@@ -840,7 +840,7 @@ HB.instance Definition _ := bilinear_isBilinear.Build C 'D[H] 'D[H] 'D[H]
 
 Lemma dot0d : left_zero 0 ·%D. Proof. exact: linear0l. Qed.
 Lemma dotd0 : right_zero 0 ·%D. Proof. exact: linear0r. Qed.
-Lemma dotdDl : left_distributive ·%D +%R. 
+Lemma dotdDl : left_distributive ·%D +%R.
 Proof. by move=>x y z; rewrite linearDl. Qed.
 Lemma dotdDr : right_distributive ·%D +%R.
 Proof. by move=>x y z; rewrite linearD. Qed.
@@ -867,22 +867,22 @@ Lemma dotd_suml z I r (P : pred I) E :
 Proof. exact: linear_sumlz. Qed.
 Lemma dotdZl z a : {morph ·%D^~ z : x / a *: x}. Proof. exact: linearZl_LR. Qed.
 Lemma dotdPl z a : {morph ·%D^~ z : u v / a *: u + v}. Proof. exact: linearPl. Qed.
-Lemma dotdZlr x y a b : (a *: x) \· (b *: y) = a *: (b *: (x \· y)). 
+Lemma dotdZlr x y a b : (a *: x) \· (b *: y) = a *: (b *: (x \· y)).
 Proof. exact: linearZlr. Qed.
-Lemma dotdZrl x y a b : (a *: x) \· (b *: y) = b *: (a *: (x \· y)). 
+Lemma dotdZrl x y a b : (a *: x) \· (b *: y) = b *: (a *: (x \· y)).
 Proof. exact: linearZrl. Qed.
 
 Lemma conjd_is_antilinear : linear_for (conjC \; *:%R) conjd.
 Proof. by move=>a x y/=; apply/diracP=>i j; rewrite conjd.unlock !diracE linearP. Qed.
-HB.instance Definition _ := GRing.isLinear.Build 
+HB.instance Definition _ := GRing.isLinear.Build
   C 'D[H] 'D[H] (conjC \; *:%R) conjd conjd_is_antilinear.
 Lemma adjd_is_antilinear  : linear_for (conjC \; *:%R) adjd.
 Proof. by move=>a x y/=; apply/diracP=>i j; rewrite adjd.unlock !diracE linearP. Qed.
-HB.instance Definition _ := GRing.isLinear.Build 
+HB.instance Definition _ := GRing.isLinear.Build
   C 'D[H] 'D[H] (conjC \; *:%R) adjd adjd_is_antilinear.
 Lemma trd_is_linear  : linear trd.
 Proof. by move=>a x y/=; apply/diracP=>i j; rewrite trd.unlock !diracE linearP. Qed.
-HB.instance Definition _ := GRing.isLinear.Build 
+HB.instance Definition _ := GRing.isLinear.Build
   C 'D[H] 'D[H] *:%R trd trd_is_linear.
 
 Lemma conjd0 : 0^C = (0 : 'D[H]). Proof. exact: linear0. Qed.
@@ -923,13 +923,13 @@ Qed.
 Lemma conjdT e1 e2 : (e1 \⊗ e2)^C = e1^C \⊗ e2^C.
 Proof.
 rewrite -(lind_dec e1) -(lind_dec e2) tend_suml !conjd_sum tend_suml.
-apply eq_bigr=>??; rewrite !tend_sumr conjd_sum; apply eq_bigr=>??. 
+apply eq_bigr=>??; rewrite !tend_sumr conjd_sum; apply eq_bigr=>??.
 by rewrite !dirac_correct tenf_conj.
 Qed.
 Lemma conjdG e1 e2 : (e1 \· e2)^C = e1^C \· e2^C.
 Proof.
 rewrite -(lind_dec e1) -(lind_dec e2) dotd_suml !conjd_sum dotd_suml.
-apply eq_bigr=>??; rewrite !dotd_sumr conjd_sum; apply eq_bigr=>??. 
+apply eq_bigr=>??; rewrite !dotd_sumr conjd_sum; apply eq_bigr=>??.
 by rewrite !dirac_correct dotf_conj.
 Qed.
 
@@ -971,7 +971,7 @@ Qed.
 Lemma adjdT e1 e2 : (e1 \⊗ e2)^A = e1^A \⊗ e2^A.
 Proof.
 rewrite -(lind_dec e1) -(lind_dec e2) tend_suml !adjd_sum tend_suml.
-apply eq_bigr=>??; rewrite !tend_sumr adjd_sum; apply eq_bigr=>??. 
+apply eq_bigr=>??; rewrite !tend_sumr adjd_sum; apply eq_bigr=>??.
 by rewrite !dirac_correct tenf_adj.
 Qed.
 Lemma adjdG e1 e2 : (e1 \· e2)^A = e2^A \· e1^A.
@@ -1001,7 +1001,7 @@ Proof. by rewrite numd1I trd_correct sfT. Qed.
 Lemma trdN1 : (-:1)^T = (-:1 : 'D[H]).
 Proof. by rewrite trdN trd1. Qed.
 Lemma trdK : involutive trd.
-Proof. by move=>x; apply/diracP=>i j; rewrite trd.unlock !diracE trfK. Qed.  
+Proof. by move=>x; apply/diracP=>i j; rewrite trd.unlock !diracE trfK. Qed.
 Lemma trd_inj : injective trd.
 Proof. exact: (can_inj trdK). Qed.
 Lemma trdM e1 e2 : (e1 \o e2)^T = e2^T \o e1^T.
@@ -1064,24 +1064,24 @@ Proof. by rewrite numd.unlock /s2sf -!linearZ/= scalerA mulrC. Qed.
 Lemma numdZ1 a : a%:D = a *: :1. Proof. by rewrite numdZ mulr1. Qed.
 Lemma numdP a b c : a*:b%:D + c%:D= (a*b+c)%:D.
 Proof. by rewrite numdZ numdD. Qed.
-Lemma numdTl x a : a%:D \⊗ x = a *: x. 
+Lemma numdTl x a : a%:D \⊗ x = a *: x.
 Proof. by rewrite numdZ1 tendZl ten1d. Qed.
-Lemma numdTr x a : x \⊗ a%:D = a *: x. 
+Lemma numdTr x a : x \⊗ a%:D = a *: x.
 Proof. by rewrite tendC numdTl. Qed.
-Lemma numdT a b : a%:D \⊗ b%:D = (a*b)%:D. 
+Lemma numdT a b : a%:D \⊗ b%:D = (a*b)%:D.
 Proof. by rewrite numdTl numdZ. Qed.
-Lemma numdM a b : a%:D \o b%:D = (a*b)%:D. 
+Lemma numdM a b : a%:D \o b%:D = (a*b)%:D.
 Proof. by rewrite !numd_lin muld_correct /s2sf -comp_lfunZl -comp_lfunZr scalerA comp_lfun1r. Qed.
-Lemma numdGl x a : a%:D \· x = a *: x. 
+Lemma numdGl x a : a%:D \· x = a *: x.
 Proof. by rewrite numdZ1 dotdZl dot1d. Qed.
-Lemma numdGr x a : x \· a%:D = a *: x. 
+Lemma numdGr x a : x \· a%:D = a *: x.
 Proof. by rewrite numdZ1 dotdZr dotd1. Qed.
-Lemma numdG a b : a%:D \· b%:D = (a*b)%:D. 
+Lemma numdG a b : a%:D \· b%:D = (a*b)%:D.
 Proof. by rewrite numdGl numdZ. Qed.
 Definition numd_adj := adjd_num.
 
 Definition numd_linear := (numd0, numd1I, numdN, numdD, numdB, numdMn, numdMNn, numd_sum, numdZ, numdP).
-Definition numd_simp := (ketd_num, brad_num, lind_num, adjd_num, conjd_num, trd_num, 
+Definition numd_simp := (ketd_num, brad_num, lind_num, adjd_num, conjd_num, trd_num,
   numdTl, numdTr, numdT, numdM, numdGl, numdGr, numdG).
 
 End DiracTheory.
@@ -1091,19 +1091,19 @@ Context {L : finType} (H : L -> chsType).
 (* since generally we need to import GRing.Theory, *)
 (* canonical of addoid here will be ignored, so we reclaim distribution lemmas *)
 (* Canonical  muld_monoid := Monoid.Law (@muldA _ H) (@mulIId _ H) (@muldII _ H). *)
-HB.instance Definition _ := Monoid.isMulLaw.Build 
+HB.instance Definition _ := Monoid.isMulLaw.Build
   'D[H] 0 (@muld _ H) (@mul0d _ H) (@muld0 _ H).
 Definition muld_addoid : @Monoid.add_law 'D[H] 0 (@muld _ H) := HB.pack +%R
   (Monoid.isAddLaw.Build 'D[H] (@muld _ H) +%R (@muldDl _ H) (@muldDr _ H)).
 
-HB.instance Definition _ := Monoid.isMulLaw.Build 
+HB.instance Definition _ := Monoid.isMulLaw.Build
   'D[H] 0 (@tend _ H) (@ten0d _ H) (@tend0 _ H).
-HB.instance Definition _ := Monoid.isComLaw.Build 
+HB.instance Definition _ := Monoid.isComLaw.Build
   'D[H] :1 (@tend _ H) (@tendA _ H) (@tendC _ H) (@ten1d _ H).
 Definition tend_addoid : @Monoid.add_law 'D[H] 0 (@tend _ H) := HB.pack +%R
   (Monoid.isAddLaw.Build 'D[H] (@tend _ H) +%R (@tendDl _ H) (@tendDr _ H)).
 
-HB.instance Definition _ := Monoid.isMulLaw.Build 
+HB.instance Definition _ := Monoid.isMulLaw.Build
   'D[H] 0 (@dotd _ H) (@dot0d _ H) (@dotd0 _ H).
 Definition dotd_addoid : @Monoid.add_law 'D[H] 0 (@dotd _ H) := HB.pack +%R
   (Monoid.isAddLaw.Build 'D[H] (@dotd _ H) +%R (@dotdDl _ H) (@dotdDr _ H)).
@@ -1125,25 +1125,25 @@ Lemma lind_sum I (r : seq I) (P : pred I) S T (F : I -> 'F[H]_(S,T)) :
 Proof. by rewrite linear_sum/=. Qed.
 
 (*distribution lemmas *)
-Lemma tend_sumlr I J rI rJ (pI : pred I) (pJ : pred J) 
+Lemma tend_sumlr I J rI rJ (pI : pred I) (pJ : pred J)
   (F : I -> 'D[H]) (G : J -> 'D) :
   (\sum_(i <- rI | pI i) F i) \⊗ (\sum_(j <- rJ | pJ j) G j)
    = \sum_(i <- rI | pI i) \sum_(j <- rJ | pJ j) (F i \⊗ G j).
 Proof. rewrite !tendsumE; apply: big_distrlr. Qed.
 
-Lemma tend_distr_sum_dep (I J : finType) j0 (P : pred I) (Q : I -> pred J) 
+Lemma tend_distr_sum_dep (I J : finType) j0 (P : pred I) (Q : I -> pred J)
   (F : I -> J -> 'D[H]) :
   (\ten_(i | P i) \sum_(j | Q i j) F i j) =
      \sum_(f in pfamily j0 P Q) \ten_(i | P i) F i (f i).
 Proof. rewrite tendsumE bigd; apply: big_distr_big_dep. Qed.
 
-Lemma tend_distr_sum (I J : finType) j0 (P : pred I) (Q : pred J) 
+Lemma tend_distr_sum (I J : finType) j0 (P : pred I) (Q : pred J)
   (F : I -> J -> 'D[H]) :
   (\ten_(i | P i) \sum_(j | Q j) F i j) =
      \sum_(f in pffun_on j0 P Q) \ten_(i | P i) F i (f i).
 Proof. by rewrite tendsumE bigd; apply: big_distr_big. Qed.
 
-Lemma tendA_distr_sum_dep (I J : finType) (Q : I -> pred J) 
+Lemma tendA_distr_sum_dep (I J : finType) (Q : I -> pred J)
   (F : I -> J -> 'D[H]) :
   (\ten_i \sum_(j | Q i j) F i j)
     = \sum_(f in family Q) \ten_i F i (f i).
@@ -1160,31 +1160,31 @@ Lemma tendA_distr_sumA (I J : finType) (F : I -> J -> 'D[H]) :
 Proof. by rewrite tendsumE bigd; apply: bigA_distr_bigA. Qed.
 
 (*distribution lemmas *)
-Lemma muld_sumlr I J rI rJ (pI : pred I) (pJ : pred J) 
+Lemma muld_sumlr I J rI rJ (pI : pred I) (pJ : pred J)
   (F : I -> 'D[H]) (G : J -> 'D) :
   (\sum_(i <- rI | pI i) F i) \o (\sum_(j <- rJ | pJ j) G j)
    = \sum_(i <- rI | pI i) \sum_(j <- rJ | pJ j) (F i \o G j).
 Proof. rewrite !muldsumE; apply: big_distrlr. Qed.
 
-Lemma dotd_sumlr I J rI rJ (pI : pred I) (pJ : pred J) 
+Lemma dotd_sumlr I J rI rJ (pI : pred I) (pJ : pred J)
   (F : I -> 'D[H]) (G : J -> 'D) :
   (\sum_(i <- rI | pI i) F i) \· (\sum_(j <- rJ | pJ j) G j)
    = \sum_(i <- rI | pI i) \sum_(j <- rJ | pJ j) (F i \· G j).
 Proof. rewrite !dotdsumE; apply: big_distrlr. Qed.
 
-Lemma dotd_distr_sum_dep (I J : finType) j0 (P : pred I) (Q : I -> pred J) 
+Lemma dotd_distr_sum_dep (I J : finType) j0 (P : pred I) (Q : I -> pred J)
   (F : I -> J -> 'D[H]) :
   (\dot_(i | P i) \sum_(j | Q i j) F i j) =
      \sum_(f in pfamily j0 P Q) \dot_(i | P i) F i (f i).
 Proof. by rewrite dotdsumE bigd; apply: big_distr_big_dep. Qed.
 
-Lemma dotd_distr_sum (I J : finType) j0 (P : pred I) (Q : pred J) 
+Lemma dotd_distr_sum (I J : finType) j0 (P : pred I) (Q : pred J)
   (F : I -> J -> 'D[H]) :
   (\dot_(i | P i) \sum_(j | Q j) F i j) =
      \sum_(f in pffun_on j0 P Q) \dot_(i | P i) F i (f i).
 Proof. by rewrite dotdsumE bigd; apply: big_distr_big. Qed.
 
-Lemma dotdA_distr_sum_dep (I J : finType) (Q : I -> pred J) 
+Lemma dotdA_distr_sum_dep (I J : finType) (Q : I -> pred J)
   (F : I -> J -> 'D[H]) :
   (\dot_i \sum_(j | Q i j) F i j)
     = \sum_(f in family Q) \dot_i F i (f i).
@@ -1204,7 +1204,7 @@ Proof. by rewrite dotdsumE bigd; apply: bigA_distr_bigA. Qed.
 Lemma tendA_distr_big_dffun (I : finType) (J : forall i : I, finType)
   (PJ : forall i : I, pred (J i)) (F : forall i : I, J i -> 'D[H]) :
   (\ten_(i : I) \sum_(j : J i| PJ i j) F i j)
-    = \sum_(f : {dffun forall i : I, J i} | 
+    = \sum_(f : {dffun forall i : I, J i} |
         family_mem (fun i : I => Mem (PJ i)) f) \ten_i F i (f i).
 Proof. rewrite tendsumE bigd; apply: big_distr_big_dffun. Qed.
 
@@ -1217,7 +1217,7 @@ Proof. rewrite tendsumE bigd; apply: big_distr_dffun. Qed.
 Lemma dotdA_distr_big_dffun (I : finType) (J : forall i : I, finType)
   (PJ : forall i : I, pred (J i)) (F : forall i : I, J i -> 'D[H]) :
   (\dot_(i : I) \sum_(j : J i| PJ i j) F i j)
-    = \sum_(f : {dffun forall i : I, J i} | 
+    = \sum_(f : {dffun forall i : I, J i} |
         family_mem (fun i : I => Mem (PJ i)) f) \dot_i F i (f i).
 Proof. rewrite dotdsumE bigd; apply: big_distr_big_dffun. Qed.
 
@@ -1235,67 +1235,67 @@ End DiracBig.
 (* and in the theory, we may set up a lemma (e : wfdirac) : P e *)
 (* the for ketd v, we can directly apply the lemma without proving wfd *)
 
-HB.mixin Record isWFDirac {L : finType} {H : L -> chsType} (S T : {set L}) 
+HB.mixin Record isWFDirac {L : finType} {H : L -> chsType} (S T : {set L})
   (f : 'D[H]) := { is_wfdirac : '[f S T] = f}.
 
 #[short(type="wfDirac")]
-HB.structure Definition WFDirac {L : finType} {H : L -> chsType} (S T : {set L}) := 
+HB.structure Definition WFDirac {L : finType} {H : L -> chsType} (S T : {set L}) :=
   { f of @isWFDirac L H S T f}.
 
-HB.mixin Record WFDirac_isSqr {L : finType} {H : L -> chsType} (S : {set L}) 
+HB.mixin Record WFDirac_isSqr {L : finType} {H : L -> chsType} (S : {set L})
   f of @WFDirac L H S S f := { is_sqrdirac : '[f S S] = f}.
 
 #[short(type="sqrDirac")]
-HB.structure Definition SqrDirac {L : finType} {H : L -> chsType} (S : {set L}) := 
+HB.structure Definition SqrDirac {L : finType} {H : L -> chsType} (S : {set L}) :=
   { f of @WFDirac L H S S f & WFDirac_isSqr L H S f}.
 
-HB.mixin Record WFDirac_isKet {L : finType} {H : L -> chsType} (S : {set L}) 
+HB.mixin Record WFDirac_isKet {L : finType} {H : L -> chsType} (S : {set L})
   f of @WFDirac L H set0 S f := { is_ketdirac : '[f set0 S] = f}.
 
 #[short(type="ketDirac")]
-HB.structure Definition KetDirac {L : finType} {H : L -> chsType} (S : {set L}) := 
+HB.structure Definition KetDirac {L : finType} {H : L -> chsType} (S : {set L}) :=
   { f of @WFDirac L H set0 S f & WFDirac_isKet L H S f}.
 
-HB.mixin Record WFDirac_isBra {L : finType} {H : L -> chsType} (S : {set L}) 
+HB.mixin Record WFDirac_isBra {L : finType} {H : L -> chsType} (S : {set L})
   f of @WFDirac L H S set0 f := { is_bradirac : '[f S set0] = f}.
 
 #[short(type="braDirac")]
-HB.structure Definition BraDirac {L : finType} {H : L -> chsType} (S : {set L}) := 
+HB.structure Definition BraDirac {L : finType} {H : L -> chsType} (S : {set L}) :=
   { f of @WFDirac L H set0 S f & WFDirac_isBra L H S f}.
 
-HB.factory Record isSqrDirac {L : finType} {H : L -> chsType} (S : {set L}) (f : 'D[H]) := 
+HB.factory Record isSqrDirac {L : finType} {H : L -> chsType} (S : {set L}) (f : 'D[H]) :=
   { is_sqrdirac : '[f S S] = f; }.
 HB.builders Context L H S f of isSqrDirac L H S f.
   HB.instance Definition _ := isWFDirac.Build L H S S f is_sqrdirac.
   HB.instance Definition _ := WFDirac_isSqr.Build L H S f is_sqrdirac.
 HB.end.
 
-HB.factory Record isKetDirac {L : finType} {H : L -> chsType} (S : {set L}) (f : 'D[H]) := 
+HB.factory Record isKetDirac {L : finType} {H : L -> chsType} (S : {set L}) (f : 'D[H]) :=
   { is_ketdirac : '[f set0 S] = f; }.
 HB.builders Context L H S f of isKetDirac L H S f.
   HB.instance Definition _ := isWFDirac.Build L H set0 S f is_ketdirac.
   HB.instance Definition _ := WFDirac_isKet.Build L H S f is_ketdirac.
 HB.end.
 
-HB.factory Record isBraDirac {L : finType} {H : L -> chsType} (S : {set L}) (f : 'D[H]) := 
+HB.factory Record isBraDirac {L : finType} {H : L -> chsType} (S : {set L}) (f : 'D[H]) :=
   { is_bradirac : '[f S set0] = f; }.
 HB.builders Context L H S f of isBraDirac L H S f.
   HB.instance Definition _ := isWFDirac.Build L H S set0 f is_bradirac.
   HB.instance Definition _ := WFDirac_isBra.Build L H S f is_bradirac.
 HB.end.
 
-Definition WFDirac_Build {L : finType} {H : L -> chsType} (S T : {set L}) 
+Definition WFDirac_Build {L : finType} {H : L -> chsType} (S T : {set L})
   (f : 'D[H]) (Hf : '[f S T] = f) :=
   WFDirac.Pack (WFDirac.Class (isWFDirac.Axioms_ H S T f Hf)).
-Definition SqrDirac_Build {L : finType} {H : L -> chsType} (S : {set L}) 
+Definition SqrDirac_Build {L : finType} {H : L -> chsType} (S : {set L})
   (f : 'D[H]) (Hf : '[f S S] = f) :=
   SqrDirac.Pack (SqrDirac.Class (WFDirac_isSqr.Axioms_ S f
   (isWFDirac.Axioms_ H S S f Hf) Hf)).
-Definition KetDirac_Build {L : finType} {H : L -> chsType} (S : {set L}) 
+Definition KetDirac_Build {L : finType} {H : L -> chsType} (S : {set L})
   (f : 'D[H]) (Hf : '[f set0 S] = f) :=
   KetDirac.Pack (KetDirac.Class (WFDirac_isKet.Axioms_ S f
   (isWFDirac.Axioms_ H set0 S f Hf) Hf)).
-Definition BraDirac_Build {L : finType} {H : L -> chsType} (S : {set L}) 
+Definition BraDirac_Build {L : finType} {H : L -> chsType} (S : {set L})
   (f : 'D[H]) (Hf : '[f S set0] = f) :=
   BraDirac.Pack (BraDirac.Class (WFDirac_isBra.Axioms_ S f
   (isWFDirac.Axioms_ H S set0 f Hf) Hf)).
@@ -1372,7 +1372,7 @@ Lemma sqrdP S (e : 'D[H]_S) : sqrd S e. Proof. by case: e. Qed.
 Lemma ketP S (e : 'Ket[H]_S) : ketd S e. Proof. by case: e. Qed.
 Lemma braP S (e : 'Bra[H]_S) : brad S e. Proof. by case: e. Qed. *)
 
-Lemma wfdP_eq S T S' T' (e : 'D[H]_(S,T)) : 
+Lemma wfdP_eq S T S' T' (e : 'D[H]_(S,T)) :
   S = S' -> T = T' -> '[e S' T'] = e.
 Proof. by move=><-<-; rewrite is_wfdirac. Qed.
 Lemma sqrdP_eq S S' (e : 'D[H]_S) : S = S' -> '[e S' S'] = e.
@@ -1395,7 +1395,7 @@ Lemma wfdirac_eqP S T S' T' (e1 : 'D[H]_(S,T)) (e2 : 'D_(S',T')) :
   (e1 : 'D) = e2 -> ((S == S') && (T == T')) || ((e1 : 'D) == 0).
 Proof.
 move=>P; case: eqP; case: eqP=>//= /eqP P1 /eqP P2.
-all:apply/eqP/diracP=>i j; rewrite (wfdiracE) lind.unlock !diracE; case: eqP=>//; 
+all:apply/eqP/diracP=>i j; rewrite (wfdiracE) lind.unlock !diracE; case: eqP=>//;
   case: eqP=>// P3 P4; rewrite P (wfdiracE).
 1,3: by rewrite lind_eq0r// linear0.
 by rewrite lind_eq0l// linear0.
@@ -1439,7 +1439,7 @@ Qed.
 
 Lemma zerod_wf S T : wfdirac_axiom S T (0 : 'D[H]).
 Proof.
-apply/diracP=>i j; rewrite lind.unlock !diracE; 
+apply/diracP=>i j; rewrite lind.unlock !diracE;
 by (do 2 case: eqP=>//?); rewrite linear0.
 Qed.
 Canonical zero_wfdirac S T := WFDirac_Build 0 (@zerod_wf S T).
@@ -1477,13 +1477,13 @@ Canonical lind_bradirac S (f : 'F_(S,set0)) := BraDirac_Build '[f] (lind_wf f).
 
 Lemma addd_wf S T (e1 e2 : 'D[H]_(S,T)) : wfdirac_axiom S T ((e1 : 'D) + e2).
 Proof. by rewrite wfdiracE (wfdiracE e2) addd_correct lind_id. Qed.
-Canonical addd_wfdirac S T (e1 e2 : 'D_(S,T)) := 
+Canonical addd_wfdirac S T (e1 e2 : 'D_(S,T)) :=
   WFDirac_Build ((e1 : 'D) + e2) (@addd_wf S T e1 e2).
-Canonical addd_sqrdirac S (e1 e2 : 'D_S) := 
+Canonical addd_sqrdirac S (e1 e2 : 'D_S) :=
   SqrDirac_Build ((e1 : 'D) + e2) (addd_wf e1 e2).
-Canonical addd_ketdirac S (e1 e2 : 'Ket_S) := 
+Canonical addd_ketdirac S (e1 e2 : 'Ket_S) :=
   KetDirac_Build ((e1 : 'D) + e2) (addd_wf e1 e2).
-Canonical addd_bradirac S (e1 e2 : 'Bra_S) := 
+Canonical addd_bradirac S (e1 e2 : 'Bra_S) :=
   BraDirac_Build ((e1 : 'D) + e2) (addd_wf e1 e2).
 
 Lemma oppd_wf S T (e : 'D[H]_(S,T)) : wfdirac_axiom S T (- (e : 'D)).
@@ -1521,29 +1521,29 @@ Canonical trd_sqrdirac S (e : 'D_S) := SqrDirac_Build e^T (trd_wf e).
 Canonical trd_ketdirac S (e : 'Bra_S) := KetDirac_Build e^T (trd_wf e).
 Canonical trd_bradirac S (e : 'Ket_S)  := BraDirac_Build e^T (trd_wf e).
 
-Lemma muld_wf S T W (e1 : 'D[H]_(S,T)) (e2 : 'D_(W,S)) : 
+Lemma muld_wf S T W (e1 : 'D[H]_(S,T)) (e2 : 'D_(W,S)) :
   wfdirac_axiom W T (e1 \o e2).
 Proof. by rewrite wfdiracE (wfdiracE e2) muld_correct lind_id. Qed.
-Canonical muld_wfdirac S T W (e1 : 'D_(S,T)) (e2 : 'D_(W,S)) := 
+Canonical muld_wfdirac S T W (e1 : 'D_(S,T)) (e2 : 'D_(W,S)) :=
   WFDirac_Build (e1 \o e2) (muld_wf e1 e2).
-Canonical muld_sqrdirac S T (e1 : 'D[H]_(S,T)) (e2 : 'D_(T,S)) := 
+Canonical muld_sqrdirac S T (e1 : 'D[H]_(S,T)) (e2 : 'D_(T,S)) :=
   SqrDirac_Build (e1 \o e2) (muld_wf e1 e2).
-Canonical muld_ketdirac S T (e1 : 'D_(S,T)) (e2 : 'Ket_S) := 
+Canonical muld_ketdirac S T (e1 : 'D_(S,T)) (e2 : 'Ket_S) :=
   KetDirac_Build (e1 \o e2) (muld_wf e1 e2).
-Canonical muld_bradirac S T (e1 : 'Bra_S) (e2 : 'D_(T,S)) := 
+Canonical muld_bradirac S T (e1 : 'Bra_S) (e2 : 'D_(T,S)) :=
   BraDirac_Build (e1 \o e2) (muld_wf e1 e2).
 
-Lemma tend_wf S T S' T' (e1 : 'D[H]_(S,T)) (e2 : 'D_(S',T')) : 
+Lemma tend_wf S T S' T' (e1 : 'D[H]_(S,T)) (e2 : 'D_(S',T')) :
   wfdirac_axiom (S :|: S') (T :|: T') (e1 \⊗ e2).
 Proof. by rewrite wfdiracE (wfdiracE e2) tend_correct lind_id. Qed.
-Canonical tend_wfdirac S T S' T' (e1 : 'D_(S,T)) (e2 : 'D_(S',T')) := 
+Canonical tend_wfdirac S T S' T' (e1 : 'D_(S,T)) (e2 : 'D_(S',T')) :=
   WFDirac_Build (e1 \⊗ e2) (tend_wf e1 e2).
-Canonical tend_sqrdirac S S' (e1 : 'D_S) (e2 : 'D_S') := 
+Canonical tend_sqrdirac S S' (e1 : 'D_S) (e2 : 'D_S') :=
   SqrDirac_Build (e1 \⊗ e2) (tend_wf e1 e2).
 Lemma tend_wf_ket S S' (e1 : 'Ket[H]_S) (e2 : 'Ket_S') :
   ketdirac_axiom (S :|: S') (e1 \⊗ e2).
 Proof. by rewrite [RHS]wfdiracE/= setU0. Qed.
-Lemma tend_wf_bra S S' (e1 : 'Bra[H]_S) (e2 : 'Bra_S') : 
+Lemma tend_wf_bra S S' (e1 : 'Bra[H]_S) (e2 : 'Bra_S') :
   bradirac_axiom (S :|: S') (e1 \⊗ e2).
 Proof. by rewrite [RHS]wfdiracE/= setU0. Qed.
 Canonical tend_ketdirac S S' (e1 : 'Ket_S) (e2 : 'Ket_S') :=
@@ -1554,63 +1554,63 @@ Canonical tend_bradirac S S' (e1 : 'Bra_S) (e2 : 'Bra_S') :=
 Lemma dotd_wf S T S' T' (e1 : 'D[H]_(S,T)) (e2 : 'D_(S',T')) :
   wfdirac_axiom (S' :|: S :\: T') (T :|: T' :\: S) (e1 \· e2).
 Proof. by rewrite wfdiracE (wfdiracE e2) dotd_correct lind_id. Qed.
-Canonical dotd_wfdirac S T S' T' (e1 : 'D_(S,T)) (e2 : 'D_(S',T')) := 
+Canonical dotd_wfdirac S T S' T' (e1 : 'D_(S,T)) (e2 : 'D_(S',T')) :=
   WFDirac_Build (e1 \· e2) (dotd_wf e1 e2).
-Lemma dotd_wf_sqr S S' (e1 : 'D[H]_S) (e2 : 'D_S') : 
+Lemma dotd_wf_sqr S S' (e1 : 'D[H]_S) (e2 : 'D_S') :
   wfdirac_axiom (S :|: S') (S :|: S') (e1 \· e2).
 Proof. by rewrite [RHS]wfdiracE/= setUDV setUD. Qed.
-Canonical dotd_sqrdirac S S' (e1 : 'D_S) (e2 : 'D_S') := 
+Canonical dotd_sqrdirac S S' (e1 : 'D_S) (e2 : 'D_S') :=
   SqrDirac_Build (e1 \· e2) (dotd_wf_sqr e1 e2).
-Lemma dotd_wf_ket S S' (e1 : 'Ket[H]_S) (e2 : 'Ket_S') : 
+Lemma dotd_wf_ket S S' (e1 : 'Ket[H]_S) (e2 : 'Ket_S') :
   ketdirac_axiom (S :|: S') (e1 \· e2).
 Proof. by rewrite [RHS]wfdiracE/= set0D setU0 setD0. Qed.
-Lemma dotd_wf_bra S S' (e1 : 'Bra[H]_S) (e2 : 'Bra_S') : 
+Lemma dotd_wf_bra S S' (e1 : 'Bra[H]_S) (e2 : 'Bra_S') :
   bradirac_axiom (S :|: S') (e1 \· e2).
 Proof. by rewrite [RHS]wfdiracE/= setD0 set0D setU0 setUC. Qed.
-Canonical dotd_ketdirac S S' (e1 : 'Ket_S) (e2 : 'Ket_S') := 
+Canonical dotd_ketdirac S S' (e1 : 'Ket_S) (e2 : 'Ket_S') :=
   KetDirac_Build (e1 \· e2) (dotd_wf_ket e1 e2).
-Canonical dotd_bradirac S S' (e1 : 'Bra_S) (e2 : 'Bra_S') := 
+Canonical dotd_bradirac S S' (e1 : 'Bra_S) (e2 : 'Bra_S') :=
   BraDirac_Build (e1 \· e2) (dotd_wf_bra e1 e2).
 
 Lemma tends_wf I (r : seq I) (P : pred I) (df cdf : I -> {set L})
-  (F : forall i : I, 'D[H]_(df i, cdf i)) : 
-  wfdirac_axiom (\bigcup_(i <- r | P i) df i) 
+  (F : forall i : I, 'D[H]_(df i, cdf i)) :
+  wfdirac_axiom (\bigcup_(i <- r | P i) df i)
     (\bigcup_(i <- r | P i) cdf i) (\ten_(i <- r | P i) F i).
 Proof.
 rewrite !bigd; elim: r=>[|x r P1]; first by rewrite !big_nil is_wfdirac.
 by rewrite !big_cons; case: (P x)=>//; rewrite (WFDirac_BuildE P1) is_wfdirac.
 Qed.
-Canonical tends_wfdirac I (r : seq I) (P : pred I) (df cdf : I -> {set L}) 
-  (F : forall i : I, 'D[H]_(df i, cdf i)) := 
+Canonical tends_wfdirac I (r : seq I) (P : pred I) (df cdf : I -> {set L})
+  (F : forall i : I, 'D[H]_(df i, cdf i)) :=
     WFDirac_Build (\ten_(i <- r | P i) F i) (tends_wf r P F).
 Canonical tends_sqrdirac I (r : seq I) (P : pred I) (df : I -> {set L})
-  (F : forall i : I, 'D[H]_(df i)) := 
+  (F : forall i : I, 'D[H]_(df i)) :=
     SqrDirac_Build (\ten_(i <- r | P i) F i) (tends_wf r P F).
 
 Lemma tends_wf_ket I (r : seq I) (P : pred I) (df : I -> {set L})
-  (F : forall i : I, 'Ket[H]_(df i)) : 
+  (F : forall i : I, 'Ket[H]_(df i)) :
   ketdirac_axiom (\bigcup_(i <- r | P i) df i) (\ten_(i <- r | P i) F i).
-Proof. 
-have {1 3}->: (set0 : {set L}) = \bigcup_(i <- r | P i) set0 by rewrite big1. 
-apply/tends_wf. 
+Proof.
+have {1 3}->: (set0 : {set L}) = \bigcup_(i <- r | P i) set0 by rewrite big1.
+apply/tends_wf.
 Qed.
 Canonical tends_ketdirac I (r : seq I) (P : pred I) (df : I -> {set L})
-  (F : forall i : I, 'Ket[H]_(df i)) := 
+  (F : forall i : I, 'Ket[H]_(df i)) :=
     KetDirac_Build (\ten_(i <- r | P i) F i) (tends_wf_ket r P F).
 
 Lemma tends_wf_bra I (r : seq I) (P : pred I) (df : I -> {set L})
-  (F : forall i : I, 'Bra[H]_(df i)) : 
+  (F : forall i : I, 'Bra[H]_(df i)) :
   bradirac_axiom (\bigcup_(i <- r | P i) df i) (\ten_(i <- r | P i) F i).
-Proof. 
+Proof.
 have {2 4}->: (set0 : {set L}) = \bigcup_(i <- r | P i) set0 by rewrite big1.
 apply/tends_wf.
 Qed.
 Canonical tends_bradirac I (r : seq I) (P : pred I) (df : I -> {set L})
-  (F : forall i : I, 'Bra[H]_(df i)) := 
+  (F : forall i : I, 'Bra[H]_(df i)) :=
     BraDirac_Build (\ten_(i <- r | P i) F i) (tends_wf_bra r P F).
 
 (* generally, its better to use lfun for add after calculations *)
-Lemma sumd_wf I (r : seq I) (P : pred I) S T (F : I -> 'D[H]_(S,T)) : 
+Lemma sumd_wf I (r : seq I) (P : pred I) S T (F : I -> 'D[H]_(S,T)) :
   wfdirac_axiom S T (\sum_(i <- r | P i) (F i : 'D)).
 Proof.
 elim: r=>[|x r P1]; first by rewrite !big_nil is_wfdirac.
@@ -1627,29 +1627,29 @@ Canonical sumd_bradirac I (r : seq I) (P : pred I) S (F : I -> 'Bra[H]_S) :=
 
 (* big dot only canonical when: all square, all ket and all bra *)
 Lemma dotds_wf_sqr I (r : seq I) (P : pred I) (df : I -> {set L})
- (F : forall i, 'D[H]_(df i)) : 
+ (F : forall i, 'D[H]_(df i)) :
   sqrdirac_axiom (\bigcup_(i <- r | P i) df i) (\dot_(i <- r | P i) (F i : 'D)).
 Proof.
 rewrite !bigd; elim: r=>[|x r P1]; first by rewrite !big_nil is_sqrdirac.
 by rewrite !big_cons; case: (P x)=>//; rewrite (SqrDirac_BuildE P1) is_sqrdirac.
 Qed.
 Canonical dotds_sqrdirac I (r : seq I) (P : pred I) (df : I -> {set L})
-  (F : forall i, 'D[H]_(df i)) 
+  (F : forall i, 'D[H]_(df i))
  := SqrDirac_Build (\dot_(i <- r | P i) (F i : 'D)) (dotds_wf_sqr r P F).
 
 Lemma dotds_wf_ket I (r : seq I) (P : pred I) (df : I -> {set L})
-  (F : forall i, 'Ket[H]_(df i)) : 
+  (F : forall i, 'Ket[H]_(df i)) :
   ketdirac_axiom (\bigcup_(i <- r | P i) df i) (\dot_(i <- r | P i) (F i : 'D)).
 Proof.
 rewrite !bigd; elim: r=>[|x r P1]; first by rewrite !big_nil is_ketdirac.
 by rewrite !big_cons; case: (P x)=>//; rewrite (KetDirac_BuildE P1) is_ketdirac.
 Qed.
 Canonical dotds_ketdirac I (r : seq I) (P : pred I) (df : I -> {set L})
-  (F : forall i, 'Ket[H]_(df i)) 
+  (F : forall i, 'Ket[H]_(df i))
   := KetDirac_Build (\dot_(i <- r | P i) (F i : 'D)) (dotds_wf_ket r P F).
 
 Lemma dotds_wf_bra I (r : seq I) (P : pred I) (df : I -> {set L})
-  (F : forall i, 'Bra[H]_(df i)) : 
+  (F : forall i, 'Bra[H]_(df i)) :
   bradirac_axiom (\bigcup_(i <- r | P i) df i) (\dot_(i <- r | P i) (F i : 'D)).
 Proof.
 rewrite !bigd; elim: r=>[|x r P1]; first by rewrite !big_nil is_bradirac.
@@ -1677,14 +1677,14 @@ Lemma dform_sqr S T W (e1 : 'D[H]_(S,T)) (e2 : 'D_W) :
 Proof.
 rewrite /dform wfdiracE sqrdiracE adjd_lin !dotd_correct wfdP_eq//; setdec.
 Qed.
-Canonical dform_wfdirac S T W (e1 : 'D[H]_(S,T)) (e2 : 'D_W) := 
+Canonical dform_wfdirac S T W (e1 : 'D[H]_(S,T)) (e2 : 'D_W) :=
   WFDirac_Build (dform e1 e2) (dform_sqr e1 e2).
-Canonical dform_sqrdirac S T W (e1 : 'D[H]_(S,T)) (e2 : 'D_W) := 
+Canonical dform_sqrdirac S T W (e1 : 'D[H]_(S,T)) (e2 : 'D_W) :=
   SqrDirac_Build (dform e1 e2) (dform_sqr e1 e2).
 
 Lemma dform_is_linear e1 : linear (@dform e1).
 Proof. by move=>a x y; rewrite /dform linearPr/= linearPl/=. Qed.
-HB.instance Definition _ e1 := GRing.isLinear.Build 
+HB.instance Definition _ e1 := GRing.isLinear.Build
   C 'D[H] 'D[H] *:%R (dform e1) (dform_is_linear e1).
 
 Lemma dformEV (e1 e2 : 'D[H]) : dform e1^A e2 = e1 \· e2 \· e1^A.
@@ -1696,34 +1696,34 @@ Section ExtraDiracTheory.
 Context {L : finType} (H : L -> chsType).
 Implicit Type (S T W : {set L}).
 
-Lemma tendfC S T S' T' (f: 'F[H]_(S,T)) (g: 'F_(S',T')) : 
+Lemma tendfC S T S' T' (f: 'F[H]_(S,T)) (g: 'F_(S',T')) :
   '[f \⊗ g] = '[g \⊗ f].
 Proof. by rewrite -tend_correct tendC tend_correct. Qed.
 
 Lemma tendfA S1 T1 S2 T2 S3 T3 (f: 'F[H]_(S1,T1)) (g: 'F_(S2,T2))
-  (h: 'F[H]_(S3,T3)) : 
+  (h: 'F[H]_(S3,T3)) :
   '[ f \⊗ (g \⊗ h) ] = '[ (f \⊗ g) \⊗ h ].
 Proof. by rewrite -!tend_correct tendA. Qed.
 
-Lemma tendf1 S T (f: 'F[H]_(S,T))  : 
+Lemma tendf1 S T (f: 'F[H]_(S,T))  :
   '[ f \⊗ (\1 : 'F_set0) ] = '[f].
 Proof. by rewrite -tend_correct lindI1 tend1. Qed.
 
-Lemma tend1f S T (f: 'F[H]_(S,T))  : 
+Lemma tend1f S T (f: 'F[H]_(S,T))  :
   '[ (\1 : 'F_set0) \⊗ f ] = '[f].
 Proof. by rewrite tendfC tendf1. Qed.
 
 Lemma dotdfA S1 T1 S2 T2 S3 T3 (f: 'F[H]_(S1,T1)) (g: 'F_(S2,T2))
-  (h: 'F_(S3,T3)) : 
+  (h: 'F_(S3,T3)) :
   [disjoint S2 & S1 :\: T2] -> [disjoint T2 & T3 :\: S2] ->
   '[ f \· (g \· h) ] = '[ f \· g \· h ].
-Proof. by move=>P1 P2; to_Fnd; rewrite dotFA_cond. Qed.  
+Proof. by move=>P1 P2; to_Fnd; rewrite dotFA_cond. Qed.
 
 Lemma dotdA_cond S1 T1 S2 T2 S3 T3 (e1: 'D[H]_(S1,T1)) (e2: 'D_(S2,T2))
   (e3: 'D_(S3,T3)) :
   [disjoint S2 & S1 :\: T2] -> [disjoint T2 & T3 :\: S2] ->
   e1 \· (e2 \· e3) = e1 \· e2 \· e3.
-Proof. 
+Proof.
 by move=>P1 P2; rewrite wfdiracE (wfdiracE e2) (wfdiracE e3) !dotd_correct dotdfA.
 Qed.
 
@@ -1741,18 +1741,18 @@ Lemma dform_compv S S' W W' (e1 : 'Bra[H]_S) (e2 : 'Ket_S') (e3 : 'D_(W,W')) :
 Proof. by rewrite !dformE adjdG !dotdA_cond//; setdec. Qed.
 
 Lemma dotdf_ten S1 T1 S2 T2 (f: 'F[H]_(S1,T1)) (g: 'F_(S2,T2)) :
-  [disjoint S1 & T2] -> 
+  [disjoint S1 & T2] ->
   '[ f \· g ] = '[ f \⊗ g ].
 Proof. by move=>P3; to_Fnd; rewrite/= dotFT. Qed.
 
 Lemma dotd_ten S1 T1 S2 T2 (e1: 'D[H]_(S1,T1)) (e2: 'D_(S2,T2)) :
-  [disjoint S1 & T2] -> 
+  [disjoint S1 & T2] ->
   e1 \· e2 = e1 \⊗ e2.
-Proof. 
+Proof.
 by move=>P1; rewrite wfdiracE (wfdiracE e2) !dotd_correct tend_correct dotdf_ten.
 Qed.
 
-Lemma dotdfC S T S' T' (f: 'F[H]_(S,T)) (g: 'F_(S',T')) : 
+Lemma dotdfC S T S' T' (f: 'F[H]_(S,T)) (g: 'F_(S',T')) :
   [disjoint S & T'] -> [disjoint T & S'] ->
   '[ f \· g ] = '[ g \· f ].
 Proof. by move=>P1 P2; to_Fnd; rewrite dotFC. Qed.
@@ -1760,15 +1760,15 @@ Proof. by move=>P1 P2; to_Fnd; rewrite dotFC. Qed.
 Lemma dotdC S T S' T' (e1: 'D[H]_(S,T)) (e2: 'D_(S',T')) :
   [disjoint S & T'] -> [disjoint T & S'] ->
   e1 \· e2 = e2 \· e1.
-Proof. 
+Proof.
 by move=>P1 P2; rewrite wfdiracE (wfdiracE e2) !dotd_correct dotdfC.
 Qed.
 
-Lemma dotdf1 S T (f: 'F[H]_(S,T))  : 
+Lemma dotdf1 S T (f: 'F[H]_(S,T))  :
   '[ f \· (\1 : 'F_set0) ] = '[f].
 Proof. by to_Fnd; rewrite dotF1. Qed.
 
-Lemma dotd1f S T (f: 'F[H]_(S,T))  : 
+Lemma dotd1f S T (f: 'F[H]_(S,T))  :
   '[ (\1 : 'F_set0) \· f ] = '[f].
 Proof. by to_Fnd; rewrite dot1F. Qed.
 
@@ -1778,7 +1778,7 @@ Proof. by to_Fnd. Qed.
 
 Lemma dotd_mul S T W (e1: 'D[H]_(S,T)) (e2: 'D_(W,S)) :
   e1 \· e2 = e1 \o e2.
-Proof. 
+Proof.
 by rewrite wfdiracE (wfdiracE e2) !dirac_correct dotdf_comp.
 Qed.
 
@@ -1792,7 +1792,7 @@ Lemma muld_lin S T W (e1 : 'D[H]_(S,T)) (e2 : 'D_(W,S)) :
   e1 \o e2 = lind (e1 S T \o e2 W S).
 Proof. by rewrite {1}wfdiracE {1}(wfdiracE e2) muld_correct. Qed.
 
-Lemma tend_mul S T S' T' W W' (e1: 'D[H]_(S,T)) (e2: 'D_(W,S)) 
+Lemma tend_mul S T S' T' W W' (e1: 'D[H]_(S,T)) (e2: 'D_(W,S))
   (e3: 'D_(S',T')) (e4: 'D_(W',S')) :
   [disjoint S & S'] ->
   (e1 \⊗ e3) \o (e2 \⊗ e4) = (e1 \o e2) \⊗ (e3 \o e4).
@@ -1802,7 +1802,7 @@ Qed.
 
 Lemma dotIdT S T W (e : 'D[H]_(T,W)) : \1_S \· e =  \1_(S :\: W) \⊗ e.
 Proof.
-rewrite wfdiracE !dirac_correct; to_Fnd; 
+rewrite wfdiracE !dirac_correct; to_Fnd;
 by rewrite dotIF dotFT//= disjointDX.
 Qed.
 
@@ -1824,7 +1824,7 @@ Proof. by rewrite -setD_eq0 dotIdT=>/eqP->; rewrite lindI1 ten1d. Qed.
 Lemma dotdIid S T W (e : 'D[H]_(T,W)) : S :<=: T -> e \· \1_S = e.
 Proof. by rewrite -setD_eq0 dotdIT=>/eqP->; rewrite lindI1 ten1d. Qed.
 
-Lemma dotd_multen S T S' T' (e1 : 'D[H]_(S,T)) (e2 : 'D_(S',T')) : 
+Lemma dotd_multen S T S' T' (e1 : 'D[H]_(S,T)) (e2 : 'D_(S',T')) :
   e1 \· e2 = (e1 \⊗ \1_( T' :\: S )) \o (e2 \⊗ \1_( S :\: T' )).
 Proof.
 rewrite wfdiracE (wfdiracE e2) !dirac_correct.
@@ -1884,7 +1884,7 @@ Lemma lindT S T S' T' (f : 'F[H]_(S,T)) (g : 'F_(S',T')) :
 Proof. by rewrite tend_correct. Qed.
 
 Lemma lind_ketM S T (f : 'F[H]_(S,T)) (v : 'H_S) : '[f] \o '|v> = '|f v>.
-Proof. by rewrite !ketd_lin muld_correct -[(_ \o _)%VF]f2vK v2f_comp. Qed. 
+Proof. by rewrite !ketd_lin muld_correct -[(_ \o _)%VF]f2vK v2f_comp. Qed.
 
 Lemma lind_ketG S T (f : 'F[H]_(S,T)) (v : 'H_S) : '[f] \· '|v> = '|f v>.
 Proof. by rewrite dotd_mul/= lind_ketM. Qed.
@@ -1899,7 +1899,7 @@ Proof. by rewrite dotd_mul/= lind_braM. Qed.
 
 (* Definition lind_bra := (lind_braM, lind_braG). *)
 
-Lemma dotfTl (S1 S2 S3 T1 T2 T3 : {set L}) (f : 'F[H]_(S1,T1)) 
+Lemma dotfTl (S1 S2 S3 T1 T2 T3 : {set L}) (f : 'F[H]_(S1,T1))
   (g : 'F_(S2,T2)) (h : 'F_(S3,T3)) :
   [disjoint S1 & T3] -> [disjoint T2 & T3] ->
   f \· (g \⊗ h) =c f \· g \⊗ h.
@@ -1912,7 +1912,7 @@ rewrite tenFC tenFA; f_equal; rewrite tenFC; f_equal; apply Fnd_eq1.
 by move: P1=>/setDidPl; rewrite setUC -setDDl=>->.
 Qed.
 
-Lemma dotfTr (S1 S2 S3 T1 T2 T3 : {set L}) (f : 'F[H]_(S1,T1)) 
+Lemma dotfTr (S1 S2 S3 T1 T2 T3 : {set L}) (f : 'F[H]_(S1,T1))
   (g : 'F[H]_(S2,T2)) (h : 'F[H]_(S3,T3)) :
   [disjoint T1 & S3] -> [disjoint S2 & S3] ->
     (g \⊗ h) \· f =c g \· f \⊗ h.
@@ -1925,7 +1925,7 @@ rewrite -tenFA tenF11; f_equal; apply Fnd_eq1.
 rewrite setDUl; f_equal; apply/setDidPl; move: P1 P2; setdec.
 Qed.
 
-Lemma dotdTll S1 S2 S3 T1 T2 T3 (e1 : 'D[H]_(S1,T1)) 
+Lemma dotdTll S1 S2 S3 T1 T2 T3 (e1 : 'D[H]_(S1,T1))
   (e2 : 'D_(S2,T2)) (e3 : 'D_(S3,T3)) :
   [disjoint S1 & T3] -> [disjoint T2 & T3] ->
   e1 \· (e2 \⊗ e3) = e1 \· e2 \⊗ e3.
@@ -1934,13 +1934,13 @@ move=>P1 P2. rewrite wfdiracE (wfdiracE e2) (wfdiracE e3).
 by rewrite !dirac_correct; apply lind_eqFnd; rewrite dotfTl.
 Qed.
 
-Lemma dotdTlr S1 S2 S3 T1 T2 T3 (e1 : 'D[H]_(S1,T1)) 
-  (e2 : 'D_(S2,T2)) (e3 : 'D_(S3,T3)) : 
+Lemma dotdTlr S1 S2 S3 T1 T2 T3 (e1 : 'D[H]_(S1,T1))
+  (e2 : 'D_(S2,T2)) (e3 : 'D_(S3,T3)) :
   [disjoint S1 & T2] -> [disjoint T3 & T2] ->
     e1 \· (e2 \⊗ e3) = e2 \⊗ (e1 \· e3).
 Proof. by move=>P1 P2; rewrite tendC dotdTll 1?tendC. Qed.
 
-Lemma dotdTrl S1 S2 S3 T1 T2 T3 (e1 : 'D[H]_(S1,T1)) 
+Lemma dotdTrl S1 S2 S3 T1 T2 T3 (e1 : 'D[H]_(S1,T1))
   (e2 : 'D_(S2,T2)) (e3 : 'D_(S3,T3)) :
   [disjoint T1 & S3] -> [disjoint S2 & S3] ->
   (e2 \⊗ e3) \· e1 = (e2 \· e1) \⊗ e3.
@@ -1949,13 +1949,13 @@ move=>P1 P2. rewrite wfdiracE (wfdiracE e1) (wfdiracE e3).
 by rewrite !dirac_correct; apply lind_eqFnd; rewrite dotfTr.
 Qed.
 
-Lemma dotdTrr S1 S2 S3 T1 T2 T3 (e1 : 'D[H]_(S1,T1)) 
+Lemma dotdTrr S1 S2 S3 T1 T2 T3 (e1 : 'D[H]_(S1,T1))
   (e2 : 'D_(S2,T2)) (e3 : 'D_(S3,T3)) :
   [disjoint T1 & S2] -> [disjoint S3 & S2] ->
   (e2 \⊗ e3) \· e1 = e2 \⊗ (e3 \· e1).
 Proof. by move=>P1 P2; rewrite tendC dotdTrl 1?tendC. Qed.
 
-Lemma lind_linTll S T S' T' (f : 'F[H]_S) (g : 'F[H]_(T,S)) (e : 'D_(S',T')) : 
+Lemma lind_linTll S T S' T' (f : 'F[H]_S) (g : 'F[H]_(T,S)) (e : 'D_(S',T')) :
   [disjoint S & T'] ->
   '[ f ] \· ('[ g ] \⊗ e) = '[ f \o g ] \⊗ e.
 Proof. by move=>P1; rewrite -lindG dotdTll. Qed.
@@ -1965,32 +1965,32 @@ Lemma lind_linTlr S T S' T' (f : 'F[H]_S) (g : 'F[H]_(T,S)) (e : 'D_(S',T')) :
   '[ f ] \· (e \⊗ '[ g ]) = e \⊗ '[ f \o g ].
 Proof. by move=>P1; rewrite -lindG dotdTlr. Qed.
 
-Lemma lind_linTrl S T S' T' (f : 'F[H]_(S,T)) (g : 'F[H]_S) (e : 'D_(S',T')) : 
+Lemma lind_linTrl S T S' T' (f : 'F[H]_(S,T)) (g : 'F[H]_S) (e : 'D_(S',T')) :
   [disjoint S & S'] ->
   ('[ f ] \⊗ e) \· '[ g ] = '[ f \o g ] \⊗ e.
 Proof. by move=>P1; rewrite -lindG dotdTrl. Qed.
 
-Lemma lind_linTrr S T S' T' (f : 'F[H]_(S,T)) (g : 'F[H]_S) (e : 'D_(S',T')) : 
+Lemma lind_linTrr S T S' T' (f : 'F[H]_(S,T)) (g : 'F[H]_S) (e : 'D_(S',T')) :
   [disjoint S & S'] ->
   (e \⊗ '[ f ]) \· '[ g ] = e \⊗ '[ f \o g ].
 Proof. by move=>P1; rewrite -lindG dotdTrr. Qed.
 
-Lemma lind_ketTl S S' T' (f : 'F[H]_S) (v : 'H[H]_S) (e : 'D_(S',T')) : 
+Lemma lind_ketTl S S' T' (f : 'F[H]_S) (v : 'H[H]_S) (e : 'D_(S',T')) :
   [disjoint S & T'] ->
   '[ f ] \· ('|v> \⊗ e) = '|f v> \⊗ e.
 Proof. by move=>P1; rewrite -lind_ketG dotdTll. Qed.
 
-Lemma lind_ketTr S S' T' (f : 'F[H]_S) (v : 'H[H]_S) (e : 'D_(S',T')) : 
+Lemma lind_ketTr S S' T' (f : 'F[H]_S) (v : 'H[H]_S) (e : 'D_(S',T')) :
   [disjoint S & T'] ->
   '[ f ] \· (e \⊗ '|v>) = e \⊗ '|f v>.
 Proof. by move=>P1; rewrite -lind_ketG dotdTlr. Qed.
 
-Lemma lind_braTl S S' T' (f : 'F[H]_S) (v : 'H[H]_S) (e : 'D_(S',T')) : 
+Lemma lind_braTl S S' T' (f : 'F[H]_S) (v : 'H[H]_S) (e : 'D_(S',T')) :
   [disjoint S & S'] ->
   ('<v| \⊗ e) \· '[ f ] = '<f^A v| \⊗ e.
 Proof. by move=>P1; rewrite -lind_braG dotdTrl. Qed.
 
-Lemma lind_braTr S S' T' (f : 'F[H]_S) (v : 'H[H]_S) (e : 'D_(S',T')) : 
+Lemma lind_braTr S S' T' (f : 'F[H]_S) (v : 'H[H]_S) (e : 'D_(S',T')) :
   [disjoint S & S'] ->
   (e \⊗ '<v|) \· '[ f ] = e \⊗ '<f^A v|.
 Proof. by move=>P1; rewrite -lind_braG dotdTrr. Qed.
@@ -2016,38 +2016,38 @@ Lemma tends_conj (I : Type) (r : seq I) (P : pred I) (F : I -> 'D[H]) :
 (\ten_(i <- r | P i) F i)^C = \ten_(i <- r | P i) (F i)^C.
 Proof. by rewrite dC2AT tends_adj tends_tr; under eq_bigr do rewrite -dC2AT. Qed.
 
-Lemma ketBT_adj (I : Type) (r : seq I) (P : pred I) (d : I -> {set L}) 
+Lemma ketBT_adj (I : Type) (r : seq I) (P : pred I) (d : I -> {set L})
   (F : forall i, 'H[H]_(d i)) :
   (\ten_(i <- r | P i) '|F i>)^A = \ten_(i <- r | P i) '<F i|.
 Proof. by rewrite tends_adj; under eq_bigr do rewrite ketd_adj. Qed.
 
-Lemma ketBT_tr (I : Type) (r : seq I) (P : pred I) (d : I -> {set L}) 
+Lemma ketBT_tr (I : Type) (r : seq I) (P : pred I) (d : I -> {set L})
   (F : forall i, 'H[H]_(d i)) :
   (\ten_(i <- r | P i) '|F i>)^T = \ten_(i <- r | P i) '<(F i)^*v|.
 Proof. by rewrite tends_tr; under eq_bigr do rewrite ketd_tr. Qed.
 
-Lemma ketBT_conj (I : Type) (r : seq I) (P : pred I) (d : I -> {set L}) 
+Lemma ketBT_conj (I : Type) (r : seq I) (P : pred I) (d : I -> {set L})
   (F : forall i, 'H[H]_(d i)) :
 (\ten_(i <- r | P i) '|F i>)^C = \ten_(i <- r | P i) '|(F i)^*v>.
 Proof. by rewrite tends_conj; under eq_bigr do rewrite ketd_conj. Qed.
 
-Lemma braBT_adj (I : Type) (r : seq I) (P : pred I) (d : I -> {set L}) 
+Lemma braBT_adj (I : Type) (r : seq I) (P : pred I) (d : I -> {set L})
   (F : forall i, 'H[H]_(d i)) :
   (\ten_(i <- r | P i) '<F i|)^A = \ten_(i <- r | P i) '|F i>.
 Proof. by rewrite tends_adj; under eq_bigr do rewrite brad_adj. Qed.
 
-Lemma braBT_tr (I : Type) (r : seq I) (P : pred I) (d : I -> {set L}) 
+Lemma braBT_tr (I : Type) (r : seq I) (P : pred I) (d : I -> {set L})
   (F : forall i, 'H[H]_(d i)) :
 (\ten_(i <- r | P i) '<F i|)^T = \ten_(i <- r | P i) '|(F i)^*v>.
 Proof. by rewrite tends_tr; under eq_bigr do rewrite brad_tr. Qed.
 
-Lemma braBT_conj (I : Type) (r : seq I) (P : pred I) (d : I -> {set L}) 
+Lemma braBT_conj (I : Type) (r : seq I) (P : pred I) (d : I -> {set L})
   (F : forall i, 'H[H]_(d i)) :
   (\ten_(i <- r | P i) '<F i|)^C = \ten_(i <- r | P i) '<(F i)^*v|.
 Proof. by rewrite tends_conj; under eq_bigr do rewrite brad_conj. Qed.
 
 Lemma tendsZ (T : Type) (r : seq T) (P : pred T) (fz : T -> C) (e : T -> 'D[H]) :
-  \ten_(i <- r | P i) ((fz i) *: (e i)) = 
+  \ten_(i <- r | P i) ((fz i) *: (e i)) =
     \prod_(i <- r | P i) (fz i) *: \ten_(i <- r | P i) (e i).
 Proof.
 elim/big_rec3: _=>[|i e1 c e2 _]; first by rewrite bigd scale1r.
@@ -2063,9 +2063,9 @@ Qed.
 
 Lemma tendsM (I : eqType) (r : seq I) (P : pred I) (d1 d2 d3 : I -> {set L})
   (F : forall i : I, 'D[H]_(d1 i, d2 i)) (G : forall i : I, 'D_(d3 i, d1 i)) :
-  (forall i j, P i -> P j -> (i != j) -> [disjoint d1 i & d1 j]) -> 
+  (forall i j, P i -> P j -> (i != j) -> [disjoint d1 i & d1 j]) ->
   uniq r ->
-  (\ten_(i <- r | P i) F i) \o \ten_(i <- r | P i) (G i) = 
+  (\ten_(i <- r | P i) F i) \o \ten_(i <- r | P i) (G i) =
   (\ten_(i <- r | P i) (F i \o G i)).
 Proof.
 elim: r=>[_|x r IH]; first by rewrite !big_nil bigd {1}numd1I mulId.
@@ -2083,9 +2083,9 @@ elim: r=>[|x r IH]; first by rewrite !big_nil bigd.
 by rewrite !big_cons; case: (P x)=>[|//]; rewrite bigdE IH numdT; f_equal.
 Qed.
 
-Lemma outerMBT (I : Type) (r : seq I) (P : pred I) (Dv Du : I -> {set L}) 
-  (Vs : forall i, 'H[H]_(Dv i)) (Us : forall i, 'H[H]_(Du i)) : 
-  (\ten_(i <- r | P i) '|Vs i>) \o (\ten_(i <- r | P i) '<Us i|) 
+Lemma outerMBT (I : Type) (r : seq I) (P : pred I) (Dv Du : I -> {set L})
+  (Vs : forall i, 'H[H]_(Dv i)) (Us : forall i, 'H[H]_(Du i)) :
+  (\ten_(i <- r | P i) '|Vs i>) \o (\ten_(i <- r | P i) '<Us i|)
   = \ten_(i <- r | P i) ('|Vs i> \o '<Us i|).
 Proof.
 elim: r=>[|x r IH]; first by rewrite !big_nil bigd {1}numd1I mulId.
@@ -2093,17 +2093,17 @@ rewrite !big_cons; case E: (P x); last by apply IH.
 by rewrite ?bigdE tend_mul ?disjoint0X//= IH.
 Qed.
 
-Lemma outerGBT (I : Type) (r : seq I) (P : pred I) (Dv Du : I -> {set L}) 
-  (Vs : forall i, 'H[H]_(Dv i)) (Us : forall i, 'H[H]_(Du i)) : 
-  (\ten_(i <- r | P i) '|Vs i>) \· (\ten_(i <- r | P i) '<Us i|) 
+Lemma outerGBT (I : Type) (r : seq I) (P : pred I) (Dv Du : I -> {set L})
+  (Vs : forall i, 'H[H]_(Dv i)) (Us : forall i, 'H[H]_(Du i)) :
+  (\ten_(i <- r | P i) '|Vs i>) \· (\ten_(i <- r | P i) '<Us i|)
   = \ten_(i <- r | P i) ('|Vs i> \· '<Us i|).
 Proof.
-rewrite dotd_mul/= outerMBT//. 
+rewrite dotd_mul/= outerMBT//.
 by under eq_bigr do rewrite -dotd_mul.
 Qed.
 
-Lemma innerMBT (I : eqType) (r : seq I) (P : pred I) (Ds : I -> {set L}) 
-  (Vs Us : forall i, 'H[H]_(Ds i)) : 
+Lemma innerMBT (I : eqType) (r : seq I) (P : pred I) (Ds : I -> {set L})
+  (Vs Us : forall i, 'H[H]_(Ds i)) :
     (forall i j, P i -> P j -> (i != j) -> [disjoint Ds i & Ds j]) -> uniq r ->
       (\ten_(i <- r | P i) '<Vs i|) \o (\ten_(i <- r | P i) '|Us i>)
         = (\prod_(i <- r | P i) [<Vs i ; Us i>])%:D.
@@ -2111,21 +2111,21 @@ Proof.
 by move=>P1 P2; rewrite tendsM// -numdBT; under eq_bigr do rewrite innerM.
 Qed.
 
-Lemma innerGBT (I : eqType) (r : seq I) (P : pred I) (Ds : I -> {set L}) 
-  (Vs Us : forall i, 'H[H]_(Ds i)) : 
+Lemma innerGBT (I : eqType) (r : seq I) (P : pred I) (Ds : I -> {set L})
+  (Vs Us : forall i, 'H[H]_(Ds i)) :
     (forall i j, P i -> P j -> (i != j) -> [disjoint Ds i & Ds j]) -> uniq r ->
       (\ten_(i <- r | P i) '<Vs i|) \· (\ten_(i <- r | P i) '|Us i>)
         = (\prod_(i <- r | P i) [<Vs i ; Us i>])%:D.
 Proof. by rewrite dotd_mul/=; apply innerMBT. Qed.
 
-Lemma outerMBTs (r : seq L) (P: pred L) (Vs Us : forall i : L, 'H[H]_[set i]) : 
-  (\ten_(i <- r | P i) '|Vs i>) \o (\ten_(i <- r | P i) '<Us i|) 
+Lemma outerMBTs (r : seq L) (P: pred L) (Vs Us : forall i : L, 'H[H]_[set i]) :
+  (\ten_(i <- r | P i) '|Vs i>) \o (\ten_(i <- r | P i) '<Us i|)
   = \ten_(i <- r | P i) ('|Vs i> \o '<Us i|).
 Proof. by rewrite outerMBT. Qed.
 
-Lemma innerMBTs (r : seq L) (P: pred L) (Vs Us: forall i : L, 'H[H]_[set i]) : 
+Lemma innerMBTs (r : seq L) (P: pred L) (Vs Us: forall i : L, 'H[H]_[set i]) :
 uniq r ->
-(\ten_(i <- r | P i) '<Vs i|) \o (\ten_(i <- r | P i) '|Us i>) 
+(\ten_(i <- r | P i) '<Vs i|) \o (\ten_(i <- r | P i) '|Us i>)
 = (\prod_(i <- r | P i) [<Vs i ; Us i>])%:D.
 Proof. by move=>ur; rewrite innerMBT// =>i j _ _; rewrite disjoint1X inE. Qed.
 
@@ -2140,14 +2140,14 @@ Lemma ketd_Hnd_eq (x y : Hnd H) : x = y -> '| of_Hnd x > = '| of_Hnd y >.
 Proof. by move=>P; move: (eq_HndP P)=><-; rewrite ketd_cast. Qed.
 Lemma lind_Fnd_eq (x y : Fnd H) : x = y -> '[ of_Fnd x ] = '[ of_Fnd y ].
 Proof. by move=>P; move: (eq_FndP P)=><-; rewrite lind_cast. Qed.
-Lemma ketBT_Hnd (I : Type) (r : seq I) (P : pred I) 
+Lemma ketBT_Hnd (I : Type) (r : seq I) (P : pred I)
   (s : I -> {set L}) (v : forall i : I, 'H[H]_(s i)) :
     \ten_(i <- r | P i) '|v i> = '| (\tenv_(i <- r | P i) (v i))%FND >.
 Proof.
 elim/big_rec2: _; first by rewrite bigd ketd_lin /v2f outp_dv0 lindI1.
 by move=>i y1 y2 _; rewrite bigd=>->; rewrite /Hnd_ten ketdT.
 Qed.
-Lemma linBT_Fnd (I : Type) (r : seq I) (P : pred I) 
+Lemma linBT_Fnd (I : Type) (r : seq I) (P : pred I)
   (s t : I -> {set L}) (v : forall i : I, 'F[H]_(s i, t i)) :
     \ten_(i <- r | P i) '[v i] = '[ (\tenf_(i <- r | P i) (v i))%FND ].
 Proof.
@@ -2155,7 +2155,7 @@ elim/big_rec2: _; first by rewrite bigd/= lindI1.
 by move=>i y1 y2 _; rewrite bigd=>->; rewrite /Fnd_ten lindT.
 Qed.
 
-Lemma tenvm_correct (J : finType) (s : J -> {set L}) 
+Lemma tenvm_correct (J : finType) (s : J -> {set L})
   (v : forall j : J, 'H[H]_(s j)) :
     \ten_j '|v j> = '|tenvm v>.
 Proof. by rewrite - [tenvm v]to_HndK (ketd_Hnd_eq (to_Hnd_tens _)); apply/ketBT_Hnd. Qed.
@@ -2181,7 +2181,7 @@ Reserved Notation "''NSD' ( S )"    (at level 8, format "''NSD' ( S )").
 Reserved Notation "[ 'NSD' 'of' f 'as' g ]" (at level 0, format "[ 'NSD'  'of'  f  'as'  g ]").
 Reserved Notation "[ 'NSD' 'of' f ]"  (at level 0, format "[ 'NSD'  'of'  f ]").
 
-HB.mixin Record isONBDirac (L : finType) (H : L -> chsType) (F : finType) 
+HB.mixin Record isONBDirac (L : finType) (H : L -> chsType) (F : finType)
   (S : {set L}) (f : F -> 'D[H]) := {
   is_ketdirac_base : forall i, ketdirac_axiom S (f i);
   onbd_dot : forall i j, (f i)^A \o (f j) = (i == j)%:R%:D;
@@ -2245,14 +2245,14 @@ Proof. by rewrite /onb2d ketd_adj innerM onb_dot. Qed.
 Lemma onb2d_ket G onb i : ketdirac_axiom S (@onb2d G onb i).
 Proof. apply: is_ketdirac. Qed.
 HB.instance Definition _ (G : finType) (onb : 'ONB[H]_(G;S)) :=
-  isONBDirac.Build L H G S (@onb2d G onb) (@onb2d_ket G onb) 
+  isONBDirac.Build L H G S (@onb2d G onb) (@onb2d_ket G onb)
     (@onb2d_dot G onb) (@onb_card _ _ onb).
 (* Canonical onb2d_qonbasis G onb := ONBDket (@onb2d G onb) (@onb2d_dot G onb) (onb_card onb). *)
 
 Definition d2onb i := d2v S (f i).
 Lemma d2onb_dot i j : [< d2onb i ; d2onb j >] = (i == j)%:R.
 Proof. by apply/(@numd_inj _ H); rewrite /d2onb -innerM -ketd_adj !d2vK onb_innerM. Qed.
-HB.instance Definition _ := 
+HB.instance Definition _ :=
   isONB.Build _ _ d2onb d2onb_dot (@onbd_card _ _ _ _ f).
 
 Lemma sumonb_outerM : \sum_i ((f i) \o (f i)^A) = \1_S.
@@ -2275,14 +2275,14 @@ Qed.
 Lemma onb_vecG (v : 'Ket_S) : (v : 'D) = \sum_i ((f i)^A \· v) \· f i.
 Proof. by rewrite {1}onb_vecM; apply eq_bigr=>i _; rewrite dotd_mul. Qed.
 
-Lemma onb_lfunM (T : {set L}) (e : 'D_(S,T)) : 
+Lemma onb_lfunM (T : {set L}) (e : 'D_(S,T)) :
   (e : 'D) = \sum_i (e \o (f i) \o (f i)^A).
 Proof.
 rewrite -[LHS]muldI -sumonb_outerM linear_sum/=.
 by apply eq_bigr=>i _/=; rewrite muldA.
 Qed.
 
-Lemma onb_lfunM2 (e : 'D_S) : 
+Lemma onb_lfunM2 (e : 'D_S) :
   (e : 'D) = \sum_i \sum_j ((f j)^A \o e \o (f i)) \· ((f j) \o (f i)^A).
 Proof.
 rewrite {1}onb_lfunM; apply eq_bigr=>i _/=.
@@ -2306,7 +2306,7 @@ HB.instance Definition _ i := isNSDirac.Build L H S (f i) is_ketdirac (@onbd_ns 
 
 Lemma ketns_innerM (v : 'NS[H]_S) : '|v>^A \o '|v> = 1%:D.
 Proof. by rewrite ketd_adj innerM ns_dot. Qed.
-HB.instance Definition _ (v : 'NS[H]_S) := isNSDirac.Build L H S 
+HB.instance Definition _ (v : 'NS[H]_S) := isNSDirac.Build L H S
   '|v> is_ketdirac (ketns_innerM v).
 
 End QEONBTheory.
@@ -2317,13 +2317,13 @@ Implicit Type (f g h: 'D[H]) (S T W : {set L}).
 (* all non-diag are 0, all diag psd *)
 
 Definition psdd :=
-  [qualify A : 'D[H] | 
-    [forall S, (A S S \is psdlf) && 
+  [qualify A : 'D[H] |
+    [forall S, (A S S \is psdlf) &&
       [forall T, (S == T) || (A S T == 0)]]].
 Fact psdd_key : pred_key psdd. Proof. by []. Qed.
 Canonical psdd_keyed := KeyedQualifier psdd_key.
 
-Lemma psddP f : reflect ((forall S, (f S S \is psdlf)) /\ 
+Lemma psddP f : reflect ((forall S, (f S S \is psdlf)) /\
   (forall S T : {set L}, S != T -> (f S T == 0))) (f \is psdd).
 Proof.
 apply/(iffP idP); rewrite qualifE.
@@ -2365,9 +2365,9 @@ Qed.
 HB.instance Definition _ := Order.Le_isPOrder.Build ring_display 'D[H]
   led_def_refl led_def_anti led_def_trans.
 
-Lemma ged0P f : reflect ((forall S, ((0 : 'End(_)) ⊑ f S S)) /\ 
+Lemma ged0P f : reflect ((forall S, ((0 : 'End(_)) ⊑ f S S)) /\
   (forall S T : {set L}, S != T -> (f S T == 0))) ((0 : 'D) ⊑ f).
-Proof. 
+Proof.
 apply/(iffP (psddP _)); rewrite subr0=>[[P1 P2]];
 by split=>[|//] S; rewrite ?psdlfE// -psdlfE P1.
 Qed.
@@ -2385,7 +2385,7 @@ Qed.
 HB.instance Definition _ := POrderedLmodule_isVOrder.Build C 'D[H]
   led_add2rP led_pscale2lP.
 
-Lemma ltd_ltf f : (0 : 'D) ⊏ f -> 
+Lemma ltd_ltf f : (0 : 'D) ⊏ f ->
   exists (S : {set L}), (0 : 'End('H_S)) ⊏ f S S.
 Proof.
 rewrite lt_def=>/andP[/eqP+/ged0P[P1 P2]].
@@ -2396,13 +2396,13 @@ move: E=>/eqP->; move: (P3 T) (P1 T)=>/negP/negPf.
 by rewrite le_eqVlt eq_sym orbC=>->/=/eqP.
 Qed.
 
-Lemma pscaled_lge0 f (a : C) : 
+Lemma pscaled_lge0 f (a : C) :
   (0 : 'D) ⊏ f -> (0 : 'D) ⊑ a *: f = (0 <= a).
 Proof.
 move=>P. move: {+}P=>/ltd_ltf[S Ps].
-apply/Coq.Bool.Bool.eq_iff_eq_true; split.
+apply/Stdlib.Bool.Bool.eq_iff_eq_true; split.
 by move=>/ged0P[/(_ S)+ _]; rewrite diracE pscalev_lge0.
-by rewrite le0r=>/orP[/eqP->|P1]; 
+by rewrite le0r=>/orP[/eqP->|P1];
   rewrite ?scale0r ?lexx// pscalev_rge0//; apply/ltW.
 Qed.
 
@@ -2419,19 +2419,19 @@ Local Notation "a '%:E'" := (a : 'D) (at level 2, right associativity, format "a
 Lemma lin_eq0 S T (f : 'F[H]_(S,T)) : ('[ f ] == 0) = (f == 0).
 Proof. by rewrite -(inj_eq (@lind_inj _ _ _ _)) linear0. Qed.
 
-Lemma wf_ge0_eq0 S T (e : 'D[H]_(S,T)) : 
+Lemma wf_ge0_eq0 S T (e : 'D[H]_(S,T)) :
   S != T -> '0 ⊑ e -> e%:E = 0.
 Proof.
 by move=>P /ged0P[_/(_ S T P)]/eqP; rewrite {2}wfdiracE=>->; rewrite linear0.
 Qed.
 
-Lemma wf_gt0_eq0 S T (e : 'D[H]_(S,T)) : 
+Lemma wf_gt0_eq0 S T (e : 'D[H]_(S,T)) :
   S != T -> '0 ⊏ e -> e%:E = 0.
 Proof. move=>+/ltW; exact: wf_ge0_eq0. Qed.
 
 Lemma sqr_gef0 S (e : 'D[H]_S) : '0 ⊑ e = (0%:VF ⊑ e S S).
 Proof.
-apply/Coq.Bool.Bool.eq_iff_eq_true; split; first by move=>/ged0P[/(_ S)].
+apply/Stdlib.Bool.Bool.eq_iff_eq_true; split; first by move=>/ged0P[/(_ S)].
 move=>P; apply/ged0P; split=>[T|T W PT]; rewrite sqrdiracE.
 case E: (S == T); move: E=>/eqP.
 by move=>Q; case: T / Q; rewrite lind_id.
@@ -2458,11 +2458,11 @@ Proof. by rewrite {1}sqrdiracE {1}(sqrdiracE e2) lin_lef. Qed.
 Lemma sqr_ltf S (e1 e2 : 'D[H]_S) : (e1%:E ⊏ e2) = (e1 S S ⊏ e2 S S).
 Proof. by rewrite {1}sqrdiracE {1}(sqrdiracE e2) lin_ltf. Qed.
 
-Lemma tend_id S1 T1 S2 T2 (f : 'D[H]_(S1,T1)) (g : 'D_(S2,T2)) : 
+Lemma tend_id S1 T1 S2 T2 (f : 'D[H]_(S1,T1)) (g : 'D_(S2,T2)) :
   (f \⊗ g) (S1 :|: S2) (T1 :|: T2) = (f S1 T1 \⊗ g S2 T2)%VF.
 Proof. by rewrite {1}wfdiracE  {1}(wfdiracE g) tend_correct lind_id. Qed.
 
-Lemma tend_sqr_id S T (f : 'D[H]_S) (g : 'D_T) : 
+Lemma tend_sqr_id S T (f : 'D[H]_S) (g : 'D_T) :
   (f \⊗ g) (S :|: T) (S :|: T) = (f S S \⊗ g T T)%VF.
 Proof. by rewrite tend_id. Qed.
 
@@ -2472,7 +2472,7 @@ Proof. by rewrite {1}sqrdiracE {1}(sqrdiracE e2) (inj_eq (@lind_inj _ _ _ _)). Q
 Lemma sqr_eqf0 S (e : 'D[H]_S) : (e%:E == 0) = (e S S == 0).
 Proof. by rewrite sqr_eqf/= diracE. Qed.
 
-Ltac simp_sqr := rewrite ?(sqr_lef,sqr_ltf,sqr_eqf0,sqr_eqf)/= 
+Ltac simp_sqr := rewrite ?(sqr_lef,sqr_ltf,sqr_eqf0,sqr_eqf)/=
   ?(tend_sqr_id,lind_id, diracE).
 
 Lemma sqr_gtf0 S (e : 'D[H]_S) : '0 ⊏ e = (0%:VF ⊏ e S S).
@@ -2486,14 +2486,14 @@ Proof. by simp_sqr. Qed.
 
 Definition sqr_cpf0 := (sqr_gef0, sqr_gtf0, sqr_lef0, sqr_ltf0).
 
-Lemma wf_ge0_ge0 S T (e : 'D[H]_(S,T)) : 
+Lemma wf_ge0_ge0 S T (e : 'D[H]_(S,T)) :
   S = T -> '0 ⊑ e = (0%:VF ⊑ e S S).
 Proof.
 move=>P; case: T / P e => e.
 by rewrite (SqrDirac_BuildE (is_wfdirac (s := e))) sqr_gef0.
 Qed.
 
-Lemma wf_gt0_gt0 S T (e : 'D[H]_(S,T)) : 
+Lemma wf_gt0_gt0 S T (e : 'D[H]_(S,T)) :
   S = T -> '0 ⊏ e = (0%:VF ⊏ e S S).
 Proof.
 move=>P; case: T / P e => e.
@@ -2546,9 +2546,9 @@ Lemma ptend_lge0 y x : '0 ⊏ y -> ('0 ⊑ x \⊗ y) = ('0 ⊑ x).
 Proof. by simp_sqr; apply: pbregv_lge0. Qed.
 
 (* bad !! *)
-(* Definition tend_bregVOrderMixin S T dis := 
+(* Definition tend_bregVOrderMixin S T dis :=
     bregVOrderMixin (@tend_eq0 S T dis) (ptend_rge0 dis) (ptend_lge0 dis).
-Canonical tend_bregVOrderType S T dis := 
+Canonical tend_bregVOrderType S T dis :=
   bregVOrderType (@ten_lfun _ _ S S T T) (@tenf_bregVOrderMixin S T dis). *)
 
 Lemma ptend_rgt0 x y : '0 ⊏ x -> ('0 ⊏ x \⊗ y) = ('0 ⊏ y).
@@ -2689,7 +2689,7 @@ Proof. by simp_sqr; apply: bregv_gt0_lt0. Qed.
 Lemma tend_lt0_gt0 x y : x%:E ⊏ 0 -> '0 ⊏ y -> x \⊗ y ⊏ 0.
 Proof. by simp_sqr; apply: bregv_lt0_gt0. Qed.
 
-Lemma tend_le1 x y : '0 ⊑ x -> '0 ⊑ y 
+Lemma tend_le1 x y : '0 ⊑ x -> '0 ⊑ y
   -> x%:E ⊑ \1_S -> y%:E ⊑ \1_T -> x \⊗ y ⊑ \1_(S :|: T).
 Proof. by move=>P1 P2 P3 P4; rewrite -tendII; apply: le_ptend2=>/=. Qed.
 
@@ -2725,7 +2725,7 @@ Proof.
 move=>IH1+IH2; elim: r=>[|a r IH]; first by rewrite big_nil bigd led01.
 rewrite cons_uniq=>/andP[na ur]. rewrite big_cons; case E: (R a).
 rewrite bigdE sqrdiracE [X in _\⊗X]sqrdiracE/= tend_correct lin_gef0.
-apply: bregv_ge0. apply/bigcup_disjoint_seqP=>i/andP[Pi Ri]. 
+apply: bregv_ge0. apply/bigcup_disjoint_seqP=>i/andP[Pi Ri].
 apply: IH1=>//. by apply: (notin_in_neq na).
 1,2: by rewrite -lin_gef0 -sqrdiracE ?IH2//= IH. by apply IH.
 Qed.

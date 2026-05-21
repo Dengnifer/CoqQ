@@ -5,8 +5,8 @@ license: "CeCILL-B"
 authors: ["Coq Quantum Dev. Team"]
 build: [ "dune" "build" "-p" name "-j" jobs ]
 depends: [
-  "coq-core"                 {>= "9.2.0" & < "9.3~"}
-  "rocq-core"                {>= "9.2.0" & < "9.3~"}
+  "coq-core"                 {>= "9.1.1" & < "9.2~"}
+  "rocq-core"                {>= "9.1.1" & < "9.2~"}
   "rocq-elpi"                {>= "3.3.1" & < "3.4~"}
   "dune"                     {>= "3.8"}
   "rocq-hierarchy-builder"   {>= "1.10.2" & < "1.11~"}

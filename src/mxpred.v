@@ -1,11 +1,11 @@
 (* -------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 From mathcomp.fingroup Require Import perm fingroup.
 From mathcomp.algebra Require Import -(notations)sesquilinear.
 From mathcomp.real_closed Require Import mxtens.
-From Coq.Bool Require Import Bool.
+From Stdlib.Bool Require Import Bool.
 Require Import notation mcaextra mcextra spectral.
 
 (* -------------------------------------------------------------------- *)
@@ -78,7 +78,7 @@ Import Order.Theory GRing.Theory Num.Theory Num.Def.
 (*                      vector norm property, over R : numDomainType          *)
 (*                      and T : lmodType                                      *)
 (*                      The HB class is VNorm                                 *)
-(*  porderLmodType R == join of porderType and lmodType (R : ringType)        *)
+(*  porderLmodType R == join of porderType and lmodType (R : nzRingType)        *)
 (*                      The HB class is POrderedLmodule                       *)
 (*      vorderType R == interface type of lmodType (R : numDomainType)        *)
 (*                      equipped with a vector order                          *)
@@ -112,7 +112,7 @@ rewrite big_ord_rev/= exprDn; apply eq_bigr => i _.
 by rewrite subSS subKn ?bin_sub// -1?ltnS// -mulr_natl mulrA.
 Qed.
 
-Lemma combination_lemma1 (k l t : nat) : 
+Lemma combination_lemma1 (k l t : nat) :
   (\sum_(i < t.+1) (k+l) * i * 'C(k,i) * 'C(l, t-i) = k * t * 'C(k+l,t))%N.
 Proof.
 pose f t := (\sum_(i < t.+1) (k + l) * i * 'C(k, i) * 'C(l, t - i))%N.
@@ -132,7 +132,7 @@ by move=>/bin_small->; rewrite ?(muln0,mul0n).
 by move=>/subnKC->; rewrite !mulnA.
 Qed.
 
-Lemma combination_lemma2 (k l t : nat) : 
+Lemma combination_lemma2 (k l t : nat) :
   (\sum_(i < t.+1) ((k+l) * (k-i) * 'C(k,i) * 'C(l, t-i))%N = k * (k+l-t) * 'C(k+l,t))%N.
 Proof.
 case: (ltnP (k+l) t)=>P.
@@ -163,12 +163,12 @@ by move=>i; rewrite prodr_const card_ord.
 under [\prod_ _ _]eq_bigr do rewrite Pi1.
 rewrite sig_big_dep//=.
 have <-: #|{: {i : I & 'I_(a i)}}| = \sum_i a i.
-by rewrite card_tagged sumnE/= big_map big_enum/=; 
+by rewrite card_tagged sumnE/= big_map big_enum/=;
   apply eq_bigr=>i _; rewrite card_ord.
 rewrite mulrC.
 case E: (#|{: {i : I & 'I_(a i)}}| == 0).
 move: E=>/eqP->; rewrite mulr0 sumr_ge0//.
-rewrite -ler_pdivlMr. 
+rewrite -ler_pdivlMr.
 by rewrite ltr0n; move: E; case: (#|{: {i : I & 'I_(a i)}}|).
 by apply leif_rootC_AGM.
 Qed.
@@ -200,22 +200,22 @@ Qed.
 
 Lemma big_ord_triangle_reindex (a b : nat) (F G : nat -> R) :
   (forall i, (a <= i)%N -> F i = 0) -> (forall i, (b <= i)%N ->  G i = 0) ->
-  (\sum_(i < a) F i) * (\sum_(i < b) G i) = 
+  (\sum_(i < a) F i) * (\sum_(i < b) G i) =
     \sum_(i < (a + b).-1) \sum_(j < i.+1) F j * G (i - j)%N.
 Proof.
 case: a=>[|a].
-  move=>Pi _; rewrite big_ord0 mul0r big1//==>j _; 
+  move=>Pi _; rewrite big_ord0 mul0r big1//==>j _;
   rewrite big1// =>i _; by rewrite Pi ?mul0r.
 case: b=>[|b].
-  move=>_ Pi; rewrite big_ord0 mulr0 big1//==>j _; 
+  move=>_ Pi; rewrite big_ord0 mulr0 big1//==>j _;
   rewrite big1// =>i _; by rewrite Pi ?mulr0.
 move=>PF PG.
 rewrite big_distrlr addSn addnS/=.
-have P1 (i : 'I_(a+b).+1) : \sum_(j < i.+1) F j * G (i - j)%N = 
+have P1 (i : 'I_(a+b).+1) : \sum_(j < i.+1) F j * G (i - j)%N =
     \sum_(j < a.+1 | (j <= i <= j+b)%N) F j * G (i - j)%N.
-  apply: (@eq_big_nat_supp i.+1 a.+1 xpredT (fun j => (j <= i <= j+b)%N) 
+  apply: (@eq_big_nat_supp i.+1 a.+1 xpredT (fun j => (j <= i <= j+b)%N)
     (fun j => F j * G (i - j)%N))=>j; rewrite andbT !ltnS.
-  by rewrite !negb_and -leq_subLR -ltnNge=>/andP[]->/=; 
+  by rewrite !negb_and -leq_subLR -ltnNge=>/andP[]->/=;
     rewrite -ltnNge=>/orP[/PF|/PG]->; rewrite ?mul0r ?mulr0.
   by rewrite -leq_subLR andbC=>/andP[]/negPf->; rewrite/= andbF.
 under [RHS]eq_bigr do rewrite P1.
@@ -229,7 +229,7 @@ by symmetry; apply/(leq_trans E); rewrite leq_add2r -ltnS.
 Qed.
 
 Lemma discrete_Minkowski_inequality_2dim (a1 b1 a2 b2 : R) (p : nat) :
-  p.-root ((`|a1| + `|b1|) ^+ p + (`|a2| + `|b2|) ^+ p) <= 
+  p.-root ((`|a1| + `|b1|) ^+ p + (`|a2| + `|b2|) ^+ p) <=
     p.-root (`|a1| ^+ p + `|a2| ^+ p) + p.-root (`|b1| ^+ p + `|b2| ^+ p).
 Proof.
 case: p=>[|p]; first by rewrite root0C addr0.
@@ -239,7 +239,7 @@ rewrite -!mulrA -mulrDr; apply ler_wpM2l=>//.
 rewrite -!rootCX //; auto_ge0; rewrite -rootCMl; auto_ge0.
 rewrite -[X in X <= _](@exprCK _ p.+1)//; auto_ge0.
 rewrite !exprDnr -subSn; first by rewrite -ltnS.
-rewrite [X in _ <= X](@big_ord_triangle_reindex _ _ 
+rewrite [X in _ <= X](@big_ord_triangle_reindex _ _
   (fun i0 => ('C(i, i0))%:R * `|a1| ^+ p.+1 ^+ i0 * `|a2| ^+ p.+1 ^+ (i - i0))
   (fun i0 => ('C(p.+1 - i, i0))%:R * `|b1| ^+ p.+1 ^+ i0 * `|b2| ^+ p.+1 ^+ (p.+1 - i - i0))).
 by move=>j /bin_small->; rewrite !mul0r.
@@ -263,9 +263,9 @@ rewrite !big_split/= !prodrXr.
 (have P (a b : R) : a = b -> a <= b by move=>->); apply P.
 have P1 : (p.+1 = i + (p.+1 - i))%N by rewrite subnKC// -ltnS.
 do ! f_equal.
-by rewrite {3}P1 -[LHS]combination_lemma1 -P1; apply eq_bigr=>j _/=; 
+by rewrite {3}P1 -[LHS]combination_lemma1 -P1; apply eq_bigr=>j _/=;
   rewrite -mulnA [('C(i,j) * _)%N]mulnC mulnA.
-by rewrite {2 4}P1 -[LHS]combination_lemma2 -?P1 -1?ltnS//; apply eq_bigr=>j _; 
+by rewrite {2 4}P1 -[LHS]combination_lemma2 -?P1 -1?ltnS//; apply eq_bigr=>j _;
   rewrite -mulnA [('C(i,j) * _)%N]mulnC mulnA.
 rewrite big_ord_rev {4}P1 addnC -[LHS]combination_lemma1.
 apply eq_bigr=>j _/=.
@@ -281,10 +281,10 @@ rewrite subKn.
 - by rewrite mulnAC.
 Qed.
 
-Lemma discrete_Minkowski_inequality 
+Lemma discrete_Minkowski_inequality
   (I : Type) (r : seq I) (P : pred I) (Fx Fy : I -> R) (p : nat) :
   p.-root (\sum_(i <- r | P i) (`|Fx i + Fy i|) ^+ p) <=
-    p.-root (\sum_(i <- r | P i) (`|Fx i|) ^+ p) + 
+    p.-root (\sum_(i <- r | P i) (`|Fx i|) ^+ p) +
     p.-root (\sum_(i <- r | P i) (`|Fy i|) ^+ p).
 Proof.
 case: p=>[|p]; first by rewrite root0C addr0.
@@ -305,11 +305,11 @@ all: by rewrite norm_rootC rootCK// ger0_norm//; auto_ge0.
 Qed.
 
 Lemma Cauchy_Schwarz_C I (r: seq I) (P: pred I) (X Y : I -> R) :
-  (\sum_(i <- r | P i) `|X i|^+2) * (\sum_(i <- r | P i) `|Y i|^+2) 
+  (\sum_(i <- r | P i) `|X i|^+2) * (\sum_(i <- r | P i) `|Y i|^+2)
     >= `| \sum_(i <- r | P i) X i * Y i|^+2.
 Proof.
 move: (discrete_Minkowski_inequality r P (fun i => `|X i|) (fun i => `|Y i|) 2).
-have ->: \sum_(i <- r | P i) `| `|X i| + `|Y i| | ^+ 2 = 
+have ->: \sum_(i <- r | P i) `| `|X i| + `|Y i| | ^+ 2 =
   \sum_(i <- r | P i) (`|X i| ^+ 2 + 2%R * (`|X i| * `|Y i|) + `|Y i| ^+ 2).
 by apply eq_bigr=>i _; rewrite mulr_natl -sqrrD ger0_norm; auto_ge0.
 under [in X in _ <= X + _]eq_bigr do rewrite normrE.
@@ -337,7 +337,7 @@ End inequality.
 (* definition of qualifiers *)
 
 Section TrivialMatrix.
-Variable (R: ringType).
+Variable (R: nzRingType).
 
 Lemma mx_dim0n p : all_equal_to (0 : 'M[R]_(0,p)).
 Proof. by move=>x/=; apply/matrixP=>i j; destruct i. Qed.
@@ -354,8 +354,8 @@ Definition mx_dim0 := (mx_dim0n,mx_dimn0,mxf_dim0n,mxf_dimn0). *)
 
 End TrivialMatrix.
 
-Lemma big_card0 (T : Type) (idx : T) (op : T -> T -> T) (I : finType) 
-  (r: seq I) (P : pred I) 
+Lemma big_card0 (T : Type) (idx : T) (op : T -> T -> T) (I : finType)
+  (r: seq I) (P : pred I)
   (F: I -> T): #|I| = 0%N ->
   \big[op/idx]_(i <- r | P i) F i = idx.
 Proof.
@@ -386,26 +386,26 @@ Arguments big_card1 [T idx op I] i0 [F].
 Lemma row_idem R m n (M : 'M[R]_(m,n)) i : row 0 (row i M) = row i M.
 Proof. by apply/matrixP=>j k; rewrite !mxE. Qed.
 
-Lemma linear_tensmx (R: comRingType) m n p q M : linear (@tensmx R m n p q M).
+Lemma linear_tensmx (R: comNzRingType) m n p q M : linear (@tensmx R m n p q M).
 Proof.
-move=>c A B/=; apply/matrixP=>i j; 
+move=>c A B/=; apply/matrixP=>i j;
 by rewrite !mxE mulrDr mulrA [_ * c]mulrC mulrA.
 Qed.
 
-Lemma linear_tensmxr (R: comRingType) m n p q M : linear ((@tensmx R m n p q)^~ M).
+Lemma linear_tensmxr (R: comNzRingType) m n p q M : linear ((@tensmx R m n p q)^~ M).
 Proof. move=>c A B/=; apply/matrixP=>i j; by rewrite !mxE mulrDl mulrA. Qed.
 
-HB.instance Definition _ (R: comRingType) m n p q := bilinear_isBilinear.Build 
-  R 'M[R]_(m,n) 'M[R]_(p,q) 'M[R]_(m * p, n * q) *:%R *:%R 
+HB.instance Definition _ (R: comNzRingType) m n p q := bilinear_isBilinear.Build
+  R 'M[R]_(m,n) 'M[R]_(p,q) 'M[R]_(m * p, n * q) *:%R *:%R
   (@tensmx R m n p q) (@linear_tensmxr R m n p q, @linear_tensmx R m n p q).
 
 Section ConjAdjmx.
 Variable (R : numClosedFieldType) (m n : nat).
 
-Definition conjmx (M : 'M[R]_(m,n)) := 
+Definition conjmx (M : 'M[R]_(m,n)) :=
     (map_mx conjC M).
 
-Definition adjmx (M : 'M[R]_(m,n)) := 
+Definition adjmx (M : 'M[R]_(m,n)) :=
     (map_mx conjC (M ^T)).
 
 Lemma conjmxE M : conjmx M = (map_mx conjC M).
@@ -429,7 +429,7 @@ Variable (R : numClosedFieldType).
 
 Lemma conjmx_is_antilinear {m n} :
   linear_for (conjC \; *:%R) (@conjmx R m n).
-Proof. 
+Proof.
 move=>a A B. apply/matrixP=>i j.
 by rewrite !mxE raddfD/= rmorphM.
 Qed.
@@ -438,15 +438,15 @@ HB.instance Definition _ m n :=
   GRing.isLinear.Build R 'M_(m, n) 'M_(m, n)
     (conjC \; *:%R) (@conjmx R m n) (@conjmx_is_antilinear m n).
 
-Lemma conjmx_is_multiplicative {m } : multiplicative (@conjmx R m.+1 m.+1).
+Lemma conjmx_is_multiplicative {m } : monoid_morphism (@conjmx R m.+1 m.+1).
 Proof. split.
+- by apply/matrixP=> i j; rewrite !mxE conjC_nat.
 - move=> A B; apply/matrixP=> i j; rewrite !mxE rmorph_sum.
   by apply: eq_bigr=> /= k _; rewrite rmorphM /= !mxE.
-- by apply/matrixP=> i j; rewrite !mxE conjC_nat.
 Qed.
 
 HB.instance Definition _ m :=
-  GRing.isMultiplicative.Build 'M_m.+2 'M_m.+2
+  GRing.isMonoidMorphism.Build 'M_m.+2 'M_m.+2
     (@conjmx R m.+2 m.+2) (@conjmx_is_multiplicative m.+1).
 
 Lemma conjmxD {m n} (A B: 'M[R]_(m, n)) : (A + B)^*m = A^*m + B^*m.
@@ -455,7 +455,7 @@ Proof. exact: linearD. Qed.
 Lemma conjmxZ {m n} (c : R) (A : 'M[R]_(m, n)) : (c *: A)^*m = c^* *: A^*m.
 Proof. exact: linearZ. Qed.
 
-Lemma conjmxP {m n} (c: R) (A B: 'M[R]_(m, n)) : 
+Lemma conjmxP {m n} (c: R) (A B: 'M[R]_(m, n)) :
   (c *: A + B)^*m = c^* *: A^*m + B^*m.
 Proof. exact: linearP. Qed.
 
@@ -510,7 +510,7 @@ Proof. exact: linearD. Qed.
 Lemma adjmxZ {m n} (c: R) (A : 'M[R]_(m, n)) : (c *: A)^*t = c^* *: A^*t.
 Proof. exact: linearZ. Qed.
 
-Lemma adjmxP {m n} (c: R) (A B: 'M[R]_(m, n)) : 
+Lemma adjmxP {m n} (c: R) (A B: 'M[R]_(m, n)) :
   (c *: A + B)^*t = c^* *: A^*t + B^*t.
 Proof. exact: linearP. Qed.
 
@@ -536,11 +536,11 @@ Proof. by apply/matrixP=>i j; rewrite !mxE rmorphMn eq_sym. Qed.
 Lemma adjmx1 m : (1%:M : 'M[R]_m)^*t = 1%:M.
 Proof. by rewrite adjmx_scale conjC1. Qed.
 
-Lemma conjmx_delta m n (i : 'I_m) (j : 'I_n) : 
+Lemma conjmx_delta m n (i : 'I_m) (j : 'I_n) :
   (@delta_mx R _ _ i j)^*m = delta_mx i j.
 Proof. by apply/matrixP=>a b; rewrite !mxE conjC_nat. Qed.
 
-Lemma adjmx_delta m n (i : 'I_m) (j : 'I_n) : 
+Lemma adjmx_delta m n (i : 'I_m) (j : 'I_n) :
   (@delta_mx R _ _ i j)^*t = delta_mx j i.
 Proof. by apply/matrixP=>a b; rewrite !mxE conjC_nat andbC. Qed.
 
@@ -587,7 +587,7 @@ Proof. by rewrite adjmxE tr_row map_col. Qed.
 
 Lemma adj_col {m n : nat} (M : 'M[R]_(m, n)) i :
   (col i M)^*t = row i M^*t.
-Proof. by rewrite adjmxE tr_col map_row. Qed. 
+Proof. by rewrite adjmxE tr_col map_row. Qed.
 
 Lemma adj_row' {m n : nat} (M : 'M[R]_(m, n)) i :
   (row' i M)^*t = col' i M^*t.
@@ -595,7 +595,7 @@ Proof. by rewrite adjmxE tr_row' map_col'. Qed.
 
 Lemma adj_col' {m n : nat} (M : 'M[R]_(m, n)) i :
   (col' i M)^*t = row' i M^*t.
-Proof. by rewrite adjmxE tr_col' map_row'. Qed. 
+Proof. by rewrite adjmxE tr_col' map_row'. Qed.
 
 Lemma adjmx_col'' [m n] j (A : 'M[R]_(m,n.-1)) v :
   (col'' j A v)^*t = row'' j A^*t v^*t.
@@ -633,10 +633,10 @@ Proof. by rewrite conjmxE map_mxT. Qed.
 
 End ConjAdjmxTheory.
 
-(* 1 * 1 <-> 1 is convertable, but might cause 
+(* 1 * 1 <-> 1 is convertable, but might cause
   difficulty when use it for dependent variables *)
 Section tens_coerce.
-Variable (R : ringType).
+Variable (R : nzRingType).
 
 Lemma tensrvrvE m n (A : 'rV[R]_m) (B : 'rV[R]_n) :
   A *t B = castmx (mul1n 1, erefl) (A *t B) :> 'M_(1,_).
@@ -659,7 +659,7 @@ Qed.
 
 End tens_coerce.
 
-Lemma mxtrace_tens (C : ringType) m n (M :'M[C]_m) (N : 'M_n) :
+Lemma mxtrace_tens (C : nzRingType) m n (M :'M[C]_m) (N : 'M_n) :
   \tr (M *t N) = \tr M * \tr N.
 Proof.
 rewrite /mxtrace mulr_suml; symmetry.
@@ -725,14 +725,14 @@ Arguments mxtens_index_pairV [R idx op m n] f.
 Arguments mxtens_index_distr [R idx times plus m n] Fm Fn.
 
 Section mxtens_swap.
-Variable (R : ringType).
+Variable (R : nzRingType).
 
 Lemma tr_tens m n (A : 'M[R]_(m * n, m * n)) :
   \tr A = \sum_i\sum_j A (mxtens_index (i, j)) (mxtens_index (i, j)).
 Proof. by rewrite /mxtrace mxtens_index_pairV. Qed.
 
 Lemma matrix_tenP m n p q (A B : 'M[R]_(m * p, n * q)) :
-  (forall i j k l, A (mxtens_index (i, j)) (mxtens_index (k, l)) 
+  (forall i j k l, A (mxtens_index (i, j)) (mxtens_index (k, l))
     = B (mxtens_index (i, j)) (mxtens_index (k, l))) -> A = B.
 Proof.
 move=>P; apply/matrixP=>i j.
@@ -752,7 +752,7 @@ Qed.
 Lemma mxswap_is_linear m n p q : linear (@mxswap m n p q).
 Proof. by move=>a x y; apply/matrixP=>i j; rewrite !mxE. Qed.
 
-HB.instance Definition _ m n p q := GRing.isLinear.Build R 
+HB.instance Definition _ m n p q := GRing.isLinear.Build R
   'M[R]_(m * p, n * q) 'M[R]_(p * m, q * n) *:%R (@mxswap m n p q)
   (@mxswap_is_linear m n p q).
 
@@ -850,7 +850,7 @@ Definition ptrace1 m n (A : 'M[R]_(m * n)) :=
 Lemma tensmxE_mid m n p q (A : 'M[R]_(m,p*q)) (B: 'M_(p*q,n)) i j :
   (A *m B) i j = \sum_i1 \sum_i2 A i (mxtens_index (i1,i2)) * B (mxtens_index (i1,i2)) j.
 Proof.
-by rewrite mxE pair_big; apply/reindex; exists (@mxtens_unindex _ _)=> k; 
+by rewrite mxE pair_big; apply/reindex; exists (@mxtens_unindex _ _)=> k;
 rewrite (mxtens_indexK, mxtens_unindexK) -?surjective_pairing.
 Qed.
 
@@ -860,7 +860,7 @@ Lemma tens_delta_mx1_mulEl m n s t (A : 'M[R]_(m * n, s)) (i : 'I_t) j k p q :
 Proof.
 rewrite mxE (bigD1 (mxtens_index (j, p)))//= big1/=.
 move=>x; case: (mxtens_indexP x)=>i1 i2.
-  by rewrite (can_eq (@mxtens_indexK _ _))/eq_op/= negb_and tensmxE 
+  by rewrite (can_eq (@mxtens_indexK _ _))/eq_op/= negb_and tensmxE
     !mxE [p == i2]eq_sym=>/orP[]/negPf->; rewrite ?andbF ?(mul0r, mulr0).
 by rewrite tensmxE mxE mxE !eqxx eq_sym andbT mulr1 addr0.
 Qed.
@@ -877,9 +877,9 @@ rewrite tensmxE mxE mxE !eqxx eq_sym addr0/= mulr1.
 by case: eqP=> _; rewrite ?mulr1 ?mul1r ?mul0r ?mulr0.
 Qed.
 
-Lemma tensmx11 m n : 
+Lemma tensmx11 m n :
   (1%:M : 'M[R]_m) *t (1%:M : 'M[R]_n) = 1%:M.
-Proof.   
+Proof.
 apply/matrixP=>i j; case: (mxtens_indexP i)=>i1 i2; case: (mxtens_indexP j)=>j1 j2.
 rewrite mxE !mxtens_indexK/= !mxE (can_eq (@mxtens_indexK _ _)) -pair_eqE/=;
 by do ! case: eqP; rewrite ?mulr0 ?mulr1.
@@ -896,7 +896,7 @@ Lemma mxswap_conj (R: numClosedFieldType) m n p q (A : 'M[R]_(m * p, n * q)) :
 Proof. by apply/matrix_tenP=>i j k l; rewrite !mxE. Qed.
 
 Section MxtensPTrace.
-Variable (R : comRingType).
+Variable (R : comNzRingType).
 Local Open Scope lfun_scope.
 
 Lemma mxswap_tens m n p q (A : 'M[R]_(m,n)) (B : 'M[R]_(p,q)) :
@@ -919,7 +919,7 @@ Proof. by rewrite ptrace2E1 mxswapK. Qed.
 Lemma ptrace2_is_linear m n : linear (@ptrace2 R m n).
 Proof.
 move=>c A B; rewrite /ptrace2 -linearP/= scaler_sumr -big_split/=; f_equal.
-apply eq_bigr=>i _; rewrite mulmxDr mulmxDl. 
+apply eq_bigr=>i _; rewrite mulmxDr mulmxDl.
 congr (_ + _); by rewrite scalemxAl scalemxAr.
 Qed.
 
@@ -947,7 +947,7 @@ Qed.
 Lemma tr_ptrace1 m n (A: 'M[R]_(m*n)) : \tr A = \tr (ptrace1 A).
 Proof. by rewrite ptrace1E2 -tr_ptrace2 mxswap_trace. Qed.
 
-Lemma ptrace1_mulmxI m n (A: 'M[R]_(m*n)) B : 
+Lemma ptrace1_mulmxI m n (A: 'M[R]_(m*n)) B :
   ptrace1 (A *m (1%:M *t B)) = ptrace1 A *m B.
 Proof.
 rewrite/ptrace1 {2}[B]tens_mx_cast1lE castmx_mul; f_equal.
@@ -955,7 +955,7 @@ rewrite linear_sumlz; apply eq_bigr => i _.
 by rewrite/= -!mulmxA !tensmx_mul !mulmx1 !mul1mx.
 Qed.
 
-Lemma ptrace1_mulImx m n (A: 'M[R]_(m*n)) B : 
+Lemma ptrace1_mulImx m n (A: 'M[R]_(m*n)) B :
   ptrace1 ((1%:M *t B) *m A) = B *m ptrace1 A.
 Proof.
 rewrite/ptrace1 {2}[B]tens_mx_cast1lE castmx_mul; f_equal.
@@ -963,11 +963,11 @@ rewrite linear_sumr; apply eq_bigr => i _.
 by rewrite/= !mulmxA !tensmx_mul !mulmx1 !mul1mx.
 Qed.
 
-Lemma ptrace2_mulmxI m n (A: 'M[R]_(m*n)) B : 
+Lemma ptrace2_mulmxI m n (A: 'M[R]_(m*n)) B :
   ptrace2 (A *m (B *t 1%:M)) = ptrace2 A *m B.
 Proof. by rewrite ptrace2E1 -mxswap_mul mxswap_tens ptrace1_mulmxI -ptrace2E1. Qed.
 
-Lemma ptrace2_mulImx m n (A: 'M[R]_(m*n)) B : 
+Lemma ptrace2_mulImx m n (A: 'M[R]_(m*n)) B :
   ptrace2 ((B *t 1%:M) *m A) = B *m ptrace2 A.
 Proof. by rewrite ptrace2E1 -mxswap_mul mxswap_tens ptrace1_mulImx -ptrace2E1. Qed.
 
@@ -976,11 +976,11 @@ End MxtensPTrace.
 Section MxCast.
 Variable (R: numClosedFieldType).
 
-Lemma adjmx_castV m n m' n' (eqS: (n = n') * (m = m')) 
+Lemma adjmx_castV m n m' n' (eqS: (n = n') * (m = m'))
 (A: 'M[R]_(m,n)) : castmx eqS (A^*t) = (castmx (eqS.2,eqS.1) A)^*t.
 Proof. by rewrite castmx_funE. Qed.
 
-Lemma trmx_castV m n m' n' (eqS: (n = n') * (m = m')) 
+Lemma trmx_castV m n m' n' (eqS: (n = n') * (m = m'))
 (A: 'M[R]_(m,n)) : castmx eqS (A^T) = (castmx (eqS.2,eqS.1) A)^T.
 Proof. by rewrite castmx_funE. Qed.
 
@@ -1043,7 +1043,7 @@ Section PredMxTens.
 Variable (R : numDomainType) (m n p q : nat).
 Implicit Type (A : 'M[R]_(m,n)) (B : 'M[R]_(p,q)).
 
-Lemma realmx_tens A B : 
+Lemma realmx_tens A B :
   A \is a realmx -> B \is a realmx -> A *t B \is a realmx.
 Proof.
 move=>/realmxP PA /realmxP PB.
@@ -1052,7 +1052,7 @@ case: (mxtens_indexP i)=>i0 i1; case: (mxtens_indexP j)=>j0 j1.
 by rewrite tensmxE realM.
 Qed.
 
-Lemma posmx_tens A B : 
+Lemma posmx_tens A B :
   A \is a posmx -> B \is a posmx -> A *t B \is a posmx.
 Proof.
 move=>/posmxP PA /posmxP PB.
@@ -1061,7 +1061,7 @@ case: (mxtens_indexP i)=>i0 i1; case: (mxtens_indexP j)=>j0 j1.
 by rewrite tensmxE posrE mulr_gt0// -posrE.
 Qed.
 
-Lemma nnegmx_tens A B : 
+Lemma nnegmx_tens A B :
   A \is a nnegmx -> B \is a nnegmx -> A *t B \is a nnegmx.
 Proof.
 move=>/nnegmxP PA /nnegmxP PB.
@@ -1070,7 +1070,7 @@ case: (mxtens_indexP i)=>i0 i1; case: (mxtens_indexP j)=>j0 j1.
 by rewrite tensmxE nnegrE mulr_ge0// -nnegrE.
 Qed.
 
-Lemma uintmx_tens A B : 
+Lemma uintmx_tens A B :
   A \is a uintmx -> B \is a uintmx -> A *t B \is a uintmx.
 Proof.
 move=>/uintmxP PA /uintmxP PB.
@@ -1080,7 +1080,7 @@ rewrite tensmxE mulr_ge0/= ?mulr_ile1//;
 by move: (PA i0 j0) (PB i1 j1)=>/andP[] + + /andP[].
 Qed.
 
-Lemma boolmx_tens A B : 
+Lemma boolmx_tens A B :
   A \is a boolmx -> B \is a boolmx -> A *t B \is a boolmx.
 Proof.
 move=>/boolmxP PA /boolmxP PB.
@@ -1096,7 +1096,7 @@ Section rank_extra.
 Variable (C : numClosedFieldType).
 
 (* normalmx unitarymx unitmx already exists *)
-Lemma unitarymxPV m (A : 'M[C]_m) : 
+Lemma unitarymxPV m (A : 'M[C]_m) :
   reflect (A ^*t *m A = 1%:M) (A \is unitarymx).
 Proof. rewrite -{2}(adjmxK A) adjmxE -trmxC_unitary; apply: unitarymxP. Qed.
 
@@ -1120,16 +1120,16 @@ Lemma adjmx_unitaryP m (U : 'M[C]_m) :
   U \is unitarymx -> U^*t \is unitarymx.
 Proof. by rewrite adjmx_unitary. Qed.
 
-Lemma mulUmx m n (U : 'M[C]_m) (A B : 'M[C]_(m,n)) : 
+Lemma mulUmx m n (U : 'M[C]_m) (A B : 'M[C]_(m,n)) :
   U \is unitarymx -> U *m A = B <-> A = U ^*t *m B.
 Proof.
 move=>P; move: P {+}P=>/unitarymxP P1 /unitarymxPV P2.
 by split=>[ <-|->]; rewrite mulmxA ?P1 ?P2 mul1mx.
 Qed.
 
-Lemma mulUCmx m n (U : 'M[C]_m) (A B : 'M[C]_(m,n)) : 
+Lemma mulUCmx m n (U : 'M[C]_m) (A B : 'M[C]_(m,n)) :
   U \is unitarymx -> U ^*t *m A = B <-> A = U *m B.
-Proof. 
+Proof.
 move=>P; move: P {+}P=>/unitarymxP P1 /unitarymxPV P2.
 by split=>[ <-|->]; rewrite mulmxA ?P1 ?P2 mul1mx.
 Qed.
@@ -1178,7 +1178,7 @@ Proof. by move=>P; rewrite mxrank_mulmxU// trmxC_unitary. Qed.
 Lemma mxrank_mulUCmx m n r (U : 'M[C]_(m,r)) (A : 'M[C]_(m,n)) :
   U \is unitarymx -> \rank (U^*t *m A) = \rank A.
 Proof.
-by move=>PU; rewrite -mxrank_tr -mxrank_conj -adjmxTC 
+by move=>PU; rewrite -mxrank_tr -mxrank_conj -adjmxTC
   adjmxM adjmxK mxrank_mulmxU// mxrank_adj.
 Qed.
 
@@ -1209,7 +1209,7 @@ Proof.
 move=>/row_unitarymxP PU /row_unitarymxP PV.
 apply/row_unitarymxP=>i j.
 case: (split_ordP i)=>i1 ->; case: (split_ordP j)=>j1 ->;
-by rewrite /block_mx ?rowKu ?rowKd !row_row_mx !dotmx_row_mx ?row0 
+by rewrite /block_mx ?rowKu ?rowKd !row_row_mx !dotmx_row_mx ?row0
   ?linear0l ?linear0r ?addr0 ?add0r ?eq_lrshift// ?eq_rlshift// ?eq_rshift//.
 Qed.
 
@@ -1239,7 +1239,7 @@ Proof. apply/unitarymx_unit/eigen_unitarymx. Qed.
 Lemma eigen_dec A :
   let P := eigenmx A in let sp := spectral_diag A in
     reflect (A = P *m diag_mx sp *m P ^*t) (A \is normalmx).
-Proof. 
+Proof.
 rewrite/= /eigenmx adjmxK adjmxE; apply (iffP idP);
   move/invmx_unitary: (spectral_unitarymx A)=><-.
 apply/orthomx_spectralP. by move/orthomx_spectralP.
@@ -1250,7 +1250,7 @@ Lemma eigen_sum A :
     (A \is normalmx).
 Proof.
 apply/(iffP (eigen_dec A))=>{1}->; [symmetry|]; apply/matrixP=>i j.
-all: rewrite mul_mx_diag mulmx_rowcol mxE summxE; apply eq_bigr=>k _; 
+all: rewrite mul_mx_diag mulmx_rowcol mxE summxE; apply eq_bigr=>k _;
   by rewrite !mxE big_ord1 !mxE mulrA [eigenval _ _ * _]mulrC.
 Qed.
 
@@ -1264,21 +1264,21 @@ Qed.
 
 End EigenDecomposition.
 
-#[global] Hint Extern 0 (is_true (spectralmx _ \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true (spectralmx _ \is unitarymx)) =>
   (apply/spectral_unitarymx) : core.
-#[global] Hint Extern 0 (is_true ((spectralmx _)^*t \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true ((spectralmx _)^*t \is unitarymx)) =>
   (apply/adjmx_unitaryP/spectral_unitarymx) : core.
-#[global] Hint Extern 0 (is_true ((spectralmx _)^*m \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true ((spectralmx _)^*m \is unitarymx)) =>
   (apply/conjmx_unitaryP/spectral_unitarymx) : core.
-#[global] Hint Extern 0 (is_true ((spectralmx _)^T \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true ((spectralmx _)^T \is unitarymx)) =>
   (apply/trmx_unitaryP/spectral_unitarymx) : core.
-#[global] Hint Extern 0 (is_true (eigenmx _ \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true (eigenmx _ \is unitarymx)) =>
   (apply/eigen_unitarymx) : core.
-#[global] Hint Extern 0 (is_true ((eigenmx _)^*t \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true ((eigenmx _)^*t \is unitarymx)) =>
   (apply/adjmx_unitaryP/eigen_unitarymx) : core.
-#[global] Hint Extern 0 (is_true ((eigenmx _)^*m \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true ((eigenmx _)^*m \is unitarymx)) =>
   (apply/conjmx_unitaryP/eigen_unitarymx) : core.
-#[global] Hint Extern 0 (is_true ((eigenmx _)^T \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true ((eigenmx _)^T \is unitarymx)) =>
   (apply/trmx_unitaryP/eigen_unitarymx) : core.
 
 (* -------------------------------------------------------------------- *)
@@ -1292,7 +1292,7 @@ Canonical hermmx_keyed := KeyedQualifier hermmx_key.
 
 Lemma hermmxP (A : 'M[R]_n) :
   reflect (A = A^*t) (A \is hermmx).
-Proof. 
+Proof.
 apply (iffP (sesquiP _ _ A)); by rewrite expr0 scale1r.
 Qed.
 
@@ -1302,11 +1302,11 @@ Canonical symmx_keyed := KeyedQualifier symmx_key.
 
 Lemma symmxP (A : 'M[R]_n) :
   reflect (A = A^T) (A \is symmx).
-Proof. 
+Proof.
 by apply (iffP (sesquiP _ _ A)); rewrite expr0 scale1r map_mx_id.
 Qed.
 
-Definition diagmx := 
+Definition diagmx :=
     [qualify A : 'M[R]_n | is_diag_mx A].
 Fact diagmx_key : pred_key diagmx. Proof. by []. Qed.
 Canonical diagmx_keyed := KeyedQualifier diagmx_key.
@@ -1320,7 +1320,7 @@ Definition psdmx :=
 Fact psdmx_key : pred_key psdmx. Proof. by []. Qed.
 Canonical psdmx_keyed := KeyedQualifier psdmx_key.
 
-Lemma psdmxP (A : 'M[R]_n) : 
+Lemma psdmxP (A : 'M[R]_n) :
   reflect ((A \is hermsymmx) /\ ((spectral_diag A) \is a nnegmx)) (A \is psdmx).
 Proof. by apply (iffP andP). Qed.
 
@@ -1329,7 +1329,7 @@ Definition pdmx :=
 Fact pdmx_key : pred_key pdmx. Proof. by []. Qed.
 Canonical pdmx_keyed := KeyedQualifier pdmx_key.
 
-Lemma pdmxP (A : 'M[R]_n) : 
+Lemma pdmxP (A : 'M[R]_n) :
   reflect ((A \is hermmx) /\ ((spectral_diag A) \is a posmx)) (A \is pdmx).
 Proof. by apply (iffP andP). Qed.
 
@@ -1338,7 +1338,7 @@ Definition denmx :=
 Fact denmx_key : pred_key denmx. Proof. by []. Qed.
 Canonical denmx_keyed := KeyedQualifier denmx_key.
 
-Lemma denmxP (A : 'M[R]_n) : 
+Lemma denmxP (A : 'M[R]_n) :
   reflect ((A \is psdmx) /\ (\tr A <= 1)) (A \is denmx).
 Proof. by apply (iffP andP). Qed.
 
@@ -1347,7 +1347,7 @@ Definition den1mx :=
 Fact den1mx_key : pred_key den1mx. Proof. by []. Qed.
 Canonical den1mx_keyed := KeyedQualifier den1mx_key.
 
-Lemma den1mxP (A : 'M[R]_n) : 
+Lemma den1mxP (A : 'M[R]_n) :
   reflect ((A \is psdmx) /\ (\tr A == 1)) (A \is den1mx).
 Proof. by apply (iffP andP). Qed.
 
@@ -1356,7 +1356,7 @@ Definition obsmx :=
 Fact obsmx_key : pred_key obsmx. Proof. by []. Qed.
 Canonical obsmx_keyed := KeyedQualifier obsmx_key.
 
-Lemma obsmxP (A : 'M[R]_n) : 
+Lemma obsmxP (A : 'M[R]_n) :
   reflect ((A \is hermmx) /\ ((spectral_diag A) \is a uintmx)) (A \is obsmx).
 Proof. by apply (iffP andP). Qed.
 
@@ -1365,7 +1365,7 @@ Definition projmx :=
 Fact projmx_key : pred_key projmx. Proof. by []. Qed.
 Canonical projmx_keyed := KeyedQualifier projmx_key.
 
-Lemma projmxP (A : 'M[R]_n) : 
+Lemma projmxP (A : 'M[R]_n) :
   reflect ((A \is hermmx) /\ ((spectral_diag A) \is a boolmx)) (A \is projmx).
 Proof. by apply (iffP andP). Qed.
 
@@ -1374,7 +1374,7 @@ Definition proj1mx :=
 Fact proj1mx_key : pred_key proj1mx. Proof. by []. Qed.
 Canonical proj1mx_keyed := KeyedQualifier proj1mx_key.
 
-Lemma proj1mxP (A : 'M[R]_n) : 
+Lemma proj1mxP (A : 'M[R]_n) :
   reflect ((A \is projmx) /\ (\rank A == 1%N)) (A \is proj1mx).
 Proof. by apply (iffP andP). Qed.
 
@@ -1462,9 +1462,9 @@ Proof. split=> /=.
   - by apply/realmxP/realmx_real_adj/realmxP.
 Qed.
 
-HB.instance Definition _ := GRing.isMulClosed.Build 
+HB.instance Definition _ := GRing.isMulClosed.Build
   ('M[R]_(m.+1, m.+1)) (@realmx R m.+1 m.+1) realmx_divring_closed.
-HB.instance Definition _ := GRing.isInvClosed.Build 
+HB.instance Definition _ := GRing.isInvClosed.Build
   ('M[R]_(m.+1, m.+1)) (@realmx R m.+1 m.+1) realmx_divring_closed.
 
 End RealMxDivRingClosed.
@@ -1477,13 +1477,13 @@ Context {R : numDomainType} (m n : nat).
 Implicit Type (M : 'M[R]_(m,n)).
 
 Lemma nnegmx_real M : M \is a nnegmx -> M \is a realmx.
-Proof. 
-move/nnegmxP=>P; apply/realmxP=>i j; rewrite realE. 
+Proof.
+move/nnegmxP=>P; apply/realmxP=>i j; rewrite realE.
 by move: (P i j); rewrite nnegrE=>->.
 Qed.
 
 Lemma posmx_nneg M : M \is a posmx -> M \is a nnegmx.
-Proof. 
+Proof.
 move/posmxP=>P; apply/nnegmxP=>i j; rewrite nnegrE.
 by move: (P i j); rewrite posrE le0r=>->; rewrite orbT.
 Qed.
@@ -1541,7 +1541,7 @@ Qed.
 
 Lemma diagmx_mulC M N : M \is diagmx -> N \is diagmx -> M *m N = N *m M.
 Proof.
-move=>/diagmxP P /diagmxP Q; apply/matrixP=>i j. 
+move=>/diagmxP P /diagmxP Q; apply/matrixP=>i j.
 rewrite !mxE (bigD1 i)// big1/=; last rewrite (bigD1 i)// big1/=.
 1, 2: move=> k nki. rewrite P. 3: rewrite Q.
 1,2,3,4: by rewrite 1 ?eq_sym 1 ?mul0r.
@@ -1562,38 +1562,38 @@ Lemma psdmx_herm M : M \is psdmx -> M \is hermmx.
 Proof. by move/psdmxP=>[->]. Qed.
 
 Lemma pdmx_psdmx M : M \is pdmx -> M \is psdmx.
-Proof. 
+Proof.
 by move/pdmxP=>[P1 P2]; apply/psdmxP;
-  split=>//; apply posmx_nneg. 
+  split=>//; apply posmx_nneg.
 Qed.
 
 Lemma obsmx_psd M : M \is obsmx -> M \is psdmx.
-Proof. 
-by move/obsmxP=>[P1 P2]; apply/psdmxP; 
+Proof.
+by move/obsmxP=>[P1 P2]; apply/psdmxP;
   split=>//; apply uintmx_nneg.
 Qed.
 
 Lemma projmx_obs M : M \is projmx -> M \is obsmx.
-Proof. 
-by move/projmxP=>[P1 P2]; apply/obsmxP; 
+Proof.
+by move/projmxP=>[P1 P2]; apply/obsmxP;
   split=>//; apply boolmx_uint.
 Qed.
 
 Lemma proj1mx_proj M : M \is proj1mx -> M \is projmx.
 Proof. by move/proj1mxP=>[->]. Qed.
 
-Lemma trace_spectral_diag n (M: 'M[R]_n) : 
+Lemma trace_spectral_diag n (M: 'M[R]_n) :
   M \is normalmx -> \tr M = \tr (diag_mx (spectral_diag M)).
 Proof. by move/eigen_dec=>{1}->; rewrite -mulmxA mxtrace_mulC mulmxKtV. Qed.
 
-Lemma diag_mx_real n (M: 'rV[R]_n) : 
+Lemma diag_mx_real n (M: 'rV[R]_n) :
   M \is a realmx -> diag_mx M \is a realmx.
 Proof.
 move/realmxP=>P; apply/realmxP=>i j; rewrite mxE.
 case: (i == j); by [rewrite mulr1n P | rewrite mulr0n real0].
 Qed.
 
-Lemma diag_mx_nneg n (M: 'rV[R]_n) : 
+Lemma diag_mx_nneg n (M: 'rV[R]_n) :
   M \is a nnegmx -> diag_mx M \is a nnegmx.
 Proof.
 move/nnegmxP=>P; apply/nnegmxP=>i j; rewrite mxE.
@@ -1620,8 +1620,8 @@ by rewrite mul0r -nnegrE; apply/nnegmxP.
 Qed.
 
 Lemma den1mx_den M : M \is den1mx -> M \is denmx.
-Proof. 
-by move/den1mxP=>[P1 /eqP P2]; apply/denmxP; 
+Proof.
+by move/den1mxP=>[P1 /eqP P2]; apply/denmxP;
   split=>//; rewrite P2 lexx.
 Qed.
 
@@ -1630,7 +1630,7 @@ Proof. by move/denmxP=>[->]. Qed.
 
 Lemma normalmx_rank M : M \is normalmx -> \rank M = \rank (diag_mx (spectral_diag M)).
 Proof.
-move=>/eigen_dec {1}->.  
+move=>/eigen_dec {1}->.
 rewrite mxrankMfree; last rewrite -mxrank_tr trmx_mul mxrankMfree.
 1,2: by apply/eqP; rewrite ?mxrank_tr; apply mxrank_unitary.
 by rewrite mxrank_tr.
@@ -1671,7 +1671,7 @@ rewrite add0n=>/eqP; rewrite sum_nat_eq0=>/forallP/(_ j).
 by rewrite eq_sym P2/==>/eqP.
 Qed.
 
-Lemma proj1mx_diagP M : M \is proj1mx -> 
+Lemma proj1mx_diagP M : M \is proj1mx ->
   exists i, spectral_diag M = delta_mx 0 i.
 Proof.
 move/proj1mxP=>[/projmxP[/hermmx_normal/normalmx_rank->]/boolmxP /(_ 0)P1 /eqP].
@@ -1690,7 +1690,7 @@ by move: P=>/proj1mx_diagP [x H]; rewrite H mxtrace_diag (bigD1 x)// big1/=
   =>[j /negPf njx|]; rewrite mxE ?njx ?andbF// !eqxx addr0.
 Qed.
 
-Lemma projmx_tr M : 
+Lemma projmx_tr M :
   M \is projmx -> \tr M = (\rank M)%:R.
 Proof.
 move=>/projmxP[/hermmx_normal/eigen_dec P1 /boolmxP P2].
@@ -1705,7 +1705,7 @@ End MxPredHierarchy.
 Section ExtraTheory.
 Variable (R: numClosedFieldType).
 
-Lemma mx_dot_diag n (M: 'M[R]_n) (u: 'cV[R]_n) : 
+Lemma mx_dot_diag n (M: 'M[R]_n) (u: 'cV[R]_n) :
   M \is diagmx -> \tr (u^*t *m M *m u) = \sum_i M i i * `|u i 0| ^+2.
 Proof.
 move/diagmxP=>Pm; rewrite trace_mx11 mxE; apply eq_bigr=>i _.
@@ -1713,14 +1713,14 @@ rewrite !mxE (bigD1 i)// big1/==>[j nji|]; first by rewrite Pm// mulr0.
 by rewrite addr0 !mxE normCK mulrA [RHS]mulrC mulrA.
 Qed.
 
-Lemma mx_dot_diag_mx n M (u: 'cV[R]_n) : 
+Lemma mx_dot_diag_mx n M (u: 'cV[R]_n) :
   \tr (u^*t *m diag_mx M *m u) = \sum_i M 0 i * `|u i 0| ^+2.
 Proof.
 move: (diag_mx_is_diag M)=>/mx_dot_diag P; rewrite (P u).
 by under eq_bigr do rewrite mxE eqxx mulr1n.
 Qed.
 
-Lemma mx_dot_eq0 n (M: 'M[R]_n)  : 
+Lemma mx_dot_eq0 n (M: 'M[R]_n)  :
   reflect (forall (u: 'cV[R]_n), \tr (u^*t *m M *m u) = 0) (M == 0).
 Proof.
 apply (iffP eqP).
@@ -1751,7 +1751,7 @@ rewrite mulmxDr mulmxDl linearD/= mulmxN mulNmx linearN/=.
 by move: (H u)=>/CrealP<-; rewrite -mxtrace_adj !adjmxM adjmxK mulmxA addrN.
 Qed.
 
-Lemma psdmx_dot n (M: 'M[R]_n)  : 
+Lemma psdmx_dot n (M: 'M[R]_n)  :
   reflect (forall u: 'cV[R]_n, \tr (u^*t *m M *m u) \is Num.nneg) (M \is psdmx).
 Proof.
 apply (iffP (psdmxP M))=>[[Pm Pd] u | P].
@@ -1761,7 +1761,7 @@ rewrite !adjmxM !mulmxA !nnegrE adjmxK=>->.
 apply sumr_ge0=> i _; apply mulr_ge0.
   rewrite -nnegrE; move/nnegmxP: Pd=>Pd; apply Pd.
   apply exprn_ge0; apply normr_ge0.
-have Pm: M \is hermmx. 
+have Pm: M \is hermmx.
 by apply/hermmx_dot=>u; move: (P u); by rewrite nnegrE realE=>->.
 split=>//; move/eigen_dec: (hermitian_normalmx Pm) => P1.
 apply/nnegmxP=>i j; rewrite ord1.
@@ -1772,7 +1772,7 @@ rewrite mx_dot_diag_mx (bigD1 j)// big1/=.
   by rewrite !mxE !eqxx normrE expr1n mulr1 addr0.
 Qed.
 
-Lemma psdmx_bimap_closed_gen n (M: 'M[R]_n) m (A: 'M[R]_(m,n)) : 
+Lemma psdmx_bimap_closed_gen n (M: 'M[R]_n) m (A: 'M[R]_(m,n)) :
   M \is psdmx -> A *m M *m A ^*t \is psdmx.
 Proof.
 move/psdmx_dot=>P; apply/psdmx_dot=>u.
@@ -1789,7 +1789,7 @@ apply sumr_ge0=>i _; apply mulr_ge0.
 rewrite exprn_ge0// normr_ge0.
 Qed.
 
-Lemma obsmx_psd_eq n (M: 'M[R]_n) : 
+Lemma obsmx_psd_eq n (M: 'M[R]_n) :
   M \is obsmx = (M \is psdmx) && (1%:M - M \is psdmx).
 Proof.
 apply Bool.eq_true_iff_eq. split.
@@ -1808,7 +1808,7 @@ apply/obsmxP. split=>//.
 apply/uintmxP=>i j. apply/andP. split. by apply/nnegmxP.
 move: (P3 (eigenmx M *m delta_mx j i)).
 move: (hermitian_normalmx P1)=>/eigen_dec P4.
-rewrite {2}P4 !linearB/= mulmxBl linearB/= !adjmxM !mulmxA mulmx1 
+rewrite {2}P4 !linearB/= mulmxBl linearB/= !adjmxM !mulmxA mulmx1
   !mulmxKtV// mx_dot_diag_mx (bigD1 j)// big1/=.
 by move=>k /negPf nkj; rewrite !mxE nkj normrE expr0n mulr0.
 rewrite trace_mx11 mxE (bigD1 j)// big1/=.
@@ -1817,7 +1817,7 @@ rewrite !mxE ord1 !eqxx/= conjC1 mulr1 normrE expr1n mulr1 !addr0.
 by rewrite nnegrE subr_ge0.
 Qed.
 
-Lemma obsmx_dot n (M: 'M[R]_n) : 
+Lemma obsmx_dot n (M: 'M[R]_n) :
   reflect (forall u: 'cV[R]_n, 0 <= \tr (u^*t *m M *m u) <= \tr (u^*t *m u)) (M \is obsmx).
 Proof.
 rewrite obsmx_psd_eq. apply (iffP idP).
@@ -1870,7 +1870,7 @@ Qed.
 Lemma obsmx_tr (n : nat) (A : 'M[R]_n) :
   A^T \is obsmx = (A \is obsmx).
 Proof.
-by rewrite !obsmx_psd_eq psdmx_tr; congr (_ && _); 
+by rewrite !obsmx_psd_eq psdmx_tr; congr (_ && _);
   rewrite -psdmx_tr linearB/= trmx1 trmxK.
 Qed.
 
@@ -1890,7 +1890,7 @@ Qed.
 Lemma obsmx_adj (n : nat) (A : 'M[R]_n) :
   A^*t \is obsmx = (A \is obsmx).
 Proof.
-by rewrite !obsmx_psd_eq psdmx_adj; congr (_ && _); 
+by rewrite !obsmx_psd_eq psdmx_adj; congr (_ && _);
   rewrite -psdmx_adj linearB/= adjmx1 adjmxK.
 Qed.
 
@@ -1918,7 +1918,7 @@ Proof. by rewrite conjmxAT denmx_tr denmx_adj. Qed.
 
 End ExtraTheory.
 
-Lemma mxtraceE {R: ringType} n (A : 'M[R]_n) :
+Lemma mxtraceE {R: nzRingType} n (A : 'M[R]_n) :
   \tr A = \sum_i A i i.
 Proof. by []. Qed.
 
@@ -1946,7 +1946,7 @@ Definition operator_closed (R: numClosedFieldType) (m n: nat) (S : {pred 'M[R]_(
   (op : 'M[R]_(m,n) -> 'M[R]_(m,n) -> 'M[R]_(m,n)) :=
     {in S &, forall A B, op A B \in S}.
 
-Definition mulmx_closed (R: ringType) (m: nat) (S: {pred 'M[R]_m}) :=
+Definition mulmx_closed (R: nzRingType) (m: nat) (S: {pred 'M[R]_m}) :=
   {in S &, forall A B, A *m B \in S}.
 
 Definition bimap_closed (R: numClosedFieldType) (m: nat) (T: {pred 'M[R]_m}) :=
@@ -1962,7 +1962,7 @@ Section ExtraMxPredClosed.
 Context {R : numClosedFieldType} (m : nat).
 
 Fact hermmx_zmod_closed : zmod_closed (@hermmx R m).
-Proof. 
+Proof.
 split=>[ | A B /hermmxP hA /hermmxP hB]. apply hermmx0.
 by apply/hermmxP; rewrite linearD/= linearN/= [in LHS]hA [in LHS]hB.
 Qed.
@@ -1973,7 +1973,7 @@ HB.instance Definition _ := GRing.isOppClosed.Build
   'M_m (@hermmx R m) (GRing.zmod_closedN hermmx_zmod_closed).
 
 Lemma psdmxD: operator_closed (@psdmx R m) (+%R).
-Proof. 
+Proof.
 move=> A B /psdmx_dot hA /psdmx_dot hB. apply/psdmx_dot=>u.
 move: (hA u) (hB u). rewrite mulmxDr mulmxDl linearD/= !nnegrE.
 by apply ler_wpDl.
@@ -1981,7 +1981,7 @@ Qed.
 
 Lemma psdmx_sum I r (P : pred I) (F: I -> 'M[R]_m) :
   (forall i, P i -> F i \is psdmx) -> \sum_(i <- r | P i) F i \is psdmx.
-Proof. 
+Proof.
 elim/big_ind: _=>[_||i Pi /(_ _ Pi)//]; first by apply psdmx0.
 by move=>x y ++ Pi; move=>/(_ Pi) Px /(_ Pi) Py; apply/psdmxD.
 Qed.
@@ -1996,7 +1996,7 @@ Fact unitmx_mulmx_closed : mulmx_closed (@unitmx R m).
 Proof. by move=>A B; rewrite unitmx_mul=>->=>->. Qed.
 
 Fact unitarymx_mulmx_closed : mulmx_closed (@unitarymx R m m).
-Proof. 
+Proof.
 move=>A B /unitarymxP hA /unitarymxP hB. apply/unitarymxP.
 by rewrite -adjmxE adjmxM mulmxA -[A *m _ *m _]mulmxA hB mulmx1 hA.
 Qed.
@@ -2061,8 +2061,8 @@ End RealMxType.
 (* Bind Scope ring_scope with realmx_of. *)
 Bind Scope ring_scope with realmx_t.
 
-Arguments realmx_mx {R m n} M%R.
-Arguments realmx_inj {R m n} [A%R B%R] : rename.
+Arguments realmx_mx {R m n} M%_R.
+Arguments realmx_inj {R m n} [A%_R B%_R] : rename.
 
 Notation "''MR[' R ]_ ( m , n )" := (@realmx_t R m n)
   (at level 8, format "''MR[' R ]_ ( m , n )").
@@ -2134,8 +2134,8 @@ End HermMxType.
 (* Bind Scope ring_scope with hermmx_of. *)
 Bind Scope ring_scope with hermmx_t.
 
-Arguments hermmx_mx {R m} M%R.
-Arguments hermmx_inj {R m} [A%R B%R] : rename.
+Arguments hermmx_mx {R m} M%_R.
+Arguments hermmx_inj {R m} [A%_R B%_R] : rename.
 
 Notation "''MH[' R ]_ m " := (@hermmx_t R m)
   (at level 8, format "''MH[' R ]_ m").
@@ -2183,8 +2183,8 @@ End DenMxType.
 (* Bind Scope ring_scope with denmx_of. *)
 Bind Scope ring_scope with denmx_t.
 
-Arguments denmx_mx {R m} M%R.
-Arguments denmx_inj {R m} [A%R B%R] : rename.
+Arguments denmx_mx {R m} M%_R.
+Arguments denmx_inj {R m} [A%_R B%_R] : rename.
 
 Notation "''MDen[' R ]_ m " := (@denmx_t R m)
   (at level 8, format "''MDen[' R ]_ m").
@@ -2220,8 +2220,8 @@ End ObsMxType.
 (* Bind Scope ring_scope with obsmx_of. *)
 Bind Scope ring_scope with obsmx_t.
 
-Arguments obsmx_mx {R m} M%R.
-Arguments obsmx_inj {R m} [A%R B%R] : rename.
+Arguments obsmx_mx {R m} M%_R.
+Arguments obsmx_inj {R m} [A%_R B%_R] : rename.
 
 Notation "''MObs[' R ]_ m " := (@obsmx_t R m)
   (at level 8, format "''MObs[' R ]_ m").
@@ -2272,7 +2272,7 @@ Definition normv_eq0 A := sameP (`[ A ] =P 0) (normv0P A).
 
 Lemma normvMn x n : `[ x *+ n] = `[x] *+ n.
 Proof. by rewrite -scaler_nat normvZ normr_nat mulr_natl. Qed.
-  
+
 Lemma normvN x : `[ - x ] = `[ x ].
 Proof. by rewrite -scaleN1r normvZ normrN normr1 mul1r. Qed.
 
@@ -2332,8 +2332,8 @@ Proof. by rewrite -normv_eq0 eq_le normv_ge0 andbT. Qed.
 Lemma normv_lt0 v : `[v] < 0 = false.
 Proof. by rewrite lt_neqAle normv_le0 normv_eq0 andNb. Qed.
 
-Definition cauchy_seqv  (u: nat -> V) := 
-  forall e : R, 0 < e -> exists N : nat, 
+Definition cauchy_seqv  (u: nat -> V) :=
+  forall e : R, 0 < e -> exists N : nat,
     forall s t, (N <= s)%N -> (N <= t)%N -> mnorm (u s - u t) < e.
 
 Lemma cauchy_seqv_cst x : cauchy_seqv (fun=>x).
@@ -2343,14 +2343,14 @@ End VNormTheory.
 
 Arguments cauchy_seqv {R V}.
 
-Lemma normvZV {R: numFieldType} {V: lmodType R} {mnorm : vnorm V} (u : V) : 
+Lemma normvZV {R: numFieldType} {V: lmodType R} {mnorm : vnorm V} (u : V) :
   u != 0 -> mnorm ( (mnorm u)^-1 *: u ) = 1.
 Proof.
 by move=>Pu; rewrite normvZ ger0_norm ?invr_ge0 ?normv_ge0// mulVf// normv_eq0.
 Qed.
 
 #[short(type="porderLmodType")]
-HB.structure Definition POrderedLmodule (R: ringType):=
+HB.structure Definition POrderedLmodule (R: nzRingType):=
   { T of Order.isPOrder ring_display T & GRing.Lmodule R T }.
 
 (* module for vector order *)
@@ -2392,7 +2392,7 @@ Notation "[ 'canVOrderType' R 'of' T ]" :=  (VOrder.clone R T%type _)
 End CanVOrderExports.
 HB.export CanVOrderExports.
 
-Lemma scalerNN (R : ringType) (V : lmodType R) (a : R) (x : V) : 
+Lemma scalerNN (R : nzRingType) (V : lmodType R) (a : R) (x : V) :
   (- a) *: (- x) = a *: x.
 Proof. by rewrite scalerN scaleNr opprK. Qed.
 
@@ -2402,8 +2402,8 @@ Implicit Type (x y z : T) (a b c : R).
 Local Notation "'0" := (0 : T).
 
 Lemma subv_ge0 x y : ('0 <= x - y) = (y <= x).
-Proof. 
-apply/Coq.Bool.Bool.eq_iff_eq_true; split=>[/(@lev_add2rP R T y)|/(@lev_add2rP R T(-y))];
+Proof.
+apply/Stdlib.Bool.Bool.eq_iff_eq_true; split=>[/(@lev_add2rP R T y)|/(@lev_add2rP R T(-y))];
 by rewrite ?addrNK ?add0r// addrN.
 Qed.
 
@@ -2669,7 +2669,7 @@ Proof. by case/orP=> /andP []; [apply: paddv_eq0 | apply: naddv_eq0]. Qed.
 (* big sum and lev *)
 Lemma sumv_ge0 I (r : seq I) (P : pred I) (F : I -> T) :
   (forall i, P i -> ('0 <= F i)) -> '0 <= \sum_(i <- r | P i) (F i).
-Proof. exact: (@big_ind T _ '0 _ (lexx '0) (@lev_paddl '0)). Qed.  
+Proof. exact: (@big_ind T _ '0 _ (lexx '0) (@lev_paddl '0)). Qed.
 
 Lemma lev_sum I (r : seq I) (P : pred I) (F G : I -> T) :
     (forall i, P i -> F i <= G i) ->
@@ -2716,7 +2716,7 @@ Local Notation "'0" := (0 : T).
 
 Lemma pscalev_rge0 a y : 0 < a -> ('0 <= a *: y) = ('0 <= y).
 Proof.
-move=>Pa; apply/Coq.Bool.Bool.eq_iff_eq_true; split=>P.
+move=>Pa; apply/Stdlib.Bool.Bool.eq_iff_eq_true; split=>P.
 have P1 : (a^-1 * a) = 1 by rewrite mulVf// lt0r_neq0.
 by rewrite -[y]scale1r -(scaler0 _ a^-1) -P1 -scalerA lev_pscale2lP// invr_gt0.
 by rewrite -(scaler0 _ a) lev_pscale2lP.
@@ -2724,7 +2724,7 @@ Qed.
 
 Lemma pscalev_rgt0 a y : 0 < a -> ('0 < a *: y) = ('0 < y).
 Proof.
-by move=>Pa; move: {+}Pa; rewrite !lt_def 
+by move=>Pa; move: {+}Pa; rewrite !lt_def
   scaler_eq0 negb_or pscalev_rge0// =>/andP[->_/=].
 Qed.
 
@@ -2992,7 +2992,7 @@ Qed.
 Lemma lev_pscale2r x : '0 < x -> {mono *:%R^~ x : x y / (x <= y)%O}.
 Proof.
 by move=>Px a b; rewrite -subv_ge0 -scalerBl pscalev_lge0// subr_ge0.
-Qed.  
+Qed.
 
 Lemma ltv_pscale2r x : '0 < x -> {mono *:%R^~ x : x y / (x < y)%O}.
 Proof. by move=> x_gt0; apply: leW_mono (lev_pscale2r _). Qed.
@@ -3063,8 +3063,8 @@ Notation applyar := (@applyar_head _ _ _ tt).
 
 HB.mixin Record isBRegVOrder
  (R: numFieldType) (U V W : vorderType R) (op : U -> V -> W) := {
-  badditivel_subproof : forall u', additive (op^~ u');
-  badditiver_subproof : forall u, additive (op u);
+  badditivel_subproof : forall u', zmod_morphism (op^~ u');
+  badditiver_subproof : forall u, zmod_morphism (op u);
   bregv_eq0 : forall x y, op x y == 0 = (x == 0) || (y == 0);
   pbregv_rge0 : forall x y, (0 : U) < x -> ((0 : W) <= op x y) = ((0 : V) <= y);
   pbregv_lge0 : forall y x, (0 : V) < y -> ((0 : W) <= op x y) = ((0 : U) <= x);
@@ -3080,7 +3080,7 @@ Definition map (R: numFieldType) (U V W : vorderType R)
     (phUVW : phant (U -> V -> W)) := BRegVOrder.type U V W.
 End BRegVOrder. *)
 Notation "{ 'bregVOrder' U '->' V '->' W }" := (bregVOrder U%type V%type W%type)
-  (at level 0, U at level 97, V at level 98, W at level 99, 
+  (at level 0, U at level 97, V at level 98, W at level 99,
    format "{ 'bregVOrder'  U  ->  V  ->  W }") : ring_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use BRegVOrder.clone instead.")]
 Notation "[ 'bregVOrder' 'of' f 'as' g ]" := (BRegVOrder.clone _ _ _ _ f g)
@@ -3097,16 +3097,16 @@ Implicit Type (a b c : U) (x y z : V).
 
 #[non_forgetful_inheritance]
 HB.instance Definition _ a :=
-  GRing.isAdditive.Build _ _ (f a) (@badditiver_subproof R U V W f a).
+  GRing.isZmodMorphism.Build _ _ (f a) (@badditiver_subproof R U V W f a).
 #[non_forgetful_inheritance]
 HB.instance Definition _ z :=
-  GRing.isAdditive.Build _ _ (applyar f z) (@badditivel_subproof R U V W f z).
+  GRing.isZmodMorphism.Build _ _ (applyar f z) (@badditivel_subproof R U V W f z).
 
 Local Notation l0 := (0 : U).
 Local Notation r0 := (0 : V).
 Local Notation b0 := (0 : W).
 
-(* it is additive, additiver *)
+(* it is zmod_morphism, additiver *)
 Lemma applyarE x : applyar f x =1 f^~ x. Proof. by []. Qed.
 
 Lemma bregv0r a : f a 0 = 0. Proof. by rewrite raddf0. Qed.
@@ -3176,7 +3176,7 @@ Definition ltev_pbreg2l := (lev_pbreg2l, ltv_pbreg2l).
 Lemma lev_pbreg2r x : r0 < x -> {mono f^~ x : x y / x <= y}.
 Proof.
 by move=> x_gt0 y z /=; rewrite -subv_ge0 -bregvBl pbregv_lge0// subv_ge0.
-Qed.  
+Qed.
 
 Lemma ltv_pbreg2r x : r0 < x -> {mono f^~ x : x y / x < y}.
 Proof. by move=> x_gt0; apply: leW_mono (lev_pbreg2r _). Qed.
@@ -3355,10 +3355,10 @@ Proof. by rewrite dotV_l2normC exprCK// normv_ge0. Qed.
 Lemma l2normC_dot (M: 'M[R]_(m,n)) : l2normC M = sqrtC (\tr (M *m M ^*t)).
 Proof. by rewrite l2normC_dotV mxtrace_mulC. Qed.
 
-Lemma l2normCUl (U : 'M[R]_m) (M : 'M[R]_(m,n)): 
+Lemma l2normCUl (U : 'M[R]_m) (M : 'M[R]_(m,n)):
   U \is unitarymx -> l2normC (U *m M) = l2normC M.
 Proof.
-by move=>P; rewrite l2normC_dot !adjmxM -!mulmxA 
+by move=>P; rewrite l2normC_dot !adjmxM -!mulmxA
 mxtrace_mulC mulmxA mulmxKtV// -l2normC_dot.
 Qed.
 
@@ -3373,8 +3373,8 @@ End l2normC.
 Section l2normC_extra.
 Variable (C : numClosedFieldType).
 
-Lemma l2normC_trmx m n (A : 'M[C]_(m,n)) : l2normC (A^T) = l2normC A. 
-Proof. 
+Lemma l2normC_trmx m n (A : 'M[C]_(m,n)) : l2normC (A^T) = l2normC A.
+Proof.
 rewrite !l2normC_pair; f_equal; rewrite exchange_big.
 by under eq_bigr do under eq_bigr do rewrite mxE.
 Qed.
@@ -3385,7 +3385,7 @@ Proof. by rewrite -l2normC_trmx /l2normC; under eq_bigr do rewrite !mxE norm_con
 Lemma l2normC_conjmx m n (A : 'M[C]_(m,n)) : l2normC (A^*m) = l2normC A.
 Proof. by rewrite -l2normC_adjmx adjmxCT conjmxK l2normC_trmx. Qed.
 
-Lemma l2normCUr m n l (U : 'M[C]_(n,l)) (M : 'M_(m,n)): 
+Lemma l2normCUr m n l (U : 'M[C]_(n,l)) (M : 'M_(m,n)):
   U \is unitarymx -> l2normC (M *m U) = l2normC M.
 Proof.
 by move=>P; rewrite l2normC_dot !adjmxM !mulmxA mulmxtVK// -l2normC_dot.
@@ -3436,7 +3436,7 @@ Lemma lownerle_refl n : reflexive (@lownerle n).
 Proof. move=>x. rewrite /lownerle addrN. apply psdmx0. Qed.
 
 Lemma lownerle_trans n : transitive (@lownerle n).
-Proof. 
+Proof.
 move=>x y z; rewrite /lownerle => P1 P2.
 move: (psdmxD P2 P1); by rewrite addrA addrNK.
 Qed.
@@ -3468,10 +3468,10 @@ Qed.
 
 HB.instance Definition _ n := POrderedLmodule_isVOrder.Build C 'M[C]_n (@lemx_add2rP n) (@lemx_pscale2lP n).
 
-Lemma pscalemx_lge0 n (x : 'M[C]_n) (a : C) : 
+Lemma pscalemx_lge0 n (x : 'M[C]_n) (a : C) :
   (0 : 'M[C]_n) < x -> (0 : 'M[C]_n) <= a *: x = (0 <= a).
 Proof.
-move=>xgt0. apply/Coq.Bool.Bool.eq_iff_eq_true; split; last first.
+move=>xgt0. apply/Stdlib.Bool.Bool.eq_iff_eq_true; split; last first.
 by move=>age0; apply: scalev_ge0=>//; apply/ltW.
 move: xgt0. rewrite lt_def {1 2}/Order.le/= /lownerle !subr0.
 move =>/andP[/eqP Px /psdmx_dot px]/psdmx_dot pax.
@@ -3534,7 +3534,7 @@ End LownerPOrder.
 End MxLownerOrder.
 Import MxLownerOrder.
 
-Lemma castmx_eq1 (R : ringType) m m' (eqm : m = m') (A: 'M[R]_m) :
+Lemma castmx_eq1 (R : nzRingType) m m' (eqm : m = m') (A: 'M[R]_m) :
   castmx (eqm,eqm) A == 1%:M = (A == 1%:M).
 Proof. by case: m' / eqm. Qed.
 
@@ -3559,16 +3559,16 @@ Lemma hermmx_psd_decomp m (M : 'M[R]_m) :
 Proof.
 move=>Ph. move: {+}Ph=>/hermmx_normal/eigen_dec P0.
 move: {+}Ph=>/hermitian_spectral_diag_real P1.
-set D1 := \matrix_(i,j) if (spectral_diag M i j) >= 0 then 
+set D1 := \matrix_(i,j) if (spectral_diag M i j) >= 0 then
   (spectral_diag M i j) else 0.
-set D2 := \matrix_(i,j) if ~~((spectral_diag M i j) >= 0) then 
+set D2 := \matrix_(i,j) if ~~((spectral_diag M i j) >= 0) then
   - (spectral_diag M i j) else 0.
 have P2: D1 - D2 = spectral_diag M.
 apply/matrixP=>i j. rewrite !mxE. case: (0 <= spectral_diag M i j)=>/=.
 by rewrite subr0. by rewrite opprK add0r.
-have P3: D1 \is a nnegmx. apply/nnegmxP=>i j. 
+have P3: D1 \is a nnegmx. apply/nnegmxP=>i j.
 rewrite mxE. case E: (0 <= spectral_diag M i j)=>//=. by rewrite nnegrE.
-have P4: D2 \is a nnegmx. apply/nnegmxP=>i j. 
+have P4: D2 \is a nnegmx. apply/nnegmxP=>i j.
 rewrite mxE. case E: (0 <= spectral_diag M i j)=>/=. by rewrite nnegrE.
 rewrite nnegrE oppr_ge0. move: P1=>/realmxP/(_ i j). by rewrite realE E.
 exists (eigenmx M *m diag_mx D1 *m (eigenmx M)^*t).
@@ -3578,11 +3578,11 @@ by rewrite [RHS]P0 -P2 linearB/= linearBr/= linearBl/=.
 Qed.
 
 Lemma reim_decomp (a b : R) :
-  a = (a + b^*)/2%:R + 'i * (- 'i * (a - b^*)/2%:R) /\ 
+  a = (a + b^*)/2%:R + 'i * (- 'i * (a - b^*)/2%:R) /\
   b = ((a + b^*)/2%:R)^* + 'i * (- 'i * (a - b^*)/2%:R)^*.
 Proof.
 rewrite -{3}(conjCK 'i) -rmorphM -rmorphD conjCi !mulrA mulrN -!expr2 sqrrN.
-rewrite  !sqrCi opprK !mulNr !mul1r -mulrDl -mulrBl opprB [a-_]addrC 
+rewrite  !sqrCi opprK !mulNr !mul1r -mulrDl -mulrBl opprB [a-_]addrC
   [_+(b^*- _)]addrC !addrA addrK addrNK -!mulr2n -(mulr_natr a) mulfK
   ?pnatr_eq0// -(mulr_natr b^*) mulfK ?pnatr_eq0//.
 change (Num.Num_conj__canonical__GRing_RMorphism R (conjC b))
@@ -3590,7 +3590,7 @@ change (Num.Num_conj__canonical__GRing_RMorphism R (conjC b))
 by rewrite conjCK.
 Qed.
 
-Lemma mx_herm_decomp m (M : 'M[R]_m) : 
+Lemma mx_herm_decomp m (M : 'M[R]_m) :
   exists (M1 M2 : 'M[R]_m), M1 \is hermmx /\ M2 \is hermmx /\ M1 + 'i *: M2 = M.
 Proof.
 set M1 := \matrix_(i,j) ((M i j + (M j i)^*)/2%:R).
@@ -3618,10 +3618,10 @@ apply/matrixP=>i j. rewrite !mxE. by move: (reim_decomp (M i j) (M j i))=>[ <-].
 Qed.
 
 Lemma mx_psd_decomp m (M : 'M[R]_m) :
-  exists (M1 M2 M3 M4 : 'M[R]_m) , M1 \is psdmx /\ M2 \is psdmx 
+  exists (M1 M2 M3 M4 : 'M[R]_m) , M1 \is psdmx /\ M2 \is psdmx
   /\ M3 \is psdmx /\ M4 \is psdmx /\ M = M1 - M2 + 'i *: M3 - 'i *: M4.
 Proof.
-move: (mx_herm_decomp M)=>[N1 [N2 [/hermmx_psd_decomp [M1 [M2 [P1 [P2 P3]]]] 
+move: (mx_herm_decomp M)=>[N1 [N2 [/hermmx_psd_decomp [M1 [M2 [P1 [P2 P3]]]]
   [/hermmx_psd_decomp [M3 [M4 [P4 [P5 P6]]]] P7]]]].
 exists M1. exists M2. exists M3. exists M4.
 do ? split=>//. by rewrite -P7 -P3 -P6 scalerBr addrA.
@@ -3638,8 +3638,8 @@ Lemma psdmx_eigen_ge0 m (A: 'M[R]_m) k :
   A \is psdmx -> eigenval A k >= 0.
 Proof. by move=>/psdmxP[_ /nnegmxP/(_ 0 k)]; rewrite nnegrE. Qed.
 
-Lemma diag_decomp_absorb m (A: 'M[R]_m) : A \is psdmx -> 
-  let v k := (sqrtC (eigenval A k) *: eigenvec A k) in 
+Lemma diag_decomp_absorb m (A: 'M[R]_m) : A \is psdmx ->
+  let v k := (sqrtC (eigenval A k) *: eigenvec A k) in
     A = \sum_k (v k) *m (v k)^*t.
 Proof.
 move=>P/=. move: {+}P=>/psdmx_herm/hermmx_normal/eigen_sum{1}->.
@@ -3647,10 +3647,10 @@ apply eq_bigr=>i _. rewrite adjmxZ -scalemxAr -!scalemxAl scalerA -normCKC ger0_
 by rewrite sqrtC_ge0; apply psdmx_eigen_ge0.
 Qed.
 
-Lemma le_lownerE_psdtr m (A B: 'M[R]_m) : 
+Lemma le_lownerE_psdtr m (A B: 'M[R]_m) :
   reflect (forall x, x \is psdmx -> \tr (A *m x) <= \tr (B *m x)) (A <= B).
 Proof.
-rewrite le_lownerE. 
+rewrite le_lownerE.
 apply/(iffP (@psdmx_dot _ _ _))=>[P x /diag_decomp_absorb ->|P x].
 rewrite !mulmx_sumr !linear_sum/= ler_sum // => i _.
 by rewrite -subr_ge0 -linearB -mulmxBl/= mulmxA mxtrace_mulC -nnegrE mulmxA P.
@@ -3658,7 +3658,7 @@ rewrite -mulmxA mxtrace_mulC -mulmxA nnegrE mulmxBl linearB/= subr_ge0.
 apply P. apply form_psd.
 Qed.
 
-Lemma mxtrace_deltaE m (A : 'M[R]_m) : 
+Lemma mxtrace_deltaE m (A : 'M[R]_m) :
   \tr A = \sum_i \tr (delta_mx 0 i *m A *m delta_mx i 0 : 'rV_1).
 Proof.
 rewrite {1}/mxtrace; apply eq_bigr=>/= i _.
@@ -3671,7 +3671,7 @@ move=>/psdmx_dot PA.
 by rewrite mxtrace_deltaE sumr_ge0//==>i _; rewrite -nnegrE -adjmx_delta.
 Qed.
 
-Lemma psdmx_trace_eq0 m (A : 'M[R]_m) : 
+Lemma psdmx_trace_eq0 m (A : 'M[R]_m) :
   A \is psdmx -> (\tr A == 0) = (A == 0).
 Proof.
 move=>PA; apply eqb_iff; split; last by move=>/eqP->; rewrite linear0.
@@ -3680,12 +3680,12 @@ rewrite mxtrace_mulC mulmxA unitarymxKV// mul1mx.
 rewrite mxtrace_diag psumr_eq0//=.
   by move=>i _; rewrite -nnegrE; apply/nnegmxP.
 move=>/allP Pi.
-suff -> : spectral_diag A = 0 by rewrite linear0 mulmx0 mul0mx. 
+suff -> : spectral_diag A = 0 by rewrite linear0 mulmx0 mul0mx.
 apply/matrixP=>? i; rewrite ord1 mxE.
 by apply/eqP/Pi; rewrite mem_index_enum.
 Qed.
 
-Lemma le_lownerE_dentr m (A B: 'M[R]_m) : 
+Lemma le_lownerE_dentr m (A B: 'M[R]_m) :
   reflect (forall x, x \is denmx -> \tr (A *m x) <= \tr (B *m x)) (A <= B).
 Proof.
 apply/(iffP (@le_lownerE_psdtr _ _ _))=>H x Px.
@@ -3693,7 +3693,7 @@ apply H. by apply/denmx_psd.
 case E: (x == 0); first by move/eqP: E=>->; rewrite !linear0.
 have P: 0 < \tr x.
   by rewrite lt_def psdmx_trace// andbT psdmx_trace_eq0// E.
-have : (\tr x)^-1 *: x \is denmx. apply/denmxP. split. 
+have : (\tr x)^-1 *: x \is denmx. apply/denmxP. split.
 apply psdmxZ=>//. by rewrite invr_ge0 ltW.
 by rewrite linearZ/= mulVf// gt_eqF.
 move=>/H. rewrite -!scalemxAr !linearZ/= mulrC [_^-1*_]mulrC ler_pdivrMr//.

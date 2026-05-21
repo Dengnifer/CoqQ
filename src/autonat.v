@@ -1,6 +1,6 @@
-From mathcomp.ssreflect Require Import all_ssreflect.
-From Coq.Bool Require Import Bool.
-Require Import Lia.
+From mathcomp Require Import all_boot all_order.
+From Stdlib.Bool Require Import Bool.
+From Stdlib Require Import Lia.
 
 (****************************************************************************)
 (* Light-weight tactic for mathcomp nat based on standard Lia/Nia: dealing  *)
@@ -150,7 +150,7 @@ Qed.
 
 Lemma Q45 (x y : bool) :
   (x = y) <-> (is_true x <-> is_true y).
-Proof. exact: Coq.Bool.Bool.eq_iff_eq_true. Qed.
+Proof. exact: Stdlib.Bool.Bool.eq_iff_eq_true. Qed.
 
 Definition Qm := (Q41, Q42, Q43, Q44, Q45, Q1, Q2, Q3, Q5).
 
@@ -410,7 +410,7 @@ Section test.
 Context (k : nat).
 
 Goal forall m, half m = uphalf m \/ (half m).+1 = uphalf m.
-time mc_nat.
+mc_nat.
 Qed.
 
 Goal forall m, (uphalf m + half m = m)%N.
@@ -422,71 +422,71 @@ Definition L2 {n} {i : 'I_n} (j : 'I_(rev_ord i)) :=
 
 Goal forall a b c, 
   a <= b -> a == b -> b < c -> a <= c.
-time mc_nat.
+mc_nat.
 Qed.
 
 Goal forall (n : nat) (a : 'I_n./2) (b : 'I_n./2) (c : 'I_a), 
   a <= b -> a == b -> b < c -> a <= c.
-time mc_nat.
+mc_nat.
 Qed.
 
 Goal forall m n, m < n./2 + 1 -> m <> (n+2) - (m+1).
-time mc_nat.
+mc_nat.
 Qed.
 
 Goal forall (n : nat) (m : 'I_(n./2+1)),
   m != (n.+2) - (m.+1) :> nat.
-time mc_nat.
+mc_nat.
 Qed.
 
 Goal forall m n, m < n./2 + 1 -> (n./2 + 1) - m.+1 <> (n+2) - (m+1).
-time mc_nat.
+mc_nat.
 Qed.
 
 Goal forall (n : nat) (m : 'I_(n./2+1)),
   rev_ord m != (n+2) - (m+1) :> nat.
-time mc_nat.
+mc_nat.
 Qed.
 
 Goal forall m n, m < n./2 + 1 -> m <> (n+2) - (m+1).
-time mc_nat.
+mc_nat.
 Qed.
 
 Goal forall a b q : nat, b <> 0 -> b * q <= a <-> q <= a %/ b.
-time mc_nat.
+mc_nat.
 Qed.
 
 Goal forall a b q : nat, 0 < b -> b * q <= a <-> q <= a %/ b.
-time mc_nat.
+mc_nat.
 Qed.
 
 Goal forall a b q : nat, 0 < b -> b * q <= a <-> q <= a %/ b.
-time mc_nat.
+mc_nat.
 Qed.
 
 Goal forall n m, m < n./2 + 1 -> m <> (n+2) - (m+1).
-time mc_nat.
+mc_nat.
 Qed.
 
 Goal forall n m, min n m <= n.
-time mc_nat.
+mc_nat.
 Qed.
 
 Goal forall n m, max n m >= n.
-time mc_nat.
+mc_nat.
 Qed.
 
 Goal forall n (m : 'I_n) (k : 'I_m.+1), (m * k + m <> n * k + n).
-time mc_nat.
+mc_nat.
 Qed.
 
 Goal forall n (i : 'I_n) (j1 : 'I_i) (j2 : 'I_(rev_ord i)),
    (L1 j1) != (L2 (rev_ord j2)).
-time mc_nat.
+mc_nat.
 Qed.
 
 Goal forall n (i : 'I_n), lift (lift ord0 i) i != lift (lift ord_max i) i.
-time mc_nat.
+mc_nat.
 Qed.
 
 End test.

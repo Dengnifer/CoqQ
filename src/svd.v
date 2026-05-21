@@ -1,12 +1,12 @@
 (* -------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 From mathcomp.fingroup Require Import perm fingroup.
 From mathcomp.algebra Require Import -(notations)sesquilinear.
 From mathcomp.classical Require Import boolp.
 From mathcomp.real_closed Require Import mxtens.
-From Coq.Bool Require Import Bool.
+From Stdlib.Bool Require Import Bool.
 Require Import notation mcaextra mcextra spectral mxpred.
 
 (* -------------------------------------------------------------------- *)
@@ -60,9 +60,9 @@ Section MatrixDotOperator.
 Variable (R: numClosedFieldType).
 
 Fact dmulmx_key : unit. Proof. by []. Qed.
-Definition dmulmx {m n} (A B : 'M[R]_(m,n)) := 
+Definition dmulmx {m n} (A B : 'M[R]_(m,n)) :=
     \matrix[dmulmx_key]_(i,j) (A i j * B i j).
-Notation "A .* B" := (dmulmx A B) 
+Notation "A .* B" := (dmulmx A B)
   (at level 40, left associativity, format "A  .*  B").
 
 Lemma dmulmxC m n (A B : 'M[R]_(m,n)) : A .* B = B .* A.
@@ -117,11 +117,11 @@ Qed.
 
 Definition dmxortho {m n} (A : 'M[R]_(m,n)) := const_mx 1 - (A .* (A .^-1)) .
 
-Lemma dmxorthoE {m n} (A : 'M[R]_(m,n)) : 
+Lemma dmxorthoE {m n} (A : 'M[R]_(m,n)) :
   dmxortho A = const_mx 1 - (A .* (A .^-1)) .
 Proof. by []. Qed.
 
-Lemma dmxorthoC {m n} (A : 'M[R]_(m,n)) : 
+Lemma dmxorthoC {m n} (A : 'M[R]_(m,n)) :
   (A .* (A .^-1)) + dmxortho A = const_mx 1.
 Proof. by rewrite /dmxortho addrC addrNK. Qed.
 
@@ -142,24 +142,24 @@ Qed.
 Lemma dmxortho_adj {m n} (A : 'M[R]_(m,n)) : (dmxortho A) ^*m = (dmxortho A).
 Proof. by apply/matrixP=>i j; rewrite mxE !dmxortho_elem conjC_nat. Qed.
 
-Lemma dmxortho_dexp {m n} (A : 'M[R]_(m,n)) k : 
+Lemma dmxortho_dexp {m n} (A : 'M[R]_(m,n)) k :
   (0 < k)%N -> dmxortho (A .^+ k) = dmxortho A.
 Proof. by move=>P; apply/matrixP=>i j; rewrite !dmxortho_elem !mxE expf_eq0 P. Qed.
 
 Lemma dmxortho_inv {m n} (A : 'M[R]_(m,n)) : dmxortho (A .^-1) = dmxortho A.
 Proof. by apply/matrixP=>i j; rewrite !dmxortho_elem !mxE invr_eq0. Qed.
 
-Lemma dmxortho_invn {m n} (A : 'M[R]_(m,n)) k : 
+Lemma dmxortho_invn {m n} (A : 'M[R]_(m,n)) k :
   (0 < k)%N -> dmxortho (A .^-k) = dmxortho A.
 Proof. rewrite dmxortho_inv; exact: dmxortho_dexp. Qed.
 
 Lemma diag_mx_adj n (A : 'rV[R]_n) : (diag_mx A)^*t = diag_mx (A ^*m).
-Proof. 
-apply/matrixP=>i j; rewrite !mxE eq_sym. 
+Proof.
+apply/matrixP=>i j; rewrite !mxE eq_sym.
 by case: eqP=>[->|_]; rewrite ?mulr1n ?mulr0n ?conjC0.
 Qed.
 
-Lemma diag_mx_dmul n (A B : 'rV[R]_n) : 
+Lemma diag_mx_dmul n (A B : 'rV[R]_n) :
   diag_mx A *m diag_mx B = diag_mx (dmulmx A B).
 Proof.
 apply/matrixP=>i j; rewrite !mxE (bigD1 i)// big1/= ?mxE.
@@ -168,14 +168,14 @@ by case E: (i == j); rewrite ?eqxx ?mulr1n ?mulr0n ?addr0 ?mulr0.
 Qed.
 
 Lemma expmx_diag n (A: 'rV[R]_n.+1) k : (diag_mx A) ^+ k = diag_mx (A .^+ k).
-Proof. 
+Proof.
 elim: k=>[|k IH]; first by rewrite expr0 dexpmx0 diag_const_mx.
 by rewrite exprS IH /GRing.mul/= diag_mx_dmul dexpmxS.
 Qed.
 
 Definition dnthrootmx k {m n} (A: 'M[R]_(m, n)) := map_mx (@nthroot R k) A.
 
-Lemma dmxortho_root {m n} (A : 'M[R]_(m,n)) k : 
+Lemma dmxortho_root {m n} (A : 'M[R]_(m,n)) k :
   (0 < k)%N -> dmxortho (dnthrootmx k A) = dmxortho A.
 Proof. by move=>P; apply/matrixP=>i j; rewrite !dmxortho_elem !mxE rootC_eq0. Qed.
 
@@ -186,7 +186,7 @@ by move: (P j j); rewrite !mxE !eqxx !mulr1n !ord1.
 Qed.
 
 Lemma normalmx_scale m (a : R) : (a%:M : 'M[R]_m) \is normalmx.
-Proof. 
+Proof.
 by apply/normalmxP; rewrite -scalemx1 -!(scalemxAr,scalemxAl) -adjmxE
   adjmxZ -!(scalemxAl,scalemxAr) mulmx1 mul1mx.
 Qed.
@@ -194,7 +194,7 @@ Qed.
 Lemma spectral_diag_scale n (a : R) : spectral_diag (a%:M : 'M[R]_n) = const_mx a.
 Proof.
 move: (normalmx_scale n a)=>/eigen_dec/esym.
-by rewrite mulmxUC// mulUmx// -{3}scalemx1 -scalemxAl mul1mx 
+by rewrite mulmxUC// mulUmx// -{3}scalemx1 -scalemxAl mul1mx
   -scalemxAr unitarymxKV// scalemx1 -{2}diag_const_mx=>/diag_mx_inj.
 Qed.
 
@@ -207,30 +207,30 @@ Proof. exact: spectral_diag_scale. Qed.
 Lemma unitarymx1 n : (1%:M : 'M[R]_n) \is unitarymx.
 Proof. by apply/unitarymxP; rewrite mul1mx -adjmxE adjmx_scale conjC1. Qed.
 
-Lemma unitarymxZ n a (A : 'M[R]_n) : 
+Lemma unitarymxZ n a (A : 'M[R]_n) :
   `|a| = 1 -> A \is unitarymx -> (a *: A) \is unitarymx.
 Proof.
 move=>P1 /unitarymxP P2; apply/unitarymxP.
 by rewrite -adjmxE adjmxZ -scalemxAr -scalemxAl scalerA P2 -normCKC P1 expr1n scale1r.
 Qed.
 
-Lemma unitarymxZ_diag n (D : 'rV[R]_n) (A : 'M[R]_n) : (forall i, `|D 0 i| = 1) 
+Lemma unitarymxZ_diag n (D : 'rV[R]_n) (A : 'M[R]_n) : (forall i, `|D 0 i| = 1)
   -> A \is unitarymx -> (diag_mx D *m A) \is unitarymx.
 Proof.
-move=>P1 P2; apply/unitarymxPV; rewrite adjmxM !mulmxA mulmxU// -mulmxA mulUCmx// 
+move=>P1 P2; apply/unitarymxPV; rewrite adjmxM !mulmxA mulmxU// -mulmxA mulUCmx//
   mul1mx [RHS]unitarymxK// diag_mx_adj diag_mx_dmul -diag_const_mx.
 by f_equal; apply/matrixP=>i j; rewrite !mxE ord1 -normCKC P1 expr1n.
 Qed.
 
 End MatrixDotOperator.
 
-#[global] Hint Extern 0 (is_true (1%:M \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true (1%:M \is unitarymx)) =>
   (apply/unitarymx1) : core.
-#[global] Hint Extern 0 (is_true ((1%:M)^*t \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true ((1%:M)^*t \is unitarymx)) =>
   (apply/adjmx_unitaryP/unitarymx1) : core.
-#[global] Hint Extern 0 (is_true ((1%:M)^*m \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true ((1%:M)^*m \is unitarymx)) =>
   (apply/conjmx_unitaryP/unitarymx1) : core.
-#[global] Hint Extern 0 (is_true ((1%:M)^T \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true ((1%:M)^T \is unitarymx)) =>
   (apply/trmx_unitaryP/unitarymx1) : core.
 
 Notation "A .* B" := (dmulmx A B) (at level 40, left associativity, format "A  .*  B").
@@ -295,12 +295,12 @@ Local Open Scope order_scope.
 Local Notation "0" := ord0.
 
 Definition rv_nincr :=
-  [qualify v : 'rV[R]_n | 
-    [forall i : 'I_n, 
+  [qualify v : 'rV[R]_n |
+    [forall i : 'I_n,
       [forall j : 'I_n, (i > j)%N || (v 0 i >= v 0 j) ]]].
 
 Lemma rv_nincrP v :
-  reflect (forall i j : 'I_n, (i <= j)%N -> (v 0 i >= v 0 j)) 
+  reflect (forall i j : 'I_n, (i <= j)%N -> (v 0 i >= v 0 j))
     (v \is rv_nincr).
 Proof.
 apply/(iffP forallP)=>[H i j|H i].
@@ -309,7 +309,7 @@ by apply/forallP=>j; rewrite ltnNge -implybE; apply/implyP/H.
 Qed.
 
 Definition rv_cmp :=
-  [qualify v : 'rV[R]_n | 
+  [qualify v : 'rV[R]_n |
     [forall i : 'I_n, [forall j : 'I_n, (v 0 i >=< v 0 j)]]].
 
 Lemma rv_cmpP v :
@@ -318,7 +318,7 @@ Proof. by apply/(iffP forallP)=>H i; apply/forallP. Qed.
 
 Notation geR := (fun x y : R => x >= y).
 
-Lemma rv_nincr_cmp v : 
+Lemma rv_nincr_cmp v :
   v \is rv_nincr -> v \is rv_cmp.
 Proof.
 move=>/rv_nincrP P; apply/rv_cmpP=>i j.
@@ -356,10 +356,10 @@ Qed.
 Lemma sorts_tsorts_perm v : perm_eq (s v) (tsorts v).
 Proof. by rewrite tsortsE perm_sym perm_sort. Qed.
 
-Lemma ltn_ordK m (i : 'I_m) : Ordinal (ltn_ord i) = i. 
+Lemma ltn_ordK m (i : 'I_m) : Ordinal (ltn_ord i) = i.
 Proof. by destruct i; rewrite (eq_irrelevance (ltn_ord (Ordinal i)) i). Qed.
 
-Lemma perm_exists_tsorts v : exists p : 'S_n, 
+Lemma perm_exists_tsorts v : exists p : 'S_n,
   forall i : 'I_n, (s v)~_i = (tsorts v)~_(p i).
 Proof.
 move: (sorts_tsorts_perm v)=>/tuple_permP=>[[p Pp]]; exists p=>i.
@@ -371,7 +371,7 @@ Definition sortv v := (\matrix_(i < 1, j < n) (tsorts v)~_j)%R.
 Lemma sortv_permvr v : permv v (sortv v).
 Proof.
 move: (perm_exists_tsorts v)=>[p Pp].
-apply/permvP; exists (invg p); apply/matrixP=>i j.
+apply/permvP; exists (inv p); apply/matrixP=>i j.
 by rewrite !ord1 !mxE -{2}(permKV p j) -Pp tnth_map tnth_ord_tuple.
 Qed.
 
@@ -381,15 +381,15 @@ Proof. by apply/permvC/sortv_permvr. Qed.
 Lemma permv_sortv v : exists s, col_perm s v = sortv v.
 Proof. by move: (sortv_permvr v)=>/permvP. Qed.
 
-Lemma homo_sorts v (i j : 'I_n) : v \is rv_cmp -> 
+Lemma homo_sorts v (i j : 'I_n) : v \is rv_cmp ->
   (i <= j)%N -> (tsorts v)~_i >= (tsorts v)~_j.
 Proof.
 move=>Pr; destruct i; destruct j; rewrite /= !(tnth_nth (v 0 (Ordinal i)))/= =>P1.
 apply: (sorted_leq_nth_in (@geR_transitive _) _ _ _ (sorts_sorted Pr) m m0)=>//.
-all: by rewrite inE; move: (size_sorts v)=>/eqP->. 
+all: by rewrite inE; move: (size_sorts v)=>/eqP->.
 Qed.
 
-Lemma sortv_nincr v : 
+Lemma sortv_nincr v :
   v \is rv_cmp -> sortv v \is rv_nincr.
 Proof. by move=>/homo_sorts Pv; apply/rv_nincrP=>i j Pij; rewrite !mxE Pv. Qed.
 
@@ -413,7 +413,7 @@ have ->: nth i0 (ord_tuple n) j = Ordinal Pj_n.
 by apply/rv_nincrP=>//; apply: ltnW.
 Qed.
 
-Lemma rv_nincr_sorted v : 
+Lemma rv_nincr_sorted v :
   v \is rv_nincr -> sortv v = v.
 Proof.
 pose P : {pred R} := fun x => [exists i, x == v 0 i].
@@ -440,11 +440,11 @@ apply/(perm_sort_inP _ _ (@geR_transitive _) (@geR_anti _)).
   rewrite !tnth_map !tnth_ord_tuple orbC.
   by apply/rv_cmpP/rv_nincr_cmp.
 rewrite perm_sym; apply/tuple_permP.
-exists (invg p); f_equal.
+exists (inv p); f_equal.
 by apply eq_from_tnth=>k; rewrite !tnth_map !tnth_ord_tuple mxE permKV.
 Qed.
 
-Lemma col_perm_cmp v (p : 'S_n) : 
+Lemma col_perm_cmp v (p : 'S_n) :
   (col_perm p v \is rv_cmp) = (v \is rv_cmp).
 Proof.
 apply/eqb_iff; split=>/rv_cmpP P; apply/rv_cmpP=>i j.
@@ -452,15 +452,15 @@ by move: (P ((p^-1)%g i) ((p^-1)%g j)); rewrite !mxE !permKV.
 by rewrite !mxE.
 Qed.
 
-Lemma permv_cmp u v : 
+Lemma permv_cmp u v :
   permv u v -> u \is rv_cmp -> v \is rv_cmp.
 Proof. by move=>/permvP[p <-]; rewrite col_perm_cmp. Qed.
 
-Lemma permv_sortv_eq u v : 
+Lemma permv_sortv_eq u v :
   u \is rv_cmp -> permv u v -> sortv u = sortv v.
 Proof.
 move=>Pu Puv; move: (permv_cmp Puv Pu)=>Pv.
-move: (permv_sortv u) (permv_sortv v) Puv (sortv_nincr Pu) 
+move: (permv_sortv u) (permv_sortv v) Puv (sortv_nincr Pu)
   (sortv_nincr Pv) =>[pu] <- [pv] <- /permvP[p <-].
 have ->: col_perm pv (col_perm p u) = col_perm (pv * p * (pu^-1)%g) (col_perm pu u).
   by rewrite -!col_permM -!mulgA mulVg mulg1.
@@ -472,7 +472,7 @@ Lemma poly_prod_perm_seq (T: idomainType) (F G : seq T) :
   -> perm_eq F G.
 Proof.
 elim: F G=>[G P1|x r IH G]; last rewrite big_cons => P1.
-have: size G = 0%N by apply/PeanoNat.Nat.succ_inj; rewrite 
+have: size G = 0%N by apply/PeanoNat.Nat.succ_inj; rewrite
   -(size_prod_XsubC _ idfun)/= -P1 size_prod_XsubC. by case: G P1.
 have: x \in G by rewrite -root_prod_XsubC -P1 rootM root_XsubC eqxx.
 move/perm_to_rem=>P2; move: P1; rewrite (perm_big _ P2)/= big_cons.
@@ -493,13 +493,13 @@ rewrite !Pf=>/poly_prod_perm_seq; move/tuple_permP=>[p Pp].
 have sfE f j : tnth (sf f) j = f j by rewrite /sf tnth_map tnth_ord_tuple.
 have Ppt : (sf F : m.-tuple T) = [tuple tnth (sf G) (p i) | i < m].
   by apply/val_inj.
-exists (invg p)=>i. 
-rewrite -[F _](sfE F (invg p i)) Ppt.
+exists (inv p)=>i.
+rewrite -[F _](sfE F (inv p i)) Ppt.
 by rewrite tnth_mktuple sfE permKV.
 Qed.
 
 Lemma poly_unique_sort (T : idomainType) (u v : 'rV[T]_n) :
-  char_poly (diag_mx u) = char_poly (diag_mx v) -> 
+  char_poly (diag_mx u) = char_poly (diag_mx v) ->
     exists (p : 'S_n), col_perm p u = v.
 Proof.
 rewrite !char_poly_trig ?diag_mx_is_trig// =>/poly_prod_perm[p Pp].
@@ -507,10 +507,10 @@ exists p; apply/matrixP=>i j; rewrite !mxE !ord1.
 by move: (Pp j); rewrite !mxE !eqxx !mulr1n.
 Qed.
 
-Lemma sortv_eq (x y : 'rV[R]_n) : 
+Lemma sortv_eq (x y : 'rV[R]_n) :
   permv x y -> y \is rv_nincr -> sortv x = y.
 Proof.
-move=>Pxy Py; rewrite -[RHS](rv_nincr_sorted)//; 
+move=>Pxy Py; rewrite -[RHS](rv_nincr_sorted)//;
 by apply/esym/permv_sortv_eq=>//; [apply/rv_nincr_cmp | apply/permvC].
 Qed.
 
@@ -531,7 +531,7 @@ Proof. by apply/rv_cmpP=>i j. Qed.
 (* since if R is not orderType, it is very slow *)
 (* #[local] Hint Extern 0 (is_true (_ \is rv_cmp)) => try (apply: total_rv_cmp) : core. *)
 
-Lemma col_permEV [C : semiRingType] [m n] (s : {perm 'I_n}) (A : 'M[C]_(m, n)) :
+Lemma col_permEV [C : nzSemiRingType] [m n] (s : {perm 'I_n}) (A : 'M[C]_(m, n)) :
     A *m perm_mx s = col_perm s^-1 A.
 Proof. by rewrite col_permE invgK. Qed.
 
@@ -540,32 +540,32 @@ Definition perm_rev_ord {n} := (perm (@rev_ord_inj n)).
 Section sortv_extra.
 Variable (R : realDomainType) (C : numDomainType).
 
-Lemma realmx_cmp n (v : 'rV[C]_n) : 
+Lemma realmx_cmp n (v : 'rV[C]_n) :
   v \is a realmx -> v \is rv_cmp.
 Proof. by move=>/realmxP P; apply/rv_cmpP=>i j; apply/real_comparable. Qed.
 
-Lemma sortv_real n (v : 'rV[C]_n) : 
+Lemma sortv_real n (v : 'rV[C]_n) :
   v \is a realmx -> sortv v \is a realmx.
 Proof.
 move=>/realmxP Pv; move: (permv_sortv v)=>[s]<-.
 by apply/realmxP=>i j; rewrite mxE.
 Qed.
 
-Lemma sortv_nneg n (v : 'rV[C]_n) : 
+Lemma sortv_nneg n (v : 'rV[C]_n) :
   v \is a nnegmx -> sortv v \is a nnegmx.
 Proof.
 move=>/nnegmxP Pv; move: (permv_sortv v)=>[s]<-.
 by apply/nnegmxP=>i j; rewrite mxE.
 Qed.
 
-Lemma sortv_uint n (v : 'rV[C]_n) : 
+Lemma sortv_uint n (v : 'rV[C]_n) :
   v \is a uintmx -> sortv v \is a uintmx.
 Proof.
 move=>/uintmxP Pv; move: (permv_sortv v)=>[s]<-.
 by apply/uintmxP=>i j; rewrite mxE.
 Qed.
 
-Lemma sortv_bool n (v : 'rV[C]_n) : 
+Lemma sortv_bool n (v : 'rV[C]_n) :
   v \is a boolmx -> sortv v \is a boolmx.
 Proof.
 move=>/boolmxP Pv; move: (permv_sortv v)=>[s]<-.
@@ -591,7 +591,7 @@ Lemma sortv_const m (c : C) :
   sortv (const_mx c : 'rV_m) = const_mx c.
 Proof. by apply/rv_nincr_sorted/rv_nincrP=>i j _; rewrite !mxE. Qed.
 
-Lemma ge0_sortvZ m (x : 'rV[R]_m) (c : R) : 
+Lemma ge0_sortvZ m (x : 'rV[R]_m) (c : R) :
   0 <= c -> sortv (c *: x) = c *: sortv x.
 Proof.
 move=>Pc; apply/sortv_eq.
@@ -601,34 +601,34 @@ apply/rv_nincrP=>i j Pij; rewrite mxE [leRHS]mxE ler_wpM2l//.
 by apply/rv_nincrP=>//; apply/sortv_nincr/total_rv_cmp.
 Qed.
 
-Lemma le0_sortvZ m (x : 'rV[R]_m) (c : R) : 
+Lemma le0_sortvZ m (x : 'rV[R]_m) (c : R) :
   c <= 0 -> sortv (c *: x) = c *: (col_perm perm_rev_ord (sortv x)).
 Proof.
 move=>Pc; apply/sortv_eq.
   move: (permv_sortv x)=>[s<-];
-  apply/permvP; exists (perm_rev_ord * s)%g; 
+  apply/permvP; exists (perm_rev_ord * s)%g;
   by rewrite col_permE -scalemxAl -col_permM col_permE.
 apply/rv_nincrP=>i j Pij; rewrite mxE [leRHS]mxE ler_wnM2l//.
 rewrite mxE [leRHS]mxE; apply/rv_nincrP.
-  by apply/sortv_nincr/total_rv_cmp.  
+  by apply/sortv_nincr/total_rv_cmp.
 by rewrite !permE /=; apply/leq_sub2l; rewrite ltnS.
 Qed.
 
 End sortv_extra.
 
 (* TODO : move *)
-Lemma big_ord_cast [T] [idx : T] [op : T -> T -> T] m m' 
+Lemma big_ord_cast [T] [idx : T] [op : T -> T -> T] m m'
   (eqm : m' = m) (P: pred 'I_m) (F : 'I_m -> T) :
   \big[op/idx]_(i | P i) F i = \big[op/idx]_(i | P (cast_ord eqm i)) F (cast_ord eqm i).
 Proof. case: m / eqm P F=>P F. apply eq_big=>[i|i Pi]; by rewrite cast_ord_id. Qed.
 
-Lemma big_split_ord_cast [T : Type] [idx : T] [op : Monoid.law idx] 
+Lemma big_split_ord_cast [T : Type] [idx : T] [op : Monoid.law idx]
   [m n r : nat] [P : pred 'I_r] (eqr : (m + n)%N = r) (F : 'I_r -> T) :
   \big[op/idx]_(i | P i) F i =
   op (\big[op/idx]_(i | P (cast_ord eqr (lshift n i))) F (cast_ord eqr (lshift n i)))
     (\big[op/idx]_(i | P (cast_ord eqr (rshift m i))) F (cast_ord eqr (rshift m i))).
 Proof.
-by case: r / eqr P F => P F; rewrite big_split_ord; 
+by case: r / eqr P F => P F; rewrite big_split_ord;
   f_equal=>/=; apply eq_big=>i; rewrite cast_ord_id.
 Qed.
 
@@ -645,10 +645,10 @@ by move=>k /negPf nki; rewrite eq_sym nki mul0r.
 by rewrite eqxx (inj_eq perm_inj) addr0 mul1r eq_sym conjC_nat.
 Qed.
 
-Lemma adjmx_perm (s : 'S_n) : (@perm_mx R n s)^*t = perm_mx (invg s).
+Lemma adjmx_perm (s : 'S_n) : (@perm_mx R n s)^*t = perm_mx (inv s).
 Proof. by apply/matrixP=>i j; rewrite !mxE conjC_nat (canF_eq (permK s)) eq_sym. Qed.
 
-Definition svd_diag := 
+Definition svd_diag :=
   [qualify v : 'rV[R]_n | (v \is a nnegmx) && (v \is rv_nincr)].
 
 Lemma svd_diag_nincr v : v \is svd_diag -> v \is rv_nincr.
@@ -666,24 +666,24 @@ Proof. by move=>/svd_diag_real/realmx_cmp. Qed.
 Lemma svd_diag_ge0 v i : v \is svd_diag -> v 0 i >= 0.
 Proof. by rewrite -nnegrE; move/svd_diag_nneg/nnegmxP=>/(_ 0 i). Qed.
 
-Lemma svd_diagP v : reflect (forall i : 'I_n, (v 0 i >= 0) 
+Lemma svd_diagP v : reflect (forall i : 'I_n, (v 0 i >= 0)
   /\ forall j : 'I_n, (i <= j)%N -> (v 0 i >= v 0 j))
     (v \is svd_diag).
 Proof.
-apply/(iffP andP)=>[[Nn De i]|IH]; 
+apply/(iffP andP)=>[[Nn De i]|IH];
   (split; [apply/nnegmxP=>// i j | apply/rv_nincrP=>// i j]).
 by rewrite ord1 nnegrE; move: (IH j)=>[->].
 by move: (IH i)=>[_ /(_ j)].
 Qed.
 
-Lemma svd_diag_eq0 v i : v \is svd_diag -> v 0 i = 0 -> 
+Lemma svd_diag_eq0 v i : v \is svd_diag -> v 0 i = 0 ->
   forall j : 'I_n, (j >= i)%N -> v 0 j = 0.
 Proof.
 rewrite qualifE=>/andP[] /nnegmxP + /rv_nincrP + Pi j Pij.
 by move=>/(_ 0 j) + /(_ i j Pij); rewrite Pi nnegrE=>P1 P2; apply/le_anti/andP; split.
 Qed.
 
-Lemma svd_diag_neq0 v i : v \is svd_diag -> v 0 i != 0 -> 
+Lemma svd_diag_neq0 v i : v \is svd_diag -> v 0 i != 0 ->
   forall j : 'I_n, (j <= i)%N -> v 0 j != 0.
 Proof.
 rewrite qualifE=>/andP[] /nnegmxP + /rv_nincrP + /negPf Pi j Pij.
@@ -702,20 +702,20 @@ Qed.
 Lemma sqr_svd_diag p v : v \is svd_diag -> v.^+p \is svd_diag.
 Proof.
 move/svd_diagP=>P; apply/svd_diagP=>i/=; rewrite !mxE; case: p=>[|p].
-by rewrite !expr0 ler01; split=>// j; rewrite mxE expr0 lexx. 
+by rewrite !expr0 ler01; split=>// j; rewrite mxE expr0 lexx.
 split=>[|j Pij]; first by apply/exprn_ge0; move: (P i)=>[->].
 by move: (P j) (P i) =>[P3 _] [P1 /(_ j Pij) P2]; rewrite !mxE ler_pXn2r.
 Qed.
 
 Lemma svd_diag_conj v : v \is svd_diag -> v ^*m = v.
-Proof. 
+Proof.
 move/svd_diagP=>P; apply/matrixP=>i j.
 by rewrite !mxE !ord1 geC0_conj//; move: (P j)=>[->].
 Qed.
 
 Lemma svd_diagZ v a : v \is svd_diag -> 0 <= a -> a *: v \is svd_diag.
 Proof.
-move/svd_diagP=>P1 P2; apply/svd_diagP=>i; split. 
+move/svd_diagP=>P1 P2; apply/svd_diagP=>i; split.
 by rewrite !mxE mulr_ge0//; move: (P1 i)=>[->].
 by move=>j Pij; move: (P1 i)=>[_ /(_ j Pij) P3]; rewrite !mxE ler_wpM2l.
 Qed.
@@ -762,7 +762,7 @@ Proof. by rewrite /cdiag_mx map_castmx map_block_mx !raddf0 map_diag_mx. Qed.
 Lemma cdiag_mx_adj p q (D : 'rV[R]_(minn p q)) :
  (cdiag_mx D)^*t = cdiag_mx (castmx (erefl _, minnC _ _) (D^*m)).
 Proof.
-rewrite /cdiag_mx castmx_funE/= adjmxE tr_block_mx map_block_mx !raddf0 -adjmxE 
+rewrite /cdiag_mx castmx_funE/= adjmxE tr_block_mx map_block_mx !raddf0 -adjmxE
   diag_mx_adj; apply/(canLR (castmxKV _ _))=>/=; rewrite castmx_comp.
 move: (etrans (min_idl q p) (esym (min_idr p q)))=>E1.
 move: (etrans (min_idr q p) (esym (min_idl p q))) (minnC p q) =>E2 E3.
@@ -781,9 +781,9 @@ Lemma cdiag_mx_diag p (D : 'rV[R]_(minn p p)) :
   cdiag_mx D = diag_mx (castmx (erefl _, minn_id _) D).
 Proof.
 rewrite /cdiag_mx. move: (min_idl p p) (esym (minn_id p))=>E1 E2.
-rewrite (eq_irrelevance (min_idr p p) E1) (eq_irrelevance (minn_id p) (esym E2)) 
+rewrite (eq_irrelevance (min_idr p p) E1) (eq_irrelevance (minn_id p) (esym E2))
   diag_mx_cast; case: (minn p p) / E2 E1 D=> E1 D.
-move: (subnn p)=>/esym E3; case: (p - p)%N / E3 E1=>E1. 
+move: (subnn p)=>/esym E3; case: (p - p)%N / E3 E1=>E1.
 by rewrite (eq_irrelevance E1 (addn0 p)) -block_mx_cast00/= castmx_id.
 Qed.
 
@@ -794,13 +794,13 @@ Definition svd_d_exdr p q (D : 'rV[R]_(minn p q)) :=
   (castmx (erefl _, min_idr p q) (row_mx D 0)).
 
 Lemma svd_d_exdl_inj p q : injective (@svd_d_exdl p q).
-Proof. 
-by move=>D D' /castmx_sym; 
+Proof.
+by move=>D D' /castmx_sym;
   rewrite castmxK=>/(f_equal lsubmx); rewrite !row_mxKl.
 Qed.
 
 Lemma svd_d_exdr_inj p q : injective (@svd_d_exdr p q).
-Proof. 
+Proof.
 by move=>D D' /castmx_sym;
   rewrite castmxK=>/(f_equal lsubmx); rewrite !row_mxKl.
 Qed.
@@ -816,7 +816,7 @@ Proof. by rewrite /svd_d_exdr castmx_funE !conjmxE map_row_mx raddf0. Qed.
 Lemma svd_d_exdr_sum p q (D: 'rV[R]_(minn p q)) (f: R-> R) :
   f 0 = 0 -> \sum_i f (D 0 i) = \sum_i f (svd_d_exdr D 0 i).
 Proof.
-move=>P1; rewrite /svd_d_exdr (big_split_ord_cast (min_idr p q))/= 
+move=>P1; rewrite /svd_d_exdr (big_split_ord_cast (min_idr p q))/=
   [X in _ + X]big1 ?addr0=>[i _|]; last apply eq_bigr=>i _.
 all: by rewrite castmxE ord1 cast_ord_comp cast_ord_id ?row_mxEl// row_mxEr mxE.
 Qed.
@@ -824,7 +824,7 @@ Qed.
 Lemma svd_d_exdl_sum p q (D: 'rV[R]_(minn p q)) (f: R-> R) :
   f 0 = 0 -> \sum_i f (D 0 i) = \sum_i f (svd_d_exdl D 0 i).
 Proof.
-move=>P1; rewrite /svd_d_exdr (big_split_ord_cast (min_idl p q))/= 
+move=>P1; rewrite /svd_d_exdr (big_split_ord_cast (min_idl p q))/=
   [X in _ + X]big1 ?addr0=>[i _|]; last apply eq_bigr=>i _.
 all: by rewrite castmxE ord1 cast_ord_comp cast_ord_id ?row_mxEl// row_mxEr mxE.
 Qed.
@@ -833,7 +833,7 @@ Lemma svd_d_exdr_dmul p q (u v : 'rV[R]_(minn p q)) :
   svd_d_exdr u .* svd_d_exdr v = svd_d_exdr (u .* v).
 Proof.
 apply/matrixP=>i j; rewrite /svd_d_exdr !mxE !castmxE/= ord1.
-set k := cast_ord _ _; case: (split_ordP k)=>l ->; 
+set k := cast_ord _ _; case: (split_ordP k)=>l ->;
 by rewrite ?row_mxEl ?row_mxEr !mxE// mulr0.
 Qed.
 
@@ -841,7 +841,7 @@ Lemma svd_d_exdl_dmul p q (u v : 'rV[R]_(minn p q)) :
   svd_d_exdl u .* svd_d_exdl v = svd_d_exdl (u .* v).
 Proof.
 apply/matrixP=>i j; rewrite /svd_d_exdr !mxE !castmxE/= ord1.
-set k := cast_ord _ _; case: (split_ordP k)=>l ->; 
+set k := cast_ord _ _; case: (split_ordP k)=>l ->;
 by rewrite ?row_mxEl ?row_mxEr !mxE// mulr0.
 Qed.
 
@@ -856,7 +856,7 @@ set i' := (cast_ord (esym (min_idl p q)) i).
 set j' := (cast_ord (esym (min_idl p q)) j).
 have ->: i == j = (i' == j') by rewrite -[RHS](inj_eq (@ord_inj _))/=.
 rewrite !mxE -{4}(splitK i') -{3}(splitK j').
-case: (fintype.split i')=>a; rewrite ?mxE; 
+case: (fintype.split i')=>a; rewrite ?mxE;
   case: (fintype.split j')=>b/=; rewrite !mxE ?ord1 ?mul0r ?mul0rn//.
 by rewrite eq_lrshift mulr0n.
 Qed.
@@ -872,14 +872,14 @@ set i' := (cast_ord (esym (min_idr p q)) i).
 set j' := (cast_ord (esym (min_idr p q)) j).
 have ->: i == j = (i' == j') by rewrite -[RHS](inj_eq (@ord_inj _))/=.
 rewrite !mxE -{4}(splitK i') -{3}(splitK j').
-case: (fintype.split i')=>a; rewrite ?mxE; 
+case: (fintype.split i')=>a; rewrite ?mxE;
   case: (fintype.split j')=>b/=; rewrite !mxE ?ord1 ?mulr0 ?mul0rn//.
 by rewrite eq_lrshift mulr0n.
 Qed.
 
 Lemma cdiag_mx_is_linear p q : linear (@cdiag_mx p q).
-Proof. 
-by move=>a A B; rewrite /cdiag_mx linearP/= -[RHS]linearP/= 
+Proof.
+by move=>a A B; rewrite /cdiag_mx linearP/= -[RHS]linearP/=
   scale_block_mx add_block_mx !scaler0 !addr0.
 Qed.
 HB.instance Definition _ p q :=
@@ -888,13 +888,13 @@ HB.instance Definition _ p q :=
 
 End diag_nonincreasing.
 
-#[global] Hint Extern 0 (is_true (perm_mx _ \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true (perm_mx _ \is unitarymx)) =>
   (apply/perm_mx_unitary) : core.
-#[global] Hint Extern 0 (is_true ((perm_mx _)^*t \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true ((perm_mx _)^*t \is unitarymx)) =>
   (apply/adjmx_unitaryP/perm_mx_unitary) : core.
-#[global] Hint Extern 0 (is_true ((perm_mx _)^*m \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true ((perm_mx _)^*m \is unitarymx)) =>
   (apply/conjmx_unitaryP/perm_mx_unitary) : core.
-#[global] Hint Extern 0 (is_true ((perm_mx _)^T \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true ((perm_mx _)^T \is unitarymx)) =>
   (apply/trmx_unitaryP/perm_mx_unitary) : core.
 
 Arguments svd_diag {R n}.
@@ -930,7 +930,7 @@ Lemma formV_psdmx  m n (A : 'M[R]_(n,m)) (B : 'M_n) :
   B \is psdmx -> A^*t *m B *m A \is psdmx.
 Proof. by move=>/psdmx_formV[]?->; rewrite -mulmxACA -mulmxA -adjmxM; apply/formV_psd. Qed.
 
-Lemma psdmx_svd p (M : 'M[R]_p) : M \is psdmx -> (exists sdpsd : 'M_p * 'rV_p, 
+Lemma psdmx_svd p (M : 'M[R]_p) : M \is psdmx -> (exists sdpsd : 'M_p * 'rV_p,
   [&& (sdpsd.1 \is unitarymx),  (sdpsd.2 \is svd_diag) &
   (M == sdpsd.1^*t *m diag_mx sdpsd.2 *m sdpsd.1)]).
 Proof.
@@ -942,11 +942,11 @@ apply/and3P; split=>//.
 by rewrite -Ps diag_perm adjmxM !mulmxA !mulmxKtV// adjmxK; apply/eqP.
 Qed.
 
-Lemma dot_dotmxE p q r (A : 'M[R]_(p,q)) (B : 'M_(r,q)) i j : 
+Lemma dot_dotmxE p q r (A : 'M[R]_(p,q)) (B : 'M_(r,q)) i j :
   (A *m B ^*t) i j = dotmx (row i A) (row j B).
 Proof. by rewrite dotmxE !mxE; apply eq_bigr=>k _; rewrite !mxE. Qed.
 
-Lemma ord_ltn_ind k P : 
+Lemma ord_ltn_ind k P :
   (forall i : 'I_k, (forall j : 'I_k, (j < i)%N -> P j) -> P i) -> forall i, P i.
 Proof.
 move=>H i; case: i=>p; elim/ltn_ind: p=> p IH ltmk.
@@ -956,7 +956,7 @@ Qed.
 Lemma unitary_dim m n (U: 'M[R]_(m,n)) : U \is unitarymx -> (m <= n)%N.
 Proof. move/mxrank_unitary=>P1; move: (rank_leq_col U); by rewrite P1. Qed.
 
-Lemma unitary_ext m n (U: 'M[R]_(m,n)) : U \is unitarymx -> 
+Lemma unitary_ext m n (U: 'M[R]_(m,n)) : U \is unitarymx ->
   U = usubmx (schmidt (col_mx U (0 : 'M[R]_(n-m,_)))).
 Proof.
 move=>UU; move: {+}UU=>/row_unitarymxP Ur; apply/row_matrixP=>i.
@@ -975,19 +975,19 @@ move: {+}P3; rewrite (bigD1 i)//= big1=>[j|P5].
 rewrite andbC -ltn_neqAle=>P4; move: (Ur i j).
 rewrite !P1 P3 addr0 linear_sumlz/= (bigD1 j)/=; first by apply ltnW.
 rewrite big1=>[k /andP[_ /negPf nkj]|].
-1,2: rewrite linearZl_LR/= (Hi _ P4) PA eq_lshift ?nkj ?mulr0// eqxx mulr1 addr0 
+1,2: rewrite linearZl_LR/= (Hi _ P4) PA eq_lshift ?nkj ?mulr0// eqxx mulr1 addr0
 -(inj_eq (@ord_inj _)) (gtn_eqF P4)=>->. by rewrite scale0r.
 move: (form1_row_schmidt V (lshift (n - m) i)) (Ur i i).
-rewrite P1 P5 !addr0 !linearZl_LR linearZr_LR /= mulrA -normCK !PA !eqxx 
+rewrite P1 P5 !addr0 !linearZl_LR linearZr_LR /= mulrA -normCK !PA !eqxx
   !mulr1=>P4 /(f_equal sqrtC); rewrite sqrCK// sqrtC1 -{2}(ger0_norm P4)=>->.
 by rewrite scale1r.
 Qed.
 
-Lemma form_diag_schmidt p (A : 'M[R]_p) (D : 'rV[R]_p): 
+Lemma form_diag_schmidt p (A : 'M[R]_p) (D : 'rV[R]_p):
   D \is svd_diag -> A *m A ^*t = diag_mx D ->
   A = diag_mx (map_mx sqrtC D) *m schmidt A.
 Proof.
-move=>P1 P2; have P3 i j : dotmx (row i A) (row j A) = D 0 i *+ (i == j) 
+move=>P1 P2; have P3 i j : dotmx (row i A) (row j A) = D 0 i *+ (i == j)
   by rewrite -dot_dotmxE P2 !mxE.
 apply/row_matrixP=>i; rewrite row_diag_mul mxE.
 move: (schmidt_unitarymx A (leqnn _))=>/row_unitarymxP PA.
@@ -1003,12 +1003,12 @@ have P8: forall j : 'I_p, (j < i)%N -> u_ j 0 0 = 0.
   move=>j ltji; move: (P3 i j).
   rewrite P6 Hi// linear_sumlz/= (bigD1 j)/=; first by apply ltnW.
   rewrite big1; first move=>k /andP[_ /negPf nkj].
-  1,2: rewrite linearZl_LR linearZr_LR /= PA ?nkj ?mulr0// ?PA eqxx mulr1 addr0. 
+  1,2: rewrite linearZl_LR linearZr_LR /= PA ?nkj ?mulr0// ?PA eqxx mulr1 addr0.
   case: eqP=>[E|/eqP E /eqP]; first by move: ltji; rewrite E ltnn.
-  by rewrite mulr0n mulf_eq0 conjC_eq0 sqrtC_eq0 -[D 0 j == 0]negbK P5// 
+  by rewrite mulr0n mulf_eq0 conjC_eq0 sqrtC_eq0 -[D 0 j == 0]negbK P5//
     1 ?leq_eqVlt ?ltji ?orbT// ?orbF =>/eqP.
 have P9: row i A = u_ i 0 0 *: row i (schmidt A).
-  rewrite P6 (bigD1 i)//= big1=>[j|]; 
+  rewrite P6 (bigD1 i)//= big1=>[j|];
   by rewrite ?addr0// andbC -ltn_neqAle=>/P8->; rewrite scale0r.
 have Q2 : `|u_ i 0 0| = sqrtC (D 0 i). move: (P3 i i).
   rewrite P9 linearZl_LR linearZr_LR /= PA !eqxx mulr1 -normCK mulr1n.
@@ -1018,38 +1018,38 @@ have Q3 : u_ i 0 0 >= 0.
 by rewrite P9 -(ger0_norm Q3) Q2.
 Qed.
 
-Lemma svd_diag_exd p (D: 'rV[R]_p) q : 
+Lemma svd_diag_exd p (D: 'rV[R]_p) q :
   D \is svd_diag -> row_mx D (0 : 'rV[R]_q) \is svd_diag.
 Proof.
-move=>P1; apply/svd_diagP=>i; split=>[|j]; first rewrite !mxE. 
+move=>P1; apply/svd_diagP=>i; split=>[|j]; first rewrite !mxE.
 by case: (fintype.split i)=>a; [apply/nnegmxP/svd_diag_nneg | rewrite mxE].
-rewrite !mxE -{1}(splitK i) -{1}(splitK j); case: (fintype.split i)=>a; 
+rewrite !mxE -{1}(splitK i) -{1}(splitK j); case: (fintype.split i)=>a;
   case: (fintype.split j)=>b/=; rewrite ?mxE//.
 - by apply/rv_nincrP/svd_diag_nincr.
 - by move=> _; apply/nnegmxP/svd_diag_nneg.
 - by case: b=>b Pb/= Pp; move: (leq_trans Pb (leq_addr a p)); rewrite ltnNge Pp.
 Qed.
 
-Lemma svd_diag_exdl p q (D: 'rV[R]_(minn p q)) : 
+Lemma svd_diag_exdl p q (D: 'rV[R]_(minn p q)) :
   D \is svd_diag -> svd_d_exdl D \is svd_diag.
 Proof. rewrite castmx_funE; exact: svd_diag_exd. Qed.
 
-Lemma svd_diag_exdr p q (D: 'rV[R]_(minn p q)) : 
+Lemma svd_diag_exdr p q (D: 'rV[R]_(minn p q)) :
   D \is svd_diag -> svd_d_exdr D \is svd_diag.
 Proof. by rewrite castmx_funE; exact: svd_diag_exd. Qed.
 
-Lemma form_diag_schmidt1 m n (lemn : (m <= n)%N) (A : 'M[R]_(m,n)) (D : 'rV[R]_m): 
+Lemma form_diag_schmidt1 m n (lemn : (m <= n)%N) (A : 'M[R]_(m,n)) (D : 'rV[R]_m):
   D \is svd_diag -> A *m A ^*t = diag_mx D ->
-  A = castmx (erefl m, (subnKC lemn)) (row_mx (diag_mx (map_mx sqrtC D)) 0) 
+  A = castmx (erefl m, (subnKC lemn)) (row_mx (diag_mx (map_mx sqrtC D)) 0)
       *m schmidt (castmx ((subnKC lemn),erefl n) (col_mx A 0)).
 Proof.
 move=> Dd PA; set De := castmx (erefl _, (subnKC lemn)) (row_mx D 0).
 set Ae := castmx ((subnKC lemn), erefl _) (col_mx A 0).
 have PDe : De \is svd_diag by rewrite /De castmx_funE svd_diag_exd.
-have PAe: Ae *m Ae ^*t = diag_mx De by rewrite /Ae castmx_funE/= castmx_mul/= 
-  /De diag_mx_cast; f_equal; rewrite adjmxE tr_col_mx map_row_mx !raddf0/= 
+have PAe: Ae *m Ae ^*t = diag_mx De by rewrite /Ae castmx_funE/= castmx_mul/=
+  /De diag_mx_cast; f_equal; rewrite adjmxE tr_col_mx map_row_mx !raddf0/=
   mul_col_row diag_mx_row PA mulmx0 !mul0mx linear0.
-move: (form_diag_schmidt PDe PAe). 
+move: (form_diag_schmidt PDe PAe).
 move/(f_equal (castmx (esym (subnKC lemn), erefl _)))/(f_equal usubmx).
 rewrite /Ae {1}esym_erefl castmxK col_mxKu=>{1}->.
 rewrite -(castmx_mul (erefl n)) castmx_id -mul_usub_mx; congr (_ *m _).
@@ -1059,27 +1059,27 @@ rewrite castmx_usubmx !castmx_comp /= etrans_erefl etrans_esym castmx_id.
 by rewrite col_mxKu.
 Qed.
 
-Lemma svd_subproof_lemn m n (lemn : (m <= n)%N) (A : 'M[R]_(m,n)) : 
+Lemma svd_subproof_lemn m n (lemn : (m <= n)%N) (A : 'M[R]_(m,n)) :
   (exists svdp : 'M_m * 'rV_m * 'M_n,
-    [&& (svdp.1.1 \is unitarymx),  (svdp.1.2 \is svd_diag), 
-        (svdp.2 \is unitarymx) &  (A == svdp.1.1 *m castmx (erefl m, (subnKC lemn)) 
+    [&& (svdp.1.1 \is unitarymx),  (svdp.1.2 \is svd_diag),
+        (svdp.2 \is unitarymx) &  (A == svdp.1.1 *m castmx (erefl m, (subnKC lemn))
                               (row_mx (diag_mx (svdp.1.2)) 0) *m svdp.2 ^*t)]).
 Proof.
 move: (psdmx_svd (form_psd A))=>[sdpsd]; set U0 := sdpsd.1; set D0 := sdpsd.2.
 move=>/and3P [U0U D0SD /eqP P1].
-have: (U0 *m A) *m (U0 *m A)^*t = diag_mx D0 
+have: (U0 *m A) *m (U0 *m A)^*t = diag_mx D0
   by rewrite adjmxM mulmxA mulmxUC// -mulmxA mulUmx// mulmxA.
 move/(form_diag_schmidt1 lemn D0SD); rewrite mulUmx// mulmxA=>P2.
-exists ((U0^*t,(map_mx sqrtC D0)), 
+exists ((U0^*t,(map_mx sqrtC D0)),
   (schmidt (castmx ((subnKC lemn), erefl n) (col_mx (U0 *m A) 0)))^*t).
 apply/and4P=>/=; rewrite !trmxC_unitary U0U schmidt_unitarymx//; split=>//.
 by apply root_svd_diag. by apply/eqP; rewrite adjmxK.
 Qed.
 
-Theorem svd_subproof m n (A : 'M[R]_(m,n)) : 
+Theorem svd_subproof m n (A : 'M[R]_(m,n)) :
   (exists svdp : 'M_m * 'rV_(minn m n) * 'M_n,
-    [&& (svdp.1.1 \is unitarymx),  (svdp.1.2 \is svd_diag), 
-        (svdp.2 \is unitarymx) & 
+    [&& (svdp.1.1 \is unitarymx),  (svdp.1.2 \is svd_diag),
+        (svdp.2 \is unitarymx) &
         (A == svdp.1.1 *m cdiag_mx svdp.1.2 *m svdp.2 ^*t)]).
 Proof.
 wlog lemn: m n A / (m <= n)%N => [th_sym|].
@@ -1092,7 +1092,7 @@ move: (svd_subproof_lemn lemn A)=>[[[U D] V] /=/and4P[P1 P2 P3 /eqP P4]].
 have E1: (m = minn m n) by apply/esym/minn_idPl.
 set D' := castmx (erefl _, E1) D.
 exists ((U,D'),V); apply/and4P; split=>//=; first by rewrite castmx_funE.
-apply/eqP; rewrite P4; do 2 f_equal; rewrite /cdiag_mx block_mx_castr0; 
+apply/eqP; rewrite P4; do 2 f_equal; rewrite /cdiag_mx block_mx_castr0;
   do 2 apply/(canLR (castmxKV _ _))=>/=; rewrite !castmx_comp/= etrans_erefl /D'.
 have E4: (m - n = 0)%N by move: {+}lemn=>/eqP.
 move: (etrans (min_idl m n) (esym (addn0 m)))=>E2.
@@ -1123,7 +1123,7 @@ by rewrite (eq_irrelevance E1 (addn0 _)) -row_mx_cast0.
 Qed.
 
 Lemma svds_dEr n (A : 'M[R]_n) : svds_d A = (svd_d_exdr (svd_d A)).
-Proof. by rewrite svds_dEl /svd_d_exdl 
+Proof. by rewrite svds_dEl /svd_d_exdl
 (eq_irrelevance (min_idl _ _) (min_idr _ _)). Qed.
 
 Lemma svd_u_unitarymx m n (A : 'M[R]_(m,n)) : svd_u A \is unitarymx.
@@ -1138,14 +1138,14 @@ Proof. by move: (xchooseP (svd_subproof A))=>/and4P[_ P1]. Qed.
 Lemma svds_d_svd_diag n (A : 'M[R]_n) : svds_d A \is svd_diag.
 Proof. by rewrite /svds_d castmx_funE svd_d_svd_diag. Qed.
 
-Definition svd_pE := (svd_u_unitarymx, svd_v_unitarymx, 
+Definition svd_pE := (svd_u_unitarymx, svd_v_unitarymx,
                       svd_d_svd_diag, svds_d_svd_diag).
 
-Lemma svdE m n (A : 'M[R]_(m,n)) : 
+Lemma svdE m n (A : 'M[R]_(m,n)) :
   A = (svd_u A) *m cdiag_mx (svd_d A) *m (svd_v A) ^*t.
 Proof. by move: (xchooseP (svd_subproof A))=>/and4P[_ _ _ /eqP P1]. Qed.
 
-Lemma svdsE n (A : 'M[R]_n) : 
+Lemma svdsE n (A : 'M[R]_n) :
   A = (svd_u A) *m diag_mx (svds_d A) *m (svd_v A) ^*t.
 Proof. by rewrite {1}[LHS]svdE /svds_d cdiag_mx_diag. Qed.
 
@@ -1161,36 +1161,36 @@ Proof. by rewrite /svds_d castmxE/= svd_d_ge0. Qed.
 Lemma svds_d_nneg m (A: 'M[R]_m) i j : svds_d A i j \is Num.nneg.
 Proof. apply/svds_d_ge0. Qed.
 
-Lemma polymx_dec n (U : 'M[R]_n) : U \is unitarymx -> 
+Lemma polymx_dec n (U : 'M[R]_n) : U \is unitarymx ->
   'X%:M = (map_mx (@polyC R) (U^*t)) *m 'X%:M *m (map_mx (@polyC R) U).
 Proof.
-move=>/unitarymxPV P; rewrite -mulmxA mulmx_colrow; under eq_bigr do 
+move=>/unitarymxPV P; rewrite -mulmxA mulmx_colrow; under eq_bigr do
   rewrite -diag_const_mx row_diag_mul -scalemxAr -map_col -map_row -map_mxM mxE.
 rewrite -scaler_sumr -map_mx_sum -mulmx_colrow P.
-apply/matrixP=>i j; rewrite !mxE. 
+apply/matrixP=>i j; rewrite !mxE.
 by case: eqP=>/=; rewrite ?mulr1n ?mulr1// mulr0n mulr0.
 Qed.
 
-Lemma char_poly_dec n (U : 'M[R]_n) (A : 'M[R]_n) : U \is unitarymx -> 
+Lemma char_poly_dec n (U : 'M[R]_n) (A : 'M[R]_n) : U \is unitarymx ->
   char_poly (U ^*t *m A *m U) = char_poly A.
 Proof.
-move=>PU; rewrite /char_poly /char_poly_mx {1}(polymx_dec PU) !map_mxM/= -mulmxBl 
+move=>PU; rewrite /char_poly /char_poly_mx {1}(polymx_dec PU) !map_mxM/= -mulmxBl
   -mulmxBr !det_mulmx mulrC !det_map_mx mulrA -rmorphM -det_map_mx -det_mulmx.
 by move/unitarymxP: PU=>->; rewrite det1 mul1r.
 Qed.
 
-Lemma spectral_unique n (U A : 'M[R]_n) (d : 'rV[R]_n) : 
+Lemma spectral_unique n (U A : 'M[R]_n) (d : 'rV[R]_n) :
   U \is unitarymx -> U ^*t *m diag_mx d *m U = A ->
       exists (s : 'S_n), col_perm s d = spectral_diag A.
 Proof.
-move=>UU DA; have /eigen_dec P: A \is normalmx. apply/normalmxP. 
+move=>UU DA; have /eigen_dec P: A \is normalmx. apply/normalmxP.
 rewrite -DA -adjmxE !adjmxM !mulmxA adjmxK mulmxtVK// [in RHS]mulmxtVK//.
 by f_equal; rewrite -!mulmxA; f_equal; rewrite diag_mx_adj diag_mxC.
 move: DA; rewrite {1}P=>/(f_equal char_poly).
 by rewrite adjmxK !char_poly_dec// =>/poly_unique_sort.
 Qed.
 
-Lemma spectral_permv n (U A : 'M[R]_n) (d : 'rV[R]_n) : 
+Lemma spectral_permv n (U A : 'M[R]_n) (d : 'rV[R]_n) :
   U \is unitarymx -> U ^*t *m diag_mx d *m U = A ->
       permv (spectral_diag A) d.
 Proof. by move=>Pu /(spectral_unique Pu) Ps; apply/permvC/permvP. Qed.
@@ -1200,9 +1200,9 @@ Lemma svd_dl_spectral_permv m n (A : 'M[R]_(m,n)) :
 Proof.
 apply/permvC/(spectral_permv (U := (svd_u A)^*t)).
   by rewrite adjmx_unitary svd_pE.
-rewrite [in RHS](svdE A) !adjmxM !adjmxK !mulmxA mulmxKtV// ?svd_pE//; f_equal; 
+rewrite [in RHS](svdE A) !adjmxM !adjmxK !mulmxA mulmxKtV// ?svd_pE//; f_equal;
 rewrite -mulmxA; f_equal; by rewrite cdiag_mx_mull svd_diag_conj ?dexpmx2// svd_pE.
-Qed.  
+Qed.
 
 Lemma spectral_svd_dl_permv m n (A : 'M[R]_(m,n)) :
   permv (map_mx sqrtC (spectral_diag (A *m A^*t))) (svd_d_exdl (svd_d A)).
@@ -1213,7 +1213,7 @@ apply/matrixP=>i j; rewrite !mxE sqrCK//.
 by apply/nnegmxP/svd_diag_nneg/svd_diag_exdl/svd_d_svd_diag.
 Qed.
 
-Lemma svd_dl_spectral_sort m n (A : 'M[R]_(m,n)) : 
+Lemma svd_dl_spectral_sort m n (A : 'M[R]_(m,n)) :
   svd_d_exdl (svd_d A) = sortv (map_mx sqrtC (spectral_diag (A *m A^*t))).
 Proof.
 move: (spectral_svd_dl_permv A)=>/permvC/permv_sortv_eq<-.
@@ -1226,9 +1226,9 @@ Lemma svd_dr_spectral_permv m n (A : 'M[R]_(m,n)) :
 Proof.
 apply/permvC/(spectral_permv (U := (svd_v A)^*t)).
   by rewrite adjmx_unitary svd_pE.
-rewrite [in RHS](svdE A) !adjmxM !adjmxK !mulmxA mulmxKtV// ?svd_pE//; f_equal; 
+rewrite [in RHS](svdE A) !adjmxM !adjmxK !mulmxA mulmxKtV// ?svd_pE//; f_equal;
 rewrite -mulmxA; f_equal; by rewrite cdiag_mx_mulr svd_diag_conj ?dexpmx2// svd_pE.
-Qed.  
+Qed.
 
 Lemma spectral_svd_dr_permv m n (A : 'M[R]_(m,n)) :
   permv (map_mx sqrtC (spectral_diag (A^*t *m A))) (svd_d_exdr (svd_d A)).
@@ -1239,7 +1239,7 @@ apply/matrixP=>i j; rewrite !mxE sqrCK//.
 by apply/nnegmxP/svd_diag_nneg/svd_diag_exdr/svd_d_svd_diag.
 Qed.
 
-Lemma svd_dr_spectral_sort m n (A : 'M[R]_(m,n)) : 
+Lemma svd_dr_spectral_sort m n (A : 'M[R]_(m,n)) :
   svd_d_exdr (svd_d A) = sortv (map_mx sqrtC (spectral_diag (A^*t *m A))).
 Proof.
 move: (spectral_svd_dr_permv A)=>/permvC/permv_sortv_eq<-.
@@ -1254,7 +1254,7 @@ Lemma row_mx_permv m n (u1 u2 : 'rV[R]_m) (v1 v2 : 'rV[R]_n) :
   permv u1 u2 -> permv v1 v2 -> permv (row_mx u1 v1) (row_mx u2 v2).
 Proof.
 move=>/permvP[s1 <-] /permvP[s2 <-].
-pose f (i : 'I_(m + n)) : 'I_(m + n) := 
+pose f (i : 'I_(m + n)) : 'I_(m + n) :=
   match split i with
   | inl i => lshift _ (s1 i)
   | inr i => rshift _ (s2 i)
@@ -1274,7 +1274,7 @@ Lemma permv_cast m n (eqmn : m = n) (u v : 'rV[R]_m) :
   permv (castmx (erefl, eqmn) u) (castmx (erefl, eqmn) v) = permv u v.
 Proof. by case: n / eqmn; rewrite !castmx_id. Qed.
 
-Lemma svd_d_unique_sort m n (U: 'M[R]_m) (V: 'M[R]_n) (A: 'M[R]_(m,n)) 
+Lemma svd_d_unique_sort m n (U: 'M[R]_m) (V: 'M[R]_n) (A: 'M[R]_(m,n))
   (v : 'rV[R]_(minn m n)) :
   U \is unitarymx -> V \is unitarymx ->
     A = U *m cdiag_mx v *m V ^*t -> sortv (map_mx normr v) = svd_d A.
@@ -1286,7 +1286,7 @@ rewrite mulmxKtV// mulmxACA cdiag_mx_mull -{1}[U]adjmxK.
 move=>/(spectral_unique (adjmx_unitaryP UU))[s <-].
 rewrite svd_d_exdl_dmul map_col_perm sortv_col_perm.
   apply/rv_cmpP=>i j; rewrite !mxE /svd_d_exdl !castmxE ord1/=.
-  apply/real_comparable; apply/ger0_real; rewrite sqrtC_ge0 mxE; 
+  apply/real_comparable; apply/ger0_real; rewrite sqrtC_ge0 mxE;
   by case: splitP=>??; rewrite !mxE// -normCK exprn_ge0.
 have ->: map_mx sqrtC (svd_d_exdl (v .* v^*m)) = svd_d_exdl (map_mx normr v).
   apply/matrixP=>i j; rewrite mxE /svd_d_exdl !castmxE/= ord1 !mxE.
@@ -1302,15 +1302,15 @@ by move/(leq_trans (leq_trans (ltn_ord l) (leq_addr k _))); rewrite ltnn.
 by rewrite !mxE.
 Qed.
 
-Lemma svd_d_unique_permv m n (U: 'M[R]_m) (V: 'M[R]_n) (A: 'M[R]_(m,n)) 
+Lemma svd_d_unique_permv m n (U: 'M[R]_m) (V: 'M[R]_n) (A: 'M[R]_(m,n))
   (v : 'rV[R]_(minn m n)) :
   U \is unitarymx -> V \is unitarymx ->
     A = U *m cdiag_mx v *m V ^*t -> permv (map_mx normr v) (svd_d A).
 Proof. by move=>UU UV /(svd_d_unique_sort UU UV) <-; apply/sortv_permvr. Qed.
 
-Lemma svd_d_unique m n (U: 'M[R]_m) (V: 'M[R]_n) (A: 'M[R]_(m,n)) 
+Lemma svd_d_unique m n (U: 'M[R]_m) (V: 'M[R]_n) (A: 'M[R]_(m,n))
   (v : 'rV[R]_(minn m n)) :
-  U \is unitarymx -> V \is unitarymx -> v \is svd_diag -> 
+  U \is unitarymx -> V \is unitarymx -> v \is svd_diag ->
     A = U *m cdiag_mx v *m V ^*t -> v = svd_d A.
 Proof.
 move=>UU UV Dv DA; rewrite -(svd_d_unique_sort UU UV DA).
@@ -1327,25 +1327,25 @@ Lemma spectral_svds_d_permv n (A : 'M[R]_n) :
   permv (map_mx sqrtC (spectral_diag (A *m A^*t))) (svds_d A).
 Proof. by rewrite svds_dEl; exact: spectral_svd_dl_permv. Qed.
 
-Lemma svds_d_spectral_sort n (A : 'M[R]_n) : 
+Lemma svds_d_spectral_sort n (A : 'M[R]_n) :
   svds_d A = sortv (map_mx sqrtC (spectral_diag (A *m A^*t))).
 Proof. by rewrite svds_dEl; exact: svd_dl_spectral_sort. Qed.
 
-Lemma svds_dV_spectral_permv n (A : 'M[R]_n) : 
+Lemma svds_dV_spectral_permv n (A : 'M[R]_n) :
   permv ((svds_d A).^+2) (spectral_diag (A^*t *m A)).
 Proof. by rewrite svds_dEr; exact: svd_dr_spectral_permv. Qed.
 
-Lemma spectral_svds_dV_permv n (A : 'M[R]_n) : 
+Lemma spectral_svds_dV_permv n (A : 'M[R]_n) :
   permv (map_mx sqrtC (spectral_diag (A^*t *m A))) (svds_d A).
 Proof. by rewrite svds_dEr; exact: spectral_svd_dr_permv. Qed.
 
-Lemma svds_dV_spectral_sort n (A : 'M[R]_n) : 
+Lemma svds_dV_spectral_sort n (A : 'M[R]_n) :
   svds_d A = sortv (map_mx sqrtC (spectral_diag (A^*t *m A))).
 Proof. by rewrite svds_dEr; exact: svd_dr_spectral_sort. Qed.
 
 Lemma svds_d_unique_sort n (U V A : 'M[R]_n) (v : 'rV[R]_n) :
   U \is unitarymx -> V \is unitarymx ->
-    A = U *m diag_mx v *m V ^*t -> 
+    A = U *m diag_mx v *m V ^*t ->
       sortv (map_mx normr v) = svds_d A.
 Proof.
 set v' := (castmx (erefl _, esym (minn_id _)) v).
@@ -1360,13 +1360,13 @@ Lemma svds_d_unique_permv n (U V A : 'M[R]_n) (v : 'rV[R]_n) :
 Proof. by move=>UU UV /(svds_d_unique_sort UU UV) <-; apply/sortv_permvr. Qed.
 
 Lemma svds_d_unique n (U V A : 'M[R]_n) (v : 'rV[R]_n) :
-  U \is unitarymx -> V \is unitarymx -> v \is svd_diag -> 
+  U \is unitarymx -> V \is unitarymx -> v \is svd_diag ->
     A = U *m diag_mx v *m V ^*t -> v = svds_d A.
 Proof.
 set v' := (castmx (erefl _, esym (minn_id _)) v).
 move: (cdiag_mx_diag v'); rewrite {2}/v' castmxKV=><- PU PV Dv PA.
 have Dv': v' \is svd_diag by rewrite /v' castmx_funE.
-move: (svd_d_unique PU PV Dv' PA). 
+move: (svd_d_unique PU PV Dv' PA).
 rewrite /v'=>/esym/(canLR (castmxK _ _))/=; by rewrite esymK=><-.
 Qed.
 
@@ -1374,7 +1374,7 @@ Lemma svds_d_spectral_permv_normal n (A : 'M[R]_n) : A \is normalmx ->
   permv (svds_d A) (map_mx normr (spectral_diag A)).
 Proof. by move=>/eigen_dec/svds_d_unique_permv P; apply/permvC/P. Qed.
 
-Lemma svds_d_spectral_permv_psd n (A : 'M[R]_n) : 
+Lemma svds_d_spectral_permv_psd n (A : 'M[R]_n) :
   A \is psdmx -> permv (svds_d A) (spectral_diag A).
 Proof.
 move=>/psdmxP[]/hermmx_normal/svds_d_spectral_permv_normal + PA.
@@ -1397,7 +1397,7 @@ by rewrite castmx_const.
 Qed.
 
 Lemma svd_d0 m n : svd_d (0 : 'M[R]_(m,n)) = 0.
-Proof. 
+Proof.
 have /svd_d_unique<-// : 0 = 1%:M *m cdiag_mx (0 : 'rV[R]_(minn m n)) *m (1%:M)^*t
   by rewrite linear0 /= mulmx0 mul0mx.
 by apply/const_svd_diag.
@@ -1413,8 +1413,8 @@ Lemma svd_d1 n : svd_d (1%:M : 'M[R]_n) = const_mx 1.
 Proof. by rewrite svd_d_scale normr1. Qed.
 
 Lemma svd_dZ m n a (A : 'M[R]_(m,n)) : svd_d (a *: A) = `|a| *: svd_d A.
-Proof. 
-have P1: a *: A = (directc a *: svd_u A) *m 
+Proof.
+have P1: a *: A = (directc a *: svd_u A) *m
   cdiag_mx (`|a| *: svd_d A) *m (svd_v A)^*t.
 by rewrite linearZ/= -scalemxAr -!scalemxAl scalerA mulrC directcE -svdE.
 by rewrite (svd_d_unique _ _ _ P1) ?svd_diagZ ?unitarymxZ ?directc_norm ?svd_pE.
@@ -1429,39 +1429,39 @@ Proof. by rewrite -scaleN1r svd_dZ normrN1 scale1r. Qed.
 Lemma svds_dN n (A : 'M[R]_n) : svds_d (- A) = svds_d A.
 Proof. by rewrite /svds_d svd_dN. Qed.
 
-Lemma svd_d_adjmx m n (A:'M[R]_(m,n)) : 
+Lemma svd_d_adjmx m n (A:'M[R]_(m,n)) :
   svd_d (A^*t) = castmx (erefl _, minnC _ _) (svd_d A).
 Proof.
-suff P1: A^*t = (svd_v A) *m cdiag_mx (castmx (erefl _, minnC _ _) (svd_d A)) 
+suff P1: A^*t = (svd_v A) *m cdiag_mx (castmx (erefl _, minnC _ _) (svd_d A))
   *m (svd_u A)^*t by rewrite -(svd_d_unique _ _ _ P1)// ?castmx_funE svd_pE.
 by rewrite {1}(svdE A) !adjmxM adjmxK cdiag_mx_adj svd_diag_conj// ?svd_pE// mulmxA.
 Qed.
 
 Lemma svds_d_adjmx n (A: 'M[R]_n) : svds_d (A^*t) = svds_d A.
-Proof. by rewrite /svds_d svd_d_adjmx 
+Proof. by rewrite /svds_d svd_d_adjmx
 (eq_irrelevance (minnC n n) (erefl (minn n n))) castmx_id. Qed.
 
-Lemma svd_d_trmx m n (A:'M[R]_(m,n)) : 
+Lemma svd_d_trmx m n (A:'M[R]_(m,n)) :
   svd_d (A^T) = castmx (erefl _, minnC _ _) (svd_d A).
 Proof.
-suff P1: A^T = (svd_v A)^*t^T *m cdiag_mx (castmx (erefl _, minnC _ _) (svd_d A)) 
-  *m (svd_u A)^T^*t^*t by rewrite (svd_d_unique _ _ _ P1)// ?trmxC_unitary 
+suff P1: A^T = (svd_v A)^*t^T *m cdiag_mx (castmx (erefl _, minnC _ _) (svd_d A))
+  *m (svd_u A)^T^*t^*t by rewrite (svd_d_unique _ _ _ P1)// ?trmxC_unitary
     ?trmx_unitary// ?trmxC_unitary// ?castmx_funE svd_pE.
 by rewrite {1}(svdE A) !trmx_mul !adjmxK cdiag_mx_tr mulmxA.
 Qed.
 
 Lemma svds_d_trmx n (A: 'M[R]_n) : svds_d (A^T) = svds_d A.
-Proof. by rewrite /svds_d svd_d_trmx 
+Proof. by rewrite /svds_d svd_d_trmx
 (eq_irrelevance (minnC n n) (erefl (minn n n))) castmx_id. Qed.
 
-Lemma svd_d_conjmx m n (A:'M[R]_(m,n)) : 
+Lemma svd_d_conjmx m n (A:'M[R]_(m,n)) :
   svd_d (A^*m) = (svd_d A).
-Proof. 
+Proof.
 by rewrite -[in LHS](trmxK A) -adjmxTC svd_d_adjmx svd_d_trmx castmx_comp castmx_id.
 Qed.
 
 Lemma svds_d_conjmx n (A: 'M[R]_n) : svds_d (A^*m) = svds_d A.
-Proof. by rewrite /svds_d svd_d_conjmx. Qed. 
+Proof. by rewrite /svds_d svd_d_conjmx. Qed.
 
 Lemma svd_d_Ul m n U (A:'M[R]_(m,n)) : U \is unitarymx -> svd_d (U *m A) = svd_d A.
 Proof.
@@ -1500,19 +1500,19 @@ Proof. by rewrite -{2}(trmxK U) svd_d_trmx=>/svd_d_unitary->; rewrite castmx_con
 Lemma svds_d_unitary m (U: 'M[R]_m) : U \is unitarymx -> svds_d U = const_mx 1.
 Proof. by rewrite /svds_d=>/svd_d_unitary->; rewrite castmx_const. Qed.
 
-Lemma svd_d_cdiag m n (D: 'rV[R]_(minn m n)) : D \is svd_diag -> 
+Lemma svd_d_cdiag m n (D: 'rV[R]_(minn m n)) : D \is svd_diag ->
   svd_d (cdiag_mx D) = D.
 Proof.
 move=>D1; suff P1: (cdiag_mx D) = 1%:M *m (cdiag_mx D) *m (1%:M)^*t.
-  by rewrite -(svd_d_unique _ _ _ P1)// ?unitarymx1//. 
+  by rewrite -(svd_d_unique _ _ _ P1)// ?unitarymx1//.
 by rewrite mul1mx adjmx_scale conjC1 mulmx1.
 Qed.
 
-Lemma svd_d_diag n (D : 'rV_n) : D \is svd_diag -> 
+Lemma svd_d_diag n (D : 'rV_n) : D \is svd_diag ->
   svd_d (diag_mx D) = castmx (erefl _, esym (minn_id _)) D.
 Proof.
-move=>D1; suff P1: (diag_mx D)= 1%:M *m(cdiag_mx(castmx(erefl _,esym(minn_id n)) D)) 
-  *m (1%:M)^*t by rewrite (svd_d_unique _ _ _ P1)// ?unitarymx1// castmx_funE. 
+move=>D1; suff P1: (diag_mx D)= 1%:M *m(cdiag_mx(castmx(erefl _,esym(minn_id n)) D))
+  *m (1%:M)^*t by rewrite (svd_d_unique _ _ _ P1)// ?unitarymx1// castmx_funE.
 by rewrite mul1mx adjmx_scale conjC1 mulmx1 cdiag_mx_diag castmx_comp/= castmx_id.
 Qed.
 
@@ -1551,39 +1551,39 @@ Proof. by rewrite -{2}[A]adjmxK rank_form mxrank_adj. Qed.
 
 End SingularValueDecomposition.
 
-#[global] Hint Extern 0 (is_true (svd_u _ \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true (svd_u _ \is unitarymx)) =>
   (apply/svd_u_unitarymx) : core.
-#[global] Hint Extern 0 (is_true ((svd_u _)^*t \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true ((svd_u _)^*t \is unitarymx)) =>
   (apply/adjmx_unitaryP/svd_u_unitarymx) : core.
-#[global] Hint Extern 0 (is_true ((svd_u _)^*m \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true ((svd_u _)^*m \is unitarymx)) =>
   (apply/conjmx_unitaryP/svd_u_unitarymx) : core.
-#[global] Hint Extern 0 (is_true ((svd_u _)^T \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true ((svd_u _)^T \is unitarymx)) =>
   (apply/trmx_unitaryP/svd_u_unitarymx) : core.
-#[global] Hint Extern 0 (is_true (svd_v _ \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true (svd_v _ \is unitarymx)) =>
   (apply/svd_v_unitarymx) : core.
-#[global] Hint Extern 0 (is_true ((svd_v _)^*t \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true ((svd_v _)^*t \is unitarymx)) =>
   (apply/adjmx_unitaryP/svd_v_unitarymx) : core.
-#[global] Hint Extern 0 (is_true ((svd_v _)^*m \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true ((svd_v _)^*m \is unitarymx)) =>
   (apply/conjmx_unitaryP/svd_v_unitarymx) : core.
-#[global] Hint Extern 0 (is_true ((svd_v _)^T \is unitarymx)) => 
+#[global] Hint Extern 0 (is_true ((svd_v _)^T \is unitarymx)) =>
   (apply/trmx_unitaryP/svd_v_unitarymx) : core.
-#[global] Hint Extern 0 (is_true (svd_d _ \is svd_diag)) => 
+#[global] Hint Extern 0 (is_true (svd_d _ \is svd_diag)) =>
   apply: svd_d_svd_diag : core.
-#[global] Hint Extern 0 (is_true (svds_d _ \is svd_diag)) => 
+#[global] Hint Extern 0 (is_true (svds_d _ \is svd_diag)) =>
   apply: svds_d_svd_diag : core.
-#[global] Hint Extern 0 (is_true (0 <= fun_of_matrix (svd_d _) _ _)) => 
+#[global] Hint Extern 0 (is_true (0 <= fun_of_matrix (svd_d _) _ _)) =>
   apply: svd_d_ge0 : core.
-#[global] Hint Extern 0 (is_true (0 <= fun_of_matrix (svds_d _) _ _)) => 
+#[global] Hint Extern 0 (is_true (0 <= fun_of_matrix (svds_d _) _ _)) =>
   apply: svds_d_ge0 : core.
-#[global] Hint Extern 0 (is_true (fun_of_matrix (svd_d _) _ _ \is Num.nneg)) => 
+#[global] Hint Extern 0 (is_true (fun_of_matrix (svd_d _) _ _ \is Num.nneg)) =>
   apply: svd_d_nneg : core.
-#[global] Hint Extern 0 (is_true (fun_of_matrix (svds_d _) _ _ \is Num.nneg)) => 
+#[global] Hint Extern 0 (is_true (fun_of_matrix (svds_d _) _ _ \is Num.nneg)) =>
   apply: svds_d_nneg : core.
 
 Section pred_mxtens.
 Variable (R: numClosedFieldType).
 
-Lemma unitarymx_tens m1 m2 n1 n2 (A: 'M[R]_(m1,m2)) (B: 'M[R]_(n1,n2)) : 
+Lemma unitarymx_tens m1 m2 n1 n2 (A: 'M[R]_(m1,m2)) (B: 'M[R]_(n1,n2)) :
   A \is unitarymx -> B \is unitarymx -> A *t B \is unitarymx.
 Proof.
 move=>/unitarymxP PA/unitarymxP PB; apply/unitarymxP.
@@ -1595,11 +1595,11 @@ Lemma psdmx_tens m n (A: 'M[R]_m) (B: 'M[R]_n) :
 Proof.
 move=>/psdmx_form[x ->] /psdmx_form[y ->].
 by rewrite -tensmx_mul -adjmx_tens form_psd.
-Qed. 
+Qed.
 
 Lemma denmx_tens m n (A: 'M[R]_m) (B: 'M[R]_n) :
   A \is denmx -> B \is denmx -> A *t B \is denmx.
-Proof. 
+Proof.
 move=>/denmxP [P1 P2] /denmxP [P3 P4]; apply/denmxP; split; last first.
 by rewrite mxtrace_tens -[1]mulr1 ler_pM// psdmx_trace.
 move: P1 P3=>/psdmx_form[x ->] /psdmx_form[y ->].
@@ -1719,19 +1719,19 @@ Proof. by rewrite /minn; case: ltnP=> _; [apply/rank_leq_row|apply/rank_leq_col]
 (* the dim depending on rank suffers type cast problem *)
 (* we thus provide any r = rank A and gives matrices with dim of r instead of rank *)
 HB.lock
-Definition csvdr_d (C : numClosedFieldType) m n (A : 'M[C]_(m,n)) r (eqr : \rank A = r) := 
+Definition csvdr_d (C : numClosedFieldType) m n (A : 'M[C]_(m,n)) r (eqr : \rank A = r) :=
     castmx (erefl, eqr) (lsubmx (castmx (erefl, esym (subnKC (rank_leq_min A))) (svd_d A))).
 Arguments csvdr_d [C m n] A [r] eqr.
 Notation csvd_d A := (csvdr_d A erefl).
 
 HB.lock
-Definition csvdr_u (C : numClosedFieldType) m n (A : 'M[C]_(m,n)) r (eqr : \rank A = r) := 
+Definition csvdr_u (C : numClosedFieldType) m n (A : 'M[C]_(m,n)) r (eqr : \rank A = r) :=
   castmx (erefl, eqr) (lsubmx (castmx (erefl, esym (subnKC (rank_leq_row A))) (svd_u A))).
 Arguments csvdr_u [C m n] A [r] eqr.
 Notation csvd_u A := (csvdr_u A erefl).
 
 HB.lock
-Definition csvdr_v (C : numClosedFieldType) m n (A : 'M[C]_(m,n)) r (eqr : \rank A = r) := 
+Definition csvdr_v (C : numClosedFieldType) m n (A : 'M[C]_(m,n)) r (eqr : \rank A = r) :=
   castmx (erefl, eqr) (lsubmx (castmx (erefl, esym (subnKC (rank_leq_col A))) (svd_v A))).
 Arguments csvdr_v [C m n] A [r] eqr.
 Notation csvd_v A := (csvdr_v A erefl).
@@ -1769,8 +1769,8 @@ by apply/usubmx_unitary; rewrite !castmx_funE/= trmx_unitary.
 Qed.
 
 Lemma svd_d_sum m n (A : 'M[C]_(m,n)) :
-  A = \sum_i svd_d A 0 i *: 
-    col (cast_ord (min_idl m n) (lshift (m - n) i)) (svd_u A) *m 
+  A = \sum_i svd_d A 0 i *:
+    col (cast_ord (min_idl m n) (lshift (m - n) i)) (svd_u A) *m
       row (cast_ord (min_idr m n) (lshift (n - m) i)) (svd_v A)^*t.
 Proof.
 rewrite {1}(svdE A) /cdiag_mx -{1}[svd_u A](castmxK erefl (esym (min_idl m n))).
@@ -1810,10 +1810,10 @@ rewrite (big_split_ord_cast Pi)/=; apply/(leq_trans (n := \sum_(i0 < i) 1%N)).
 by rewrite sum1_card card_ord.
 Qed.
 
-Lemma csvd_d_ge0 m n (A : 'M[C]_(m,n)) r (eqr : \rank A = r) i j : 
+Lemma csvd_d_ge0 m n (A : 'M[C]_(m,n)) r (eqr : \rank A = r) i j :
   0 <= csvdr_d A eqr i j.
 Proof. by case: r / eqr j => j; rewrite csvdr_d.unlock mxE castmxE. Qed.
-Lemma csvd_d_nneg m n (A : 'M[C]_(m,n)) r (eqr : \rank A = r) i j : 
+Lemma csvd_d_nneg m n (A : 'M[C]_(m,n)) r (eqr : \rank A = r) i j :
   csvdr_d A eqr i j \is Num.nneg.
 Proof. apply/csvd_d_ge0. Qed.
 
@@ -1825,16 +1825,16 @@ case: ltnP=>// Pij /=; rewrite csvdr_d.unlock !mxE !castmxE/= ord1 esymK=> _.
 by move: (svd_d_svd_diag A)=>/svd_diag_nincr/rv_nincrP; apply=>/=.
 Qed.
 
-Lemma csvd_d_gt0 m n (A : 'M[C]_(m,n)) r (eqr : \rank A = r) i j : 
+Lemma csvd_d_gt0 m n (A : 'M[C]_(m,n)) r (eqr : \rank A = r) i j :
   0 < csvdr_d A eqr i j.
 Proof.
-by case: r / eqr j => j; rewrite csvdr_d.unlock mxE 
+by case: r / eqr j => j; rewrite csvdr_d.unlock mxE
   castmxE ord1/= esymK svd_diag_rank_neq0// rank_svd_d/=.
 Qed.
-Lemma csvd_d_pos m n (A : 'M[C]_(m,n)) r (eqr : \rank A = r) i j : 
+Lemma csvd_d_pos m n (A : 'M[C]_(m,n)) r (eqr : \rank A = r) i j :
   csvdr_d A eqr i j \is Num.pos.
 Proof. apply/csvd_d_gt0. Qed.
-Lemma csvd_d_posmx m n (A : 'M[C]_(m,n)) r (eqr : \rank A = r) : 
+Lemma csvd_d_posmx m n (A : 'M[C]_(m,n)) r (eqr : \rank A = r) :
   csvdr_d A eqr \is a posmx.
 Proof. by case: r / eqr; apply/posmxP=>i j; rewrite posrE csvd_d_gt0. Qed.
 
@@ -1846,21 +1846,21 @@ rewrite (big_split_ord_cast (subnKC (rank_leq_min A)))/= [X in _ + X]big1 ?addr0
   by rewrite svd_diag_rank_eq0 ?scale0r ?mul0mx// ?svd_pE//= rank_svd_d leq_addr.
 rewrite mul_mx_diag; apply/matrixP=>i j.
 rewrite mxE summxE; apply eq_bigr=>r _.
-rewrite !mxE big_ord1 !mxE -mulrA mulrCA mulrA !castmxE/= ?esymK ?cast_ord_id; 
+rewrite !mxE big_ord1 !mxE -mulrA mulrCA mulrA !castmxE/= ?esymK ?cast_ord_id;
 by do ! f_equal; apply/val_inj=>/=.
 Qed.
 Arguments csvdrE [m n] A [r] eqr.
 
 Lemma csvd_d2_svds_d m n A (U : 'M_(m,\rank A)) (v : 'rV[C]_(\rank A)) (V : 'M_(n,\rank A)) :
-  U^*t \is unitarymx -> V^*t \is unitarymx -> 
-    v \is svd_diag -> A = U *m diag_mx v *m V ^*t -> 
+  U^*t \is unitarymx -> V^*t \is unitarymx ->
+    v \is svd_diag -> A = U *m diag_mx v *m V ^*t ->
     castmx (erefl, subnKC (rank_leq_row A)) (row_mx (v .* v^*m) 0) = svds_d (A *m A^*t).
 Proof.
 move=>PU PV Pv PA.
 move: (unitary_ext PU) (unitary_ext PV) => PU1 PV1.
 apply/(svds_d_unique (U := castmx (erefl, subnKC (rank_leq_row A)) (schmidt (col_mx U^*t 0))^*t)
       (V := (castmx (subnKC (rank_leq_row A), erefl) (schmidt (col_mx U^*t 0)))^*t)).
-- by rewrite -trmxC_unitary adjmx_castV/= -adjmxE adjmxK 
+- by rewrite -trmxC_unitary adjmx_castV/= -adjmxE adjmxK
     castmx_funE schmidt_unitarymx// subnKC// rank_leq_row.
 - by rewrite trmxC_unitary castmx_funE schmidt_unitarymx// subnKC// rank_leq_row.
 - rewrite castmx_funE svd_diag_exd//; apply/svd_diagP=>i; split=>[|j Pij].
@@ -1875,13 +1875,13 @@ apply/(svds_d_unique (U := castmx (erefl, subnKC (rank_leq_row A)) (schmidt (col
   by rewrite  !adjmxM !mulmxA mulmxtVK// diag_mx_adj mulmxACA diag_mx_dmul.
 Qed.
 
-Lemma csvd_d_unique m n A r (eqr : \rank A = r) 
+Lemma csvd_d_unique m n A r (eqr : \rank A = r)
   (U : 'M_(m,r)) (v : 'rV[C]_r) (V : 'M_(n,r)) :
-  U^*t \is unitarymx -> V^*t \is unitarymx -> v \is svd_diag -> 
+  U^*t \is unitarymx -> V^*t \is unitarymx -> v \is svd_diag ->
     A = U *m diag_mx v *m V ^*t -> v = csvdr_d A eqr.
 Proof.
 case: r / eqr U v V => U v V PU PV Pv PA.
-move: (csvd_d2_svds_d (csvd_u_unitarymx erefl) (csvd_v_unitarymx erefl) 
+move: (csvd_d2_svds_d (csvd_u_unitarymx erefl) (csvd_v_unitarymx erefl)
   (csvd_d_svd_diag erefl) (csvdrE A erefl)).
 move: (csvd_d2_svds_d PU PV Pv PA)=><-/esym.
 move=>/castmx_inj/eq_row_mx[]/matrixP P _.
@@ -1890,9 +1890,9 @@ apply/matrixP=>i j; rewrite ord1 -[LHS]ger0_norm -1?[RHS]ger0_norm ?csvd_d_ge0//
 move: (P 0 j); rewrite !mxE -!normCK=>/pexpIrn; apply=>//; apply/normr_nneg.
 Qed.
 
-Lemma csvd_d_unique_sort m n A r (eqr : \rank A = r) 
+Lemma csvd_d_unique_sort m n A r (eqr : \rank A = r)
   (U : 'M_(m,r)) (v : 'rV[C]_r) (V : 'M_(n,r)) :
-  U^*t \is unitarymx -> V^*t \is unitarymx -> 
+  U^*t \is unitarymx -> V^*t \is unitarymx ->
     A = U *m diag_mx v *m V ^*t -> sortv (map_mx normr v) = csvdr_d A eqr.
 Proof.
 move=>PU PV PA. move: (permv_sortv (map_mx normr v))=>[s Ps].
@@ -1904,7 +1904,7 @@ apply/(csvd_d_unique _ (U := U') (V := V')).
   apply/unitarymxPV; rewrite diag_mx_adj diag_mx_dmul -diag_const_mx.
   by f_equal; apply/matrixP=>i j; rewrite !mxE -normCKC directc_norm expr1n.
 - by rewrite adjmxM; apply/mul_unitarymx.
-- rewrite qualifE; apply/andP; split; 
+- rewrite qualifE; apply/andP; split;
   [apply/sortv_nneg | apply/sortv_nincr/realmx_cmp/nnegmx_real];
   by apply/nnegmxP=>i j; rewrite mxE nnegrE.
 - have PX l (X : 'M[C]_(l,r)) : X *m perm_mx s^-1 *m perm_mx s = X.
@@ -1914,16 +1914,16 @@ apply/(csvd_d_unique _ (U := U') (V := V')).
   by apply/matrixP=>i j; rewrite !mxE directcE.
 Qed.
 
-Lemma csvd_d_unique_permv m n A r (eqr : \rank A = r) 
+Lemma csvd_d_unique_permv m n A r (eqr : \rank A = r)
   (U : 'M_(m,r)) (v : 'rV[C]_r) (V : 'M_(n,r)) :
-  U^*t \is unitarymx -> V^*t \is unitarymx -> 
+  U^*t \is unitarymx -> V^*t \is unitarymx ->
     A = U *m diag_mx v *m V ^*t -> permv (map_mx normr v) (csvdr_d A eqr).
 Proof. by move=>UU UV /(csvd_d_unique_sort _ UU UV) <-; apply/sortv_permvr. Qed.
 
 Lemma csvd_d_uniqueP m n r A (U : 'M_(m,r)) (v : 'rV[C]_r) (V : 'M_(n,r)) :
-  U^*t \is unitarymx -> V^*t \is unitarymx -> 
+  U^*t \is unitarymx -> V^*t \is unitarymx ->
     v \is svd_diag -> v \is a posmx ->
-    A = U *m diag_mx v *m V ^*t -> 
+    A = U *m diag_mx v *m V ^*t ->
     match \rank A =P r with
                    | ReflectT E => v = csvdr_d A E
                    | _ => False
@@ -1940,10 +1940,10 @@ Qed.
 
 Lemma castmx_symV T m1 n1 m2 n2 (eq_m : m1 = m2) (eq_n : n1 = n2) (A1 : 'M[T]_(m1, n1)) A2 :
   A1 = castmx (esym eq_m, esym eq_n) A2 -> A2 = castmx (eq_m, eq_n) A1.
-Proof. by move=>/castmx_sym; rewrite !esymK. Qed.  
+Proof. by move=>/castmx_sym; rewrite !esymK. Qed.
 
 Lemma svd_d_csvdrE m n (A : 'M[C]_(m,n)) r (eqr : \rank A = r) :
-  svd_d A = castmx (erefl, subnKC (rank_leq_min A)) 
+  svd_d A = castmx (erefl, subnKC (rank_leq_min A))
     (row_mx (castmx (erefl, esym eqr) (csvdr_d A eqr)) 0).
 Proof.
 case: r / eqr; rewrite csvdr_d.unlock; apply/castmx_symV/matrixP=>i j.
@@ -1980,7 +1980,7 @@ case: r / eqr =>/=; set P := esym _; move: P.
 by rewrite adjmxTC=>P; rewrite csvd_d_conjmx csvd_d_trmx (eq_irrelevance (etrans _ _) P).
 Qed.
 
-Lemma csvdr_d_tens_permv m n p q (A : 'M[C]_(m,n)) (B : 'M[C]_(p,q)) 
+Lemma csvdr_d_tens_permv m n p q (A : 'M[C]_(m,n)) (B : 'M[C]_(p,q))
   r1 (eqr1 : _ = r1) r2 (eqr2 : _ = r2) (eqr : _ = (r1 * r2)%N) :
     permv (csvdr_d (A *t B) eqr) (csvdr_d A eqr1 *t csvdr_d B eqr2).
 Proof.
@@ -1990,12 +1990,12 @@ have P1: map_mx normr (csvd_d A *t csvd_d B) = csvd_d A *t csvd_d B.
   by apply/nnegmx_tens; apply/posmx_nneg/csvd_d_posmx.
 rewrite -P1; apply/permvC/(csvd_d_unique_permv _
   (U := csvd_u A *t csvd_u B) (V := csvd_v A *t csvd_v B)).
-1,2: rewrite adjmx_tens; apply/unitarymx_tens; 
+1,2: rewrite adjmx_tens; apply/unitarymx_tens;
   by rewrite ?csvd_u_unitarymx ?csvd_v_unitarymx.
 by rewrite diag_mx_tens tensmx_mul adjmx_tens tensmx_mul -!csvdrE.
 Qed.
 
-Lemma csvdr_d_tens m n p q (A : 'M[C]_(m,n)) (B : 'M[C]_(p,q)) 
+Lemma csvdr_d_tens m n p q (A : 'M[C]_(m,n)) (B : 'M[C]_(p,q))
   r1 (eqr1 : _ = r1) r2 (eqr2 : _ = r2) (eqr : _ = (r1 * r2)%N) :
     exists s : 'S__, csvdr_d (A *t B) eqr =
       col_perm s (csvdr_d A eqr1 *t csvdr_d B eqr2).
@@ -2026,7 +2026,7 @@ apply/(csvd_d_unique _ (U := U) (V := V)).
 - by rewrite /U adjmxE tr_col_mx map_row_mx -!adjmxE linear0 row_mx0_unitarymx// csvd_u_unitarymx.
 - by rewrite /V adjmxE tr_col_mx map_row_mx -!adjmxE linear0 row_mx0_unitarymx// csvd_v_unitarymx.
 - by rewrite csvd_d_svd_diag.
-- by rewrite /U /V mul_col_mx mul0mx mul_col_mx mul0mx adjmxE tr_col_mx 
+- by rewrite /U /V mul_col_mx mul0mx mul_col_mx mul0mx adjmxE tr_col_mx
   map_row_mx -!adjmxE linear0 mul_mx_row mulmx0 -csvdrE /block_mx row_mx0.
 Qed.
 
@@ -2118,12 +2118,12 @@ Variable (R : numFieldType).
 Definition telescope_fun_ord (n : nat) (f : 'I_n.+1 -> R) (i : 'I_n.+1) :=
   f i - frcons (ftail f) 0 i.
 
-Lemma telescope_fun_ord_fcons n x f : 
+Lemma telescope_fun_ord_fcons n x f :
   @telescope_fun_ord n.+1 (fcons x f) = fcons (x - f 0) (telescope_fun_ord f).
 Proof.
 rewrite /telescope_fun_ord; apply/funext=>i.
 case: (unliftP ord0 i)=>/=[j ->|->].
-  rewrite !fconsE fconsKV; do ! f_equal; 
+  rewrite !fconsE fconsKV; do ! f_equal;
   case: (unliftP ord_max j)=>/=[k ->|->].
     have -> : (nlift ord0 (nlift ord_max k)) = nlift ord_max (nlift ord0 k).
       by apply/val_inj=>/=; rewrite !bump0 bumpS.
@@ -2155,7 +2155,7 @@ End shift.
 Variable (R : numClosedFieldType).
 
 (* von Neumann trace inequality *)
-Lemma vonNeumann_trace_ler m (A B : 'M[R]_m): 
+Lemma vonNeumann_trace_ler m (A B : 'M[R]_m):
   `| \tr (A *m B) | <= \sum_i (svds_d A 0 i) * (svds_d B 0 i).
 Proof.
 case: m A B=>[??|m A B].
@@ -2167,7 +2167,7 @@ pose a (x : 'M[R]_m.+1) := telescope_fun_ord (svds_d x 0).
 have Pa x : diag_mx (svds_d x) = \sum_i (a x i) *: (P i).
   transitivity (diag_mx (\sum_i (a x i) *: (\row_(j < m.+1) (j <= i)%:R))); last first.
     apply/matrixP=>i j; rewrite mxE !summxE.
-    case: eqP=>[->|/eqP/negPf Pij]; 
+    case: eqP=>[->|/eqP/negPf Pij];
       first by rewrite mulr1n; apply eq_bigr=>k _; rewrite !mxE eqxx mulr1n.
     by rewrite mulr0n big1// =>k _; rewrite !mxE Pij mulr0n mulr0.
   f_equal; apply/matrixP=>i j; rewrite ord1 summxE.
@@ -2182,7 +2182,7 @@ rewrite !Pa linear_sumlz/=.
 under eq_bigr do rewrite linear_sumlz/= !linear_sumr/=.
 rewrite pair_big/= linear_sum/=.
 under eq_bigr do rewrite -!scalemxAl -!scalemxAr scalerA linearZ/=.
-have -> : \sum_(i < m.+1) svds_d A 0 i * svds_d B 0 i = 
+have -> : \sum_(i < m.+1) svds_d A 0 i * svds_d B 0 i =
           \sum_i (a A i.1) * (a B i.2) * \tr(P i.1 *m P i.2).
   transitivity (\tr (diag_mx (svds_d A) *m diag_mx (svds_d B))).
     by rewrite mul_mx_diag /mxtrace; apply eq_bigr=>/= i _; rewrite !mxE eqxx mulr1n.
@@ -2226,7 +2226,7 @@ End vonNeumann_trace.
 (* to avoid messy type cast of singular values *)
 HB.lock Definition svd_f (C : numClosedFieldType) m n (A : 'M[C]_(m,n)) (i : nat) :=
   match (i < minn m n)%N =P true with
-  | ReflectT E => svd_d A 0 (Ordinal E) | _ => 0 
+  | ReflectT E => svd_d A 0 (Ordinal E) | _ => 0
   end.
 
 Section svd_f.
@@ -2234,7 +2234,7 @@ Variable (C : numClosedFieldType).
 
 Lemma svd_dE m n (A : 'M[C]_(m,n)) i j : svd_d A i j = svd_f A j.
 Proof.
-by rewrite svd_f.unlock ord1; case: j=>j Pj; 
+by rewrite svd_f.unlock ord1; case: j=>j Pj;
   case: eqP=>//= P; rewrite (eq_irrelevance P Pj).
 Qed.
 
@@ -2247,11 +2247,11 @@ Proof. by rewrite ord1 /svds_d castmxE/= svd_dE. Qed.
 Lemma svds_dEV m (A : 'M[C]_m) (j : 'I_m) : svd_f A j = svds_d A 0 j.
 Proof. by rewrite svds_dE. Qed.
 
-Lemma csvdr_dE m n (A : 'M[C]_(m,n)) r (eqr : \rank A = r) i j : 
+Lemma csvdr_dE m n (A : 'M[C]_(m,n)) r (eqr : \rank A = r) i j :
   csvdr_d A eqr i j = svd_f A j.
 Proof. by rewrite csvdr_d.unlock castmxE mxE castmxE svd_dE. Qed.
 
-Lemma csvdr_dEV m n (A : 'M[C]_(m,n)) r (eqr : \rank A = r) i (j : 'I_r) : 
+Lemma csvdr_dEV m n (A : 'M[C]_(m,n)) r (eqr : \rank A = r) i (j : 'I_r) :
   svd_f A j = csvdr_d A eqr i j.
 Proof. by rewrite csvdr_dE. Qed.
 
@@ -2282,7 +2282,7 @@ Qed.
 Lemma svd_f_pos m n (A : 'M[C]_(m,n)) i : (i < \rank A)%N -> svd_f A i \is Num.pos.
 Proof. rewrite posrE; exact: svd_f_gt0. Qed.
 
-Lemma svd_d_exdrE m n (A : 'M[C]_(m,n)) i j : 
+Lemma svd_d_exdrE m n (A : 'M[C]_(m,n)) i j :
   svd_d_exdr (svd_d A) i j = svd_f A j.
 Proof.
 rewrite castmxE/= ord1 mxE; case: split_ordP.
@@ -2291,7 +2291,7 @@ move=>k /(f_equal val)/= ->; rewrite mxE svd_f_eq0//.
 apply/(leq_trans (rank_leq_min _))/leq_addr.
 Qed.
 
-Lemma svd_d_exdlE m n (A : 'M[C]_(m,n)) i j : 
+Lemma svd_d_exdlE m n (A : 'M[C]_(m,n)) i j :
   svd_d_exdl (svd_d A) i j = svd_f A j.
 Proof.
 rewrite castmxE/= ord1 mxE; case: split_ordP.
@@ -2323,19 +2323,19 @@ Proof. apply/svd_f_eq/svd_d_conjmx. Qed.
 Lemma svd_f_adjmx m n (A : 'M[C]_(m,n)) : svd_f A^*t = svd_f A.
 Proof. by rewrite adjmxTC svd_f_conjmx svd_f_trmx. Qed.
 
-Lemma svd_f_Ul m n (U : 'M_m) (A : 'M[C]_(m,n)) : 
+Lemma svd_f_Ul m n (U : 'M_m) (A : 'M[C]_(m,n)) :
   U \is unitarymx -> svd_f (U *m A) = svd_f A.
 Proof. by move=>UU; apply/svd_f_eq/svd_d_Ul. Qed.
 
-Lemma svd_f_Ur m n (U : 'M_n) (A : 'M[C]_(m,n)) : 
+Lemma svd_f_Ur m n (U : 'M_n) (A : 'M[C]_(m,n)) :
   U \is unitarymx -> svd_f (A *m U) = svd_f A.
 Proof. by move=>UU; apply/svd_f_eq/svd_d_Ur. Qed.
 
-Lemma svd_f_Ul_cond r m n (U : 'M_(r,m)) (A : 'M[C]_(m,n)) : 
+Lemma svd_f_Ul_cond r m n (U : 'M_(r,m)) (A : 'M[C]_(m,n)) :
   U \is unitarymx -> r = m -> svd_f (U *m A) = svd_f A.
 Proof. by move=>UU Pm; case: m / Pm U A UU; exact: svd_f_Ul. Qed.
 
-Lemma svd_f_Ur_cond r m n (U : 'M_(n,r)) (A : 'M[C]_(m,n)) : 
+Lemma svd_f_Ur_cond r m n (U : 'M_(n,r)) (A : 'M[C]_(m,n)) :
   U \is unitarymx -> n = r -> svd_f (A *m U) = svd_f A.
 Proof. by move=>UU Pr; case: r / Pr U UU=>U; apply: svd_f_Ur. Qed.
 
@@ -2415,8 +2415,8 @@ by do ! f_equal; apply/matrixP=>i j; rewrite !mxE.
 Qed.
 
 Lemma test1 (U : 'M[C]_m) (D S : 'rV_m) :
-  U \is unitarymx -> U *m diag_mx D = diag_mx D *m U -> 
-    (forall i j, D 0 i = D 0 j -> S 0 i = S 0 j) -> 
+  U \is unitarymx -> U *m diag_mx D = diag_mx D *m U ->
+    (forall i j, D 0 i = D 0 j -> S 0 i = S 0 j) ->
       U *m diag_mx S = diag_mx S *m U.
 Proof.
 move=>PU PD PDS; apply/matrixP=>i j; apply/eqP.
@@ -2427,7 +2427,7 @@ by rewrite subr_eq0=>/eqP/PDS->; rewrite mulrC.
 Qed.
 
 Lemma test2 (U : 'M[C]_m) (D : 'rV_m) f :
-  U \is unitarymx -> U *m diag_mx D = diag_mx D *m U -> 
+  U \is unitarymx -> U *m diag_mx D = diag_mx D *m U ->
       U *m diag_mx (map_mx f D) = diag_mx (map_mx f D) *m U.
 Proof. by move=>PU /(test1 PU); apply=>i j; rewrite !mxE=>->. Qed.
 
@@ -2437,7 +2437,7 @@ Lemma mapf_mx_unique f A (U : 'M_m) (D : 'rV_m) :
 Proof.
 move=>PU PD.
 have: A \is normalmx.
-  by apply/normalmxP; rewrite -adjmxE -PD !adjmxM adjmxK 
+  by apply/normalmxP; rewrite -adjmxE -PD !adjmxM adjmxK
     !mulmxA diag_mx_adj !mulmxtVK// !mulmxACA !diag_mx_dmul dmulmxC.
 move=>/eigen_dec; rewrite /eigenmx adjmxK => PA.
 move: (spectral_unique PU PD)=>[s] Ps.
@@ -2446,16 +2446,22 @@ rewrite mulmxU// -!mulmxA -mulUmx// -mulUCmx// => P1.
 rewrite -mulUCmx//.
 rewrite [LHS]mulmxA [LHS]mulmxA [X in _ = _ *m X]mulmxA.
 rewrite adjmxK.
-rewrite mulmxU//.
-rewrite -[RHS]mulmxA -(mulUCmx (U := perm_mx s))//.
-rewrite !mulmxA.
-rewrite -![RHS]mulmxA.
-rewrite -[X in X *m diag_mx (D ^ f)%sesqui]mulmxA.
 apply/test2.
-  rewrite mulmxA.
-  apply/unitarymx_mulmx_closed; first apply/unitarymx_mulmx_closed=>[|//=].
-  1,2: by rewrite adjmx_unitary.
-by rewrite -[LHS]mulmxA -[X in _ *m X = _]mulmxA.
+  apply/unitarymx_mulmx_closed.
+    apply/unitarymx_mulmx_closed.
+      by rewrite adjmx_unitary perm_mx_unitary.
+    by apply/spectral_unitarymx.
+  by rewrite adjmx_unitary.
+move: (congr1 (fun M => (perm_mx s)^*t *m M *m U^*t) P1).
+rewrite !mulmxA.
+move=> P2.
+have UU : U *m U^*t = 1%:M by move/unitarymxP: PU.
+have PsU : (@perm_mx C m s)^*t *m (@perm_mx C m s) = 1%:M.
+  by rewrite adjmx_perm -perm_mxM mulVg perm_mx1.
+rewrite -!mulmxA UU mulmx1 in P2.
+rewrite [RHS]mulmxA PsU mul1mx in P2.
+rewrite !mulmxA in P2.
+exact: P2.
 Qed.
 
 Lemma mapf_mx_comp f1 f2 A : mapf_mx f1 (mapf_mx f2 A) = mapf_mx (f1 \o f2) A.
@@ -2479,14 +2485,14 @@ move=>Pf A /eigen_dec; rewrite /eigenmx adjmxK =>/esym PA.
 by apply/esym; rewrite -{1}PA -(mapf_mx_unique _ _ PA) ?map_mx_id.
 Qed.
 
-Lemma mapf_mx_sqrt A : A \is normalmx -> 
+Lemma mapf_mx_sqrt A : A \is normalmx ->
   (mapf_mx sqrtC A) *m (mapf_mx sqrtC A) = A.
 Proof.
 move=>PA; rewrite mapf_mx_mul.
 by apply/mapf_mx_id=>// x; rewrite /= -expr2 sqrtCK.
 Qed.
 
-Lemma mapf_mx_rank f A : 
+Lemma mapf_mx_rank f A :
   A \is normalmx -> (forall x, (f x == 0) = (x == 0)) ->
     \rank (mapf_mx f A) = \rank A.
 Proof.
@@ -2513,7 +2519,7 @@ apply/diagmx_nnegmx_psd/nnegmxP=>i j; rewrite mxE nnegrE Pf//.
 by apply/nnegmxP; move: PA=>/psdmxP[].
 Qed.
 
-Lemma mapf_mx_svds_d f A : 
+Lemma mapf_mx_svds_d f A :
   permv (svds_d (mapf_mx f A)) (map_mx (normr \o f) (spectral_diag A)).
 Proof.
 apply/(permv_trans (svds_d_spectral_permv_normal (mapf_mx_normal f A))).
@@ -2540,7 +2546,7 @@ by rewrite !rv_nincr_sorted.
 Qed.
 
 Lemma mapf_mx_svd_f_psd f A : A \is psdmx ->
-  (f 0 = 0) -> {in Num.nneg &, {homo f : x y / x <= y}} -> 
+  (f 0 = 0) -> {in Num.nneg &, {homo f : x y / x <= y}} ->
   forall i, svd_f (mapf_mx f A) i = f (svd_f A i).
 Proof.
 move=>PA Pf0 Pf i.
@@ -2551,7 +2557,7 @@ have : forall x, 0 <= x -> 0 <= f x.
   by move=>x Px; rewrite -Pf0 Pf// nnegrE.
 move=>/(mapf_mx_svds_d_psd PA)/rv_nincr_permv_eq=>->.
 by apply/svd_diag_nincr/svds_d_svd_diag.
-by apply/rv_nincrP=>j k Pjk; rewrite !mxE Pf//; 
+by apply/rv_nincrP=>j k Pjk; rewrite !mxE Pf//;
   apply/rv_nincrP=>//; apply/svd_diag_nincr/svds_d_svd_diag.
 by rewrite mxE.
 Qed.
@@ -2567,7 +2573,7 @@ Variable (C : numClosedFieldType).
 Import VectorInternalTheory.
 
 Theorem svd_minmax_ub m n (A : 'M[C]_(m,n)) (k : nat) (P : 'M_(k,n)) :
-  exists x : 'cV_n, (P *m x = 0) /\ 
+  exists x : 'cV_n, (P *m x = 0) /\
    svd_f A k <= l2normC (A *m x) / l2normC x.
 Proof.
 have [Pk|] := boolP (k < minn m n)%N; last first.
@@ -2576,7 +2582,7 @@ have [Pk|] := boolP (k < minn m n)%N; last first.
 have P1 : (\rank P <= k)%N by apply rank_leq_row.
 pose Q := (ortho (Num.Num_conj__canonical__GRing_RMorphism C) 1%:M P).
 have Q1 : ((n - k) <= \rank Q)%N by rewrite rank_ortho leq_sub2l.
-have c1 : (k.+1 <= n)%N by apply/(leq_trans Pk)/geq_minr.  
+have c1 : (k.+1 <= n)%N by apply/(leq_trans Pk)/geq_minr.
 pose Vk := \matrix_(i < k.+1, j < n) (svd_v A)^*t (widen_ord c1 i) j.
 have Vk_row i : row i Vk = row (widen_ord c1 i) (svd_v A)^*t.
   by apply/matrixP=>a b; rewrite !mxE.
@@ -2593,7 +2599,7 @@ exists v^*t; do ! split.
   move: Pv1; rewrite sub_capmx=>/andP[]+ _.
   by rewrite orthomx1E -adjmxE=>/eqP P4; rewrite -[LHS]adjmxK adjmxM adjmxK P4 linear0.
 move: Pv1; rewrite sub_capmx=>/andP[] _ /submxP [d] Pd.
-rewrite ler_pdivlMr ?l2normC_adjmx ?normv_gt0// {2}(svdE A) -!mulmxA 
+rewrite ler_pdivlMr ?l2normC_adjmx ?normv_gt0// {2}(svdE A) -!mulmxA
   l2normCUl// -adjmxM -[in leLHS](l2normCUr (U := svd_v A))//.
 set w := _ *m _.
 rewrite -(ler_pXn2r (n := 2))// ?nnegrE// ?mulr_ge0// exprMn -l2normC_adjmx.
@@ -2611,7 +2617,7 @@ by rewrite ltnNge -ltnS ltn_ord.
 Qed.
 
 Theorem svd_minmax_lb m n (A : 'M[C]_(m,n)) (k : nat) :
-  exists (P : 'M_(k,n)), forall x : 'cV_n, 
+  exists (P : 'M_(k,n)), forall x : 'cV_n,
     (P *m x = 0) -> l2normC (A *m x) <= svd_f A k * l2normC x .
 Proof.
 have [c1|] := boolP (k <= n)%N; last first.
@@ -2680,7 +2686,7 @@ by move: Pi; rewrite -Pj/= -ltn_subRL subnn.
 Qed.
 
 Theorem svd_maxmin_ub m n (A : 'M[C]_(m,n)) (k : 'I_n) :
-  exists (P : 'M_(rev_ord k,n)), forall x : 'cV_n, 
+  exists (P : 'M_(rev_ord k,n)), forall x : 'cV_n,
     (P *m x = 0) -> svd_f A k * l2normC x <= l2normC (A *m x).
 Proof.
 case: n A k => [?[]//| n A k].
@@ -2698,7 +2704,7 @@ rewrite svd_d_exdr_conj 3![in leRHS]mxE svd_d_exdrE -normCKC ger0_norm//.
 have [Pi | Pi ] := leqP i k.
   apply/ler_pM=>//; rewrite ?exprn_ge0// ?ler_pXn2r// ?nnegrE// ?svd_f_nincr//.
   by rewrite mxE big_ord1 2![in X in _ * X]mxE -normCK exprn_ge0.
-rewrite mxE big1 ?mulr0//==>j _; 
+rewrite mxE big1 ?mulr0//==>j _;
 rewrite 2![in X in _ * X]mxE -normCK ord1 /y.
 have i1 : (i - k.+1 < rev_ord k)%N by rewrite /= ltn_sub2rE.
 have -> : i = cast_ord c1 (rshift k.+1 (Ordinal i1)).
@@ -2707,11 +2713,11 @@ move: Px; rewrite mul_dsub_mx=>/matrixP/(_ (Ordinal i1) 0).
 by rewrite mxE castmx_mull castmxE/= ord1 esymK=>->; rewrite mxE normr0 expr0n.
 Qed.
 
-Lemma l2normC_col''0 [R : numClosedFieldType] [m n] j (A : 'M[R]_(m,n.-1)) : 
+Lemma l2normC_col''0 [R : numClosedFieldType] [m n] j (A : 'M[R]_(m,n.-1)) :
   l2normC (col'' j A 0) = l2normC A.
 Proof. by rewrite !l2normC_dot adjmx_col'' mulmx_colrow'' mul0mx addr0. Qed.
 
-Lemma l2normC_row''0 [R : numClosedFieldType] [m n] j (A : 'M[R]_(m.-1,n)) : 
+Lemma l2normC_row''0 [R : numClosedFieldType] [m n] j (A : 'M[R]_(m.-1,n)) :
   l2normC (row'' j A 0) = l2normC A.
 Proof. by rewrite -l2normC_trmx tr_row'' linear0 l2normC_col''0 l2normC_trmx. Qed.
 
@@ -2806,7 +2812,7 @@ Lemma svd_f_mulmxUlr m n k (A : 'M[C]_(m,n)) (V : 'M[C]_(k,m)) (W : 'M[C]_(k,n))
   V \is unitarymx -> W \is unitarymx ->
     svd_f (V *m A *m W^*t) i <= svd_f A i.
 Proof.
-move=>PV PW; rewrite (unitary_ext PV) (unitary_ext PW) 
+move=>PV PW; rewrite (unitary_ext PV) (unitary_ext PW)
   mul_usub_mx adjmxE trmx_usub map_lsubmx -adjmxE mul_usub_mx mulmx_lsub.
 apply/(le_trans (svd_f_usub _ _))/(le_trans (svd_f_lsub _ _)).
 move: PV PW => /unitary_dim PV /unitary_dim PW.
@@ -2814,7 +2820,7 @@ by rewrite svd_f_Ur_cond ?adjmx_unitary_cond ?svd_f_Ul_cond// ?schmidt_unitarymx
 Qed.
 
 (* to replace the detM in matrix.v (more general) *)
-Lemma detM [R : comRingType] [n : nat] (A B : 'M[R]_n) :
+Lemma detM [R : comNzRingType] [n : nat] (A B : 'M[R]_n) :
   \det (A *m B) = \det A * \det B.
 Proof. by case: n A B=>[A B|n A B]; rewrite ?detM// !det_mx00 mulr1. Qed.
 
@@ -2848,7 +2854,7 @@ Lemma cast_ord_sym m n (eqmn : m = n) i j :
 Proof. by case: n / eqmn j => j; rewrite !cast_ord_id. Qed.
 
 Theorem polar_PU m n (A : 'M[C]_(m,n)) :
-  (m <= n)%N -> exists (P : 'M_m) (U : 'M_(m,n)), 
+  (m <= n)%N -> exists (P : 'M_m) (U : 'M_(m,n)),
     P \is psdmx /\ P *m P = A *m A^*t /\ U \is unitarymx /\ A = P *m U.
 Proof.
 move=>Pmn; exists (svd_u A *m diag_mx (svd_d_exdl (svd_d A)) *m (svd_u A)^*t).
@@ -2856,13 +2862,13 @@ exists (svd_u A *m (lsubmx (castmx (erefl, esym (subnKC Pmn)) (svd_v A)))^*t).
 do ! split.
 - by apply/psdmx_bimap_closed_gen/diagmx_nnegmx_psd/nnegmxP=>??; rewrite svd_d_exdlE.
 - rewrite {7 8}[A]svdE !adjmxM adjmxK !mulmxA !mulmxKtV//; f_equal.
-  rewrite -!mulmxA diag_mx_dmul cdiag_mx_mull; do ! f_equal; 
+  rewrite -!mulmxA diag_mx_dmul cdiag_mx_mull; do ! f_equal;
   by apply/matrixP=>??; rewrite mxE conj_Creal// ger0_real.
-- apply/unitarymxP; rewrite -!adjmxE adjmxM !mulmxA mulmxACA 
-  adjmxK adjmxE trmx_lsub map_usubmx -adjmxE mul_usub_mx mulmx_lsub 
+- apply/unitarymxP; rewrite -!adjmxE adjmxM !mulmxA mulmxACA
+  adjmxK adjmxE trmx_lsub map_usubmx -adjmxE mul_usub_mx mulmx_lsub
     castmx_funE/= castmx_mul unitarymxKV//.
   set t := usubmx _; have -> : t = 1%:M.
-    by apply/matrixP=>i j; rewrite !mxE castmxE/= mxE 
+    by apply/matrixP=>i j; rewrite !mxE castmxE/= mxE
       (inj_eq (@cast_ord_inj _ _ _)) (inj_eq (@lshift_inj _ _)).
   by rewrite mulmx1 unitarymxK.
 - rewrite mulmxA mulmxKtV// {1}[A]svdE -!mulmxA; f_equal.
@@ -2877,7 +2883,7 @@ do ! split.
 Qed.
 
 Theorem polar_UP m n (A : 'M[C]_(m,n)) :
-  (n <= m)%N -> exists (P : 'M_n) (U : 'M_(m,n)), 
+  (n <= m)%N -> exists (P : 'M_n) (U : 'M_(m,n)),
     P \is psdmx /\ P *m P = A^*t *m A /\ U^*t \is unitarymx /\ A = U *m P.
 Proof.
 move=>Pnm; move: (polar_PU A^*t Pnm)=>[P][U][P1][P2][P3]P4.
@@ -2889,8 +2895,8 @@ exists (P^*t); exists (U^*t); do ! split.
 Qed.
 
 Theorem polar_PU_UQ m (A : 'M[C]_m) :
-  exists (P Q : 'M_m) (U : 'M_m), 
-    P \is psdmx /\ Q \is psdmx /\ P *m P = A *m A^*t /\ Q *m Q = A^*t *m A 
+  exists (P Q : 'M_m) (U : 'M_m),
+    P \is psdmx /\ Q \is psdmx /\ P *m P = A *m A^*t /\ Q *m Q = A^*t *m A
       /\ U \is unitarymx /\ A = P *m U /\ A = U *m Q.
 Proof.
 exists (svd_u A *m diag_mx (svds_d A) *m (svd_u A)^*t).
@@ -2898,7 +2904,7 @@ exists (svd_v A *m diag_mx (svds_d A) *m (svd_v A)^*t).
 exists (svd_u A *m (svd_v A)^*t).
 do ! split.
 1,2: apply/psdmx_bimap_closed_gen/diagmx_nnegmx_psd/nnegmxP=>??; apply/svds_d_nneg.
-1,2: rewrite [in RHS](svdsE A) !adjmxM !adjmxK !mulmxA !diag_mx_adj 
+1,2: rewrite [in RHS](svdsE A) !adjmxM !adjmxK !mulmxA !diag_mx_adj
   !mulmxKtV// !mulmxACA !diag_mx_dmul; do ! f_equal;
   by apply/matrixP=>i j; rewrite !mxE conj_Creal ?ger0_real.
 - by apply/unitarymx_mulmx_closed.
@@ -2908,7 +2914,7 @@ Qed.
 Lemma svd_f_form m n (A : 'M[C]_(m,n)) i :
   svd_f (A *m A^*t) i = (svd_f A i) ^+ 2.
 Proof.
-rewrite {1 2}[A]svdE !adjmxM adjmxK !mulmxA mulmxKtV// 
+rewrite {1 2}[A]svdE !adjmxM adjmxK !mulmxA mulmxKtV//
   mulmxACA cdiag_mx_mull svd_f_Ur// svd_f_Ul//.
 have [Pi | Pi] := leqP m i.
   by rewrite !svd_f_eq0 ?(leq_trans (rank_leq_row _))// expr0n.
@@ -2926,7 +2932,7 @@ Theorem svd_f_prodM m n p (A : 'M[C]_(m,n)) (B : 'M[C]_(n,p)) k :
   \prod_(i < k) svd_f (A *m B) i <= \prod_(i < k) (svd_f A i * svd_f B i).
 Proof.
 have [Pk|Pk] := leqP k (minn m p); last first.
-  by rewrite (bigD1 (Ordinal Pk))//= svd_f_eq0 ?rank_leq_min// 
+  by rewrite (bigD1 (Ordinal Pk))//= svd_f_eq0 ?rank_leq_min//
     mul0r prodr_ge0// =>i _; rewrite mulr_ge0.
 have cm : (k <= m)%N by apply/(leq_trans Pk)/geq_minl.
 have cp : (k <= p)%N by apply/(leq_trans Pk)/geq_minr.
@@ -2944,7 +2950,7 @@ move: (svd_v_unitarymx (A *m B)); rewrite -adjmx_unitary=>/row_unitarymxP PV.
 have -> : \prod_(i < k) svd_f (A *m B) i = `| \det (Vk *m (A *m B) *m Wk^*t) |.
   have -> : (Vk *m (A *m B) *m Wk^*t) = diag_mx (\row_(i < k) svd_d (A *m B) 0 (widen_ord Pk i)).
     apply/matrixP=>i j.
-    rewrite {1}(svdE (A *m B)) -!mulmxA -adjmxM mulmxA mxE 
+    rewrite {1}(svdE (A *m B)) -!mulmxA -adjmxM mulmxA mxE
       (bigD1 (widen_ord cm i))//= big1=>[l /negPf Pl|];
     rewrite -[svd_u _]adjmxK dot_dotmxE Vk_row PU ?eqxx 1?eq_sym ?Pl ?mul0r//.
     rewrite mul1r addr0 mxE (bigD1 (widen_ord cp j))//= big1=>[l /negPf Pl|];
@@ -2958,7 +2964,7 @@ have -> : \prod_(i < k) svd_f (A *m B) i = `| \det (Vk *m (A *m B) *m Wk^*t) |.
 rewrite mulmxA -mulmxA.
 move: (polar_UP (B *m Wk^*t) cn)=>[P][U][P1][P2][P3]P4.
 rewrite P4 mulmxA detM normrM big_split/= ler_pM//.
-  rewrite -[U]adjmxK; apply/det_mulmxUlr=>//; apply/row_unitarymxP=>i j; 
+  rewrite -[U]adjmxK; apply/det_mulmxUlr=>//; apply/row_unitarymxP=>i j;
   by rewrite !Vk_row PU (inj_eq widen_ord_inj).
 rewrite -(ler_pXn2r (n := 2))// ?nnegrE// ?prodr_ge0//.
 rewrite expr2 -normrM -detM P2 adjmxM adjmxK mulmxA mulmxACA.
@@ -2983,7 +2989,7 @@ Qed.
 
 Theorem svd_minmax_ub_psd m (A : 'M[C]_m) (k : nat) (P : 'M_(k,m)) :
   A \is psdmx ->
-  exists x : 'cV_m, (P *m x = 0) /\ 
+  exists x : 'cV_m, (P *m x = 0) /\
    svd_f A k <= \tr (x^*t *m A *m x) / (l2normC x) ^+ 2.
 Proof.
 move=>PA; pose B := mapf_mx sqrtC A.
@@ -3062,10 +3068,10 @@ Import MxLownerOrder.
 
 Variable (C : numClosedFieldType).
 
-Lemma tensmx_eq0 m n p q (x : 'M[C]_(m,n)) (y : 'M[C]_(p,q)) : 
+Lemma tensmx_eq0 m n p q (x : 'M[C]_(m,n)) (y : 'M[C]_(p,q)) :
   (x *t y == 0) = (x == 0) || (y == 0).
 Proof.
-apply/Coq.Bool.Bool.eq_iff_eq_true; split; last first.
+apply/Stdlib.Bool.Bool.eq_iff_eq_true; split; last first.
   by move=>/orP[/eqP->|/eqP->]; rewrite ?linear0l ?linear0r eqxx.
 move=>/eqP/matrixP Pxy.
 case: eqP=>// /eqP Px /=; case: eqP=>// /eqP Py.
@@ -3078,11 +3084,11 @@ move: (Pxy (mxtens_index (ix,iy)) (mxtens_index (jx,jy))).
 by rewrite tensmxE mxE =>/eqP; rewrite mulf_eq0 P1 P2.
 Qed.
 
-Lemma tensmx_ge0 m n (x : 'M[C]_m) (y : 'M[C]_n) : 
+Lemma tensmx_ge0 m n (x : 'M[C]_m) (y : 'M[C]_n) :
   0 <= x -> 0 <= y -> 0 <= x *t y.
 Proof. by rewrite !le_lownerE !subr0; apply/psdmx_tens. Qed.
 
-Lemma ptensmx_rge0 m n (x : 'M[C]_m) (y : 'M[C]_n) : 
+Lemma ptensmx_rge0 m n (x : 'M[C]_m) (y : 'M[C]_n) :
   0 < x -> (0 <= x *t y) = (0 <= y).
 Proof.
 move=>Px; apply/eqb_iff; split=>[Pxy|]; last first.
@@ -3098,7 +3104,7 @@ rewrite !subr0 tensvE/= castmx_funE/= castmx_mull castmx_mul castmx_funE.
 by rewrite adjmx_tens !tensmx_mul mxtrace_tens !nnegrE pmulr_rge0.
 Qed.
 
-Lemma ptensmx_lge0 m n (x : 'M[C]_m) (y : 'M[C]_n) : 
+Lemma ptensmx_lge0 m n (x : 'M[C]_m) (y : 'M[C]_n) :
   0 < x -> (0 <= y *t x) = (0 <= y).
 Proof.
 move=>Px; apply/eqb_iff; split=>[Pxy|Py]; last first.
@@ -3116,8 +3122,8 @@ Qed.
 
 HB.instance Definition _ m n := isBRegVOrder.Build C
   'M[C]_m 'M[C]_n 'M[C]_(m * n) (@tensmx C m m n n)
-  (fun y => additive_linear (linear_tensmxr y)) 
-  (fun x => additive_linear (linear_tensmx x)) 
+  (fun y => zmod_morphism_linear (linear_tensmxr y))
+  (fun x => zmod_morphism_linear (linear_tensmx x))
   (@tensmx_eq0 m m n n) (@ptensmx_rge0 m n) (@ptensmx_lge0 n m).
 
 End mxtens_breg.

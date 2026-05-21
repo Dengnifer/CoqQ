@@ -1,11 +1,11 @@
 From HB Require Import structures.
-From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 From mathcomp.algebra Require Import all_algebra.
 From mathcomp.fingroup Require Import all_fingroup.
 From mathcomp.classical Require Import boolp classical_sets.
 From mathcomp.algebra Require Import -(notations)sesquilinear.
 From mathcomp.reals Require Import reals.
-From Coq.Bool Require Import Bool.
+From Stdlib.Bool Require Import Bool.
 From mathcomp.analysis Require Import exp trigo.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
@@ -1046,7 +1046,7 @@ End GroverAlgorithm.
 Module PhaseEstimation.
 Section PhaseEstimation.
 Variable (pt st : bool) (T : qType) (U : 'FU('Ht T)) (phi : 'Ht T) (theta : R).
-(* since 'End[T] is a ringType, exp can be directly written as ^+ *)
+(* since 'End[T] is a nzRingType, exp can be directly written as ^+ *)
 Hypothesis (eigU : U phi = (expip (2%:R * theta) *: phi)).
 Hypothesis (theta_bound : 0 <= theta < 1).
 Variable (n : nat). (* control system *)
@@ -1164,7 +1164,7 @@ exists (fun i=>i * (repr j)^-1)%g.
 by move=>y _; rewrite -mulgA mulgV mulg1.
 by move=>y _; rewrite -mulgA mulVg mulg1.
 move: Px2; rewrite rcosetE=>Px2. apply eq_bigl=>y.
-rewrite rcosetE; apply/Coq.Bool.Bool.eq_iff_eq_true; split.
+rewrite rcosetE; apply/Stdlib.Bool.Bool.eq_iff_eq_true; split.
 move=>/eqP.
 rewrite Px2 -{2}[(H :* x)%g]rcoset_repr.
 set t := repr (H :* x)%g =>P.
@@ -1348,8 +1348,8 @@ rewrite addr0 -linear_sum/= !scalerA /HC_state; f_equal.
 rewrite -{2}(sqrtCK #|H|%:R) expr2 mulrA.
 rewrite [((sqrtC #|H|%:R)^-1 / sqrtC #|G|%:R) * _]mulrC.
 rewrite -!mulrA.
-rewrite mulrA mulfV ?sqrtC_eq0//
-  mul1r sqrtCM// 1?mulrC// ?sqrtC_inv// nnegrE invr_ge0//.
+rewrite [sqrtC #|H|%:R * _]mulrA mulrACA mulfV ?sqrtC_eq0// mul1r.
+by rewrite sqrtCM// ?sqrtC_inv// nnegrE invr_ge0//.
 Qed.
 
 Lemma FG_tauC (t : {set G}) : (FG \o (tau t) = (phi t) \o FG)%VF.
