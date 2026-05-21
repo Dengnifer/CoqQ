@@ -1,10 +1,13 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
 From mathcomp.classical Require Import boolp cardinality mathcomp_extra
   classical_sets functions.
-From mathcomp.analysis Require Import ereal reals signed topology 
-  prodnormedzmodule normedtype sequences.
-From mathcomp.analysis Require Import -(notations)forms.
+From mathcomp.reals Require Import reals signed prodnormedzmodule.
+From mathcomp.analysis Require Import ereal sequences.
+From mathcomp.analysis.topology_theory Require Import topology.
+From mathcomp.analysis.normedtype_theory Require Import normedtype.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
 Require Import mcextra mcaextra notation mxpred extnum cpo.
@@ -67,6 +70,7 @@ Proof.
 move=> x s/= /nbhs_ballP [/=[e1 e2] /andP[/eqP e2eq0 e1gt0] Pb]; 
 apply/nbhs_ballP; exists (e1/(Num.sqrt 2))=>//=; first by rewrite divr_gt0//.
 move=>y/=; rewrite{1}/ball/=/mx_ball=>P; apply Pb.
+case: P=> _ P.
 move: (P 0 0) (P 0 1); rewrite -!ball_normE/ball_ /= e2eq0 /mx2c; simpc.
 rewrite -![`| _ | < _ / _](ltr_pXn2r (_ : (0 < 2)%N)) ?real_normK ?num_real// 
   ?nnegrE// ?divr_ge0// ?ltW//= => P1 P2.
@@ -277,25 +281,25 @@ rewrite -ball_normE/= /ball/= -(@raddfB _ _ (im_complex_additive R))/=.
 by rewrite normc_im -ltcR cgt0_real// normc_real.
 Qed.
 
-Lemma conjC_continuous (K : numClosedFieldType) : continuous (@Num.conj_op K).
+Lemma conjC_continuous (K : numClosedFieldType) : continuous (@Num.conj K).
 Proof.
 move=> x s/= /nbhs_ballP [/=e egt0 Pb].
 apply/nbhs_ballP. exists (e) =>//=.
-move=> y /= Pxy. apply (Pb (@Num.conj_op K y)). move: Pxy.
+move=> y /= Pxy. apply (Pb (@Num.conj K y)). move: Pxy.
 by rewrite /ball/= -rmorphB Num.Theory.norm_conjC.
 Qed.
-Lemma ccvgn_conj f a : f @ \oo --> a -> (Num.conj_op \o f) @ \oo --> (Num.conj_op a).
+Lemma ccvgn_conj f a : f @ \oo --> a -> (Num.conj \o f) @ \oo --> (Num.conj a).
 Proof. by apply: continuous_cvg; apply conjC_continuous. Qed.
-Lemma is_ccvgn_conj f : cvgn f -> cvgn (Num.conj_op \o f).
+Lemma is_ccvgn_conj f : cvgn f -> cvgn (Num.conj \o f).
 Proof. by move=> /ccvgn_conj /cvgP. Qed.
-Lemma is_ccvgn_conjE f : cvgn (Num.conj_op \o f) = cvgn f.
+Lemma is_ccvgn_conjE f : cvgn (Num.conj \o f) = cvgn f.
 Proof. 
 rewrite propeqE; split.
-have P1: f = (Num.conj_op \o (Num.conj_op \o f))
+have P1: f = (Num.conj \o (Num.conj \o f))
 by apply/funext=>x/=; rewrite Num.Theory.conjCK.
 rewrite [in X in _ -> X]P1. all: apply is_ccvgn_conj.
 Qed.
-Lemma climn_conj f : cvgn f -> limn (Num.conj_op \o f) = Num.conj_op (limn f).
+Lemma climn_conj f : cvgn f -> limn (Num.conj \o f) = Num.conj (limn f).
 Proof. by move=> ?; apply: cvg_lim; [apply: Chausdorff | apply: ccvgn_conj]. Qed.
 
 End C_sequence.
@@ -670,8 +674,15 @@ Proof. exact: mxcauchy_seqvP. Qed.
 
 End CmxNormExtNumEqual.
 
+Fact regular_vector_iso (C : numFieldType) : Vector.axiom 1 C^o.
+Proof.
+exists (fun a => a%:M).
+  by move=> a x y; rewrite rmorphD scale_scalar_mx.
+by exists (fun A : 'M_1 => A 0 0) => [a | A]; rewrite ?mxE // -mx11_scalar.
+Qed.
+
 HB.instance Definition _ (C : numFieldType) := Lmodule_hasFinDim.Build _
-  C^o (regular_vect_iso C).
+  C^o (regular_vector_iso C).
 #[non_forgetful_inheritance]
 HB.instance Definition _ (C : numFieldType) := FinNormedModule.copy C C^o.
 HB.instance Definition _ (R : rcfType) := FinNormedModule.copy R[i] (R[i]: numFieldType).
@@ -690,9 +701,10 @@ Canonical C_vorderType := VOrder.Pack (VOrder.Class C_vorderMixin).
 
 HB.instance Definition _ := VOrder.copy C C^o.
 
-HB.instance Definition C_vorderFinNormedModMixin := 
-  FinNormedModule_isVOrderFinNormedModule.Build C C (@cclosed_ge _ 0).
 Canonical ctopology_C__canonical__extnum_VOrderFinNormedModule := 
-  VOrderFinNormedModule.Pack (VOrderFinNormedModule.Class C_vorderFinNormedModMixin).
+  @VOrderFinNormedModule.Pack C C_vorderType
+    (FinNormedModule.class (C : finNormedModType C))
+    erefl (fun _ => erefl) (fun _ _ => erefl) (fun _ _ => erefl)
+    (@cclosed_ge _ 0).
 
 End C_vorderFinNormedModType.

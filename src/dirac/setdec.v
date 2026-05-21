@@ -10,9 +10,10 @@
     Anisimov, Alexander. Proof Automation for Typed Finite Sets. 2015. *)
 (* -------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect.
+From mathcomp.ssreflect Require Import all_ssreflect.
 From elpi     Require Export elpi.
 (* ------- *) Require Import BinPos Number Decimal.
+From Coq.Lists Require List.
 
 (* -------------------------------------------------------------------- *)
 Set Implicit Arguments.

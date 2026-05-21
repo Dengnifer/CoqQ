@@ -1,8 +1,9 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
 From mathcomp.classical Require Import boolp classical_sets.
-From mathcomp.analysis Require Import -(notations)forms.
-From mathcomp.analysis Require Import reals.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
+From mathcomp.reals Require Import reals.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
 (* topology and setoid has notation conflicts *)
@@ -146,7 +147,8 @@ by rewrite linearZ/=; move: (projT2 (cid (Pi i)))=>[] _ ->.
 move=>[y] + <-; rewrite /conv/==>[[F][c][g][Pi1][Pi2][Pi3]Pi4].
 exists F; exists c; exists (fun i => f (g i)); do ! split=>//.
 by move=>i; rewrite inE/=; exists (g i)=>//; move: (Pi3 i); rewrite inE.
-by rewrite Pi4 linear_sum; under eq_bigr do rewrite linearZ.
+  rewrite Pi4 linear_sum; apply: eq_bigr=> i _.
+  by rewrite linearZ.
 Qed.
 
 Lemma ler_conj (R : numClosedFieldType) (a b : R) :
@@ -154,7 +156,7 @@ Lemma ler_conj (R : numClosedFieldType) (a b : R) :
 Proof. by rewrite -subr_ge0 -rmorphB conjC_ge0 subr_ge0. Qed.
 
 Lemma conv_antilinear (C : numClosedFieldType) (U V : lmodType C) 
-  (f : {linear U -> V | Num.conj_op \; *:%R}) (S : set U) :
+  (f : {linear U -> V | conjC \; *:%R}) (S : set U) :
   (conv (f @` S) = f @` (conv S))%classic.
 Proof.
 apply/seteqP; split=>x /=.
@@ -164,16 +166,17 @@ have Pi: forall i, exists xi, S xi /\ f xi = g i.
 exists (\sum_i (c i)^* *: projT1 (cid (Pi i))).
 exists F; exists (fun i => (c i)^*); exists (fun i => projT1 (cid (Pi i))); do ! split=>//.
 by move=>i; rewrite -conjC0 -conjC1 !ler_conj.
-by rewrite -rmorph_sum Pi2 conjC1.
+  by rewrite -rmorph_sum Pi2 rmorph1.
 by move=>i; rewrite inE; move: (projT2 (cid (Pi i)))=>[].
 rewrite linear_sum Pi4; apply eq_bigr=>i _.
 by rewrite linearZ/= conjCK; move: (projT2 (cid (Pi i)))=>[] _ ->.
 move=>[y] + <-; rewrite /conv/==>[[F][c][g][Pi1][Pi2][Pi3]Pi4].
 exists F; exists (fun i => (c i)^*); exists (fun i => f (g i)); do ! split=>//.
 by move=>i; rewrite -conjC0 -conjC1 !ler_conj.
-by rewrite -rmorph_sum Pi2 conjC1.
+  by rewrite -rmorph_sum Pi2 rmorph1.
 by move=>i; rewrite inE/=; exists (g i)=>//; move: (Pi3 i); rewrite inE.
-by rewrite Pi4 linear_sum; under eq_bigr do rewrite linearZ.
+  rewrite Pi4 linear_sum; apply: eq_bigr=> i _.
+  by rewrite linearZ.
 Qed.
 
 End ConvexLinear.
@@ -579,11 +582,10 @@ apply/seteqP; split.
     exists (fa i1); first by move: (Pa3 i1); rewrite inE.
     by exists (fb i2)=>//; move: (Pb3 i2); rewrite inE.
   - under eq_bigr do rewrite -scalerA comp_lfunZr comp_lfunZl.
-    rewrite Pa4 Pb4 pair_bigV/= linear_suml; apply eq_bigr=>i _.
+    rewrite Pa4 Pb4 pair_bigV/= linear_sumlz; apply eq_bigr=>i _.
     by rewrite/= linear_sumr.
 by apply/conv_le_hom/set_comp_le; apply/conv_le.
 Qed.
 
 End SetComp.
 Infix "`\o`" := set_comp (at level 50).
-

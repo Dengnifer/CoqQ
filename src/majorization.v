@@ -1,11 +1,20 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra archimedean interval finmap fingroup perm.
-From mathcomp.analysis Require Import -(notations)forms.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra archimedean interval.
+From mathcomp.fingroup Require Import fingroup perm.
+From mathcomp.finmap Require Import finmap.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
 From quantum.external Require Import complex.
-From mathcomp Require Import mathcomp_extra boolp classical_sets functions.
-From mathcomp Require Import signed reals ereal topology normedtype sequences real_interval.
-From mathcomp Require Import esum measure lebesgue_measure lebesgue_integral numfun exp.
-From mathcomp Require Import convex itv realfun.
+From mathcomp.classical Require Import mathcomp_extra boolp classical_sets functions.
+From mathcomp.reals Require Import signed reals real_interval.
+From mathcomp.analysis Require Import ereal sequences.
+From mathcomp.analysis.topology_theory Require Import topology.
+From mathcomp.analysis.normedtype_theory Require Import normedtype.
+From mathcomp.analysis Require Import esum lebesgue_measure numfun exp.
+From mathcomp.analysis.measure_theory Require Import measure.
+From mathcomp.analysis.lebesgue_integral_theory Require Import lebesgue_integral.
+From mathcomp.algebra Require Import interval.
+From mathcomp.analysis Require Import convex realfun.
 Require Import mcextra mcaextra mxpred svd extnum ctopology convex.
 From quantum.external Require Import spectral.
 
@@ -186,11 +195,15 @@ rewrite Px; apply/doubly_stochasticP; do ! split.
 - move=>i j; rewrite summxE sumr_ge0//==>k _;
   rewrite mxE mulr_ge0//; first by move: (Pc1 k)=>/andP[].
   by move: (Pf k); rewrite inE/==>/doubly_stochasticP[]/(_ i j).
-- move=>i; under eq_bigr do (rewrite summxE; under eq_bigr do rewrite mxE).
+- move=>i.
+  transitivity (\sum_j \sum_k c k * f k i j).
+    by apply eq_bigr=>j _; rewrite summxE; apply eq_bigr=>k _; rewrite mxE.
   rewrite exchange_big/=; under eq_bigr do rewrite -mulr_sumr.
   rewrite -Pc2; apply eq_bigr=>j _; rewrite -[RHS]mulr1.
   by move: (Pf j); rewrite inE=>/doubly_stochasticP[] _ []/(_ i)-> _.
-- move=>i; under eq_bigr do (rewrite summxE; under eq_bigr do rewrite mxE).
+- move=>i.
+  transitivity (\sum_j \sum_k c k * f k j i).
+    by apply eq_bigr=>j _; rewrite summxE; apply eq_bigr=>k _; rewrite mxE.
   rewrite exchange_big/=; under eq_bigr do rewrite -mulr_sumr.
   rewrite -Pc2; apply eq_bigr=>j _; rewrite -[RHS]mulr1.
   by move: (Pf j); rewrite inE=>/doubly_stochasticP[] _ [] _ /(_ i)->.
@@ -682,12 +695,16 @@ apply/seteqP; split=>A; last first.
   - move=>i j; rewrite P4 summxE sumr_ge0// =>k _; rewrite mxE mulr_ge0//.
     by move: (P1 k)=>/andP[].
     by move: (P3 k); rewrite inE/==>/is_perm_mxP[s ->]; rewrite !mxE; case: eqP.
-  - move=>i; rewrite P4; under eq_bigr do rewrite summxE.
+  - move=>i.
+    transitivity (\sum_j \sum_k c k * f k i j).
+      by rewrite P4; apply eq_bigr=>j _; rewrite summxE; apply eq_bigr=>k _; rewrite mxE.
     rewrite -P2 exchange_big/=; apply eq_bigr=>j _.
     move: (P3 j); rewrite inE -[RHS]mulr1/==>/is_perm_mxP[s ->].
     move: (perm_mx_doubly_stochastic R s)=>/doubly_stochasticP[ _ [/(_ i)<- _]].
     by rewrite mulr_sumr; apply eq_bigr=>k _; rewrite mxE.
-  - move=>i; rewrite P4; under eq_bigr do rewrite summxE.
+  - move=>i.
+    transitivity (\sum_j \sum_k c k * f k j i).
+      by rewrite P4; apply eq_bigr=>j _; rewrite summxE; apply eq_bigr=>k _; rewrite mxE.
     rewrite -P2 exchange_big/=; apply eq_bigr=>j _.
     move: (P3 j); rewrite inE -[RHS]mulr1/==>/is_perm_mxP[s ->].
     move: (perm_mx_doubly_stochastic R s)=>/doubly_stochasticP[ _ [_ /(_ i)<-]].
@@ -1088,7 +1105,7 @@ have P1 (v : 'rV[R]_m) t i :
   (2 * \sum_(j < m | (j < i)%N) v 0 j) - \sum_j v 0 j - \sum_(j < m | (j < i)%N) t + 
   \sum_(j < m | ~~(j < i)%N) t.
   rewrite !big_split/= -!raddf_sum/= addrA addrC !addrA; do 2 f_equal.
-  apply/eqP; rewrite eq_sym subr_eq addrC [X in X + _](bigID (fun j : 'I_m => (j < i)%N))/=.
+  apply/eqP; rewrite eq_sym subr_eq addrC [\sum_j v 0 j](bigID (fun j : 'I_m => (j < i)%N))/=.
   by rewrite addrA addrK mulrDl mul1r.
 split.
 - move=>P t; move: (sortv_nincr x)=>/rv_nincrP/(rv_nincr_itv t)[i Pi].
@@ -1150,9 +1167,12 @@ move=>/majorize_normP P1; apply/majorize_normP=>t.
 under eq_bigr do rewrite mxE.
 move: (P1 (t / c)); rewrite -(ler_pM2l (x := `|c|)) ?normr_gt0//.
 rewrite !mulr_sumr.
-under eq_bigr do rewrite -normrM mulrBr [_ * (_ / _)]mulrC (mulfVK Pc0).
+under [in X in X <= _ -> _]eq_bigr do
+  rewrite -normrM mulrBr [_ * (_ / _)]mulrC (mulfVK Pc0).
+under [in X in _ <= X -> _]eq_bigr do
+  rewrite -normrM mulrBr [_ * (_ / _)]mulrC (mulfVK Pc0).
 move=>/le_trans; apply; apply/ler_sum=>i _.
-by rewrite -normrM mulrBr mxE [_ * (_ / _)]mulrC (mulfVK Pc0).
+by rewrite mxE.
 Qed.
 
 Lemma weak_majorize_row_mx m n (x y : 'rV[R]_m) (u w : 'rV_n) :
@@ -1996,7 +2016,7 @@ have Py1 : const_mx (-s) + y \is a nnegmx.
 rewrite -(weak_majorizeD2l _ _ (-s))=>/(weak_majorizeP Px1 Py1)[A PA1 PA2].
 move: {+}PA1; rewrite doubly_substochastic_elem_leP ?(doubly_substochastic_nnegmx PA1)//.
 move=>[B PB1 /elem_lemxP PB2].
-exists ((const_mx (- s)%R + y)%E *m B - const_mx (-s)).
+exists ((const_mx (- s)%R + y) *m B - const_mx (- s)%R).
   rewrite elem_lemxBrDl PA2.
   apply/elem_lemxP=>i j; rewrite !mxE ler_sum//==>k _.
   by rewrite ler_wpM2l// !mxE addrC subr_ge0 ord1.
@@ -2057,7 +2077,7 @@ Qed.
 End S2.
 #[global] Hint Extern 0 (is_true (_ \is rv_cmp)) => apply: total_rv_cmp : core.
 
-Lemma in_itv1 [disp : unit] [T : latticeType disp] (i : T) :
+Lemma in_itv1 [disp : Order.disp_t] [T : latticeType disp] (i : T) :
   i \in `]-oo, +oo[.
 Proof. by move: (itv_lex1 `[i,i])=>/subitvP; apply; rewrite itvxx inE. Qed.
 #[global] Hint Extern 0 (is_true (_ \is `]-oo, +oo[)) => apply: in_itv1 : core.
@@ -2074,11 +2094,12 @@ Notation conv := analysis.convex.conv.
 Lemma normrB_convex c : convex_fun (fun x => `|x - c| : R^o) `]-oo, +oo[.
 Proof.
 move=>t a b /= _ _; rewrite /conv/=/conv/=.
-have Pc : c = `1-(t%:inum) *: (c : R^o) + t%:inum *: (c : R^o).
-  by rewrite /onem -scalerDl subrK scale1r.
-rewrite {1}Pc opprD addrACA /GRing.scale/= -!mulrBr.
+have Pc : c = t%:inum *: (c : R^o) + unstable.onem t%:inum *: (c : R^o).
+  by rewrite -scalerDl unstable.add_onemK scale1r.
+rewrite {1}Pc opprD addrACA.
+rewrite -!mulrBr.
 apply/(le_trans (ler_normD _ _))/lerD;
-by rewrite normrM ger0_norm//= /onem subr_ge0.
+by rewrite normrM ger0_norm//= ?unstable.onem_ge0.
 Qed.
 
 Lemma normr_convex : convex_fun (normr : R -> R^o) `]-oo, +oo[.
@@ -2087,23 +2108,23 @@ Proof. by move=>t a b /= Pa Pb; move: (normrB_convex 0 t Pa Pb); rewrite !subr0.
 Lemma maxrB_convexl c d : convex_fun (fun t : R => maxr c (t-d) : R^o) `]-oo, +oo[.
 Proof.
 move=>t a b /= _ _; rewrite /conv/=/conv/= /maxr.
-have Pc : c = `1-(t%:inum) *: (c : R^o) + t%:inum *: (c : R^o).
-  by rewrite /onem -scalerDl subrK scale1r.
-have Pd : d = `1-(t%:inum) *: (d : R^o) + t%:inum *: (d : R^o).
-  by rewrite /onem -scalerDl subrK scale1r.
-have Pt : 0 <= `1-(t%:inum) by rewrite /onem subr_ge0.
+have Pc : c = t%:inum *: (c : R^o) + unstable.onem t%:inum *: (c : R^o).
+  by rewrite -scalerDl unstable.add_onemK scale1r.
+have Pd : d = t%:inum *: (d : R^o) + unstable.onem t%:inum *: (d : R^o).
+  by rewrite -scalerDl unstable.add_onemK scale1r.
+have Pt : 0 <= unstable.onem t%:inum by rewrite unstable.onem_ge0.
 case Ea: (c < a-d); case Eb: (c < b-d).
 - case: ltP=>// _.
     by rewrite !scalerBr addrACA -opprD -Pd.
     by rewrite Pc lerD// ler_wpM2l// ltW.
 - case: ltP=> _.
-    by rewrite {1}Pd opprD addrACA /GRing.scale/= -!mulrBr lerD2l ler_wpM2l// leNgt Eb.
+    by rewrite {1}Pd opprD addrACA -!mulrBr lerD2l ler_wpM2l// leNgt Eb.
   by rewrite {1}Pc lerD2r ler_wpM2l // ltW.
 - case: ltP=> _.
-    by rewrite {1}Pd opprD addrACA /GRing.scale/= -!mulrBr lerD2r ler_wpM2l// leNgt Ea.
+    by rewrite {1}Pd opprD addrACA -!mulrBr lerD2r ler_wpM2l// leNgt Ea.
   by rewrite {1}Pc lerD2l ler_wpM2l // ltW.
 - case: ltP=>// _; last by rewrite -Pc.
-  by rewrite {1}Pd opprD addrACA /GRing.scale/= -!mulrBr lerD// ler_wpM2l// leNgt ?Ea ?Eb.
+  by rewrite {1}Pd opprD addrACA -!mulrBr lerD// ler_wpM2l// leNgt ?Ea ?Eb.
 Qed.
 
 Lemma maxrB_convexr c d : convex_fun (fun t : R => maxr (t-d) c: R^o) `]-oo, +oo[.
@@ -2135,7 +2156,7 @@ move=>Pa Pb.
 have: (`[minr a b, maxr a b] <= itv)%O.
   by apply/subitv_incc; rewrite /minr /maxr; case: ltP.
 move=>/subitvP; apply.
-have P1t : 0 <= `1-(t%:inum) by rewrite /onem subr_ge0.
+have P1t : 0 <= 1 - t%:inum by rewrite subr_ge0.
 rewrite inE /Order.le/= !bnd_simp /minr /maxr; case: ltP=>Pab.
   rewrite -{1}[a](convmm t) -{3}[b](convmm t).
   by rewrite !convRE lerD2l lerD2r !ler_wpM2l// ltW.
@@ -2170,15 +2191,18 @@ have Pfi i : 0 <= ft i / (\sum_i ft i).
   by rewrite mulr_ge0// invr_ge0 sumr_ge0.
 have Pf_sum : \sum_i (ft i / (\sum_i ft i)) = 1.
   by rewrite -mulr_suml mulfV// Pi subr_eq add0r eq_sym.
-move: (IH _ _ Pxi Pfi Pf_sum).
-under eq_bigr do rewrite mulrAC.
-rewrite -mulr_suml=>Pft.
-have Pitv : Itv.spec `[0,1] f0.
-  by rewrite /Itv.itv_cond/= inE /Order.le/= 
-    !bnd_simp/= Pf0/= -subr_ge0 -Pi sumr_ge0.
-move: (convex_in_itv (Itv.mk Pitv) Pft Px0).
-rewrite /conv/=/conv/= /onem -Pi /GRing.scale/= addrC mulrCA mulfV ?mulr1//.
-by rewrite Pi subr_eq add0r eq_sym.
+have Psum_neq0 : \sum_i ft i != 0.
+  by rewrite Pi subr_eq add0r eq_sym.
+move: (IH _ _ Pxi Pfi Pf_sum)=>Pft.
+have Pitv : @Itv.spec R (@Itv.num_sem R) (Itv.Real `[0%Z, 1%Z]) f0.
+  by rewrite /Itv.num_sem/= realE in_itv/= Pf0/= -subr_ge0 -Pi sumr_ge0.
+have Pionem : unstable.onem f0 = \sum_i ft i.
+  by rewrite Pi -{1}(unstable.add_onemK f0) addrAC subrr add0r.
+move: (convex_in_itv (Itv.mk Pitv) Px0 Pft).
+rewrite /conv/=/conv/= Pionem scaler_sumr /GRing.scale/=.
+under eq_bigr do rewrite -mulrA [(\sum_i ft i) * _]mulrC -mulrA mulrAC
+  (mulVf Psum_neq0) mul1r.
+by [].
 Qed.
 
 Lemma convex_convex_le_itv n (x : 'I_n.+1 -> R) (itv : interval R) 
@@ -2209,19 +2233,26 @@ have Pfi i : 0 <= ft i / (\sum_i ft i).
   by rewrite mulr_ge0// invr_ge0 sumr_ge0.
 have Pf_sum : \sum_i (ft i / (\sum_i ft i)) = 1.
   by rewrite -mulr_suml mulfV// Pi subr_eq add0r eq_sym.
-move: (IH _ _ Pxi Pfi Pf_sum).
-under eq_bigr do rewrite mulrAC.
-rewrite -mulr_suml=>Pft.
-have Pitv : Itv.spec `[0,1] f0.
-  by rewrite /Itv.itv_cond/= inE /Order.le/= 
-    !bnd_simp/= Pf0/= -subr_ge0 -Pi sumr_ge0.
-move: (Pg (Itv.mk Pitv) _ _ (convex_in_itv_sum Pxi Pfi Pf_sum) Px0).
-under eq_bigr do rewrite mulrAC; rewrite -mulr_suml.
-rewrite !convRE/= /onem Pi addrC mulrCA mulfV ?subr_eq ?add0r 1?eq_sym// mulr1.
+pose S := \sum_i ft i.
+have Psum_neq0 : S != 0.
+  by rewrite /S Pi subr_eq add0r eq_sym.
+move: (IH _ _ Pxi Pfi Pf_sum)=>Pft.
+have Pitv : @Itv.spec R (@Itv.num_sem R) (Itv.Real `[0%Z, 1%Z]) f0.
+  by rewrite /Itv.num_sem/= realE in_itv/= Pf0/= -subr_ge0 -Pi sumr_ge0.
+have Pionem : unstable.onem f0 = S.
+  by rewrite /S Pi -{1}(unstable.add_onemK f0) addrAC subrr add0r.
+have Pcancel a y : S * (a / S * y) = a * y.
+  by rewrite -mulrA mulrC -mulrA mulrAC mulVf ?mul1r.
+move: (Pg (Itv.mk Pitv) _ _ Px0 (convex_in_itv_sum Pxi Pfi Pf_sum)).
+rewrite !convRE/= Pionem mulr_sumr /GRing.scale/= -/S.
+have Parg : \sum_(i < n.+1) S * (ft i / S * xt i) = \sum_i ft i * xt i.
+  by apply eq_bigr=>i _; rewrite Pcancel.
+rewrite Parg.
 move=>/le_trans; apply.
-rewrite addrC lerD2l mulrC -ler_pdivlMr.
-  by rewrite lt_def subr_eq add0r eq_sym f0_neq0/= -Pi sumr_ge0.
-move: Pft; rewrite Pi; under [leRHS]eq_bigr do rewrite mulrAC.
+rewrite lerD2l mulrC -ler_pdivlMr.
+  by rewrite lt_def Psum_neq0/= /S sumr_ge0.
+move: Pft; rewrite -/S.
+under [leRHS]eq_bigr do rewrite mulrAC.
 by rewrite -mulr_suml.
 Qed.
 
@@ -2234,7 +2265,7 @@ Qed.
 
 Lemma convN (T : realDomainType) (t : {i01 T}) (a b : T^o) :
   - (conv t a b) = conv t (-a) (-b).
-Proof. by rewrite !convRE /onem/= opprD -!mulrN. Qed.
+Proof. by rewrite !convRE/= opprD -!mulrN. Qed.
 
 Lemma convex_average_ord (f : R -> R^o) (itv : interval R) n (x : 'I_n.+1 -> R) :
   (forall (t : {i01 R}) (a b : R^o), a \in itv -> b \in itv ->
@@ -2246,21 +2277,27 @@ move=>Pf Px; elim: n x Px => [x _ | n IH x Px].
 by rewrite !divr1 !big_ord1.
 rewrite big_ord_recl/= [in X in _ <= X]big_ord_recl/=.
 pose tn := n.+1%:R / n.+2%:R : R.
-have P1 : Itv.spec `[Posz 0, Posz 1] tn.
-  by rewrite /Itv.itv_cond/= inE /Order.le/= /Order.le/= 
+have P1 : @Itv.spec R (@Itv.num_sem R) (Itv.Real `[0%Z, 1%Z]) tn.
+  by rewrite /Itv.num_sem/= realE in_itv/= 
     /tn divr_ge0//= ler_pdivrMr// mul1r ler_nat.
 pose t := Itv.mk P1.
 have P2 : (\sum_(i < n.+1) x (nlift ord0 i)) / n.+1%:R \in itv.
   rewrite mulrC mulr_sumr; apply/convex_in_itv_sum=>//.
   by rewrite sumr_const -[LHS]mulr_natl card_ord mulfV.
-move: (Pf t _ _ (Px ord0) P2).
+move: (Pf t _ _ P2 (Px ord0)).
+have P3_onem : unstable.onem tn = 1 - tn.
+  by apply/eqP; rewrite eq_sym subr_eq addrC unstable.add_onemK.
 have P3 : (1 - tn) = 1 / n.+2%:R.
   by apply/eqP; rewrite subr_eq /tn -mulrDl nat1r mulfV.
 have P4 : (tn / n.+1%:R) = 1 / n.+2%:R.
   by rewrite /tn mulrC mulKf// div1r.
-rewrite !convRE/= mulrCA /onem P3 P4 mulrC -mulrDl div1r.
+rewrite !convRE/= mulrCA P3_onem P3 P4 mulrC
+  [in X in f X <= _ -> _]addrC -mulrDr mulrC div1r.
 move=>/le_trans; apply.
-by rewrite mulrDl mulrC lerD2l /tn mulrC mulrA ler_pM2r// -ler_pdivlMr// IH.
+rewrite mulrDl [leRHS]addrC.
+apply: lerD; last by rewrite mulrC.
+rewrite /tn mulrC mulrA ler_pM2r// -ler_pdivlMr//.
+by apply: IH=>i; apply: Px.
 Qed.
 
 Lemma convex_average_seq (f : R -> R^o) (itv : interval R)
@@ -2450,18 +2487,27 @@ have Pfi i : 0 <= ft i / (\sum_i ft i).
   by rewrite mulr_ge0// invr_ge0 sumr_ge0.
 have Pf_sum : \sum_i (ft i / (\sum_i ft i)) = 1.
   by rewrite -mulr_suml mulfV// Pi subr_eq add0r eq_sym.
-move: (IH _ _ Pxi Pfi Pf_sum).
-under eq_bigr do rewrite mulrC -scalerA.
-rewrite -scaler_sumr Pi=>Pft.
-have Pitv : Itv.spec `[0,1] f0.
-  by rewrite /Itv.itv_cond/= inE /Order.le/= 
-    !bnd_simp/= Pf0/= -subr_ge0 -Pi sumr_ge0.
-move: (Pg (Itv.mk Pitv) _ _ (convex_fun_in_itv_sum Pxi Pfi Pf_sum) Px0).
-under eq_bigr do rewrite mulrC -scalerA; rewrite -scaler_sumr.
-rewrite /conv/= /onem Pi addrC scalerA mulfV ?subr_eq ?add0r 1?eq_sym// scale1r.
+pose S := \sum_i ft i.
+have Psum_neq0 : S != 0.
+  by rewrite /S Pi subr_eq add0r eq_sym.
+move: (IH _ _ Pxi Pfi Pf_sum)=>Pft.
+have Pitv : @Itv.spec R (@Itv.num_sem R) (Itv.Real `[0%Z, 1%Z]) f0.
+  by rewrite /Itv.num_sem/= realE in_itv/= Pf0/= -subr_ge0 -Pi sumr_ge0.
+have Pionem : unstable.onem f0 = S.
+  by rewrite /S Pi -{1}(unstable.add_onemK f0) addrAC subrr add0r.
+have Pscancel a (y : 'rV[R]_m) : S *: (a / S *: y) = a *: y.
+  by rewrite scalerA mulrC (mulfVK Psum_neq0).
+move: (Pg (Itv.mk Pitv) _ _ Px0 (convex_fun_in_itv_sum Pxi Pfi Pf_sum)).
+rewrite /conv/= Pionem scaler_sumr.
+have Parg : \sum_(i < n.+1) S *: ((ft i / \sum_(i0 < n.+1) ft i0) *: xt i) =
+    \sum_i ft i *: xt i.
+  apply eq_bigr=>i _.
+  change (\sum_(i0 < n.+1) ft i0) with S.
+  by rewrite Pscancel.
+rewrite Parg.
 move=>/elem_lemx_trans; apply; apply/elem_lemxP=>? i.
-rewrite ord1 addrC !mxE lerD2l mulrC -ler_pdivlMr.
-  by rewrite lt_def subr_eq add0r eq_sym f0_neq0/= -Pi sumr_ge0.
+rewrite ord1 !mxE lerD2l mulrC -ler_pdivlMr.
+  by rewrite lt_def Psum_neq0/= /S sumr_ge0.
 move: Pft=>/elem_lemxP/(_ 0 i)/le_trans; apply.
 rewrite !summxE mulr_suml ler_sum//==>j _.
 by rewrite !mxE mulrAC.
@@ -2588,16 +2634,18 @@ Proof. by apply/(weak_majorize_map_mx (itv := `]-oo, +oo[))=>//; apply/normr_con
 Lemma sqtB_convex c : convex_fun (fun x => (x - c) ^+ 2 : R^o) `]-oo, +oo[.
 Proof.
 move=>t a b _ _ /=; rewrite !convRE.
-have {1}-> : c = (`1-(t%:inum) * c) + (t%:inum * c).
-  by rewrite -mulrDl /onem subrK mul1r.
+have {1}-> : c = (t%:inum * c) + (unstable.onem t%:inum * c).
+  by rewrite -mulrDl unstable.add_onemK mul1r.
 rewrite opprD addrACA -!mulrBr.
 set x := a - c; set y := b - c.
-have Pt1 : 0 <= 1 - t%:inum by rewrite subr_ge0.
-set t1 := `1-(t%:inum).
+have Pt1 : 0 <= unstable.onem t%:inum by rewrite unstable.onem_ge0.
+set t1 := unstable.onem t%:inum.
 rewrite !expr2 mulrDr mulrDl [X in _ + X]mulrDl mulrACA -addrA -lerBrDl.
-rewrite [leRHS]addrAC -mulrBl -onemMr onemK mulrACA [_ * t1]mulrC -lerBrDl.
-rewrite addrAC -mulrBr mulrACA -lerBrDl addrAC -mulrBr mulrACA -subr_ge0.
-rewrite -addrA -!mulrBl -onemMr -/t1 [_ * t1]mulrC -mulrDr.
+rewrite [leRHS]addrAC -mulrBl -unstable.onemMr.
+rewrite -/t1 mulrACA [_ * t1]mulrC -lerBrDl.
+rewrite addrAC -mulrBr mulrACA -lerBrDl addrAC [t%:inum * t1]mulrC
+  -mulrBr mulrACA -subr_ge0.
+rewrite -addrA -!mulrBl -unstable.onemMr /t1 unstable.onemK -/t1 -mulrDr.
 rewrite !mulr_ge0//; move: (sqr_ge0 (x-y))=>/le_trans; apply.
 by rewrite expr2 mulrBr -[leRHS]addrA lerD2l mulrBl opprB addrC.
 Qed.
@@ -2637,9 +2685,12 @@ Variable (T : topologicalType).
 
 Lemma near_id  (P : T -> Prop) (x : T) :
   (\near x, P x) -> P x.
-Proof. by rewrite -nbhs_nearE nbhsE_subproof /= =>[[B [ _ PB /(_ x)]]]; apply. Qed.
+Proof.
+by move=>H; move: H; rewrite -nbhs_nearE nbhsE => -[B [_ Bx] BP]; apply: BP.
+Qed.
 
-Lemma near_eq_lim (U : Type) (F : set_system U) {FF : Filter F} (f g : U -> T) :
+Lemma near_eq_lim (V : pnbhsType) (U : Type) (F : set_system U)
+    {FF : Filter F} (f g : U -> V) :
   {near F, f =1 g} -> lim (f @ F)%classic = lim (g @ F)%classic.
 Proof.
 move=>P. rewrite /lim /lim_in.
@@ -2861,7 +2912,7 @@ move=>Px. rewrite -cvg_shiftS/=.
 have: expR (n.+1%:R^-1 * ln x) @[n --> \oo] --> expR 0.
   apply: continuous_cvg. apply: continuous_expR.
   apply/cvg_ballP=>e Pe.
-  exists (Num.ExtraDef.archi_bound (`|ln x|/e))=>//= y /= Py.
+  exists (Num.bound (`|ln x|/e))=>//= y /= Py.
   rewrite -ball_normE/= sub0r normrN normrM ger0_norm// ltr_pdivrMl// -ltr_pdivrMr//.
   apply: (lt_le_trans (archi_boundP _)).
   by apply/divr_ge0=>//; apply/ltW.
@@ -2909,10 +2960,11 @@ wlog : a b t / a <= b => [IH | IH Pa Pb].
   case E: (a <= b); first by apply: IH.
   move=>Pa Pb; rewrite convC [leRHS]convC; apply: IH=>//.
   by move: E; case: ltP=>// /ltW.
-case E: (a == 0).
+  case E: (a == 0).
   move: E =>/eqP ->; rewrite powR0 ?gt_eqF// ?(lt_le_trans ltr01 Pr)//.
-  rewrite /conv/=/conv/= scaler0 !add0r /GRing.scale/= powRM// ler_wpM2r// 
-  ge1r_powR//; by case: t.
+  rewrite /conv/=/conv/= scaler0 !add0r /GRing.scale/= powRM ?unstable.onem_ge0//.
+  rewrite ler_wpM2r ?powR_ge0// ge1r_powR//.
+  by rewrite unstable.onem_ge0 ?unstable.onem_le1.
 have Pa0 : 0 < a by rewrite lt_def E.
 move: (lt_le_trans Pa0 IH) => Pb0.
 apply: (second_derivative_convex (f := fun x => x `^ r))=>/=[|||||//].

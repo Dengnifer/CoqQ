@@ -1,8 +1,11 @@
 (* -------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra perm fingroup.
-From mathcomp.analysis Require Import -(notations)forms.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
+From mathcomp.fingroup Require Import perm fingroup.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
 From mathcomp.real_closed Require Import mxtens.
+From Coq.Bool Require Import Bool.
 Require Import notation mcaextra mcextra spectral.
 
 (* -------------------------------------------------------------------- *)
@@ -243,16 +246,20 @@ by move=>j /bin_small->; rewrite !mul0r.
 by move=>j; rewrite subSn -1?ltnS// ltnS =>/bin_small->; rewrite !mul0r.
 rewrite addSn/= subnKC; first by apply/ltnW.
 apply ler_sum=>k _.
-under eq_bigr do rewrite -mulrA -mulrA mulrCA !mulrA -natrM -!mulrA.
+have coeff_reorder (c d : nat) (x1 x2 x3 x4 : R) :
+  c%:R * x1 * x2 * (d%:R * x3 * x4) =
+  (c * d)%:R * (x1 * x2 * x3 * x4).
+  by rewrite natrM !mulrA [c%:R * x1 * x2 * d%:R]mulrAC
+    [c%:R * x1 * d%:R]mulrAC.
+under eq_bigr do rewrite coeff_reorder.
 apply: (le_trans _ (rootC_AGM_variant _ _))=>[|?]; auto_ge0.
-under eq_bigr do rewrite mulnC.
 rewrite binomial.Vandermonde subnKC -1?ltnS//.
 rewrite -mulrA; apply: ler_wpM2l=>//.
 rewrite -[X in X <= _](@exprCK _ 'C(p.+1,k))//; auto_ge0.
 1,2: by rewrite bin_gt0 -ltnS.
 rewrite !exprMn -!exprM !mulnA mulrACA !mulrA.
 under eq_bigr do rewrite !exprMn -!exprM !mulnA.
-rewrite !big_split/= !prodrXr !mulrA.
+rewrite !big_split/= !prodrXr.
 (have P (a b : R) : a = b -> a <= b by move=>->); apply P.
 have P1 : (p.+1 = i + (p.+1 - i))%N by rewrite subnKC// -ltnS.
 do ! f_equal.
@@ -260,10 +267,18 @@ by rewrite {3}P1 -[LHS]combination_lemma1 -P1; apply eq_bigr=>j _/=;
   rewrite -mulnA [('C(i,j) * _)%N]mulnC mulnA.
 by rewrite {2 4}P1 -[LHS]combination_lemma2 -?P1 -1?ltnS//; apply eq_bigr=>j _; 
   rewrite -mulnA [('C(i,j) * _)%N]mulnC mulnA.
-rewrite big_ord_rev {4}P1 addnC -[LHS]combination_lemma1;
-  by apply eq_bigr=>j _/=; rewrite addnC -P1 subSS subKn// -ltnS.
-rewrite {3 5}P1 addnC big_ord_rev/= -[LHS]combination_lemma2;
-  by apply eq_bigr=>j _/=; rewrite addnC -P1 subSS subKn// -ltnS.
+rewrite big_ord_rev {4}P1 addnC -[LHS]combination_lemma1.
+apply eq_bigr=>j _/=.
+rewrite /rev_ord/= addnC -P1 subSS.
+rewrite subKn.
+- by rewrite -ltnS; apply: ltn_ord.
+- by rewrite mulnAC.
+rewrite {3 5}P1 addnC big_ord_rev/= -[LHS]combination_lemma2.
+apply eq_bigr=>j _/=.
+rewrite /rev_ord/= addnC -P1 subSS.
+rewrite subKn.
+- by rewrite -ltnS; apply: ltn_ord.
+- by rewrite mulnAC.
 Qed.
 
 Lemma discrete_Minkowski_inequality 
@@ -388,14 +403,14 @@ Section ConjAdjmx.
 Variable (R : numClosedFieldType) (m n : nat).
 
 Definition conjmx (M : 'M[R]_(m,n)) := 
-    (map_mx Num.conj_op M).
+    (map_mx conjC M).
 
 Definition adjmx (M : 'M[R]_(m,n)) := 
-    (map_mx Num.conj_op (M ^T)).
+    (map_mx conjC (M ^T)).
 
-Lemma conjmxE M : conjmx M = (map_mx Num.conj_op M).
+Lemma conjmxE M : conjmx M = (map_mx conjC M).
 Proof. by []. Qed.
-Lemma adjmxE M : adjmx M = (map_mx Num.conj_op (M ^T)).
+Lemma adjmxE M : adjmx M = (map_mx conjC (M ^T)).
 Proof. by []. Qed.
 
 Lemma mxE_conj M i j : conjmx M i j = (M i j)^*.
@@ -413,7 +428,7 @@ Section ConjAdjmxTheory.
 Variable (R : numClosedFieldType).
 
 Lemma conjmx_is_antilinear {m n} :
-  linear_for (Num.conj_op \; *:%R) (@conjmx R m n).
+  linear_for (conjC \; *:%R) (@conjmx R m n).
 Proof. 
 move=>a A B. apply/matrixP=>i j.
 by rewrite !mxE raddfD/= rmorphM.
@@ -421,7 +436,7 @@ Qed.
 
 HB.instance Definition _ m n :=
   GRing.isLinear.Build R 'M_(m, n) 'M_(m, n)
-    (Num.conj_op \; *:%R) (@conjmx R m n) (@conjmx_is_antilinear m n).
+    (conjC \; *:%R) (@conjmx R m n) (@conjmx_is_antilinear m n).
 
 Lemma conjmx_is_multiplicative {m } : multiplicative (@conjmx R m.+1 m.+1).
 Proof. split.
@@ -459,12 +474,12 @@ Lemma conjmx_inj {m n} : injective (@conjmx R m n).
 Proof. exact (inv_inj conjmxK). Qed.
 
 Lemma conjmx_eq0  m n (A : 'M[R]_(m, n)) : (A^*m == 0) = (A == 0).
-Proof. by apply raddf_eq0; apply conjmx_inj. Qed.
+Proof. by rewrite conjmxE map_mx_eq0. Qed.
 
 Lemma det_conj {m} (M : 'M[R]_m) : \det M^*m = (\det M)^*.
 Proof.
 rewrite rmorph_sum; apply: eq_bigr=> /= s _.
-rewrite rmorphM rmorphXn /= rmorphN conjC1; congr (_ * _).
+rewrite rmorphM rmorphXn /= rmorphN rmorph1; congr (_ * _).
 by rewrite rmorph_prod; apply: eq_bigr=> /= i _; rewrite mxE.
 Qed.
 
@@ -482,12 +497,12 @@ Proof. by []. Qed.
 Lemma adjmxCT {m n : nat} (M : 'M[R]_(m, n)) : M^*t = M^*m^T.
 Proof. by apply/matrixP=> i j; rewrite !mxE. Qed.
 
-Lemma adjmx_is_antilinear {m n} : linear_for (Num.conj_op \; *:%R) (@adjmx R m n).
+Lemma adjmx_is_antilinear {m n} : linear_for (conjC \; *:%R) (@adjmx R m n).
 Proof. by move=>a A B; rewrite !adjmxCT linearP/= linearP/=. Qed.
 
 HB.instance Definition _ m n :=
   GRing.isLinear.Build R 'M_(m, n) 'M_(n, m)
-    (Num.conj_op \; *:%R) (@adjmx R m n) (@adjmx_is_antilinear m n).
+    (conjC \; *:%R) (@adjmx R m n) (@adjmx_is_antilinear m n).
 
 Lemma adjmxD {m n} (A B: 'M[R]_(m, n)) : (A + B)^*t = A^*t + B^*t.
 Proof. exact: linearD. Qed.
@@ -510,7 +525,7 @@ Lemma adjmx_inj {m n} : injective (@adjmx R m n).
 Proof. by move=> M N P; rewrite -(adjmxK M) -(adjmxK N) P. Qed.
 
 Lemma adjmx_eq0  m n (A : 'M[R]_(m, n)) : (A^*t == 0) = (A == 0).
-Proof. by apply raddf_eq0; apply adjmx_inj. Qed.
+Proof. by rewrite adjmxTC conjmx_eq0 trmx_eq0. Qed.
 
 Lemma det_adj {m : nat} (M : 'M[R]_m) : \det M^*t = (\det M)^*.
 Proof. by rewrite adjmxCT det_tr det_conj. Qed.
@@ -936,7 +951,7 @@ Lemma ptrace1_mulmxI m n (A: 'M[R]_(m*n)) B :
   ptrace1 (A *m (1%:M *t B)) = ptrace1 A *m B.
 Proof.
 rewrite/ptrace1 {2}[B]tens_mx_cast1lE castmx_mul; f_equal.
-rewrite linear_suml; apply eq_bigr => i _.
+rewrite linear_sumlz; apply eq_bigr => i _.
 by rewrite/= -!mulmxA !tensmx_mul !mulmx1 !mul1mx.
 Qed.
 
@@ -1271,7 +1286,7 @@ End EigenDecomposition.
 Section SPredMxDef.
 Context {R : numClosedFieldType} (n : nat).
 
-Definition hermmx := (@sesqui R n (false, Num.conj_op)).
+Definition hermmx := (@sesqui R n (false, (conjC : {rmorphism R -> R}))).
 Fact hermmx_key : pred_key hermmx. Proof. by []. Qed.
 Canonical hermmx_keyed := KeyedQualifier hermmx_key.
 
@@ -1298,7 +1313,7 @@ Canonical diagmx_keyed := KeyedQualifier diagmx_key.
 
 Lemma diagmxP (A : 'M[R]_n) :
   reflect (forall i j, (i != j) -> A i j = 0) (A \is diagmx).
-Proof. by apply is_diag_mxP. Qed.
+Proof. by rewrite qualifE; apply: is_diag_mxP. Qed.
 
 Definition psdmx :=
   [qualify A : 'M[R]_n | (A \is hermmx) && ((spectral_diag A) \is a nnegmx)].
@@ -1306,7 +1321,7 @@ Fact psdmx_key : pred_key psdmx. Proof. by []. Qed.
 Canonical psdmx_keyed := KeyedQualifier psdmx_key.
 
 Lemma psdmxP (A : 'M[R]_n) : 
-  reflect ((A \is hermitian) /\ ((spectral_diag A) \is a nnegmx)) (A \is psdmx).
+  reflect ((A \is hermsymmx) /\ ((spectral_diag A) \is a nnegmx)) (A \is psdmx).
 Proof. by apply (iffP andP). Qed.
 
 Definition pdmx :=
@@ -1424,7 +1439,7 @@ Qed.
 HB.instance Definition _ := GRing.isAddClosed.Build
   ('M[R]_(m, n)) (@realmx R m n) realmx_zmod_closed.
 HB.instance Definition _ := GRing.isOppClosed.Build
-  ('M[R]_(m, n)) (@realmx R m n) realmx_zmod_closed.
+  ('M[R]_(m, n)) (@realmx R m n) (GRing.zmod_closedN realmx_zmod_closed).
 HB.instance Definition _ := GRing.isAddClosed.Build
   ('M[R]_(m, n)) (@nnegmx R m n) nnegmx_addr_closed.
 
@@ -1848,7 +1863,7 @@ Lemma psdmx_tr (n : nat) (A : 'M[R]_n) :
 Proof.
 suff P : forall (B : 'M[R]_n), B \is psdmx -> B^T \is psdmx.
 case E: (A \is psdmx). by apply P. move: E. apply contraFF=>/P. by rewrite trmxK.
-move=>B /psdmx_dot P. apply/psdmx_dot=>u. move: (P (map_mx Num.conj_op u)).
+move=>B /psdmx_dot P. apply/psdmx_dot=>u. move: (P (map_mx conjC u)).
 by rewrite -mxtrace_tr !trmx_mul !map_trmx trmxK map_mxCK mulmxA.
 Qed.
 
@@ -1883,7 +1898,10 @@ Lemma denmx_adj (n : nat) (A : 'M[R]_n) :
   A^*t \is denmx = (A \is denmx).
 Proof.
 rewrite qualifE [RHS]qualifE psdmx_adj mxtrace_adj .
-by rewrite -subr_ge0 -conjC_ge0 rmorphB conjC1 conjCK subr_ge0.
+rewrite -subr_ge0 -conjC_ge0 rmorphB rmorph1.
+change (Num.Num_conj__canonical__GRing_RMorphism R (conjC (\tr A)))
+  with (conjC (conjC (\tr A))).
+by rewrite conjCK subr_ge0.
 Qed.
 
 Lemma psdmx_conj (n : nat) (A : 'M[R]_n) :
@@ -1952,7 +1970,7 @@ Qed.
 HB.instance Definition _ := GRing.isAddClosed.Build
   'M_m (@hermmx R m) hermmx_zmod_closed.
 HB.instance Definition _ := GRing.isOppClosed.Build
-  'M_m (@hermmx R m) hermmx_zmod_closed.
+  'M_m (@hermmx R m) (GRing.zmod_closedN hermmx_zmod_closed).
 
 Lemma psdmxD: operator_closed (@psdmx R m) (+%R).
 Proof. 
@@ -2385,7 +2403,7 @@ Local Notation "'0" := (0 : T).
 
 Lemma subv_ge0 x y : ('0 <= x - y) = (y <= x).
 Proof. 
-apply/Bool.eq_iff_eq_true; split=>[/(@lev_add2rP R T y)|/(@lev_add2rP R T(-y))];
+apply/Coq.Bool.Bool.eq_iff_eq_true; split=>[/(@lev_add2rP R T y)|/(@lev_add2rP R T(-y))];
 by rewrite ?addrNK ?add0r// addrN.
 Qed.
 
@@ -2698,7 +2716,7 @@ Local Notation "'0" := (0 : T).
 
 Lemma pscalev_rge0 a y : 0 < a -> ('0 <= a *: y) = ('0 <= y).
 Proof.
-move=>Pa; apply/Bool.eq_iff_eq_true; split=>P.
+move=>Pa; apply/Coq.Bool.Bool.eq_iff_eq_true; split=>P.
 have P1 : (a^-1 * a) = 1 by rewrite mulVf// lt0r_neq0.
 by rewrite -[y]scale1r -(scaler0 _ a^-1) -P1 -scalerA lev_pscale2lP// invr_gt0.
 by rewrite -(scaler0 _ a) lev_pscale2lP.
@@ -3453,7 +3471,7 @@ HB.instance Definition _ n := POrderedLmodule_isVOrder.Build C 'M[C]_n (@lemx_ad
 Lemma pscalemx_lge0 n (x : 'M[C]_n) (a : C) : 
   (0 : 'M[C]_n) < x -> (0 : 'M[C]_n) <= a *: x = (0 <= a).
 Proof.
-move=>xgt0. apply/Bool.eq_iff_eq_true; split; last first.
+move=>xgt0. apply/Coq.Bool.Bool.eq_iff_eq_true; split; last first.
 by move=>age0; apply: scalev_ge0=>//; apply/ltW.
 move: xgt0. rewrite lt_def {1 2}/Order.le/= /lownerle !subr0.
 move =>/andP[/eqP Px /psdmx_dot px]/psdmx_dot pax.
@@ -3564,9 +3582,12 @@ Lemma reim_decomp (a b : R) :
   b = ((a + b^*)/2%:R)^* + 'i * (- 'i * (a - b^*)/2%:R)^*.
 Proof.
 rewrite -{3}(conjCK 'i) -rmorphM -rmorphD conjCi !mulrA mulrN -!expr2 sqrrN.
-by rewrite  !sqrCi opprK !mulNr !mul1r -mulrDl -mulrBl opprB [a-_]addrC 
+rewrite  !sqrCi opprK !mulNr !mul1r -mulrDl -mulrBl opprB [a-_]addrC 
   [_+(b^*- _)]addrC !addrA addrK addrNK -!mulr2n -(mulr_natr a) mulfK
-  ?pnatr_eq0// -(mulr_natr b^*) mulfK ?pnatr_eq0// conjCK.
+  ?pnatr_eq0// -(mulr_natr b^*) mulfK ?pnatr_eq0//.
+change (Num.Num_conj__canonical__GRing_RMorphism R (conjC b))
+  with (conjC (conjC b)).
+by rewrite conjCK.
 Qed.
 
 Lemma mx_herm_decomp m (M : 'M[R]_m) : 
@@ -3575,10 +3596,24 @@ Proof.
 set M1 := \matrix_(i,j) ((M i j + (M j i)^*)/2%:R).
 set M2 := \matrix_(i,j) ((- 'i * (M i j - (M j i)^*)/2%:R)).
 exists M1. exists M2.
-do ? split. 1,2: apply/hermmxP/matrixP=>i j; rewrite /M1 /M2 !mxE 
-  !rmorphM -?conjCi ?conjCK ?conjCi 1 ?mulNr -?mulrN ?rmorphB ?rmorphD conjCK ?opprB;
-  congr (_ * _). by rewrite addrC. 
-1,2: by symmetry; apply/conj_Creal; rewrite realV realn.
+do ? split.
+- apply/hermmxP/matrixP=> i j; rewrite /M1 !mxE
+    !rmorphM -?conjCi ?conjCK ?conjCi 1 ?mulNr -?mulrN ?rmorphB ?rmorphD ?opprB.
+  change (Num.Num_conj__canonical__GRing_RMorphism R (M j i)) with (conjC (M j i)).
+  change (Num.Num_conj__canonical__GRing_RMorphism R (conjC (M i j)))
+    with (conjC (conjC (M i j))).
+  rewrite conjCK; congr (_ * _).
+  by rewrite addrC.
+  by symmetry; apply/conj_Creal; rewrite realV realn.
+- apply/hermmxP/matrixP=> i j; rewrite /M2 !mxE
+    !rmorphM -?conjCi ?conjCK ?conjCi 1 ?mulNr -?mulrN ?rmorphB ?rmorphD ?opprB.
+  change (Num.Num_conj__canonical__GRing_RMorphism R (- 'i : R))
+    with (conjC (- 'i : R)).
+  change (Num.Num_conj__canonical__GRing_RMorphism R (M j i)) with (conjC (M j i)).
+  change (Num.Num_conj__canonical__GRing_RMorphism R (conjC (M i j)))
+    with (conjC (conjC (M i j))).
+  rewrite -conjCi !conjCK; congr (_ * _).
+  by symmetry; apply/conj_Creal; rewrite realV realn.
 apply/matrixP=>i j. rewrite !mxE. by move: (reim_decomp (M i j) (M j i))=>[ <-].
 Qed.
 

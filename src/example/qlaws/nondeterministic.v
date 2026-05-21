@@ -1,8 +1,13 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra finmap.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
+From mathcomp.finmap Require Import finmap.
 From mathcomp.classical Require Import boolp classical_sets.
-From mathcomp.analysis Require Import -(notations)forms topology.
-From mathcomp.analysis Require Import reals normedtype sequences.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
+From mathcomp.analysis.topology_theory Require Import topology.
+From mathcomp.reals Require Import reals.
+From mathcomp.analysis Require Import sequences.
+From mathcomp.analysis.normedtype_theory Require Import normedtype.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
 Require Import Relation_Definitions.
@@ -182,7 +187,7 @@ apply/seteqP; split.
     exists (fa i1); first by move: (Pa3 i1); rewrite inE.
     by exists (fb i2)=>//; move: (Pb3 i2); rewrite inE.
   - under eq_bigr do rewrite -scalerA -comp_soZr -comp_soZl.
-    rewrite Pa4 Pb4 pair_bigV/= linear_suml; apply eq_bigr=>i _.
+    rewrite Pa4 Pb4 pair_bigV/= linear_sumlz; apply eq_bigr=>i _.
     by rewrite/= linear_sumr.
 by apply/conv_le_hom/set_compso_le; apply/conv_le.
 Qed.
@@ -649,7 +654,10 @@ Qed.
 End fsem.
 
 Module Export EQ_FSEM.
-Require Import Setoid.
+Require Import -(notations)Setoid.
+From Coq.Classes Require Import -(notations)Morphisms.
+Local Notation "R ==> R'" := (respectful R R')
+  (at level 55, right associativity) : signature_scope.
 
 Add Parametric Morphism (T : qType) : (@init_ T )
   with signature (@eq_qreg T) ==> (@eq _) ==> eq_fsem as eq_fsem_init.
@@ -849,12 +857,12 @@ rewrite !comp_lfunDl adjfD !comp_lfunDr !adjf_comp !comp_lfunA.
 have -> : phi1^A = phi1 by rewrite -liftf_lf_adj tf2f_adj adj_outp.
 have -> : phi0^A = phi0 by rewrite -liftf_lf_adj tf2f_adj adj_outp.
 have P2 : forall A : 'F[msys]_setT, A \o liftfso (initialso (tv2v x psi)) y \o phi0 = 0.
-  move=>A; rewrite liftfso_krausso kraussoE/= -comp_lfunA linear_suml/= big1 ?comp_lfun0r// =>i _.
+  move=>A; rewrite liftfso_krausso kraussoE/= -comp_lfunA linear_sumlz/= big1 ?comp_lfun0r// =>i _.
   by rewrite liftf_funE -liftf_lf_adj -!comp_lfunA -liftf_lf_comp 
     adj_outp -tv2v_out outp_comp tv2v_dot P1 scale0r linear0 !comp_lfun0r.
 rewrite !P2 !comp_lfun0l !addr0 -[RHS]addr0; f_equal.
 f_equal; rewrite -!comp_lfunA; f_equal; rewrite !liftfso_krausso 
-  !kraussoE linear_suml linear_sumr; apply eq_bigr=>i _ /=.
+  !kraussoE linear_sumlz linear_sumr; apply eq_bigr=>i _ /=.
 rewrite !liftf_funE -!liftf_lf_adj !adj_outp !comp_lfunA -comp_lfunA -!liftf_lf_comp -!tv2v_out
   !outp_comp !tv2v_dot !(linearZ, linearZl, linearZr)/= scalerA -[RHS]scale1r.
   f_equal. rewrite -(ns_dot psi).
@@ -960,7 +968,7 @@ rewrite eq_fsem.unlock !fsemE !image2_set1; apply/eq_set=>?/=; apply/propeqP; sp
   under eq_bigr do rewrite /elemso liftf_funE -liftfso_formso.
   rewrite -linear_sum/= -liftfso_formso -!liftfso_comp; f_equal.
   rewrite -(initialso_onb (tv2v <{ (x1, x2) }> phi) (tv2v_fun _ <{ (x1, x2) }> t2tv)).
-  rewrite -elemso_sum !linear_suml/=; apply eq_bigr=>[[j1 j2]] _.
+  rewrite -elemso_sum !linear_sumlz/=; apply eq_bigr=>[[j1 j2]] _.
   rewrite /elemso linear_sumr/= (bigD1 j2)//= big1=>[k /negPf nkj|];
   rewrite !formso_comp tm2mE tmeasE /tv2v_fun tv2v_out !tf2f_comp outp_comp.
   by rewrite -!tentv_t2tv tentv_dot !t2tv_dot [_ == k]eq_sym nkj mulr0 scale0r tf2f0 formso0.
@@ -988,7 +996,7 @@ by rewrite /elemso liftf_funE -tf2f_pair liftf_lf_cast tf2f1 liftf_lf_tenf1r -?d
 under eq_bigr do rewrite /elemso liftf_funE -liftfso_formso.
 rewrite -linear_sum/= -liftfso_formso -!liftfso_comp; f_equal.
 rewrite -(initialso_onb (tv2v <{ (x1, x2) }> phi) (tv2v_fun _ <{ (x1, x2) }> t2tv)).
-rewrite -elemso_sum !linear_suml/=; apply eq_bigr=>[[j1 j2]] _.
+rewrite -elemso_sum !linear_sumlz/=; apply eq_bigr=>[[j1 j2]] _.
 rewrite /elemso linear_sumr/= (bigD1 j2)//= big1=>[k /negPf nkj|];
 rewrite !formso_comp tm2mE tmeasE /tv2v_fun tv2v_out !tf2f_comp outp_comp.
 by rewrite -!tentv_t2tv tentv_dot !t2tv_dot [_ == k]eq_sym nkj mulr0 scale0r tf2f0 formso0.
@@ -1117,7 +1125,7 @@ Proof. by move=>P; rewrite -if_compl if_weaker// if_compl. Qed.
 
 (* Lemma 5.2 *)
 Lemma meas_reducel T (x : 'QReg[T]) (N : 'QM) (M : 'QM) (K : 'QM) (L : 'QM) :
-  <{[ '[ N[x] ) ]}> =c <{[ '[ K[x] ) ◁ M[x] ▷ '[ L[x] ) ]}> <->
+  <{[ '[ N[x] ) ]}> =c <{[ ('[ K[x] )) ◁ M[x] ▷ ('[ L[x] )) ]}> <->
     exists (c0 c1 : C), (c0^+2 + c1^+2 = 1) /\ 
     ((K false \o M false) ⋈_(c0) (N false)) /\ ((L false \o M true) ⋈_(c1) (N false)).
 Proof.
@@ -1173,7 +1181,7 @@ Lemma if_reduce T1 T2 T3 T4 (x1 : qreg T1) (x2 : qreg T2) (x3 : qreg T3)
   (x4 : qreg T4) (N : 'QM) (M : 'QM) (K : 'QM) (L : 'QM) c0 c1 
   {Hc0 : `{{no_nchoice_ c0}}} {Hc1 : `{{no_nchoice_ c1}}} :
   <{[ '( N[x1] ] ]}> =c <{[ '( K[x3] ] ◁ M[x2] ▷ '( L[x4] ] ]}> ->
-  <{[ '[ N[x1] ) ]}> =c <{[ '[ K[x3] ) ◁ M[x2] ▷ '[ L[x4] ) ]}> ->
+  <{[ '[ N[x1] ) ]}> =c <{[ ('[ K[x3] )) ◁ M[x2] ▷ ('[ L[x4] )) ]}> ->
   <{[ (c0 ◁ K[x3] ▷ c1) ◁ M[x2] ▷ (c0 ◁ L[x4] ▷ c1) ]}> =c <{[ c0 ◁ N[x1] ▷ c1 ]}>.
 Proof.
 move: Hc0 Hc1=>/fsem_no_nchoice [y0 P0] /fsem_no_nchoice [y1 P1].
@@ -1198,7 +1206,7 @@ rewrite eq_fsem.unlock !fsemE; apply/eq_set=>?/=; apply/propeqP; split.
     by move=>[i j]/=; move: (projT2 (cid (P3 i)))=>[] _ /(_ j).
   rewrite !ifso_elem pair_bigV/=; apply eq_bigr=>i _.
   move: (projT2 (cid (P3 i)))=>[] {6}<- Pj.
-  rewrite ifso_elem linear_suml/=; apply eq_bigr=>j _.
+  rewrite ifso_elem linear_sumlz/=; apply eq_bigr=>j _.
   rewrite -comp_soA; f_equal.
   rewrite /elemso !liftf_funE !tm2mE formso_comp !tmeasE -tentv_t2tv 
     -tentv_out -tf2f_pair liftf_lf_cast liftf_lf_compC ?liftf_lf_compT//.
@@ -1209,7 +1217,7 @@ split; last first.
   move=>i; rewrite fsemE/=; exists (fun j => l (i,j)); split=>//.
   by move=>j; move: (Pi (i,j)).
 rewrite !ifso_elem.
-under eq_bigr do rewrite ifso_elem linear_suml/=.
+under eq_bigr do rewrite ifso_elem linear_sumlz/=.
 rewrite pair_big/=; apply eq_bigr=>[[m n]] _ /=.
 rewrite -comp_soA; f_equal.
 rewrite /elemso !liftf_funE !tm2mE formso_comp !tmeasE -tentv_t2tv 
@@ -1485,7 +1493,7 @@ apply/eq_set=>y; apply/propeqP; split=>/=.
     move=>i; rewrite fsemE/=.
     exists (formso (usem (u i))); first by rewrite fsemE.
     by exists (l i).
-  rewrite usemE !ifso_elem linear_suml/=.
+  rewrite usemE !ifso_elem linear_sumlz/=.
   apply eq_bigr=>i _; rewrite /elemso liftf_funE tm2mE onb_measE 
     -!comp_soA !formso_comp; do 2 f_equal.
   rewrite linear_sumr/= (bigD1 i)//= big1=>[j /negPf nji|];
@@ -1501,7 +1509,7 @@ have Pi (i : F) :  exists y, fsem (c i) y /\ y :o (formso (usem (u i))) = l i.
 exists (ifso (liftf_fun (tm2m x x (onb_meas phi))) (fun i => projT1 (cid (Pi i)))).
 exists (fun i : F => projT1 (cid (Pi i))); split=>// i.
   by move: (projT2 (cid (Pi i)))=>[].
-rewrite usemE !ifso_elem linear_suml/=.
+rewrite usemE !ifso_elem linear_sumlz/=.
 apply eq_bigr=>i _; rewrite /elemso liftf_funE tm2mE onb_measE 
   -!comp_soA !formso_comp.
 move: (projT2 (cid (Pi i)))=>[] _ {3}<-.
@@ -1700,7 +1708,10 @@ Instance refine_anti_instance : Antisymmetric _ eq_fsem refine_cmd := refine_cmd
 
 (* move *)
 Section Refinement.
-Require Import Setoid.
+Require Import -(notations)Setoid.
+From Coq.Classes Require Import -(notations)Morphisms.
+Local Notation "R ==> R'" := (respectful R R')
+  (at level 55, right associativity) : signature_scope.
 
 (* proposition B.1 (1) *)
 Add Parametric Morphism : seqc_

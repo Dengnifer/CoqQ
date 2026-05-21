@@ -1,8 +1,10 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra finmap.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
+From mathcomp.finmap Require Import finmap.
 From mathcomp.classical Require Import boolp.
-From mathcomp.analysis Require Import -(notations)forms.
-From mathcomp.analysis Require Import reals.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
+From mathcomp.reals Require Import reals.
 From quantum.external Require Import complex.
 (* From mathcomp.real_closed Require Import complex. *)
 Require Import mcextra mcaextra notation quantum inhabited autonat.
@@ -10,7 +12,8 @@ Require Import mcextra mcaextra notation quantum inhabited autonat.
 From quantum Require Import hermitian qreg prodvect tensor mxpred
   orthomodular hspace hspace_extra.
 From quantum.dirac Require Import hstensor dirac.
-Require Import Coq.Program.Equality String.
+From Coq.Program Require Import Equality.
+From Coq.Strings Require Import String.
 Require Import Relation_Definitions Setoid.
 
 (*****************************************************************************)
@@ -275,7 +278,7 @@ Lemma tv2v_dot T (x : 'QReg[T]) (u v : 'Ht T) :
 Proof.
 rewrite [v](onb_vec (@t2tv _))/= !linear_sum; apply eq_bigr => i _.
 rewrite/= !linearZ; f_equal.
-rewrite [u](onb_vec t2tv)/= linear_sum !linear_suml.
+rewrite [u](onb_vec t2tv)/= linear_sum !linear_sumlz.
 apply eq_bigr => j _/=; rewrite/= linearZ !linearZl_LR; f_equal.
 by rewrite /= onb_dot tv2v_onb_t2tv.
 Qed.
@@ -323,7 +326,7 @@ HB.instance Definition _ T (x : qreg T) :=
 Lemma v2tUMV T (x : 'QReg[T]) : v2tU x \o (v2tU x)^A = \1.
 Proof.
 rewrite QMemory.v2tU.unlock [RHS](onb_lfun2id t2tv) exchange_big.
-rewrite linear_suml/=; apply eq_bigr=>i _; rewrite adjf_sum linear_sumr/=.
+rewrite linear_sumlz/=; apply eq_bigr=>i _; rewrite adjf_sum linear_sumr/=.
 by apply eq_bigr=>j _; rewrite lfunE/= adj_outp outp_comp tv2v_dot.
 Qed.
 
@@ -352,8 +355,8 @@ Lemma tv2v_out T1 T2 (x1 : qreg T1) (x2 : qreg T2) (v1 : 'Ht T1) (v2 : 'Ht T2) :
 Proof.
 rewrite {1}[v1](onb_vec t2tv) {1}[v2](onb_vec t2tv)/=.
 rewrite ![tv2v _ _]linear_sum/= QMemory.tf2f.unlock linear_sumr/=.
-apply eq_bigr=>i _/=; rewrite linear_suml; apply eq_bigr=>j _/=.
-by rewrite linearZ linearZl_LR/= linearZ linearZr scalerA conj_dotp outpE linearZr/= mulrC.
+apply eq_bigr=>i _/=; rewrite linear_sumlz; apply eq_bigr=>j _/=.
+by rewrite linearZ linearZl_LR/= linearZ linearZr scalerA outpE linearZr/= conj_dotp mulrC.
 Qed.
 
 Lemma t2f_dec T1 T2 (x1 : qreg T1) (x2 : qreg T2) (f : 'F[H]_(mset x1,mset x2)) :
@@ -368,8 +371,8 @@ Qed.
 Lemma tf2f_UE T1 T2 (x1 : qreg T1) (x2 : qreg T2) f :
   tf2f x1 x2 f = (v2tU x2)^A \o f \o (v2tU x1).
 Proof.
-rewrite [f](onb_lfun2 t2tv t2tv) linear_sum/= linear_sumr/= linear_suml/=.
-apply eq_bigr=>i _; rewrite linear_sum/= linear_sumr/= linear_suml/=.
+rewrite [f](onb_lfun2 t2tv t2tv) linear_sum/= linear_sumr/= linear_sumlz/=.
+apply eq_bigr=>i _; rewrite linear_sum/= linear_sumr/= linear_sumlz/=.
 apply eq_bigr=>j _; rewrite linearZ/= linearZr linearZl/=; f_equal.
 by rewrite -tv2v_out outp_compr outp_compl -!tv2v_UE.
 Qed.
@@ -380,7 +383,7 @@ Proof.
 rewrite QMemory.f2tf.unlock.
 under eq_bigr do under eq_bigr do rewrite !tv2v_UE -!comp_lfunE -adj_dotEl -outp_comp
  -!comp_lfunE -adjf_comp -outp_compl -comp_lfunA.
-under eq_bigr do rewrite -linear_suml/= sumonb_out comp_lfun1l.
+under eq_bigr do rewrite -linear_sumlz/= sumonb_out comp_lfun1l.
 by rewrite -linear_sumr/= sumonb_out comp_lfun1r comp_lfunA.
 Qed.
 
@@ -585,7 +588,10 @@ Proof. by rewrite mset_pair (mset_eqr (eq_qreg_pair _)). Qed.
 
 Lemma mset_tuple {n T} {x : 'I_n -> qreg T} :
   \bigcup_i mset (x i) = mset <{(tuple i => x i)}>.
-Proof. by move: (t2V_tuple x (witness _)); rewrite -to_Hnd_tens=>/eq_Hnd1. Qed.
+Proof.
+by move: (t2V_tuple x (nseq_tuple n (witness (evalQT T))));
+  rewrite -to_Hnd_tens=>/eq_Hnd1.
+Qed.
 
 Lemma mset_tupleV {n T} {x : qreg (QArray n T)} :
   mset x = \bigcup_i mset <{x.[i]}>.
@@ -656,7 +662,7 @@ Lemma tv2v_pair T1 T2 (x1 : qreg T1) (x2 : qreg T2) (t1 : 'Ht T1) (t2 : 'Ht T2) 
 Proof.
 rewrite [t1](onb_vec t2tv) [t2](onb_vec t2tv).
 rewrite !linear_sum/=; apply eq_bigr=>i _.
-rewrite !linear_suml !linear_sum; apply eq_bigr=>j _.
+rewrite !linear_sumlz !linear_sum; apply eq_bigr=>j _.
 rewrite/= !linearZ/=; f_equal.
 rewrite !linearZl_LR !linearZ/=; f_equal.
 by apply/to_Hnd_inj; rewrite Hnd_cast to_HndE t2V_pair.
@@ -679,7 +685,7 @@ Lemma tf2f_pair T11 T12 T21 T22 (x11 : qreg T11) (x12 : qreg T12)
   castlf (mset_pair, mset_pair) (tf2f x11 x12 f1 \⊗ tf2f x21 x22 f2) = 
     tf2f <{(x11,x21)}> <{(x12,x22)}> (f1 ⊗f f2).
 Proof.
-rewrite [f1](onb_lfun2 t2tv t2tv) pair_big/= linear_sum !linear_suml !linear_sum.
+rewrite [f1](onb_lfun2 t2tv t2tv) pair_big/= linear_sum !linear_sumlz !linear_sum.
 apply eq_bigr=>[[i1 i2]] _/=; rewrite linearZ/= 2!linearZl_LR/= !linearZ; f_equal.
 rewrite [f2](onb_lfun2 t2tv t2tv) pair_big/= !linear_sum.
 apply eq_bigr=>[[j1 j2]] _/=; rewrite !linearZ/=; f_equal.
@@ -1060,7 +1066,7 @@ HB.instance Definition _ x (g : 'F+(_)) :=
 Lemma tf2f_obs x (g : 'FO(_)) : tf2f x x g \is obslf.
 Proof. by rewrite tf2f_obsP// is_obslf. Qed.
 HB.instance Definition _ x (g : 'FO(_)) := 
-  Psd_isObsLf.Build _ (tf2f x x g) (@tf2f_obs x g).
+  isObsLf.Build _ (tf2f x x g) (@tf2f_obs x g).
 Lemma tf2f_den x (g : 'FD(_)) : tf2f x x g \is denlf.
 Proof. by rewrite tf2f_denP// is_denlf. Qed.
 HB.instance Definition _ x (g : 'FD(_)) := 
@@ -1898,7 +1904,7 @@ Notation "''<' v ; x |" := (tbra x v%VF).
 Notation "''|' u ; x >< v ; y |" := (muld (tket x u%VF) (tbra y v%VF)).
 Notation "''|' u >< v ; x |" := (muld (tket x u%VF) (tbra x v%VF)).
 Notation "''[' f ; x , y ]" := (tlin x y f%VF).
-Notation "''[' f ; x ]" := (tlin x x f%VF).
+(* Notation "''[' f ; x ]" := (tlin x x f%VF). *)
 Notation "''<' x | z ; w >" := (muld (tbra (tv2v w x%VF)) (tket (tv2v w z%VF))).
 
 End Exports.
@@ -1957,13 +1963,13 @@ Local Notation tlin := (@tlin QMem _ _).
 (* bind tv2v in order to avoid type cast    *)
 
 Lemma tlinE T1 T2 (x1 : qreg T1) (x2 : qreg T2) f : 
-  '[ tf2f x1 x2 f ]%D = tlin x1 x2 f.
+  lind (tf2f x1 x2 f) = tlin x1 x2 f.
 Proof. by rewrite QMemory.tlin.unlock. Qed.
 Lemma tketE T (x : qreg T) v :
-  '| tv2v x v >%D = tket x v.
+  ketd (tv2v x v) = tket x v.
 Proof. by rewrite QMemory.tket.unlock. Qed.
 Lemma tbraE T (x : qreg T) v :
-  '< tv2v x v |%D = tbra x v.
+  brad (tv2v x v) = tbra x v.
 Proof. by rewrite QMemory.tbra.unlock. Qed.
 
 Lemma tket_is_linear T (x : qreg T) : linear (tket x).
@@ -1971,10 +1977,10 @@ Proof. by move=>a u v; rewrite QMemory.tket.unlock !linearP. Qed.
 HB.instance Definition _ T x := GRing.isLinear.Build C _ 'D[H]
   *:%R (tket x) (@tket_is_linear T x).
 
-Lemma tbra_is_linear T (x : qreg T) : linear_for (Num.conj_op \; *:%R) (tbra x).
+Lemma tbra_is_linear T (x : qreg T) : linear_for (Num.conj \; *:%R) (tbra x).
 Proof. by move=>a u v; rewrite QMemory.tbra.unlock !linearP. Qed.
 HB.instance Definition _ T x := GRing.isLinear.Build C _ 'D[H]
-  (Num.conj_op \; *:%R) (tbra x) (@tbra_is_linear T x).
+  (Num.conj \; *:%R) (tbra x) (@tbra_is_linear T x).
 
 Lemma tlin_is_linear T1 T2 (x1 : qreg T1) (x2 : qreg T2) : linear (tlin x1 x2).
 Proof. by move=>a u v; rewrite QMemory.tlin.unlock !linearP. Qed.
@@ -2014,7 +2020,7 @@ Local Notation "''<' v ; x |" := (tbra x v%VF).
 Local Notation "''|' u ; x >< v ; y |" := (muld (tket x u%VF) (tbra y v%VF)).
 Local Notation "''|' u >< v ; x |" := (muld (tket x u%VF) (tbra x v%VF)).
 Local Notation "''[' f ; x , y ]" := (tlin x y f%VF).
-Local Notation "''[' f ; x ]" := (tlin x x f%VF).
+(* Local Notation "''[' f ; x ]" := (tlin x x f%VF). *)
 Local Notation "''<' x | z ; w >" := (muld (tbra w x%VF) (tket w z%VF)).
 
 Section TypedDiracBasic.
@@ -2024,7 +2030,7 @@ Variable (x : qreg T) (x1 : qreg T1) (x2 : qreg T2) (x3 : qreg T3).
 Variable (y : 'QReg[T]) (y1 : 'QReg[T1]) (y2 : 'QReg[T2]) (y3 : 'QReg[T3]).
 Implicit Type (c : C) (f : 'Hom{T1, T2}) (u : 'Ht T) (v : 'Ht T1) (w : 'Ht T2).
 
-Lemma tlin0 : '[ 0; x1, x2 ] = 0. Proof. by rewrite !linear0/=. Qed.
+Lemma tlin0 : '[ 0 ; x1, x2 ] = 0. Proof. by rewrite !linear0/=. Qed.
 
 Lemma tlinN f : - '[ f; x1, x2 ] = '[ - f; x1, x2 ].
 Proof. by rewrite !linearN/=. Qed.
@@ -2051,7 +2057,7 @@ Lemma tlin_sum I (r : seq I) (P : pred I) (F : I -> 'Hom{T1,T2}) :
   \sum_(i <- r | P i) '[ F i; x1,x2 ] = '[ \sum_(i <- r | P i) (F i); x1,x2 ] .
 Proof. by rewrite !linear_sum/=. Qed.
 
-Lemma tlin1 : \1_(mset x) = '[ \1; x ].
+Lemma tlin1 : lind (\1 : 'F[H]_(mset x, mset x)) = tlin x x \1.
 Proof. by rewrite QMemory.tlin.unlock; f_equal; rewrite tf2f1. Qed.
 
 Lemma tlin_adj f : '[ f; x1,x2 ]^A = '[ f^A; x2,x1 ].
@@ -2262,7 +2268,7 @@ Definition tinnerBT := (tinnerMBT, tinnerGBT).
 Lemma touterMBT :
   (forall i j, P i -> P j -> i != j -> [disjoint mset (x i) & mset (x j)]) ->
   (\ten_(i | P i) '|F i; x i>) \o (\ten_(i | P i) '<G i; x i|) 
-  = (\ten_(i | P i) '[[>F i ; G i<]; x i]).
+  = (\ten_(i | P i) '[ [> F i ; G i <]; x i, x i]).
 Proof.
 by move=>P1; rewrite QMemory.tket.unlock QMemory.tbra.unlock outerMBT// 
   ?index_enum_uniq//; under eq_bigr do rewrite tketE tbraE touter.
@@ -2271,7 +2277,7 @@ Qed.
 Lemma touterGBT :
   (forall i j : I, P i -> P j -> i != j -> [disjoint mset (x i) & mset (x j)]) ->
   (\ten_(i | P i) '|F i; x i>) \· (\ten_(i | P i) '<G i; x i|) 
-  = (\ten_(i | P i) '[[>F i ; G i<]; x i]).
+  = (\ten_(i | P i) '[ [> F i ; G i <]; x i, x i]).
 Proof. rewrite dotd_mul/=; exact: touterMBT. Qed.
 Definition touterBT := (touterMBT, touterGBT).
 
@@ -2448,7 +2454,8 @@ Lemma tketT_swap T1 T2 (x : qreg (T2 * T1)) (u : 'Ht (T1 * T2)) :
 Proof.
 rewrite (onb_vec t2tv u)/= !linear_sum/=; apply eq_bigr=>i _.
 rewrite !linearZ/=; f_equal.
-by rewrite [i ]surjective_pairing -tentv_t2tv swaptfEtv tketTC !eq_qrE.
+rewrite [i ]surjective_pairing -tentv_t2tv swaptfEtv tketTC.
+by [].
 Qed.
 Lemma tketT_swapV T1 T2 (x : qreg (T1 * T2)) (u : 'Ht (T1 * T2)) :
   '| u; x > = '|swaptf u ; (x.2,x.1) >.
@@ -2465,9 +2472,9 @@ Lemma tlinT_swap T1 T2 T3 T4 (x1 : qreg (T2 * T1)) (x2 : qreg (T4 * T3))
   (f : 'Hom{T1 * T2, T3 * T4}) :
   '[ swaptf \o f \o swaptf ; x1, x2 ] = '[ f ; (x1.2,x1.1) , (x2.2,x2.1) ].
 Proof.
-rewrite (onb_lfun2 t2tv t2tv f) pair_big/= linear_sumr linear_suml !linear_sum/=.
+rewrite (onb_lfun2 t2tv t2tv f) pair_big/= linear_sumr linear_sumlz !linear_sum/=.
 apply eq_bigr=>[][][]i1 i2[]j1 j2 _; rewrite linearZr linearZl/= !linearZ/=; f_equal.
-by rewrite outp_compr outp_compl swaptf_adj -!tentv_t2tv !swaptfEtv -!tentv_out tlinTC !eq_qrE.
+ by rewrite outp_compr outp_compl swaptf_adj -!tentv_t2tv !swaptfEtv -!tentv_out tlinTC.
 Qed.
 Lemma tlinT_swapV T1 T2 T3 T4 (x1 : qreg (T1 * T2)) (x2 : qreg (T3 * T4)) 
   (f : 'Hom{T1 * T2, T3 * T4}) :
@@ -2506,24 +2513,24 @@ Proof. by rewrite touterT_swap !eq_qrE. Qed.
 Section tlinGid.
 Variable (T1 T2 T3 T4 : qType) (x1 : qreg T1) (x2 : qreg T2) (x3 : qreg T3) (x4 : qreg T4).
 
-Lemma tlin1Gl f : '[ \1; x1 ] \· '[ f; x3,(x1,x2) ] = '[ f; x3,(x1,x2) ].
+Lemma tlin1Gl f : tlin x1 x1 \1 \· '[ f; x3,(x1,x2) ] = '[ f; x3,(x1,x2) ].
 Proof. by rewrite -tlin1 dotIdid// mset_pairV !eq_qrE subsetUl. Qed.
-Lemma tlin1Gr f : '[ \1; x2 ] \· '[ f; x3,(x1,x2) ] = '[ f; x3,(x1,x2) ].
+Lemma tlin1Gr f : tlin x2 x2 \1 \· '[ f; x3,(x1,x2) ] = '[ f; x3,(x1,x2) ].
 Proof. by rewrite -tlin1 dotIdid// mset_pairV !eq_qrE subsetUr. Qed.
-Lemma tlinG1l f : '[ f; (x1,x2),x3 ] \· '[ \1; x1 ] = '[ f; (x1,x2),x3 ].
+Lemma tlinG1l f : '[ f; (x1,x2),x3 ] \· tlin x1 x1 \1 = '[ f; (x1,x2),x3 ].
 Proof. by rewrite -tlin1 dotdIid// mset_pairV !eq_qrE subsetUl. Qed.
-Lemma tlinG1r f : '[ f; (x1,x2),x3 ] \· '[ \1; x2 ] = '[ f; (x1,x2),x3 ].
+Lemma tlinG1r f : '[ f; (x1,x2),x3 ] \· tlin x2 x2 \1 = '[ f; (x1,x2),x3 ].
 Proof. by rewrite -tlin1 dotdIid// mset_pairV !eq_qrE subsetUr. Qed.
 Definition tlin1G := (tlin1Gl, tlin1Gr).
 Definition tlinG1 := (tlinG1l, tlinG1r).
-Lemma tket1Gl v : '[ \1; x1 ] \· '| v; (x1,x2) > = '| v; (x1,x2) >.
+Lemma tket1Gl v : tlin x1 x1 \1 \· '| v; (x1,x2) > = '| v; (x1,x2) >.
 Proof. by rewrite -tlin1 dotIdid// mset_pairV !eq_qrE subsetUl. Qed.
-Lemma tket1Gr v : '[ \1; x2 ] \· '| v; (x1,x2) > = '| v; (x1,x2) >.
+Lemma tket1Gr v : tlin x2 x2 \1 \· '| v; (x1,x2) > = '| v; (x1,x2) >.
 Proof. by rewrite -tlin1 dotIdid// mset_pairV !eq_qrE subsetUr. Qed.
 Definition tket1G := (tket1Gl, tket1Gr).
-Lemma tbra1Gl v : '< v; (x1,x2) | \· '[ \1; x1 ] = '< v; (x1,x2) |.
+Lemma tbra1Gl v : '< v; (x1,x2) | \· tlin x1 x1 \1 = '< v; (x1,x2) |.
 Proof. by rewrite -tlin1 dotdIid// mset_pairV !eq_qrE subsetUl. Qed.
-Lemma tbra1Gr v : '< v; (x1,x2) | \· '[ \1; x2 ] = '< v; (x1,x2) |.
+Lemma tbra1Gr v : '< v; (x1,x2) | \· tlin x2 x2 \1 = '< v; (x1,x2) |.
 Proof. by rewrite -tlin1 dotdIid// mset_pairV !eq_qrE subsetUr. Qed.
 Definition tbraG1 := (tbra1Gl, tbra1Gr).
 End tlinGid.
@@ -2532,25 +2539,25 @@ Section tlinG2.
 Variable (T1 T2 T3 T4 : qType) (x1 : 'QReg[T1]) (x2 : 'QReg[T2]) (x3 : qreg T3) (x4 : qreg T4).
 
 Lemma tlintGl N1 f (dis : disjoint_qreg x1 x2) : 
-  '[ N1; x1 ] \· '[ f; x3, (x1,x2) ] = '[(N1 ⊗f \1) \o f; x3, (x1,x2) ].
+  tlin x1 x1 N1 \· '[ f; x3, (x1,x2) ] = '[(N1 ⊗f \1) \o f; x3, (x1,x2) ].
 Proof.
 by rewrite -[RHS](tlinG _ _ <{(x1, x2)}>) tlinTV !eq_qrE 
   -dotd_ten//= -?dotdA/= ?tlin1G// -disj_setE.
 Qed.
 Lemma tlintGr N2 f (dis : disjoint_qreg x1 x2) : 
-  '[ N2; x2 ] \· '[ f; x3, (x1,x2) ] = '[(\1 ⊗f N2) \o f; x3, (x1,x2) ].
+  tlin x2 x2 N2 \· '[ f; x3, (x1,x2) ] = '[(\1 ⊗f N2) \o f; x3, (x1,x2) ].
 Proof.
 by rewrite -[RHS](tlinG _ _ <{(x1, x2)}>) tlinTV !eq_qrE tendC
   -dotd_ten//= -?dotdA/= ?tlin1G// disjoint_sym -disj_setE.
 Qed.
 Lemma tlinGtl f N1 (dis : disjoint_qreg x1 x2) : 
-  '[ f; (x1,x2),x3 ] \· '[ N1; x1 ] = '[ f \o (N1 ⊗f \1); (x1,x2),x3 ].
+  '[ f; (x1,x2),x3 ] \· tlin x1 x1 N1 = '[ f \o (N1 ⊗f \1); (x1,x2),x3 ].
 Proof.
 by rewrite -[RHS](tlinG _ _ <{(x1, x2)}>) tlinTV !eq_qrE tendC
   -dotd_ten//= ?dotdA/= ?tlinG1// disjoint_sym -disj_setE.
 Qed.
 Lemma tlinGtr f N2 (dis : disjoint_qreg x1 x2) :
-  '[ f; (x1,x2),x3 ] \· '[ N2; x2 ] = '[ f \o (\1 ⊗f N2); (x1,x2),x3 ].
+  '[ f; (x1,x2),x3 ] \· tlin x2 x2 N2 = '[ f \o (\1 ⊗f N2); (x1,x2),x3 ].
 Proof.
 by rewrite -[RHS](tlinG _ _ <{(x1, x2)}>) tlinTV !eq_qrE
   -dotd_ten//= ?dotdA/= ?tlinG1// -disj_setE.
@@ -2655,43 +2662,43 @@ Lemma tbra_id_cast S (eqs : mset x = S) v :
 Proof. by case: _ / eqs; rewrite tbra_id casths_id. Qed.
 
 Lemma tlin_leP (f1 f2 : 'End{T}) :
-  f1 ⊑ f2 -> '[f1;x] ⊑ '[f2;x].
+  f1 ⊑ f2 -> tlin x x f1 ⊑ tlin x x f2.
 Proof. by rewrite QMemory.tlin.unlock lin_lef; apply tf2f_lefP. Qed.
 
 Lemma tlin_lefP S (f1 f2 : 'End{T}) :
-  f1 ⊑ f2 -> '[f1;x] S S ⊑ '[f2;x] S S.
+  f1 ⊑ f2 -> (tlin x x f1) S S ⊑ (tlin x x f2) S S.
 Proof.
 move=>/tlin_leP; rewrite -subv_ge0=>/ged0P[]/(_ S) + _.
 by rewrite !diracE subv_ge0.
 Qed.
 
-Lemma tlin_lef1P S (f : 'End{T}) : f ⊑ \1 -> '[f;x] S S ⊑ \1.
+Lemma tlin_lef1P S (f : 'End{T}) : f ⊑ \1 -> (tlin x x f) S S ⊑ \1.
 Proof.
 move=>P; case: (@eqP _ S (mset x))=>[->|/eqP P1].
   by rewrite QMemory.tlin.unlock lind_id tf2f_le1P.
 by rewrite QMemory.tlin.unlock lind_eq0l// lef01.
 Qed.
-Lemma tlin_gef0P S (f : 'End{T}) : 0%:VF ⊑ f -> 0%:VF ⊑ '[f;x] S S.
+Lemma tlin_gef0P S (f : 'End{T}) : 0%:VF ⊑ f -> 0%:VF ⊑ (tlin x x f) S S.
 Proof.
 move=>P; case: (@eqP _ S (mset x))=>[->|/eqP P1].
   by rewrite QMemory.tlin.unlock lind_id tf2f_ge0P.
 by rewrite QMemory.tlin.unlock lind_eq0l.
 Qed.
-Lemma tlin_ge0P (f : 'End{T}) : 0%:VF ⊑ f -> 0 ⊑ '[f;x].
+Lemma tlin_ge0P (f : 'End{T}) : 0%:VF ⊑ f -> 0 ⊑ tlin x x f.
 Proof. by move=>P; rewrite QMemory.tlin.unlock lin_gef0 tf2f_ge0P. Qed.
 
-Lemma tlin_le (f1 f2 : 'End{T}) : '[f1;y] ⊑ '[f2;y] = (f1 ⊑ f2).
+Lemma tlin_le (f1 f2 : 'End{T}) : tlin y y f1 ⊑ tlin y y f2 = (f1 ⊑ f2).
 Proof. by rewrite QMemory.tlin.unlock lin_lef tf2f_lef. Qed.
-Lemma tlin_lt (f1 f2 : 'End{T}) : '[f1;y] ⊏ '[f2;y] = (f1 ⊏ f2).
+Lemma tlin_lt (f1 f2 : 'End{T}) : tlin y y f1 ⊏ tlin y y f2 = (f1 ⊏ f2).
 Proof. by rewrite QMemory.tlin.unlock lin_ltf tf2f_ltf. Qed.
-Lemma tlin_ge0 (f : 'End{T}) : 0 ⊑ '[f;y] = (0%:VF ⊑ f).
+Lemma tlin_ge0 (f : 'End{T}) : 0 ⊑ tlin y y f = (0%:VF ⊑ f).
 Proof. by rewrite QMemory.tlin.unlock lin_gef0 tf2f_ge0. Qed.
-Lemma tlin_gt0 (f : 'End{T}) : 0 ⊏ '[f;y] = (0%:VF ⊏ f).
+Lemma tlin_gt0 (f : 'End{T}) : 0 ⊏ tlin y y f = (0%:VF ⊏ f).
 Proof. by rewrite QMemory.tlin.unlock lin_gtf0 tf2f_gt0. Qed.
-Lemma tlin_lef1 (f : 'End{T}) : '[f;y] (mset y) (mset y) ⊑ \1 = (f ⊑ \1).
+Lemma tlin_lef1 (f : 'End{T}) : (tlin y y f) (mset y) (mset y) ⊑ \1 = (f ⊑ \1).
 Proof. by rewrite QMemory.tlin.unlock lind_id tf2f_le1. Qed.
 Lemma tlin_lef1_cond S (f : 'End{T}) : 
-  mset y = S -> '[f;y] S S ⊑ \1 = (f ⊑ \1).
+  mset y = S -> (tlin y y f) S S ⊑ \1 = (f ⊑ \1).
 Proof. by move=><-; exact: tlin_lef1. Qed.
 
 End Order.
@@ -2983,4 +2990,3 @@ Check <{'x}>.
 Check qreg_r_cst <{'x}>.
 Check qreg_r_tuplei_expr (qreg_r_cst <{'y}>) (`ci)%X.
 Check qreg_r_pair_expr (qreg_r_tuplei_expr (qreg_r_cst <{'y}>) (`ci + 0%:S)%X) (qreg_r_ffuni_expr (qreg_r_cst <{'x}>) (`ci + 1%:S)%X). *)
-

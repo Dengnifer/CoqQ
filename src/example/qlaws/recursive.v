@@ -1,8 +1,13 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra finmap.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
+From mathcomp.finmap Require Import finmap.
 From mathcomp.classical Require Import boolp classical_sets.
-From mathcomp.analysis Require Import -(notations)forms topology.
-From mathcomp.analysis Require Import reals normedtype sequences.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
+From mathcomp.analysis.topology_theory Require Import topology.
+From mathcomp.reals Require Import reals.
+From mathcomp.analysis Require Import sequences.
+From mathcomp.analysis.normedtype_theory Require Import normedtype.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
 Require Import Relation_Definitions.
@@ -133,7 +138,7 @@ Notation setT := finset.setT.
 Notation set0 := finset.set0.
 
 Module Export Semantics.
-From mathcomp.analysis Require Import topology.
+From mathcomp.analysis.topology_theory Require Import topology.
 From mathcomp.classical Require Import functions.
 Import QOCPO.Exports.
 Local Open Scope classical_set_scope.
@@ -307,8 +312,12 @@ Qed.
 
 Lemma repsn_is_cvgn c : cvgn (repsn c).
 Proof.
-apply: (vnondecreasing_is_cvgn (b := b0) (repsn_homo c)).
-move=>n; apply: qo_ubound.
+change (cvgn (fun n => (repsn c n : 'SO[msys]_setT))).
+pose SOV := quantum_soperop__canonical__extnum_VOrderFinNormedModule
+  'H[msys]_setT 'H[msys]_setT.
+apply: (@vnondecreasing_is_cvgn _ _ SOV _ _).
+by apply: repsn_homo.
+by move=>n; apply: qo_ubound.
 Qed.
 
 (* the semantics of recursive qwhile program is a cptn map, 
@@ -356,7 +365,7 @@ Proof.
 rewrite fsem_repsnE/= ifso_elem /=.
 transitivity (\sum_i limn (fun n => repsn (fc i) n :o elemso (liftf_fun (tm2m x x M)) i)).
 rewrite -lim_sum. move=>i _; apply: so_comp_is_cvgl. apply: repsn_is_cvgn.
-apply eq_lim=>i; case: i=>[|i]/=;
+apply: (@eq_lim nat 'SO[msys]_setT \oo)=>i; case: i=>[|i]/=;
 by rewrite functions.fct_sumE ifso_elem; apply eq_bigr=>? _.
 apply eq_bigr=>i _; rewrite so_comp_liml// ?fsem_repsnE//; apply: repsn_is_cvgn.
 Qed.
@@ -375,9 +384,16 @@ rewrite !fsem_repsnE -limn_shiftS/= whileso.unlock.
 have P1 i : nondecreasing_seq (fun i0 : nat => whileso_iter (liftf_fun (tm2m x x M)) true (repsn c i0.+1) i).
   by apply/cpo.chain_homo=>j; apply/whileso_iter_leso/repsn_homo.
 have P2 i : cvgn (fun i0 : nat => whileso_iter (liftf_fun (tm2m x x M)) true (repsn c i0.+1) i).
-  apply: (vnondecreasing_is_cvgn (b := b0) (P1 i))=>j.
-  apply/qo_ubound.
-rewrite (exchange_limn_nondecreasing (b := b0) _ P1).
+  set W := (fun i0 : nat => whileso_iter (liftf_fun (tm2m x x M)) true (repsn c i0.+1) i).
+  change (cvgn (fun i0 => (W i0 : 'SO[msys]_setT))).
+  pose SOV := quantum_soperop__canonical__extnum_VOrderFinNormedModule
+    'H[msys]_setT 'H[msys]_setT.
+  apply: (@vnondecreasing_is_cvgn _ _ SOV _ _).
+  by rewrite /W; apply: P1.
+  by move=>j; apply/qo_ubound.
+pose SOV := quantum_soperop__canonical__extnum_VOrderFinNormedModule
+  'H[msys]_setT 'H[msys]_setT.
+rewrite (@exchange_limn_nondecreasing _ _ SOV _ b0 _ P1).
 move=>i; apply/whileso_iter_homo.
 move=>i j; apply/qo_ubound.
 apply: eq_lim=> i; rewrite whileso_iter_limn=>[|//].
@@ -466,15 +482,21 @@ move=>gh Pg. elim: c.
     = (fun i => (\sum_j (fun i => (reps (c j) (g i) :o elemso (liftf_fun (tm2m x x M)) j))) i).
   by apply/funext=>i; rewrite fct_sumE ifso_elem.
   apply: cvg_sum=>i _. apply: so_comp_cvgl. apply: IH.
-- move=>T x M c IH. rewrite /= vcvgn_limnE; split; last first.
-    apply: (vnondecreasing_is_cvgn (b := b0)).
+- move=>T x M c IH.
+  pose SOV := quantum_soperop__canonical__extnum_VOrderFinNormedModule
+    'H[msys]_setT 'H[msys]_setT.
+  rewrite /= vcvgn_limnE; split; last first.
+    set W := (fun n => whileso (liftf_fun (tm2m x x M)) true (reps c (g n))).
+    change (cvgn (fun n => (W n : 'SO[msys]_setT))).
+    apply: (@vnondecreasing_is_cvgn _ _ SOV _ _).
       by move=>n m /gh /lefP Pnm; apply: whileso_leso=>/=; apply: reps_leso=>i; apply: Pnm.
       move=>i; apply: qo_ubound.
-  rewrite whileso.unlock (exchange_limn_nondecreasing (b := b0)).
+  set W := fun n i => whileso_iter (liftf_fun (tm2m x x M)) true (reps c (g n)) i.
+  rewrite whileso.unlock (@exchange_limn_nondecreasing _ _ SOV W b0).
     by move=>i; apply: whileso_iter_homo.
     by move=>j n m /gh /lefP Pnm; apply: whileso_iter_leso=>/=; apply: reps_leso=>i; apply: Pnm.
     by move=>i j; apply: qo_ubound.
-  apply: eq_lim=>i; rewrite whileso_iter_limn.
+  apply: (@eq_lim nat 'SO[msys]_setT \oo)=>i; rewrite /W whileso_iter_limn.
   by apply/cvg_ex; exists (reps c gn).
   by f_equal; move: IH; rewrite vcvgn_limnE=>[[]].
 - by move=>i /=.
@@ -504,7 +526,11 @@ Proof. by move=>Pc i m; move: (Pc m)=>/lefP; apply. Qed.
 
 Lemma fQO_cvgni (c : nat -> fQO) i : cpo.chain c -> cvgn (c ^~ i : nat -> 'SO).
 Proof.
-move=>Pc; apply: (vnondecreasing_is_cvgn (b := b0)).
+move=>Pc.
+change (cvgn (fun n => (c n i : 'SO[msys]_setT))).
+pose SOV := quantum_soperop__canonical__extnum_VOrderFinNormedModule
+  'H[msys]_setT 'H[msys]_setT.
+apply: (@vnondecreasing_is_cvgn _ _ SOV _ _).
 by apply/cpo.chain_homo/fQO_chaini. by move=>j; apply/qo_ubound.
 Qed.
 
@@ -523,7 +549,9 @@ Qed.
 Lemma fQOlub_ub : forall c : nat -> fQO, cpo.chain c -> (forall i, (c i <= fQOlub c)%O).
 Proof.
 move=>c Pc n; apply/lefP=>i; rewrite leEsub/= fQOEi//.
-apply: nondecreasing_cvgn_lev.
+pose SOV := quantum_soperop__canonical__extnum_VOrderFinNormedModule
+  'H[msys]_setT 'H[msys]_setT.
+apply: (@nondecreasing_cvgn_lev _ _ SOV (fun n => c n i)).
 by apply/cpo.chain_homo/fQO_chaini. by apply/fQO_cvgni.
 Qed.
 
@@ -531,7 +559,9 @@ Lemma fQOlub_least : forall c : nat -> fQO,
   cpo.chain c -> forall x : fQO, (forall i, (c i <= x)%O) -> (fQOlub c <= x)%O.
 Proof.
 move=>c Pc x Px; apply/lefP=>i; rewrite leEsub/= fQOEi//.
-apply: limn_lev.
+pose SOV := quantum_soperop__canonical__extnum_VOrderFinNormedModule
+  'H[msys]_setT 'H[msys]_setT.
+apply: (@limn_lev _ _ SOV (x i) (fun n => c n i)).
 by apply/fQO_cvgni. by move=>n; move: (Px n)=>/lefP/(_ i).
 Qed.
 
@@ -626,10 +656,12 @@ Add Parametric Relation F f : (@cmd_ F) (eq_fsem f)
   as eq_fsem_rel.
 
 Module Export EQ_FSEM.
-Require Import Setoid.
+Require Import -(notations)Setoid.
+From Coq.Classes Require Import -(notations)Morphisms.
 
 Add Parametric Morphism F f (T : qType) : (@init_ F T)
-  with signature (@eq_qreg T) ==> (@eq _) ==> (@eq_fsem F f) as eq_fsem_init.
+  with signature respectful (@eq_qreg T)
+    (respectful (@eq _) (@eq_fsem F f)) as eq_fsem_init.
 Proof.
 move=>x y Pxy U; rewrite eq_fsem.unlock !fsemE -(tv2v_eqr _ Pxy).
 by move: (mset_eqr default_qmemory Pxy)=>P; case: _ / P; rewrite casths_id.
@@ -642,15 +674,17 @@ Qed.
 (* and thus allows to substitut in all composition of circuit in qwhile      *)
 (*---------------------------------------------------------------------------*)
 Add Parametric Morphism F f : (@circuit_ F)
-  with signature eq_usem ==> (@eq_fsem F f) as eq_fsem_circuit.
+  with signature respectful eq_usem (@eq_fsem F f) as eq_fsem_circuit.
 Proof. by move=>x y; rewrite eq_fsem.unlock !fsemE eq_usem.unlock=>->. Qed.
 
 Add Parametric Morphism F f : seqc_
-  with signature (@eq_fsem F f) ==> (@eq_fsem F f) ==> (@eq_fsem F f) as eq_fsem_seqc.
+  with signature respectful (@eq_fsem F f)
+    (respectful (@eq_fsem F f) (@eq_fsem F f)) as eq_fsem_seqc.
 Proof. by rewrite eq_fsem.unlock=>??+??+; rewrite !fsemE=>->->. Qed.
 
 Add Parametric Morphism F f (T : qType) (FM : finType) : (@cond_ F T FM)
-  with signature (@eq_qreg T) ==> (@eq _) ==> (@eq _) ==> (@eq_fsem F f) as eq_fsem_cond.
+  with signature respectful (@eq_qreg T)
+    (respectful (@eq _) (respectful (@eq _) (@eq_fsem F f))) as eq_fsem_cond.
 Proof.
 move=>x y Pxy M ff; rewrite eq_fsem.unlock !fsemE.
 by f_equal; apply/funext=>i; rewrite !liftf_funE !tm2mE 
@@ -658,7 +692,10 @@ by f_equal; apply/funext=>i; rewrite !liftf_funE !tm2mE
 Qed.
 
 Add Parametric Morphism F f T : (@cond2_ F T)
-  with signature (@eq_qreg T) ==> (@eq _) ==> (@eq_fsem F f) ==> (@eq_fsem F f) ==> (@eq_fsem F f)
+  with signature respectful (@eq_qreg T)
+    (respectful (@eq _)
+      (respectful (@eq_fsem F f)
+        (respectful (@eq_fsem F f) (@eq_fsem F f))))
     as eq_fsem_cond2.
 Proof.
 move=>x y Pxy M c00 c01 + c10 c11 +.
@@ -666,7 +703,8 @@ by rewrite eq_fsem.unlock !fsemE -!(tf2f_eqr _ Pxy Pxy) !liftf_lf_cast=>->->.
 Qed.
 
 Add Parametric Morphism F f (T : qType) : (@while_ F T)
-  with signature (@eq_qreg T) ==> (@eq _) ==> (@eq_fsem F f) ==> (@eq_fsem F f)
+  with signature respectful (@eq_qreg T)
+    (respectful (@eq _) (respectful (@eq_fsem F f) (@eq_fsem F f)))
     as eq_fsem_while.
 Proof.
 move=>x y Pxy M c1 c2; rewrite eq_fsem.unlock !fsemE=>->.
@@ -1228,12 +1266,12 @@ rewrite !comp_lfunDl adjfD !comp_lfunDr !adjf_comp !comp_lfunA.
 have -> : phi1^A = phi1 by rewrite -liftf_lf_adj tf2f_adj adj_outp.
 have -> : phi0^A = phi0 by rewrite -liftf_lf_adj tf2f_adj adj_outp.
 have P2 : forall A : 'F[msys]_setT, A \o liftfso (initialso (tv2v x psi)) y \o phi0 = 0.
-  move=>A; rewrite liftfso_krausso kraussoE/= -comp_lfunA linear_suml/= big1 ?comp_lfun0r// =>i _.
+  move=>A; rewrite liftfso_krausso kraussoE/= -comp_lfunA linear_sumlz/= big1 ?comp_lfun0r// =>i _.
   by rewrite liftf_funE -liftf_lf_adj -!comp_lfunA -liftf_lf_comp 
     adj_outp -tv2v_out outp_comp tv2v_dot P1 scale0r linear0 !comp_lfun0r.
 rewrite !P2 !comp_lfun0l !addr0 -[RHS]addr0; f_equal.
 f_equal; rewrite -!comp_lfunA; f_equal; rewrite !liftfso_krausso 
-  !kraussoE linear_suml linear_sumr; apply eq_bigr=>i _ /=.
+  !kraussoE linear_sumlz linear_sumr; apply eq_bigr=>i _ /=.
 rewrite !liftf_funE -!liftf_lf_adj !adj_outp !comp_lfunA -comp_lfunA -!liftf_lf_comp -!tv2v_out
   !outp_comp !tv2v_dot !(linearZ, linearZl, linearZr)/= scalerA -[RHS]scale1r.
   f_equal. rewrite -(ns_dot psi).
@@ -1323,7 +1361,7 @@ by rewrite /elemso liftf_funE -tf2f_pair liftf_lf_cast tf2f1 liftf_lf_tenf1r -?d
 under eq_bigr do rewrite /elemso liftf_funE -liftfso_formso.
 rewrite -linear_sum/= -liftfso_formso -!liftfso_comp; f_equal.
 rewrite -(initialso_onb (tv2v <{ (x1, x2) }> phi) (tv2v_fun _ <{ (x1, x2) }> t2tv)).
-rewrite -elemso_sum !linear_suml/=; apply eq_bigr=>[[j1 j2]] _.
+rewrite -elemso_sum !linear_sumlz/=; apply eq_bigr=>[[j1 j2]] _.
 rewrite /elemso linear_sumr/= (bigD1 j2)//= big1=>[k /negPf nkj|];
 rewrite !formso_comp tm2mE tmeasE /tv2v_fun tv2v_out !tf2f_comp outp_comp.
 by rewrite -!tentv_t2tv tentv_dot !t2tv_dot [_ == k]eq_sym nkj mulr0 scale0r tf2f0 formso0.
@@ -1422,7 +1460,7 @@ Proof. by move=>P; rewrite -if_compl if_weaker// if_compl. Qed.
 
 (* Lemma 5.2 *)
 Lemma meas_reducel T (x : 'QReg[T]) (N : 'QM) (M : 'QM) (K : 'QM) (L : 'QM) :
-  <{[ '[ N[x] ) ]}> =c <{[ '[ K[x] ) ◁ M[x] ▷ '[ L[x] ) ]}> <->
+  <{[ '[ N[x] ) ]}> =c <{[ ('[ K[x] )) ◁ M[x] ▷ ('[ L[x] )) ]}> <->
     exists (c0 c1 : C), (c0^+2 + c1^+2 = 1) /\ 
     ((K false \o M false) ⋈_(c0) (N false)) /\ ((L false \o M true) ⋈_(c1) (N false)).
 Proof.
@@ -1471,7 +1509,7 @@ Proof. by rewrite -![ cond2_ _ _ abort_ _]if_compl meas_aborbl/= !/bcmeas/=. Qed
 Lemma if_reduce T1 T2 T3 T4 (x1 : qreg T1) (x2 : qreg T2) (x3 : qreg T3)
   (x4 : qreg T4) (N : 'QM) (M : 'QM) (K : 'QM) (L : 'QM) c0 c1 :
   <{[ '( N[x1] ] ]}> =c <{[ '( K[x3] ] ◁ M[x2] ▷ '( L[x4] ] ]}> ->
-  <{[ '[ N[x1] ) ]}> =c <{[ '[ K[x3] ) ◁ M[x2] ▷ '[ L[x4] ) ]}> ->
+  <{[ '[ N[x1] ) ]}> =c <{[ ('[ K[x3] )) ◁ M[x2] ▷ ('[ L[x4] )) ]}> ->
   <{[ (c0 ◁ K[x3] ▷ c1) ◁ M[x2] ▷ (c0 ◁ L[x4] ▷ c1) ]}> =c <{[ c0 ◁ N[x1] ▷ c1 ]}>.
 Proof.
 rewrite eq_fsem.unlock !fsemE !comp_so1l !comp_so0l !addr0 !add0r.
@@ -1484,7 +1522,7 @@ Lemma if_reduce_tmeas T1 T2 (x1 : qreg T1) (x2 : qreg T2)
   =c <{[ If tmeas[(x1,x2)] = k then P k.1 k.2 fI ]}>.
 Proof.
 rewrite eq_fsem.unlock !fsemE !ifso_elem.
-under eq_bigr do rewrite fsemE ifso_elem linear_suml/=.
+under eq_bigr do rewrite fsemE ifso_elem linear_sumlz/=.
 rewrite pair_big/=; apply eq_bigr=>[[m n]] _ /=.
 rewrite -comp_soA; f_equal.
 rewrite /elemso !liftf_funE !tm2mE formso_comp !tmeasE -tentv_t2tv 
@@ -1630,7 +1668,7 @@ Lemma qif_if T (F : finType) (x : 'QReg[T]) (phi : 'ONB(F; 'Ht T))
   (u : F -> ucmd_) (c : F -> cmd_) {H : `{{forall i, (ucmd_var_disj x (u i))}}}:
   <{[ [cir qif phi[x] = i then u i fiq] ;; If (onb_meas phi)[x] = i then c i fI]}> =c <{[ If (onb_meas phi)[x] = i then seqc_ (circuit_ (u i)) (c i) fI]}>.
 Proof.
-rewrite eq_fsem.unlock !fsemE !ifso_elem linear_suml/=.
+rewrite eq_fsem.unlock !fsemE !ifso_elem linear_sumlz/=.
 apply eq_bigr=>i _; rewrite /elemso liftf_funE tm2mE onb_measE !fsemE 
   -!comp_soA !usemE !formso_comp; do 2 f_equal.
 rewrite linear_sumr/= (bigD1 i)//= big1=>[j /negPf nji|];

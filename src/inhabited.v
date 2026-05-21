@@ -1,10 +1,13 @@
 (* -------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra perm fingroup.
-From mathcomp.analysis Require Import -(notations)forms.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
+From mathcomp.fingroup Require Import perm fingroup.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
 From quantum.external Require Import spectral.
-From mathcomp.analysis Require Import reals.
+From mathcomp.reals Require Import reals.
 From mathcomp.classical Require Import classical_sets.
+From Coq.Bool Require Import Bool.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
 From mathcomp.real_closed Require Import mxtens.
@@ -129,8 +132,8 @@ Definition ddotp (x y : H) := dotmx (v2r x)^*m (v2r y)^*m.
 
 #[local] Lemma ddotpE x y : ddotp x y = \sum_i ((v2r x) 0 i)^* * ((v2r y) 0 i).
 Proof.
-rewrite /ddotp /dotmx /form /= mulmx1 /mxtrace mxE;
-apply eq_bigr=>i _; by rewrite !mxE /conjCfun conjCK.
+rewrite /ddotp dotmxE !mxE;
+apply eq_bigr=>i _; by rewrite !mxE conjCK.
 Qed.
 
 #[local] Lemma ge0_ddotp v : 0 <= ddotp v v.
@@ -182,7 +185,7 @@ Notation "''Hs' T" := (ihb_chsType T%type) (at level 8, T at level 2, format "''
 Notation "''Hom[' T1 , T2 ]" := ('Hom('Hs T1%type, 'Hs T2%type)) (at level 8, format "''Hom[' T1 ,  T2 ]").
 Notation "''End[' T ]" := ('End('Hs T%type)) (at level 8, format "''End[' T ]").
 Notation "x %:V" := (x : 'Hs _) 
-  (at level 2, left associativity, format "x %:V") : lfun_scope.
+  (at level 2, format "x %:V") : lfun_scope.
 
 Section DefaultChsType1.
 Variable (T : ihbFinType).
@@ -687,7 +690,7 @@ Qed.
 
 Lemma tentf_eq0 x y : (x ⊗f y == 0) = (x == 0) || (y == 0).
 Proof.
-apply/Bool.eq_iff_eq_true; split.
+apply/Coq.Bool.Bool.eq_iff_eq_true; split.
 move=>/eqP/lfunP P1. case: eqP=>//=; move=>/eqP/lfun_neq0P[v /negPf Pv].
 apply/eqP/lfunP=>a; apply/intro_dotl=>b;
 move: (P1 (tentv v a))=>/intro_dotl/(_ (tentv (x v) b))/eqP.
@@ -699,7 +702,7 @@ Lemma ptentf_rge0 x y :
   (0 : 'End(_)) ⊏ x -> ((0 : 'End(_)) ⊑ x ⊗f y) = ((0 : 'End(_)) ⊑ y).
 Proof.
 move=>/gtf0_pdP[xge0 [v Pv]].
-apply/Bool.eq_iff_eq_true; split; last by apply: tentf_ge0=>//.
+apply/Coq.Bool.Bool.eq_iff_eq_true; split; last by apply: tentf_ge0=>//.
 move/lef_dot=>P1. apply/lef_dot=>u.
 move: (P1 (tentv v u)).
 by rewrite tentf_apply tentv_dot !lfunE/= !linear0 pmulr_rge0.
@@ -709,7 +712,7 @@ Lemma ptentf_lge0 y x :
   (0 : 'End(_)) ⊏ y -> ((0 : 'End(_)) ⊑ x ⊗f y) = ((0 : 'End(_)) ⊑ x).
 Proof.
 move=>/gtf0_pdP[xge0 [v Pv]].
-apply/Bool.eq_iff_eq_true; split=>[/lef_dot P1|P1]; last by apply: tentf_ge0.
+apply/Coq.Bool.Bool.eq_iff_eq_true; split=>[/lef_dot P1|P1]; last by apply: tentf_ge0.
 apply/lef_dot=>u; move: (P1 (tentv u v)).
 by rewrite tentf_apply tentv_dot !lfunE/= !linear0 pmulr_lge0.
 Qed.
@@ -871,7 +874,7 @@ Lemma tentvMNnl (v: 'Hs T2) (u: 'Hs T1) n : tentv (u *- n) v = (tentv u v) *- n.
 Proof. exact: linearMNnl. Qed.
 Lemma tentv_suml L r (P : pred L) (F: L -> 'Hs T1) (u: 'Hs T2) : 
   (\sum_(i <- r | P i) F i) ⊗t u = \sum_(i <- r | P i) ((F i) ⊗t u).
-Proof. exact: linear_suml. Qed.
+Proof. exact: linear_sumlz. Qed.
 Lemma tentvNr (u: 'Hs T1) (v: 'Hs T2) : u ⊗t (-v) = - (u ⊗t v).
 Proof. exact: linearNr. Qed.
 Lemma tentvBr (w: 'Hs T1) (u v: 'Hs T2) : w ⊗t (u-v) = w ⊗t u - w ⊗t v.
@@ -929,7 +932,7 @@ Lemma tentfMNnr f g n : f ⊗f (g *- n) = (f ⊗f g) *- n.
 Proof. exact: linearMNnr. Qed.
 Lemma tentf_suml g I r (P: pred I) (E: I -> 'Hom[T1,T2]) :
  (\sum_(i <- r | P i) E i) ⊗f g = \sum_(i <- r | P i) (E i ⊗f g).
-Proof. exact: linear_suml. Qed.
+Proof. exact: linear_sumlz. Qed.
 Lemma tentf_sumr f I r (P: pred I) (E: I -> 'Hom[T3,T4]) :
  f ⊗f (\sum_(i <- r | P i) E i) = \sum_(i <- r | P i) (f ⊗f E i).
 Proof. exact: linear_sumr. Qed.
@@ -1125,7 +1128,7 @@ Lemma tentv_tuple_dot (u v : 'I_n -> ('Hs T)) :
   [< tentv_tuple u ; tentv_tuple v >] = \prod_i [< u i ; v i >].
 Proof.
 rewrite dotp_mulmx !c2hK mxE.
-under eq_bigr do rewrite !mxE rmorph_prod -big_split/=.
+under [LHS]eq_bigr do rewrite adjmxE !mxE rmorph_prod -big_split/=.
 under [RHS]eq_bigr do rewrite dotp_mulmx mxE.
 rewrite bigA_distr_bigA/= (reindex (fun i=>[ffun j => idx_tuplei i j])).
 exists (fun i : {ffun 'I_n -> _}=> idx_tuple i)=>x _.
@@ -1420,9 +1423,9 @@ Proof.
 rewrite -gisolf_adj; apply/isolf_giso_dim; last first.
   by rewrite -!ihb_dim_cast card_prod !card_tuple expnS.
 apply/isolfP; rewrite adjfK /tentv_tuple_tensU adjf_sum.
-rewrite -tentf11 -(sumonb_out t2tv) !linear_suml/=; apply eq_bigr=>i _. 
+rewrite -tentf11 -(sumonb_out t2tv) !linear_sumlz/=; apply eq_bigr=>i _. 
 rewrite linear_sumr/= (bigD1 i)//= [X in _ + X]big1=>[j /negPf nji|];
-rewrite adjf_sum linear_suml/=.
+rewrite adjf_sum linear_sumlz/=.
   rewrite big1// =>a _; rewrite linear_sumr big1// =>b _ /=;
   by rewrite adj_outp outp_comp tentv_tuple_dot big_ord_recl 
     !fcons0 onb_dot eq_sym nji mul0r scale0r.
@@ -1651,7 +1654,7 @@ Lemma tentv_dffun_dot (u v : forall i : F, 'Hs (TF i)) :
   [< tentv_dffun u ; tentv_dffun v >] = \prod_i [< u i ; v i >].
 Proof.
 rewrite dotp_mulmx !c2hK mxE.
-under eq_bigr do rewrite !mxE rmorph_prod -big_split/=.
+under [LHS]eq_bigr do rewrite adjmxE !mxE rmorph_prod -big_split/=.
 under [RHS]eq_bigr do rewrite dotp_mulmx mxE.
 rewrite big_distr_dffun/= (reindex idx_dffun).
 by exists (idx_dffuni)=>x _; rewrite ?idx_dffuniK// idx_dffunK.
@@ -1900,7 +1903,7 @@ rewrite -gisolf_adj; apply/isolf_giso_dim; last first.
   by rewrite -!ihb_dim_cast card_prod !card_dffun 
     (big_sig _ _ (fun i : F => #|T i|))/= [RHS](bigD1 x).
 apply/isolfP; rewrite adjfK adjf_sum.
-rewrite -tentf11 -(sumonb_out t2tv) -(sumonb_out t2tv) !linear_suml/=.
+rewrite -tentf11 -(sumonb_out t2tv) -(sumonb_out t2tv) !linear_sumlz/=.
 under eq_bigr do rewrite linear_sumr/=.
 transitivity (\sum_(i : {dffun forall i, T i}) 
   [> ''(i x) ⊗t tentv_dffun (fun i1 : {j | j != x} => ''(i (val i1))); 
@@ -2347,4 +2350,3 @@ HB.instance Definition _ T' (f : F -> 'FI('Hs T, 'Hs T')) := IsoLf.on (tentf_ffu
 HB.instance Definition _ T' (f : F -> 'FGI('Hs T, 'Hs T')) := GisoLf.on (tentf_ffun f).
 
 End TentfFfunPred.
-

@@ -1,10 +1,12 @@
 (* -------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra.
-From mathcomp.analysis Require Import -(notations)forms.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
 From quantum.external Require Import spectral.
 From mathcomp.classical Require Import boolp.
-From mathcomp.analysis Require Import reals.
+From mathcomp.reals Require Import reals.
+From Coq.Bool Require Import Bool.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
 
@@ -454,10 +456,10 @@ Proof. by move=>a x y; rewrite ketd.unlock !linearP. Qed.
 HB.instance Definition _ S := GRing.isLinear.Build C 
   'H[H]_S 'D[H] *:%R (@ketd _ H S) (@ketd_is_linear S).
 
-Lemma brad_is_antilinear S : linear_for (Num.conj_op \; *:%R) (@brad _ H S).
+Lemma brad_is_antilinear S : linear_for (conjC \; *:%R) (@brad _ H S).
 Proof. by move=>a x y; rewrite brad.unlock !linearP. Qed.
 HB.instance Definition _ S := GRing.isLinear.Build C 
-  'H[H]_S 'D[H] (Num.conj_op \; *:%R) (@brad _ H S) (@brad_is_antilinear S).
+  'H[H]_S 'D[H] (conjC \; *:%R) (@brad _ H S) (@brad_is_antilinear S).
 
 Lemma numd_is_additive : additive (@numd _ H).
 Proof. by move=>x y; rewrite numd.unlock raddfB linearB. Qed.
@@ -474,10 +476,10 @@ Proof. by move=>a x y; rewrite d2v.unlock !diracE linearP. Qed.
 HB.instance Definition _ S := GRing.isLinear.Build C 
   'D[H] 'H[H]_S *:%R (@d2v _ H S) (@d2v_is_linear S).
 
-Lemma d2dv_is_antilinear S : linear_for (Num.conj_op \; *:%R) (@d2dv _ H S).
+Lemma d2dv_is_antilinear S : linear_for (conjC \; *:%R) (@d2dv _ H S).
 Proof. by move=>a x y; rewrite d2dv.unlock !diracE linearP. Qed.
 HB.instance Definition _ S := GRing.isLinear.Build C 
-  'D[H] 'H[H]_S (Num.conj_op \; *:%R) (@d2dv _ H S) (@d2dv_is_antilinear S).
+  'D[H] 'H[H]_S (conjC \; *:%R) (@d2dv _ H S) (@d2dv_is_antilinear S).
 
 Lemma d2c_is_scalar : scalar (@d2c _ H).
 Proof. by move=>a x y; rewrite d2c.unlock !diracE linearP. Qed.
@@ -492,21 +494,21 @@ Qed.
 
 (* correctness of compoistion operators *)
 Lemma addd_correct S T (f g: 'F[H]_(S,T)) :
-  '[f] + '[g] = '[f + g].
+  '[ f ] + '[ g ] = '[ f + g ].
 Proof. by rewrite linearD. Qed.
 
 Lemma oppd_correct S T (f : 'F[H]_(S,T)) : 
-  - '[f] = '[- f].
+  - '[ f ] = '[ - f ].
 Proof. by rewrite linearN. Qed.
 
 Lemma scaled_correct S T (c: C) (f : 'F[H]_(S,T)) :
-  c *: '[f] = '[c *: f].
+  c *: '[ f ] = '[ c *: f ].
 Proof. by rewrite linearZ. Qed.
 
 Definition comp_lfun0 := (comp_lfun0l, comp_lfun0r).
 
 Lemma muld_correct S T W (f: 'F[H]_(S,T)) (g: 'F_(W,S)) :
-    '[f] \o '[g] = '[f \o g].
+    '[ f ] \o '[ g ] = '[ f \o g ].
 Proof.
 apply/diracP=>d1 d2; rewrite muld.unlock [LHS]diracE.
 rewrite (bigD1 S)//= big1=>[i P|].
@@ -525,7 +527,7 @@ Lemma dotd_pairE (e1 e2 : 'D[H]) :
 Proof. by rewrite dotd.unlock pair_big; apply eq_bigr=>d1 _; rewrite pair_big. Qed.
 
 Lemma tend_correct S T S' T' (f: 'F[H]_(S,T)) (g: 'F_(S', T')) :
-    '[f] \⊗ '[g] = '[f \⊗ g].
+    '[ f ] \⊗ '[ g ] = '[ f \⊗ g ].
 Proof.
 apply/diracP=>d1 d2; rewrite tend_pairE.
 rewrite (bigD1 (S,T))//= (bigD1 (S',T'))//= !big1=>[[i1 i2]/=P|[i1 i2]/=P|].
@@ -535,7 +537,7 @@ by rewrite !addr0 !lind_id.
 Qed.
 
 Lemma dotd_correct S T S' T' (f: 'F[H]_(S,T)) (g: 'F[H]_(S', T')) :
-    '[f] \· '[g] = '[f \· g].
+    '[ f ] \· '[ g ] = '[ f \· g ].
 Proof.
 apply/diracP=>d1 d2; rewrite dotd_pairE. 
 rewrite (bigD1 (S,T))//= (bigD1 (S',T'))//= !big1=>[[i1 i2]/=P|[i1 i2]/=P|]. 
@@ -545,11 +547,11 @@ by rewrite !addr0 !lind_id.
 Qed.
 
 Lemma sdotd_correct S T (f: 'F[H]_S) (g: 'F[H]_T) :
-  '[f] \· '[g] = '[f \O g].
+  '[ f ] \· '[ g ] = '[ f \O g ].
 Proof. by rewrite sdot_lfun.unlock lind_cast dotd_correct. Qed.
 
 Lemma conjd_correct S T (f : 'F[H]_(S,T)) :
-  '[f]^C = '[f^C].
+  '[ f ]^C = '[ f^C ].
 Proof.
 apply/diracP=>i j; rewrite conjd.unlock diracE.
 case E: ((i,j) == (S,T)); first by move/eqP in E; inversion E; rewrite !lind_id.
@@ -557,7 +559,7 @@ by move/negbT: E=>E; rewrite !lind_eq0p// linear0.
 Qed.
 
 Lemma adjd_correct S T (f : 'F[H]_(S,T)) :
-  '[f]^A = '[f^A].
+  '[ f ]^A = '[ f^A ].
 Proof.
 apply/diracP=>i j; rewrite adjd.unlock diracE.
 case E: ((i,j) == (T,S)); first by move/eqP in E; inversion E; rewrite !lind_id.
@@ -566,7 +568,7 @@ by move: E; apply contraNN=>/eqP P; inversion P.
 Qed.
 
 Lemma trd_correct S T (f : 'F[H]_(S,T)) :
-  '[f]^T = '[f^T].
+  '[ f ]^T = '[ f^T ].
 Proof.
 apply/diracP=>i j; rewrite trd.unlock diracE.
 case E: ((i,j) == (T,S)); first by move/eqP in E; inversion E; rewrite !lind_id.
@@ -649,8 +651,8 @@ rewrite  (eq_bigr (fun d1 => \sum_d0 \sum_d3 \sum_d2
 2: rewrite  [RHS](eq_bigr (fun j => \sum_d1 \sum_d2 \sum_i
 (lind (lind (f d1.1 d1.2 \⊗ g d2.1 d2.2) i.1 i.2 \⊗ h j.1 j.2)))).
 1,2: by move=>i _; rewrite exchange_bigR/= exchange_bigR/=; apply eq_bigr=>j _;
-rewrite dirac_sumE 1 ?linear_suml/= 2 ?linear_sum/=; apply eq_bigr=>k _;
-rewrite dirac_sumE 1 ?linear_suml/= 2 ?linear_sum/=; apply eq_bigr.
+rewrite dirac_sumE 1 ?linear_sumlz/= 2 ?linear_sum/=; apply eq_bigr=>k _;
+rewrite dirac_sumE 1 ?linear_sumlz/= 2 ?linear_sum/=; apply eq_bigr.
 rewrite [RHS]exchange_bigR/=; apply eq_bigr=>[[i1 i2]] _; 
 apply eq_bigr=>[[j1 j2]] _; apply eq_bigr=>[[k1 k2]] _.
 rewrite (bigD1 (j1 :|: k1, j2 :|: k2))// big1/=.
@@ -724,7 +726,7 @@ Definition tendnAl := tendMnl.
 Lemma tendMNnl z n : {morph ⊗%D^~ z : x / x *- n}. Proof. exact: linearMNnl. Qed.
 Lemma tend_suml z I r (P : pred I) E :
   (\sum_(i <- r | P i) E i) \⊗ z = \sum_(i <- r | P i) (E i \⊗ z).
-Proof. exact: linear_suml. Qed.
+Proof. exact: linear_sumlz. Qed.
 Lemma tendZl z a : {morph ⊗%D^~ z : x / a *: x}. Proof. exact: linearZl_LR. Qed.
 Lemma tendPl z a : {morph ⊗%D^~ z : u v / a *: u + v}. Proof. exact: linearPl. Qed.
 Lemma tendZlr x y a b : (a *: x) \⊗ (b *: y) = a *: (b *: (x \⊗ y)). 
@@ -749,7 +751,7 @@ move=>x y z; rewrite muld.unlock.
 apply/diracP=>i j; rewrite !diracE.
 under eq_bigr do rewrite !diracE linear_sumr/=.
 rewrite exchange_big/=. apply eq_bigr=>k _.
-rewrite diracE/= linear_suml/=. 
+rewrite diracE/= linear_sumlz/=. 
 by under eq_bigr do rewrite comp_lfunA.
 Qed.
 
@@ -794,7 +796,7 @@ Definition muldnAl := muldMnl.
 Lemma muldMNnl z n : {morph o%D^~ z : x / x *- n}. Proof. exact: linearMNnl. Qed.
 Lemma muld_suml z I r (P : pred I) E :
   (\sum_(i <- r | P i) E i) \o z = \sum_(i <- r | P i) (E i \o z).
-Proof. exact: linear_suml. Qed.
+Proof. exact: linear_sumlz. Qed.
 Lemma muldZl z a : {morph o%D^~ z : x / a *: x}. Proof. exact: linearZl_LR. Qed.
 Lemma muldPl z a : {morph o%D^~ z : u v / a *: u + v}. Proof. exact: linearPl. Qed.
 Lemma muldZlr x y a b : (a *: x) \o (b *: y) = a *: (b *: (x \o y)). 
@@ -862,7 +864,7 @@ Definition dotdnAl := dotdMnl.
 Lemma dotdMNnl z n : {morph ·%D^~ z : x / x *- n}. Proof. exact: linearMNnl. Qed.
 Lemma dotd_suml z I r (P : pred I) E :
   (\sum_(i <- r | P i) E i) \· z = \sum_(i <- r | P i) (E i \· z).
-Proof. exact: linear_suml. Qed.
+Proof. exact: linear_sumlz. Qed.
 Lemma dotdZl z a : {morph ·%D^~ z : x / a *: x}. Proof. exact: linearZl_LR. Qed.
 Lemma dotdPl z a : {morph ·%D^~ z : u v / a *: u + v}. Proof. exact: linearPl. Qed.
 Lemma dotdZlr x y a b : (a *: x) \· (b *: y) = a *: (b *: (x \· y)). 
@@ -870,14 +872,14 @@ Proof. exact: linearZlr. Qed.
 Lemma dotdZrl x y a b : (a *: x) \· (b *: y) = b *: (a *: (x \· y)). 
 Proof. exact: linearZrl. Qed.
 
-Lemma conjd_is_antilinear : linear_for (Num.conj_op \; *:%R) conjd.
+Lemma conjd_is_antilinear : linear_for (conjC \; *:%R) conjd.
 Proof. by move=>a x y/=; apply/diracP=>i j; rewrite conjd.unlock !diracE linearP. Qed.
 HB.instance Definition _ := GRing.isLinear.Build 
-  C 'D[H] 'D[H] (Num.conj_op \; *:%R) conjd conjd_is_antilinear.
-Lemma adjd_is_antilinear  : linear_for (Num.conj_op \; *:%R) adjd.
+  C 'D[H] 'D[H] (conjC \; *:%R) conjd conjd_is_antilinear.
+Lemma adjd_is_antilinear  : linear_for (conjC \; *:%R) adjd.
 Proof. by move=>a x y/=; apply/diracP=>i j; rewrite adjd.unlock !diracE linearP. Qed.
 HB.instance Definition _ := GRing.isLinear.Build 
-  C 'D[H] 'D[H] (Num.conj_op \; *:%R) adjd adjd_is_antilinear.
+  C 'D[H] 'D[H] (conjC \; *:%R) adjd adjd_is_antilinear.
 Lemma trd_is_linear  : linear trd.
 Proof. by move=>a x y/=; apply/diracP=>i j; rewrite trd.unlock !diracE linearP. Qed.
 HB.instance Definition _ := GRing.isLinear.Build 
@@ -1859,7 +1861,7 @@ Definition ketd_tr   := (@trd_ket _ H).
 Lemma ketdT S T (u: 'H[H]_S) (v: 'H_T) : '|u> \⊗ '|v> = '|u ⊗v v>.
 Proof.
 rewrite 2!ketd_lin tend_correct /v2f tenf_outp tenv_idx0r -outerM -[RHS]muldI/=.
-by f_equal; rewrite brad_cast !numd_simp /sf2s /sv2s lfunE/= dv_dot eqxx conjc1.
+by f_equal; rewrite brad_cast !numd_simp /sf2s /sv2s lfunE/= dv_dot eqxx conjC1.
 Qed.
 
 Definition brad_conj := (@conjd_bra _ H).
@@ -2284,7 +2286,7 @@ Lemma onb_lfunM2 (e : 'D_S) :
   (e : 'D) = \sum_i \sum_j ((f j)^A \o e \o (f i)) \· ((f j) \o (f i)^A).
 Proof.
 rewrite {1}onb_lfunM; apply eq_bigr=>i _/=.
-rewrite [e \o f i]onb_vecM/= linear_suml; apply eq_bigr=>j _/=.
+rewrite [e \o f i]onb_vecM/= linear_sumlz; apply eq_bigr=>j _/=.
 by rewrite !muldA -d2cK/= !numdGl muldZl.
 Qed.
 
@@ -2398,7 +2400,7 @@ Lemma pscaled_lge0 f (a : C) :
   (0 : 'D) ⊏ f -> (0 : 'D) ⊑ a *: f = (0 <= a).
 Proof.
 move=>P. move: {+}P=>/ltd_ltf[S Ps].
-apply/Bool.eq_iff_eq_true; split.
+apply/Coq.Bool.Bool.eq_iff_eq_true; split.
 by move=>/ged0P[/(_ S)+ _]; rewrite diracE pscalev_lge0.
 by rewrite le0r=>/orP[/eqP->|P1]; 
   rewrite ?scale0r ?lexx// pscalev_rge0//; apply/ltW.
@@ -2412,7 +2414,7 @@ Section DiracVOrderTheory.
 Context {L : finType} (H : L -> chsType).
 Implicit Type (S T : {set L}).
 Local Notation "'0" := (0 : 'D[H]).
-Local Notation "a '%:E'" := (a : 'D) (at level 2, left associativity, format "a %:E").
+Local Notation "a '%:E'" := (a : 'D) (at level 2, right associativity, format "a %:E").
 
 Lemma lin_eq0 S T (f : 'F[H]_(S,T)) : ('[ f ] == 0) = (f == 0).
 Proof. by rewrite -(inj_eq (@lind_inj _ _ _ _)) linear0. Qed.
@@ -2429,7 +2431,7 @@ Proof. move=>+/ltW; exact: wf_ge0_eq0. Qed.
 
 Lemma sqr_gef0 S (e : 'D[H]_S) : '0 ⊑ e = (0%:VF ⊑ e S S).
 Proof.
-apply/Bool.eq_iff_eq_true; split; first by move=>/ged0P[/(_ S)].
+apply/Coq.Bool.Bool.eq_iff_eq_true; split; first by move=>/ged0P[/(_ S)].
 move=>P; apply/ged0P; split=>[T|T W PT]; rewrite sqrdiracE.
 case E: (S == T); move: E=>/eqP.
 by move=>Q; case: T / Q; rewrite lind_id.

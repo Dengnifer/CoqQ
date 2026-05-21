@@ -1,6 +1,7 @@
 (* -------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
 
 (* -------------------------------------------------------------------- *)
 Import Order.TTheory GRing.Theory Num.Theory Num.Def.

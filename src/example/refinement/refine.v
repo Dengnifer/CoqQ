@@ -1,8 +1,11 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
 From mathcomp.classical Require Import boolp classical_sets.
-From mathcomp.analysis Require Import -(notations)forms.
-From mathcomp.analysis Require Import reals topology normedtype.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
+From mathcomp.reals Require Import reals.
+From mathcomp.analysis.topology_theory Require Import topology.
+From mathcomp.analysis.normedtype_theory Require Import normedtype.
 From quantum.external Require Import complex.
 Require Import mcextra mcaextra notation hermitian quantum
   orthomodular hspace inhabited autonat hspace_extra.
@@ -11,7 +14,8 @@ From quantum Require Import prodvect tensor mxpred cpo extnum
   ctopology qreg qmem.
 From quantum.dirac Require Import hstensor.
 From quantum.example.refinement Require Import language.
-Require Import Coq.Program.Equality String.
+From Coq.Program Require Import Equality.
+From Coq.Strings Require Import String.
 
 (************************************************************************)
 (*                   Formalization of Section 5                         *)

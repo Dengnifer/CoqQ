@@ -1,9 +1,13 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra finmap.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
+From mathcomp.finmap Require Import finmap.
 From mathcomp.classical Require Import boolp cardinality mathcomp_extra
   classical_sets functions.
-From mathcomp.analysis Require Import ereal reals signed topology function_spaces
-  prodnormedzmodule normedtype sequences xfinmap.
+From mathcomp.reals Require Import reals signed prodnormedzmodule.
+From mathcomp.analysis Require Import ereal sequences.
+From mathcomp.analysis.topology_theory Require Import topology function_spaces.
+From mathcomp.analysis.normedtype_theory Require Import normedtype.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
 Require Import mcextra mcaextra extnum mxpred ctopology notation.
@@ -49,10 +53,10 @@ Lemma normf_ge0 (I : Type) (K : numDomainType) (V : normedZmodType K) (f : I -> 
 Proof. by rewrite /normf. Qed.
 Hint Resolve normf_ge0 : core.
 
-Lemma max_le_l {disp : unit} {T : porderType disp} (x y : T) :
+Lemma max_le_l {disp : Order.disp_t} {T : porderType disp} (x y : T) :
   (x <= Order.max x y)%O.
 Proof. by rewrite maxEle; case E: (x <= y)%O. Qed.
-Lemma min_le_r {disp : unit} {T : porderType disp} (x y : T) :
+Lemma min_le_r {disp : Order.disp_t} {T : porderType disp} (x y : T) :
   (Order.min x y <= y)%O.
 Proof. by rewrite minEle; case E: (x <= y)%O. Qed.
 
@@ -147,7 +151,17 @@ Proof. by rewrite !psumrE linearZ. Qed.
 Lemma psumU {R} (x : I -> R) (A B : {fset I}) :
   [disjoint A & B]%fset -> 
     psum x (A `|` B)%fset = psum x A + psum x B.
-Proof. exact: xfinmap.big_fsetU. Qed.
+Proof.
+move=> /fdisjointP disjAB.
+rewrite /psum -(@big_seq_fsetE R 0 +%R I (A `|` B)%fset predT x)
+  -(@big_seq_fsetE R 0 +%R I A predT x)
+  -(@big_seq_fsetE R 0 +%R I B predT x)
+  (@big_fsetID R 0 +%R I (mem A) (A `|` B)%fset x).
+congr (_ + _); apply: eq_fbigl=> i; rewrite !inE.
+- by case: (i \in A); case: (i \in B).
+case Ai: (i \in A); case Bi: (i \in B)=> //=.
+by move: (disjAB i Ai); rewrite Bi.
+Qed.
 
 Lemma psumDB {R} (x : I -> R) (A B : {fset I}) :
   psum x (A `\` B)%fset = psum x A - psum x (A `&` B)%fset.
@@ -539,7 +553,7 @@ Proof. by rewrite predeqE => i; split => // _; exists i. Qed.
   exists k, [/\ D k, b k t & b k `<=` b i `&` b j].
 Proof. by move=> i j t _ _ -> ->; exists j. Qed.
 
-HB.instance Definition _ := Pointed_isBaseTopological.Build 
+HB.instance Definition _ := isBaseTopological.Build
   {fset I} bT bD.
 
 End fset_topologicalType.
@@ -1185,14 +1199,17 @@ Qed.
 End SummableCountable.
 
 HB.mixin Record Summable_isVDistr (I : choiceType) (R : realType)
-  (V : vorderFinNormedModType R[i]) (f : I -> V) of @Summable I R[i] V f := {
-  vdistr_ge0  :  forall x, (0 : V) ⊑ f x;
+  (V : vorderFinNormedModType R[i])
+  (f : I -> VOrderFinNormedModule.to_FinNormedModule V)
+  of @Summable I R[i] (VOrderFinNormedModule.to_FinNormedModule V) f := {
+  vdistr_ge0  :  forall x, (0 : V) ⊑ (f x : V);
   vdistr_sum_le1  :  `|sum f| <= 1;
 }.
 
 HB.structure Definition VDistr (I : choiceType) (R : realType)
   (V : vorderFinNormedModType R[i]) :=
-  { f of @Summable I R[i] V f & Summable_isVDistr I R V f}.
+  { f of @Summable I R[i] (VOrderFinNormedModule.to_FinNormedModule V) f
+      & Summable_isVDistr I R V f}.
 
 Module VDistrExports.
 Module VDistr.
@@ -1239,12 +1256,26 @@ Proof. by case: f=>?[?[]]. Qed.
 
 Lemma psum_vdistr_lev (A B : {fset I}) : (A `<=` B)%fset -> psum f A ⊑ psum f B.
 Proof.
-by move=>PAB; rewrite -(fsetUD_sub PAB) psumU ?fdisjointXD// 
-  levDl sumv_ge0// =>? _; apply: vdistr_ge0.
+move=>PAB; rewrite -(fsetUD_sub PAB) psumU ?fdisjointXD//.
+rewrite VOrderFinNormedModule.fin_addE levDl /psum.
+pose VF := VOrderFinNormedModule.to_FinNormedModule V.
+apply: (big_ind (fun x : VF => (0 : V) ⊑ (x : V))).
+- by rewrite VOrderFinNormedModule.fin_zeroE.
+- move=>x y x_ge0 y_ge0.
+  by rewrite VOrderFinNormedModule.fin_addE -[0]addr0 levD.
+by move=>? _; apply: vdistr_ge0.
 Qed.
 
 Lemma psum_vdistr_ge0 (A : {fset I}) : (0 : V) ⊑ psum f A.
-Proof. rewrite sumv_ge0// =>??; apply: vdistr_ge0. Qed.
+Proof.
+rewrite /psum.
+pose VF := VOrderFinNormedModule.to_FinNormedModule V.
+apply: (big_ind (fun x : VF => (0 : V) ⊑ (x : V))).
+- by rewrite VOrderFinNormedModule.fin_zeroE.
+- move=>x y x_ge0 y_ge0.
+  by rewrite VOrderFinNormedModule.fin_addE -[0]addr0 levD.
+by move=>? _; apply: vdistr_ge0.
+Qed.
 
 Lemma psum_vdistr_lev_sum (A : {fset I}) : psum f A ⊑ sum f.
 Proof.
@@ -1256,7 +1287,7 @@ Lemma vdistr_le_sum : forall x, f x ⊑ sum f.
 Proof. move=>x; rewrite -[f x]psum1; apply/psum_vdistr_lev_sum. Qed.
 
 Lemma vdistr_sum_ge0 : (0 : V) ⊑ sum f.
-Proof. by apply/(le_trans _ (psum_vdistr_lev_sum fset0)); rewrite psum0. Qed.
+Proof. exact: (le_trans (psum_vdistr_ge0 fset0) (psum_vdistr_lev_sum fset0)). Qed.
 
 End VDistrCoreTh.
 #[global] Hint Resolve vdistr_ge0 vdistr_le_sum vdistr_summable : core.
@@ -1265,17 +1296,21 @@ Require Import hermitian.
 
 Notation C := hermitian.C.
 
-Definition Distr (I : choiceType) := nosimpl {vdistr I -> C}.
+Definition Distr (I : choiceType) := nosimpl
+  (@VDistr.type I hermitian.R
+    (ctopology_C__canonical__extnum_VOrderFinNormedModule hermitian.R)).
 
 Section DistrTheory.
 Context (I : choiceType) (mu : Distr I).
+Local Notation CV :=
+  (ctopology_C__canonical__extnum_VOrderFinNormedModule hermitian.R).
 
 Lemma ge0_mu : forall x, 0 <= mu x.
-Proof. move=>x; apply: vdistr_ge0. Qed.
+Proof. move=>x; exact: (@vdistr_ge0 I hermitian.R CV mu x). Qed.
 
 Lemma sum_le1_mu : sum mu <= 1.
 Proof.
-apply/(le_trans _ (vdistr_sum_le1))/real_ler_norm.
+apply/(le_trans _ (@vdistr_sum_le1 I hermitian.R CV mu))/real_ler_norm.
 move: (summable_cvg (f := mu)).
 apply: (closed_cvg _ etclosed_real)=>//.
 near=>J. apply/ger0_real/sumr_ge0=>i _; apply: ge0_mu.
@@ -1286,7 +1321,7 @@ Lemma summable_mu : summable mu.
 Proof. exact: vdistr_summable. Qed.
 
 Lemma le_psum_mu (A : {fset I}) : psum mu A <= sum mu.
-Proof. apply: psum_vdistr_lev_sum. Qed.
+Proof. exact: (@psum_vdistr_lev_sum I hermitian.R CV mu A). Qed.
 
 Lemma le_sum_mu (x : I) : mu x <= sum mu.
 Proof. by apply/(le_trans _ (le_psum_mu [fset x]%fset)); rewrite psum1. Qed.
@@ -1364,10 +1399,16 @@ Lemma lesP2 f g : (forall i, f i ⊑ g i) -> f ⊑ g.
 Proof. by move=>/lesP. Qed.
 
 Lemma les_add2rP h f g : f ⊑ g -> (f + h) ⊑ (g + h).
-Proof. by move=>/lesP1 P1; apply/lesP2=>i; rewrite !summableE levD2r. Qed.  
+Proof.
+by move=>/lesP1 P1; apply/lesP2=>i;
+  rewrite !summableE !VOrderFinNormedModule.fin_addE levD2r.
+Qed.  
 
 Lemma les_pscale2lP (e : R[i]) f g : 0 < e -> f ⊑ g -> (e *: f) ⊑ (e *: g).
-Proof. by move=>Pe /lesP1 P1; apply/lesP2=>i; rewrite !summableE lev_pscale2lP. Qed. 
+Proof.
+by move=>Pe /lesP1 P1; apply/lesP2=>i;
+  rewrite !summableE !VOrderFinNormedModule.fin_scaleE lev_pscale2lP.
+Qed. 
 
 Import VOrder.Exports.
 HB.instance Definition _ := POrderedLmodule_isVOrder.Build R[i] {summable I -> V}
@@ -1452,16 +1493,20 @@ Qed.
 Section vdistr_lim.
 Context {I : choiceType} {R : realType} {V : vorderFinNormedModType R[i]}.
 Local Notation C := R[i].
+Local Notation VF := (VOrderFinNormedModule.to_FinNormedModule V).
+Let vdistr_zero_fun : {summable I -> VF} := 0.
 
-Lemma vdistr_zero_subproof1 : forall i, (0 : V) ⊑ (\0 : I -> V) i.
-Proof. by []. Qed.
-Lemma vdistr_zero_subproof2 : `|sum (\0 : I -> V)| <= 1.
+Lemma vdistr_zero_subproof1 : forall i, (0 : V) ⊑ (vdistr_zero_fun i : V).
 Proof.
-rewrite/sum; have ->: psum (\0 : I -> V) = fun=>0 by apply/funext=>i; rewrite/psum big1.
-by rewrite lim_cst// normr0.
+move=>i.
+by rewrite /vdistr_zero_fun summable_zeroE VOrderFinNormedModule.fin_zeroE.
 Qed.
-HB.instance Definition vdistr_zero_mixin := Summable_isVDistr.Build I R V \0
-  vdistr_zero_subproof1 vdistr_zero_subproof2.
+Lemma vdistr_zero_subproof2 : `|sum vdistr_zero_fun| <= 1.
+Proof.
+by rewrite /vdistr_zero_fun summable_sum0 normr0.
+Qed.
+HB.instance Definition vdistr_zero_mixin := Summable_isVDistr.Build I R V
+  vdistr_zero_fun vdistr_zero_subproof1 vdistr_zero_subproof2.
 Definition vdistr_zero := VDistr.Pack (VDistr.Class vdistr_zero_mixin).
 
 Lemma vdistr_lim_subproof1 (T : Type) (F : set_system T) {FF : ProperFilter F} (f : T -> {vdistr I -> V}) :
@@ -1470,8 +1515,8 @@ Lemma vdistr_lim_subproof1 (T : Type) (F : set_system T) {FF : ProperFilter F} (
 Proof.
 move=>P i; rewrite -summableE_lim//.
 move: (summableE_is_cvg (FF := FF) P)=>/(_ i).
-apply: (closed_cvg (fun y=>(0 : V) ⊑ y)). apply/closed_gev.
-near=>x; apply: vdistr_ge0.
+apply: (closed_cvg (fun y : VF => (0 : V) ⊑ (y : V))). apply/closed_gev.
+near=>x; exact: (@vdistr_ge0 I R V (f x) i).
 Unshelve. end_near.
 Qed.
 
@@ -1654,6 +1699,7 @@ Context {I : choiceType} {R : realType} {V : vorderFinNormedModType R[i]}.
 
 Variable (mnorm : vnorm V).
 Local Notation C := R[i].
+Local Notation VF := (VOrderFinNormedModule.to_FinNormedModule V).
 Local Notation "`[ x ]" := (mnorm x).
 Hypothesis (mnorm_ge0D : forall x y, (0 : V) ⊑ x -> (0 : V) ⊑ y -> `[x + y] = `[x] + `[y]).
 
@@ -1674,7 +1720,9 @@ Local Hint Resolve c2_gt0 : core.
 Proof.
 move=>H; suff: (0 : V) ⊑ \sum_(j <- r | P j) f j /\ 
   `[ \sum_(j <- r | P j) f j ] = \sum_(j <- r | P j) `[f j] by move=>[].
-elim/big_rec2: _; first by rewrite normv0.
+elim/big_rec2: _.
+- split=>//.
+  by rewrite -VOrderFinNormedModule.fin_zeroE normv0.
 by move=>j ? y Pj [] Py <-; split; rewrite ?addv_ge0 ?mnorm_ge0D// H.
 Qed.
 
@@ -1686,14 +1734,14 @@ by rewrite -[y](addrNK x) mnorm_ge0D// lerDr.
 Qed.
 Local Hint Resolve mnorm_ge0_mono : core.
 
-#[local] Lemma ubmnorm (x : V) : `|x| <= c1 * `[x].
+#[local] Lemma ubmnorm (x : V) : `|(x : VF)| <= c1 * `[x].
 Proof.
 rewrite mulrC ler_pdivlMr 1?mulrC; 
 by move: (projT2 (cid2 (normv_lbounded mnorm)))=>[].
 Qed.
 Local Hint Resolve ubmnorm : core.
 
-#[local] Lemma lbmnorm (x : V) : `[x] <= c2 * `|x|.
+#[local] Lemma lbmnorm (x : V) : `[x] <= c2 * `|(x : VF)|.
 Proof. by move: (projT2 (cid2 (normv_ubounded mnorm)))=>[]. Qed.
 Local Hint Resolve lbmnorm : core.
 
@@ -1717,14 +1765,19 @@ Let smnorm (x : {summable I -> V}) := sum (mmap x).
 Proof.
 move=>/andP[/lesP Px /lesP Pyx].
 rewrite /smnorm/sum; apply: ler_etlim; [apply: summable_cvg.. |].
-by move=>S; apply/ler_sum=>i _; apply/mnorm_ge0_mono; rewrite Px Pyx.
+move=>S; apply/ler_sum=>i _; apply/mnorm_ge0_mono/andP; split.
+- by move: (Px (val i)); rewrite summableE VOrderFinNormedModule.fin_zeroE.
+by exact: (Pyx (val i)).
 Qed.
 #[local] Lemma smnorm_ge0D (x y : {summable I -> V}) : 
   (0 : {summable I -> V}) ⊑ x -> (0 : {summable I -> V}) ⊑ y ->
     smnorm (x + y) = smnorm x + smnorm y.
 Proof.
-move=>/lesP /= Px /lesP /= Py; rewrite/smnorm -summable_sumD/=.
-by f_equal; apply/funext=>i; rewrite /mmap/= mnorm_ge0D.
+move=>/lesP Px /lesP Py; rewrite/smnorm -summable_sumD/=.
+f_equal; apply/funext=>i; rewrite /mmap/= VOrderFinNormedModule.fin_addE.
+rewrite mnorm_ge0D//.
+- by move: (Px i); rewrite summableE VOrderFinNormedModule.fin_zeroE.
+by move: (Py i); rewrite summableE VOrderFinNormedModule.fin_zeroE.
 Qed.
 #[local] Lemma smnorm_ge0B (x y : {summable I -> V}) : 
   (0 : {summable I -> V}) ⊑ x ⊑ y -> smnorm (y - x) = smnorm y - smnorm x.
@@ -1755,6 +1808,15 @@ by move=>S/=; rewrite/psum mulr_sumr ler_sum// /mmap.
 Qed.
 Local Hint Resolve ge_smnorm : core.
 
+#[local] Lemma psum_vorderE (f : {vdistr I -> V}) (S : {fset I}) :
+  @psum I (VOrderFinNormedModule.vorder_sort V) (fun i => (f i : V)) S =
+    (psum (f : I -> VF) S : V).
+Proof.
+rewrite /psum; elim/big_rec2: _.
+- by rewrite VOrderFinNormedModule.fin_zeroE.
+by move=>i x y _ <-; rewrite VOrderFinNormedModule.fin_addE.
+Qed.
+
 Program Definition smnorm_vnorm_mixin := @isVNorm.Build
   R[i] {summable I -> V} smnorm _ _ _.
 Next Obligation.
@@ -1784,7 +1846,15 @@ rewrite/smnorm/sum. apply: etlim_le.
 apply: summable_cvg.
 move=>S. rewrite/psum -mnorm_ge0_sum ?psumE=>[??|]. apply: vdistr_ge0.
 apply/(le_trans (y := `[sum f])).
-by apply/mnorm_ge0_mono/andP; rewrite psum_vdistr_ge0 psum_vdistr_lev_sum.
+apply/mnorm_ge0_mono/andP; split.
+- rewrite /psum.
+  apply: (big_ind (fun x : VF => (0 : V) ⊑ (x : V))).
+  - by [].
+  - move=>x y x_ge0 y_ge0.
+    by rewrite -[0]addr0 levD.
+  by move=>i _; exact: (@vdistr_ge0 I R V f (val i)).
+rewrite (psum_vorderE f S).
+exact (@psum_vdistr_lev_sum I R V f S).
 by apply/(le_trans (lbmnorm _)); rewrite ger_pMr// vdistr_sum_le1.
 Qed.
 
@@ -1875,7 +1945,9 @@ rewrite/smnorm/mmap/sum. apply: etlim_le.
 by move: (summable_cvg (f := Summable.build (summable_mmap (f i)))).
 move=>S. apply/(le_trans (y := `[sum (f i)])).
 rewrite/psum -mnorm_ge0_sum ?psumE=>[??|]. apply: vdistr_ge0.
-by apply/mnorm_ge0_mono; rewrite psum_vdistr_lev_sum psum_vdistr_ge0.
+apply/mnorm_ge0_mono/andP; split; rewrite psum_vorderE.
+- exact: (@psum_vdistr_ge0 _ _ _ (f i) S).
+exact: (@psum_vdistr_lev_sum _ _ _ (f i) S).
 by apply/(le_trans (lbmnorm _)); rewrite ger_pMr// vdistr_sum_le1.
 Qed.
 
@@ -1954,12 +2026,14 @@ Qed.
 
 Lemma exchange_limr {I J : choiceType} {F : set_system I} {G : set_system J}
   {FF : ProperFilter F} {FG : ProperFilter G} (a : I -> J -> V) (c : I -> V) :
-    cvg (a i @[i --> F]) -> (forall i, (a i j @[j --> G]) --> c i) ->
+    [cvg (a i @[i --> F]) in arrow_uniform_type J V] ->
+    (forall i, (a i j @[j --> G]) --> c i) ->
     lim ((lim (a i j @[i --> F])) @[j --> G]) = lim (c i @[i --> F]).
 Proof.
 move=>uc ca; move: {+}uc=>/uniform_fct_cvg uc1.
 move: (@exchange_lim_cvg _ _ _ _ FF FG _ _ _ uc1 ca)=>[]Pc Pb.
-suff ->: (fun j => lim (a i j @[i --> F])) = lim (a i @[i --> F]) by move: Pb=>/cvg_lim ->.
+suff ->: (fun j => lim (a i j @[i --> F])) =
+    [lim (a i @[i --> F]) in arrow_uniform_type J V] by move: Pb=>/cvg_lim ->.
 apply/funext=>j; apply: cvg_lim=>//.
 by move: uc=>/uniform_fct_cvg/pointwise_uniform_cvg/ptws_fct_cvg.
 Unshelve. all: end_near.
@@ -1967,14 +2041,16 @@ Qed.
 
 Lemma exchange_lim {I J : choiceType} {F : set_system I} {G : set_system J}
   {FF : ProperFilter F} {FG : ProperFilter G} (a : I -> J -> V) :
-  cvg (a i @[i --> F]) -> (forall i, cvg (a i j @[j --> G])) ->
+  [cvg (a i @[i --> F]) in arrow_uniform_type J V] ->
+    (forall i, cvg (a i j @[j --> G])) ->
     lim ((lim (a i j @[j --> G])) @[i --> F]) = 
     lim ((lim (a i j @[i --> F])) @[j --> G]).
 Proof. by move=>uc ca; rewrite (exchange_limr uc ca); apply: exchange_liml. Qed.
 
 Lemma fct_diag_cvg {I : choiceType} {F : set_system I}
   {FF : ProperFilter F} (a : I -> I -> V) (c : I -> V) :
-  cvg (a i @[i --> F]) -> (forall i, (a i j @[j --> F]) --> c i) ->
+  [cvg (a i @[i --> F]) in arrow_uniform_type I V] ->
+    (forall i, (a i j @[j --> F]) --> c i) ->
     (a i i @[i --> F]) --> lim (c i @[i --> F]).
 Proof.
 move=>/uniform_fct_cvg uc ca.
@@ -1986,25 +2062,29 @@ Qed.
 
 Lemma fct_diag_lim {I : choiceType} {F : set_system I}
   {FF : ProperFilter F} (a : I -> I -> V) (c : I -> V) :
-  cvg (a i @[i --> F]) -> (forall i, (a i j @[j --> F]) --> c i) ->
+  [cvg (a i @[i --> F]) in arrow_uniform_type I V] ->
+    (forall i, (a i j @[j --> F]) --> c i) ->
     lim (a i i @[i --> F]) = lim (c i @[i --> F]).
 Proof. by move=>uc ca; apply: cvg_lim=>//; apply: (fct_diag_cvg uc ca). Qed.
 
 Lemma fct_diag_liml {I : choiceType} {F : set_system I}
   {FF : ProperFilter F} (a : I -> I -> V) :
-  cvg (a i @[i --> F]) -> (forall i, cvg (a i j @[j --> F])) ->
+  [cvg (a i @[i --> F]) in arrow_uniform_type I V] ->
+    (forall i, cvg (a i j @[j --> F])) ->
     lim ((lim (a i j @[j --> F])) @[i --> F]) = lim (a i i @[i --> F]).
 Proof. by move=>uc ca; rewrite (fct_diag_lim uc ca) (exchange_liml ca). Qed.
 
 Lemma fct_diag_limr {I : choiceType} {F : set_system I}
   {FF : ProperFilter F} (a : I -> I -> V) :
-  cvg (a i @[i --> F]) -> (forall i, cvg (a i j @[j --> F])) ->
+  [cvg (a i @[i --> F]) in arrow_uniform_type I V] ->
+    (forall i, cvg (a i j @[j --> F])) ->
     lim ((lim (a i j @[i --> F])) @[j --> F]) = lim (a i i @[i --> F]).
 Proof. by move=>uc ca; rewrite (fct_diag_lim uc ca) (exchange_limr uc ca). Qed.
 
 Lemma exchange_lim_pair_cvg {I J : choiceType} {F : set_system I} {G : set_system J}
   {FF : ProperFilter F} {FG : ProperFilter G} (a : I -> J -> V) (c : I -> V) :
-  cvg (a i @[i --> F]) -> (forall i, (a i j @[j --> G]) --> c i) ->
+  [cvg (a i @[i --> F]) in arrow_uniform_type J V] ->
+    (forall i, (a i j @[j --> G]) --> c i) ->
     (a k.1 k.2 @[k --> (F,G)]) --> lim (c i @[i --> F]).
 Proof.
 move=>/uniform_fct_cvg uc ca; apply/cvgrPdist_lt=>e egt0/=.
@@ -2013,7 +2093,8 @@ Qed.
 
 Lemma exchange_lim_pair_is_cvg {I J : choiceType} {F : set_system I} {G : set_system J}
   {FF : ProperFilter F} {FG : ProperFilter G} (a : I -> J -> V) :
-  cvg (a i @[i --> F]) -> (forall i, cvg (a i j @[j --> G])) ->
+  [cvg (a i @[i --> F]) in arrow_uniform_type J V] ->
+    (forall i, cvg (a i j @[j --> G])) ->
     cvg (a k.1 k.2 @[k --> (F,G)]).
 Proof.
 move=>uc; move=>/(exchange_lim_pair_cvg uc) P; apply/cvg_ex; 
@@ -2022,19 +2103,22 @@ Qed.
 
 Lemma exchange_lim_pair_lim {I J : choiceType} {F : set_system I} {G : set_system J}
   {FF : ProperFilter F} {FG : ProperFilter G} (a : I -> J -> V) (c : I -> V) :
-  cvg (a i @[i --> F]) -> (forall i, (a i j @[j --> G]) --> c i) ->
+  [cvg (a i @[i --> F]) in arrow_uniform_type J V] ->
+    (forall i, (a i j @[j --> G]) --> c i) ->
     lim (a k.1 k.2 @[k --> (F,G)]) = lim (c i @[i --> F]).
 Proof. by move=>uc; move=>/(exchange_lim_pair_cvg uc)/cvg_lim<-. Qed.
 
 Lemma exchange_liml_pair {I J : choiceType} {F : set_system I} {G : set_system J}
   {FF : ProperFilter F} {FG : ProperFilter G} (a : I -> J -> V) :
-  cvg (a i @[i --> F]) -> (forall i, cvg (a i j @[j --> G])) ->
+  [cvg (a i @[i --> F]) in arrow_uniform_type J V] ->
+    (forall i, cvg (a i j @[j --> G])) ->
     lim (a k.1 k.2 @[k --> (F,G)]) = lim ((lim (a i j @[j --> G])) @[i --> F]).
 Proof. move=>uc ca; rewrite (exchange_liml ca); exact: exchange_lim_pair_lim. Qed.
 
 Lemma exchange_limr_pair {I J : choiceType} {F : set_system I} {G : set_system J}
   {FF : ProperFilter F} {FG : ProperFilter G} (a : I -> J -> V) :
-  cvg (a i @[i --> F]) -> (forall i, cvg (a i j @[j --> G])) ->
+  [cvg (a i @[i --> F]) in arrow_uniform_type J V] ->
+    (forall i, cvg (a i j @[j --> G])) ->
     lim (a k.1 k.2 @[k --> (F,G)]) = lim ((lim (a i j @[i --> F])) @[j --> G]).
 Proof. move=>uc ca; rewrite (exchange_limr uc ca); exact: exchange_lim_pair_lim. Qed.
 
@@ -2045,18 +2129,21 @@ Lemma exchange_limn_nondecreasing (R : realType) (C : extNumType R)
   (forall i, nondecreasing_seq (ff i)) ->
   (forall j, nondecreasing_seq (ff ^~ j)) ->
   (forall i j, ff i j <= b) ->
-    limn (fun i => limn (ff i)) = limn (fun j => limn (ff ^~ j)).
+    let VF := VOrderFinNormedModule.to_FinNormedModule V in
+    limn (fun i => limn (fun j => (ff i j : VF))) =
+      limn (fun j => limn (fun i => (ff i j : VF))).
 Proof.
 move=>Pi Pj Ub.
-have P1 i : cvgn (ff i).
+pose VF := VOrderFinNormedModule.to_FinNormedModule V.
+have P1 i : cvgn (fun j => (ff i j : VF)).
   apply: (vnondecreasing_is_cvgn (b := b)). apply: Pi. apply: Ub.
-have P2 j : cvgn (ff ^~ j).
+have P2 j : cvgn (fun i => (ff i j : VF)).
   apply: (vnondecreasing_is_cvgn (b := b)). apply: Pj. move=>i; apply: Ub.
-have P4 : cvgn (fun j : nat => limn (ff^~ j)).
+have P4 : cvgn (fun j : nat => limn (fun i => (ff i j : VF))).
   apply: (vnondecreasing_is_cvgn (b := b)).
   move=>n m Pnm. apply: lev_limn. apply: P2. apply: P2. by move=>i; apply: Pi.
   move=>j; apply: limn_lev. apply: P2. by move=>i; apply: Ub.
-have P3 : cvgn (fun i : nat => limn (ff i)).
+have P3 : cvgn (fun i : nat => limn (fun j => (ff i j : VF))).
   apply: (vnondecreasing_is_cvgn (b := b)).
   move=>n m Pnm. apply: lev_limn. apply: P1. apply: P1. by move=>j; apply: Pj.
   move=>i; apply: limn_lev. apply: P1. apply: Ub.
@@ -2074,16 +2161,19 @@ Lemma limn_diag_nondecreasing (R : realType) (C : extNumType R)
   (forall i, nondecreasing_seq (ff i)) ->
   (forall j, nondecreasing_seq (ff ^~ j)) ->
   (forall i j, ff i j <= b) ->
-    limn (fun i => limn (ff i)) = limn (fun i => ff i i).
+    let VF := VOrderFinNormedModule.to_FinNormedModule V in
+    limn (fun i => limn (fun j => (ff i j : VF))) =
+      limn (fun i => (ff i i : VF)).
 Proof.
 move=>Pi Pj Ub.
-have P1 i : cvgn (ff i).
+pose VF := VOrderFinNormedModule.to_FinNormedModule V.
+have P1 i : cvgn (fun j => (ff i j : VF)).
   apply: (vnondecreasing_is_cvgn (b := b)). apply: Pi. apply: Ub.
-have P3 : cvgn (fun i : nat => limn (ff i)).
+have P3 : cvgn (fun i : nat => limn (fun j => (ff i j : VF))).
   apply: (vnondecreasing_is_cvgn (b := b)).
   move=>n m Pnm. apply: lev_limn. apply: P1. apply: P1. by move=>j; apply: Pj.
   move=>i; apply: limn_lev. apply: P1. apply: Ub.
-have P5 : cvgn (fun i : nat => ff i i).
+have P5 : cvgn (fun i : nat => (ff i i : VF)).
   apply: (vnondecreasing_is_cvgn (b := b)).
   by move=>n m Pnm; apply/(le_trans (Pi n n m Pnm))/Pj.
   move=>i; apply: Ub.
@@ -2141,7 +2231,7 @@ Import ArrowAsUniformType.
 
 Lemma foo4 R (f : nat -> nat -> R) :
   (exists M, forall N1 N2, \sum_(0 <= i < N1)\sum_(0 <= j < N2) `|f i j| <= M) ->
-    cvgn (series2 f : nat -> nat -> R) /\
+    [cvg ((series2 f : nat -> nat -> R) @ \oo) in arrow_uniform_type nat R] /\
     (forall i, cvgn (series2 f i)).
 Proof.
 move=>P1. move: (foo3 P1)=>[]P2 _.
@@ -2249,7 +2339,8 @@ Qed.
 
 Lemma pseries_uniform_cvg I J V (f : I -> J -> V) :
   (exists M, forall Si Sj, pseries (fun i j => `|f i j|) Si Sj <= M) ->
-    cvg ((pseries f : {fset I} -> {fset J} -> V) @ totally) /\
+    [cvg ((pseries f : {fset I} -> {fset J} -> V) @ totally)
+      in arrow_uniform_type {fset J} V] /\
     (forall Si, cvg ((pseries f Si) @ totally)).
 Proof.
 move=>P1; move: (pseries_ubounded_cvg P1)=>[] _ [] P2 _.

@@ -1,4 +1,5 @@
-From mathcomp Require Import all_ssreflect.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From Coq.Bool Require Import Bool.
 Require Import Lia.
 
 (****************************************************************************)
@@ -137,15 +138,19 @@ Proof. by []. Qed.
 
 Lemma Q43 (a : bool) :
   false = a <-> ~ (is_true a).
-Proof. by rewrite -Q41. Qed.
+Proof.
+by case: a; split=> // H; case: (H isT).
+Qed.
 
 Lemma Q44 (a : bool) :
   true = a <-> (is_true a).
-Proof. by rewrite -Q42. Qed.
+Proof.
+by case: a; split=> // H; case: H.
+Qed.
 
 Lemma Q45 (x y : bool) :
   (x = y) <-> (is_true x <-> is_true y).
-Proof. exact: Bool.eq_iff_eq_true. Qed.
+Proof. exact: Coq.Bool.Bool.eq_iff_eq_true. Qed.
 
 Definition Qm := (Q41, Q42, Q43, Q44, Q45, Q1, Q2, Q3, Q5).
 

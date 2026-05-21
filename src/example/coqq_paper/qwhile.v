@@ -1,8 +1,9 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
 From mathcomp.classical Require Import boolp.
-From mathcomp.analysis Require Import -(notations)forms.
-From mathcomp.analysis Require Import reals.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
+From mathcomp.reals Require Import reals.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
 Require Import Relation_Definitions.

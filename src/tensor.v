@@ -1,8 +1,9 @@
 (* -------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra.
-From mathcomp.analysis Require Import -(notations)forms.
-From mathcomp.analysis Require Import reals.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
+From mathcomp.reals Require Import reals.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
 
@@ -148,7 +149,7 @@ Proof. by move=> /eqP ne_ij; rewrite ffunE; case: (i =P j). Qed.
 End FFunSet.
 
 Local Notation "f .[ i0 <- v ]" := (@ffun_set _ _ i0 v f) 
-  (at level 2, left associativity, format "f .[ i0  <-  v ]").
+  (at level 2, right associativity, format "f .[ i0  <-  v ]").
 
 Definition ffunE := (@ffset_eq, ffunE, @ffun_sumE, @ffun_prodE).
 
@@ -241,7 +242,7 @@ Definition mset (i : I) (x : mvector E) (v : E i) : mvector E :=
     else x j.
 
 Notation "x [< i ← v >]" := (@mset i x v)
-  (at level 2, left associativity, format "x [< i  ←  v >]").
+  (at level 2, right associativity, format "x [< i  ←  v >]").
 
 Lemma msetii (i : I) (x : mvector E) (v : E i) :
   x[< i ← v >] i = v.
@@ -601,7 +602,7 @@ Notation "a *:_m x" := (scalem a x)
   (at level 50, format "a  *:_m  x").
 
 Notation "x [< i ← v >]" := (mset (i := i) x v)
-  (at level 2, left associativity, format "x [< i  ←  v >]").
+  (at level 2, right associativity, format "x [< i  ←  v >]").
 
 Notation "x +_ i v" := (x + 0[< i ← v >])
   (at level 60, i at level 2, format "x  +_ i  v").
@@ -621,7 +622,7 @@ Context (f : {ffun forall i : I, mvector (@E i)} -> F).
 
 Hypothesis lin_f :
   forall (i : I) (m : {ffun forall i : I, mvector (@E i)}),
-    mxlinear (c i) (fun x => f m.[i <- x]).
+    mxlinear (c i) (fun x => f (@ffun_set _ _ i x m)).
 
 Definition lift_r (x : forall (i : I), T i) (b : forall (i : I), B i) :=
   (\prod_(i : I) c i (v2r (x i) 0 (i2n (b i))))
@@ -657,7 +658,8 @@ elim/setW: [set: I] => [|s i i_notin_s ih].
 - rewrite big_set0 scale1r; congr (f _); apply/ffunP.
   by move=> i; rewrite !ffunE /b in_set0 scale1m.
 rewrite big_setU1 //= -scalerA -ih; set y := (X in f X = _).
-have {y}->: y = [ffun j => b s j *:_m x j].[i <- a i *:_m x i].
+have {y}->: y =
+  @ffun_set _ _ i (a i *:_m x i) [ffun j => b s j *:_m x j].
 - apply/ffunP=> j; case: (i =P j) => [ <-|/eqP ne_ij].
   - by rewrite !ffunE /b in_setU1 eqxx.
   by rewrite ffset_neq // !ffunE /b in_setU1 eq_sym (negbTE ne_ij).
@@ -711,7 +713,7 @@ elim/setW: {2}[set: I] p0 => [|s i i_notin_s ih] p0.
   by congr (_ *: _); rewrite !ffunE.
 move=> p0E; pose R (b : {dffun forall i, B i}) := b i.
 rewrite (partition_big R predT) {}/R //=.
-pose q0 j := p0.[i <- Some j].
+pose q0 j := @ffun_set _ _ i (Some j) p0.
 have q0s j: supp (q0 j) = [set: I] :\: s.
 - apply/setP=> i'; rewrite [in LHS]inE.
   case: (i =P i') => [ <-|/eqP ne_ii'].
@@ -719,8 +721,10 @@ have q0s j: supp (q0 j) = [set: I] :\: s.
   rewrite ffset_neq //; move/setP/(_ i'): p0E.
   by rewrite !inE [i' == i]eq_sym (negbTE ne_ii') andbT.
 have ->: f (y p0) = \sum_j f (y (q0 j)).
-- have h (b : B i): y (q0 b) = (y p0).[i <-
-    \mvector_ (j : J i) (v2r (x i j) 0 (b j) *: r2v (delta_mx 0 (b j)))].
+- have h (b : B i): y (q0 b) =
+    @ffun_set _ _ i
+      (\mvector_ (j : J i) (v2r (x i j) 0 (b j) *: r2v (delta_mx 0 (b j))))
+      (y p0).
   - apply/ffunP=> i'; case: (i =P i') => [ <-|/eqP ne_ii'].
     - by rewrite !ffunE.
     - by rewrite ffset_neq // ffunE ffset_neq // !ffunE.
@@ -749,14 +753,16 @@ move=> h; apply/forallP => i'; case: (i =P i') => [ <-|/eqP ne_ii'].
 Qed.
 
 Lemma xlinear_lift  i a m (x y : {ffun B i -> k^o}) :
-  lift m.[i <- a *: x + y] = (c i a) *: lift m.[i <- x] + lift m.[i <- y].
+  lift (@ffun_set _ _ i (a *: x + y) m) =
+    (c i a) *: lift (@ffun_set _ _ i x m) + lift (@ffun_set _ _ i y m).
 Proof.
 rewrite /lift; rewrite scaler_sumr -big_split /=.
 apply: eq_bigr=> /= b _; rewrite /lift_r /=.
 set m' := (X in f X); have lf := @lin_f i m'.
 rewrite scalerA -scalerDl !(bigD1 (P := predT) i) //=.
 pose X := \prod_(i' | i' != i) c i' (v2r (m i') 0 (i2n (b i'))).
-have h z: \prod_(i' | i' != i) c i' (v2r (m.[i <- z] i') 0 (i2n (b i'))) = X.
+have h z: \prod_(i' | i' != i)
+    c i' (v2r (@ffun_set _ _ i z m i') 0 (i2n (b i'))) = X.
 - by apply: eq_bigr=> i' ne_i'i; rewrite ffset_neq // eq_sym.
 rewrite !{}h ![_ * X]mulrC mulrCA -mulrDr -!scalerA; congr (_ *: _).
 by rewrite !ffset_eq linearP /= !mxE rmorphD rmorphM.
@@ -788,7 +794,7 @@ Let fT (x : {ffun bool -> mvector E}) :=
 
 Definition lift2 (x y : T) : F := lift cT fT (aT x y).
 
-Lemma mxlinear2 b m : mxlinear (cT b) (fun v => fT m.[b <- v]).
+Lemma mxlinear2 b m : mxlinear (cT b) (fun v => fT (@ffun_set _ _ b v m)).
 Proof.
 case: b => /=; rewrite !ffunE => i.
 - apply/(eq_mxlinear (f := f^~ (m false)))/lin1_f.
@@ -807,7 +813,7 @@ Qed.
 Lemma xlift2_mxlinear1 a (x1 x2 y : T) :
   lift2 (a *: x1 + x2) y = c1 a *: lift2 x1 y + lift2 x2 y.
 Proof.
-have h x: lift2 x y = lift cT fT [ffun=> y].[true <- x].
+have h x: lift2 x y = lift cT fT (@ffun_set _ _ true x [ffun=> y]).
 - congr (lift _ _ (fun_of_fin _)); apply/ffunP=> /=.
   move=> b; rewrite ffunE; case: b.
   - by rewrite ffset_eq. - by rewrite ffset_neq // ffunE.
@@ -817,7 +823,7 @@ Qed.
 Lemma xlift2_mxlinear2 a (x y1 y2 : T) :
   lift2 x (a *: y1 + y2) = c2 a *: lift2 x y1 + lift2 x y2.
 Proof.
-have h y: lift2 x y = lift cT fT [ffun=> x].[false <- y].
+have h y: lift2 x y = lift cT fT (@ffun_set _ _ false y [ffun=> x]).
 - congr (lift _ _ (fun_of_fin _)); apply/ffunP=> /=.
   move=> b; rewrite ffunE; case: b.
   - by rewrite ffset_neq // ffunE. - by rewrite ffset_eq.
@@ -834,11 +840,11 @@ Context (f : mvector E -> mvector E -> F).
 Let B := mvector (fun i : I => 'I_(dim (E i))).
 Let T := {ffun B -> C^o}.
 
-Hypothesis (lin1_f : forall y, mxlinear Num.conj_op (f^~ y)).
+Hypothesis (lin1_f : forall y, mxlinear conjC (f^~ y)).
 Hypothesis (lin2_f : forall x, mlinear (f x)).
 
 Definition lifts (x y : T) : F :=
-  lift2 Num.conj_op (GRing.RMorphism.clone _ _ idfun _) f x y.
+  lift2 conjC (GRing.RMorphism.clone _ _ idfun _) f x y.
 
 Lemma xliftsE (x y : mvector E) : lifts ⊗x ⊗y = f x y.
 Proof. by apply: xlift2E. Qed.
@@ -875,7 +881,7 @@ Let fT (x : {ffun unit -> mvector E}) :=
 Definition lift1 (x : T) : F :=
   lift cT fT (aT x).
 
-Lemma mxlinear1 b m : mxlinear (cT b) (fun v => fT m.[b <- v]).
+Lemma mxlinear1 b m : mxlinear (cT b) (fun v => fT (@ffun_set _ _ b v m)).
 Proof.
 case: b; rewrite !ffunE /=.
 apply/(eq_mxlinear (f := f))/lin_f.
@@ -891,7 +897,7 @@ Qed.
 
 Lemma xlift1_linear : linear lift1.
 Proof.
-move=> /= a u v; have h x: lift1 x = lift cT fT [ffun=> 0].[tt <- x].
+move=> /= a u v; have h x: lift1 x = lift cT fT (@ffun_set _ _ tt x [ffun=> 0]).
 - by congr (lift _ _ (fun_of_fin _)); apply/ffunP=> /= -[]; rewrite !ffunE.
 by rewrite h xlinear_lift /=; [apply: mxlinear1 | rewrite -!h ffunE].
 Qed.
@@ -921,7 +927,7 @@ apply/prodf_eq0/inject_eq0P.
 Qed.
 
 Lemma conj_hdotp x y : (hdotp x y)^* = hdotp y x.
-Proof. by rewrite rmorph_prod; apply/eq_bigr=> i _; rewrite conj_dotp. Qed.
+Proof. by rewrite rmorph_prod; apply/eq_bigr=> i _; apply: conj_dotp. Qed.
 
 Lemma linear_hdotp x : mlinear (G := Vector.clone C C^o _) (hdotp x).
 Proof.
@@ -936,7 +942,7 @@ rewrite eqxx dotpDr dotpZr mulrDl -mulrA; congr (_ *: _ + _).
 Qed.
 
 Lemma alinear_hdotp y :
-  mxlinear (G := C^o) Num.conj_op (hdotp^~ y).
+  mxlinear (G := C^o) conjC (hdotp^~ y).
 Proof.
 move=> /= i a x1 x2; rewrite -conj_hdotp linear_hdotp /=.
 by rewrite rmorphD/= rmorphM /= !conj_hdotp.
@@ -954,7 +960,7 @@ Proof.
 by move=>a b c; rewrite /tdotp (xlifts_linear 
   alinear_hdotp linear_hdotp) /GRing.scale.
 Qed.
-Lemma linear_tdotpr x : linear_for (Num.conj_op \; *%R) (tdotp^~ x).
+Lemma linear_tdotpr x : linear_for (conjC \; *%R) (tdotp^~ x).
 Proof.
 by move=>a b c; rewrite /tdotp (xlifts_alinear 
   alinear_hdotp linear_hdotp) /GRing.scale.
@@ -964,7 +970,7 @@ HB.instance Definition _ x := GRing.isLinear.Build C T C
   *%R (tdotp x) (linear_tdotp x).
 
 HB.instance Definition _ := bilinear_isBilinear.Build C T T C
-  (Num.conj_op \; *%R) *%R tdotp (linear_tdotpr, linear_tdotp).
+  (conjC \; *%R) *%R tdotp (linear_tdotpr, linear_tdotp).
 
 Definition fbasis (b : B) := ⊗ (\mvector_(i : I) (vonbasis {:(E i)})~_ 
   (cast_ord (esym (dimvf (E i))) (b i))).
@@ -1017,7 +1023,7 @@ Lemma tdotp_sumlr (f g : B -> C) :
   tdotp (\sum_b f b *: fbasis b) (\sum_b g b *: fbasis b)
   = \sum_b (f b)^* * g b.
 Proof.
-rewrite linear_suml/=. apply eq_bigr=>b _.
+rewrite linear_sumlz/=. apply eq_bigr=>b _.
 rewrite linear_sum/= (bigD1 b)// big1/= =>[j /negPf nji |];
 rewrite linearZl_LR linearZr/= fbasis_ortho 1 ?eq_sym ?nji ?mulr0//.
 by rewrite eqxx mulr1 addr0.
@@ -1044,7 +1050,8 @@ Qed.
 Lemma conj_tdotp (x y : T) : (tdotp x y)^* = tdotp y x.
 Proof.
 rewrite (fbasis_dec x) (fbasis_dec y) !tdotp_sumlr rmorph_sum.
-by under eq_bigr do rewrite rmorphM conjCK mulrC.
+apply: eq_bigr=> i _.
+by rewrite /= rmorphM /= conjCK mulrC.
 Qed.
 
 (* ? HB.instance fails here *)

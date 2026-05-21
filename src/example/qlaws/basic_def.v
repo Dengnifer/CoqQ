@@ -1,8 +1,10 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra finmap.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
+From mathcomp.finmap Require Import finmap.
 From mathcomp.classical Require Import boolp.
-From mathcomp.analysis Require Import -(notations)forms.
-From mathcomp.analysis Require Import reals.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
+From mathcomp.reals Require Import reals.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
 
@@ -98,7 +100,7 @@ have PNN1 : trace_nincr NN.
   rewrite -tentf11 -tentf_suml lev_pbreg2// ?lef01//.
     by apply/sumv_ge0=>i _; rewrite form_gef0.
   under eq_bigr do rewrite !adjf_comp adjfK !comp_lfunA gisofKl comp_lfunACA.
-  rewrite -linear_suml/= -linear_sumr/= -formlfE.
+  rewrite -linear_sumlz/= -linear_sumr/= -formlfE.
   by apply/formlf_bound1f_le1/is_trnincr.
 pose AA := UA^A \o ((US \o A \o UV^A) ⊗f (\1 : 'End('Hs TR))).
 pose BB := ((UU \o B \o US^A) ⊗f (\1 : 'End('Hs TR))) \o UA.
@@ -133,8 +135,10 @@ have lP1 X : ((US \o X \o US^A) ⊗f \1) = UA \o liftf_lf X \o UA^A.
 have lP X : UA^A \o ((US \o X \o US^A) ⊗f \1) \o UA = liftf_lf X.
   by rewrite lP1 !comp_lfunA gisofKl gisofEl comp_lfun1l.
 have lE : forall i, liftf_lf ((A \o N i) \o B) = AA \o NN i \o BB.
-  by move=>i; rewrite /AA /NN /BB comp_lfunACA tentf_comp comp_lfunA comp_lfunACA 
-    tentf_comp !comp_lfunA !gisofKl !comp_lfun1l -lP !comp_lfunA.
+  move=>i; rewrite -lP /AA /NN /BB -!comp_lfunA.
+  rewrite [RHS]comp_lfunA [RHS]comp_lfunA [RHS]comp_lfunACA tentf_comp
+    comp_lfun1l [RHS]comp_lfunA [RHS]comp_lfunACA tentf_comp.
+  by rewrite !comp_lfunA !gisofKl !comp_lfun1l.
 under eq_bigr do rewrite lE (TraceNincr_BuildE PNN1) (Bound1Lf_BuildE AA_b) (Bound1Lf_BuildE BB_b).
 apply: formlf_sum_bound1.
   by move=>i j /Pij P1; rewrite /NN tentf_adj tentf_comp !adjf_comp 
@@ -143,7 +147,7 @@ under eq_bigr do rewrite /NN tentf_adj tentf_comp adjf1 comp_lfun1r.
 rewrite -tentf11 -tentf_suml lev_pbreg2// ?lef01//.
   by apply/sumv_ge0=>i _; rewrite formV_gef0.
 under eq_bigr do rewrite !adjf_comp adjfK !comp_lfunA gisofKl comp_lfunACA.
-rewrite -linear_suml/= -linear_sumr/= -formlfE.
+rewrite -linear_sumlz/= -linear_sumr/= -formlfE.
 by apply/formlf_bound1f_le1.
 Qed.
 
@@ -154,7 +158,7 @@ Proof. by rewrite onb_change.unlock adjf_sum; under eq_bigr do rewrite adj_outp.
 Lemma onb_change_bound1 U V F (u : 'PONB) (v : 'PONB) :
   @onb_change U V F u v \is bound1lf.
 Proof.
-rewrite bound1lf_form_le1 onb_change.unlock adjf_sum linear_suml/=.
+rewrite bound1lf_form_le1 onb_change.unlock adjf_sum linear_sumlz/=.
 apply/(le_trans _ (sumponb_out u))/lev_sum=>i _.
 rewrite adj_outp outp_compl adjf_sum sum_lfunE/= (bigD1 i)//= big1.
 by move=>j /negPf nji; rewrite adj_outp outpE ponb_dot nji scale0r.
@@ -165,7 +169,7 @@ HB.instance Definition _ U V F (u : 'PONB(F;U)) (v : 'PONB(F;V))
 Lemma onb_change_iso U V F (u : 'ONB) (v : 'PONB) :
   @onb_change U V F u v \is isolf.
 Proof.
-apply/isolfP; rewrite onb_change.unlock adjf_sum linear_suml/=.
+apply/isolfP; rewrite onb_change.unlock adjf_sum linear_sumlz/=.
 rewrite -(sumonb_out u); apply eq_bigr=>i _.
 rewrite adj_outp outp_compl adjf_sum sum_lfunE/= (bigD1 i)//= big1.
 by move=>j /negPf nji; rewrite adj_outp outpE ponb_dot nji scale0r.
@@ -176,7 +180,7 @@ HB.instance Definition _ U V F (u : 'ONB(F;U)) (v : 'PONB(F;V)) :=
 Lemma onb_change_giso U V F (u : 'ONB) (v : 'ONB) :
   @onb_change U V F u v \is gisolf.
 Proof.
-apply/gisolfP; split; rewrite onb_change.unlock adjf_sum linear_suml/=.
+apply/gisolfP; split; rewrite onb_change.unlock adjf_sum linear_sumlz/=.
 rewrite -(sumonb_out u). 2: rewrite -(sumonb_out v). 
 all: apply eq_bigr=>i _; rewrite linear_sumr/= (bigD1 i)//= big1=>[j /negPf nji|];
   first by rewrite adj_outp outp_comp onb_dot eq_sym nji scale0r.
@@ -379,7 +383,7 @@ Proof.
 move=>P1. move: (lf_svds A)=>[F] [u] [v] [D] PA.
 pose V : 'End(U) := \sum_i [> v i ; u i <].
 have PV : V \is unitarylf.
-  apply/unitarylfP; rewrite /V adjf_sum -(sumonb_out u) linear_suml/=.
+  apply/unitarylfP; rewrite /V adjf_sum -(sumonb_out u) linear_sumlz/=.
   apply eq_bigr=>i _; rewrite adj_outp linear_sumr/= (bigD1 i)//= big1=>[j /negPf nji|];
   by rewrite outp_comp ?ns_dot ?scale1r ?addr0// onb_dot eq_sym nji scale0r.
 pose c i := projT1 (cid (P1 (v i))).
@@ -650,8 +654,9 @@ Lemma hcommute (U : chsType) (X Y : {hspace U}) :
 Proof.
 rewrite -commute_char2; split=>[|P1]; last first.
   have P3 : (X `&&` Y)%O = (Y `&&` X)%O.
-    by rewrite !sprojhE P1 -comp_lfunA projf_idem -P1 -comp_lfunA projf_idem.
-  by rewrite joinC -shookxJxy -P3 shookxJyx -sprojxHxy shookHxyx sprojHxyx meetC.
+  by rewrite !sprojhE P1 -comp_lfunA projf_idem -P1 -comp_lfunA projf_idem.
+  rewrite joinC -shookxJxy -P3 shookxJyx.
+  by rewrite -[X in X == _]sprojxHxy shookHxyx sprojHxyx meetC.
 move: X Y.
 have PXY (X Y : {hspace U}): (X _C_ Y)%O -> ((X \o Y) \o (X \o Y)) = (X \o Y) \o X.
   move=>/commuteJE/(f_equal (fun x => ~` x)%HS).

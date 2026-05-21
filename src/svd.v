@@ -1,9 +1,12 @@
 (* -------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra perm fingroup.
-From mathcomp.analysis Require Import -(notations)forms.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
+From mathcomp.fingroup Require Import perm fingroup.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
 From mathcomp.classical Require Import boolp.
 From mathcomp.real_closed Require Import mxtens.
+From Coq.Bool Require Import Bool.
 Require Import notation mcaextra mcextra spectral mxpred.
 
 (* -------------------------------------------------------------------- *)
@@ -15,7 +18,7 @@ Unset SsrOldRewriteGoalsOrder.
 (* -------------------------------------------------------------------- *)
 Local Open Scope ring_scope.
 
-Import Order.Theory GRing.Theory Num.Theory Num.Def.
+Import Order Order.Theory GRing.Theory Num.Theory Num.Def.
 
 
 (******************************************************************************)
@@ -284,7 +287,7 @@ Qed.
 (* sort row vector for total order *)
 
 Section sortvect.
-Variable (disp : unit) (R : porderType disp) (n: nat).
+Variable (disp : Order.disp_t) (R : porderType disp) (n: nat).
 Implicit Type (v : 'rV[R]_n).
 
 Local Close Scope ring_scope.
@@ -360,7 +363,7 @@ Lemma perm_exists_tsorts v : exists p : 'S_n,
   forall i : 'I_n, (s v)~_i = (tsorts v)~_(p i).
 Proof.
 move: (sorts_tsorts_perm v)=>/tuple_permP=>[[p Pp]]; exists p=>i.
-by rewrite (tnth_nth (v 0 i)) Pp/= (nth_map i (v 0 i)) ?size_enum_ord// nth_ord_enum.
+by rewrite (tnth_nth (v 0 i)) Pp/= nth_mktuple.
 Qed.
 
 Definition sortv v := (\matrix_(i < 1, j < n) (tsorts v)~_j)%R.
@@ -399,9 +402,15 @@ move=>Pv; rewrite sorted_pairwise=>[x y z +P2|]; first by apply (le_trans P2).
 move: case_n v Pv=>[++ _|[i0 _] v Pv].
   by rewrite /s=>->/= v; rewrite enum_ord0.
 apply/(pairwiseP (v 0 i0))=>i j.
-rewrite !inE/= size_map size_enum_ord=>Pi Pj ltij.
-rewrite !(nth_map i0 (v 0 i0)) ?size_enum_ord//.
-by apply/rv_nincrP=>//; rewrite !nth_enum_ord// ltnW.
+rewrite !inE/= size_map size_tuple=>Pi Pj ltij.
+rewrite !(nth_map i0 (v 0 i0)) ?size_tuple//.
+have Pi_n : i < n by move: Pi; rewrite card_ord.
+have Pj_n : j < n by move: Pj; rewrite card_ord.
+have ->: nth i0 (ord_tuple n) i = Ordinal Pi_n.
+  by rewrite -[i]/(val (Ordinal Pi_n)) -tnth_nth tnth_ord_tuple.
+have ->: nth i0 (ord_tuple n) j = Ordinal Pj_n.
+  by rewrite -[j]/(val (Ordinal Pj_n)) -tnth_nth tnth_ord_tuple.
+by apply/rv_nincrP=>//; apply: ltnW.
 Qed.
 
 Lemma rv_nincr_sorted v : 
@@ -413,7 +422,7 @@ have P1 : {in P & &, transitive (fun x : R => <=%O^~ x)}.
 move/rv_nincr_sorted_s/(sorted_sort_in P1)=>P2.
 apply/matrixP=>i j; rewrite !ord1 !mxE (tnth_nth (v 0 j))/= /ss P2.
   by apply/all_tnthP=>k; apply/existsP; exists k; rewrite tnth_map tnth_ord_tuple.
-by rewrite /s/= (nth_map j (v 0 j)) ?size_enum_ord// nth_ord_enum.
+by rewrite /s/= (nth_map j (v 0 j)) ?size_tuple ?card_ord ?ltn_ord// -enum_ord nth_ord_enum.
 Qed.
 
 Lemma sortv_idem v : v \is rv_cmp -> sortv (sortv v) = sortv v.
@@ -478,11 +487,15 @@ Lemma poly_prod_perm m (T: idomainType) (F G : 'I_m -> T) :
 Proof.
 set sf := fun (f:'I_m -> T) => [tuple of [seq f i | i <- ord_tuple m]].
 have Pf f: (\prod_(i < m) ('X - (f i)%:P) = \prod_(a <- (sf f)) ('X - a%:P))%R.
-by rewrite /sf/= big_map enumT /index_enum !unlock.
+rewrite /sf/= big_map.
+by rewrite big_enum.
 rewrite !Pf=>/poly_prod_perm_seq; move/tuple_permP=>[p Pp].
+have sfE f j : tnth (sf f) j = f j by rewrite /sf tnth_map tnth_ord_tuple.
+have Ppt : (sf F : m.-tuple T) = [tuple tnth (sf G) (p i) | i < m].
+  by apply/val_inj.
 exists (invg p)=>i. 
-rewrite -(tnth_ord_tuple (invg p i)) -tnth_map -/sf/= (tnth_nth (F i)) Pp.
-by rewrite /= (nth_map i (F i)) ?size_enum_ord// /sf tnth_map tnth_ord_tuple nth_ord_enum permKV.
+rewrite -[F _](sfE F (invg p i)) Ppt.
+by rewrite tnth_mktuple sfE permKV.
 Qed.
 
 Lemma poly_unique_sort (T : idomainType) (u v : 'rV[T]_n) :
@@ -512,7 +525,7 @@ End sortvect.
 Arguments rv_nincr {disp R n}.
 Arguments rv_cmp {disp R n}.
 
-Lemma total_rv_cmp (disp : unit) (R : orderType disp) m (v : 'rV[R]_m) : v \is rv_cmp.
+Lemma total_rv_cmp (disp : Order.disp_t) (R : orderType disp) m (v : 'rV[R]_m) : v \is rv_cmp.
 Proof. by apply/rv_cmpP=>i j. Qed.
 (* add it as a hint if R is orderType, but don't set it as global hint *)
 (* since if R is not orderType, it is very slow *)
@@ -892,7 +905,7 @@ Variable (R: numClosedFieldType).
  (* (m n: nat) Hypothesis (lenm : (m <= n)%N). *)
 
 Local Notation "''[' u , v ]" := (dotmx u v) : ring_scope.
-Local Notation "''[' u ]" := '[u, u]%R : ring_scope.
+Local Notation "''[' u ]" := (dotmx u u) : ring_scope.
 
 Lemma psdmx_form n (A : 'M[R]_n) :
   A \is psdmx -> exists B : 'M[R]_n , A = B *m B^*t.
@@ -930,7 +943,7 @@ by rewrite -Ps diag_perm adjmxM !mulmxA !mulmxKtV// adjmxK; apply/eqP.
 Qed.
 
 Lemma dot_dotmxE p q r (A : 'M[R]_(p,q)) (B : 'M_(r,q)) i j : 
-  (A *m B ^*t) i j = '[ (row i A), (row j B)].
+  (A *m B ^*t) i j = dotmx (row i A) (row j B).
 Proof. by rewrite dotmxE !mxE; apply eq_bigr=>k _; rewrite !mxE. Qed.
 
 Lemma ord_ltn_ind k P : 
@@ -960,7 +973,7 @@ rewrite big_split_ord/= [X in _ + X]big1=>[j|P3].
 by destruct i=>/= P3; move: (leq_trans (leq_addr _ _) P3); rewrite leqNgt i.
 move: {+}P3; rewrite (bigD1 i)//= big1=>[j|P5].
 rewrite andbC -ltn_neqAle=>P4; move: (Ur i j).
-rewrite !P1 P3 addr0 linear_suml/= (bigD1 j)/=; first by apply ltnW.
+rewrite !P1 P3 addr0 linear_sumlz/= (bigD1 j)/=; first by apply ltnW.
 rewrite big1=>[k /andP[_ /negPf nkj]|].
 1,2: rewrite linearZl_LR/= (Hi _ P4) PA eq_lshift ?nkj ?mulr0// eqxx mulr1 addr0 
 -(inj_eq (@ord_inj _)) (gtn_eqF P4)=>->. by rewrite scale0r.
@@ -974,7 +987,7 @@ Lemma form_diag_schmidt p (A : 'M[R]_p) (D : 'rV[R]_p):
   D \is svd_diag -> A *m A ^*t = diag_mx D ->
   A = diag_mx (map_mx sqrtC D) *m schmidt A.
 Proof.
-move=>P1 P2; have P3 i j : '[ (row i A), (row j A)] = D 0 i *+ (i == j) 
+move=>P1 P2; have P3 i j : dotmx (row i A) (row j A) = D 0 i *+ (i == j) 
   by rewrite -dot_dotmxE P2 !mxE.
 apply/row_matrixP=>i; rewrite row_diag_mul mxE.
 move: (schmidt_unitarymx A (leqnn _))=>/row_unitarymxP PA.
@@ -988,7 +1001,7 @@ have P7 i0 : u_ i0 *m row i0 (schmidt A) = u_ i0 0 0 *: row i0 (schmidt A)
 under eq_bigr do rewrite P7; move=>P6.
 have P8: forall j : 'I_p, (j < i)%N -> u_ j 0 0 = 0.
   move=>j ltji; move: (P3 i j).
-  rewrite P6 Hi// linear_suml/= (bigD1 j)/=; first by apply ltnW.
+  rewrite P6 Hi// linear_sumlz/= (bigD1 j)/=; first by apply ltnW.
   rewrite big1; first move=>k /andP[_ /negPf nkj].
   1,2: rewrite linearZl_LR linearZr_LR /= PA ?nkj ?mulr0// ?PA eqxx mulr1 addr0. 
   case: eqP=>[E|/eqP E /eqP]; first by move: ltji; rewrite E ltnn.
@@ -2165,24 +2178,29 @@ have Pa_ge0 x i : 0 <= a x i.
     move: (svds_d_svd_diag x)=>/svd_diagP/(_ (nlift ord_max j))[] _ /(_ (nlift 0 j)).
     by apply; rewrite lift_max lift0.
   by rewrite frcons_max subr0.
-rewrite !Pa linear_suml/=.
-under eq_bigr do rewrite linear_suml/= !linear_sumr/=.
+rewrite !Pa linear_sumlz/=.
+under eq_bigr do rewrite linear_sumlz/= !linear_sumr/=.
 rewrite pair_big/= linear_sum/=.
 under eq_bigr do rewrite -!scalemxAl -!scalemxAr scalerA linearZ/=.
 have -> : \sum_(i < m.+1) svds_d A 0 i * svds_d B 0 i = 
           \sum_i (a A i.1) * (a B i.2) * \tr(P i.1 *m P i.2).
   transitivity (\tr (diag_mx (svds_d A) *m diag_mx (svds_d B))).
     by rewrite mul_mx_diag /mxtrace; apply eq_bigr=>/= i _; rewrite !mxE eqxx mulr1n.
-  rewrite !Pa pair_bigV linear_suml/= linear_sum; apply eq_bigr=>i _ /=.
+  rewrite !Pa pair_bigV linear_sumlz/= linear_sum; apply eq_bigr=>i _ /=.
   rewrite linear_sumr linear_sum; apply eq_bigr =>j _ /=.
   by rewrite -scalemxAl -scalemxAr scalerA linearZ.
-apply/(le_trans (ler_norm_sum _ _ _))/ler_sum=>[[i j]] _ /=.
-rewrite normrM ger0_norm ?ler_wpM2l ?mulr_ge0//.
-have: U \is unitarymx by rewrite unitarymx_mulmx_closed.
-have: V \is unitarymx by rewrite unitarymx_mulmx_closed.
-wlog : i j U V / (i <= j)%N => [IH PV PU|Pij PV PU].
-  case: (leqP i j)=>[/IH/(_ PV)/(_ PU)//|/ltnW/IH/(_ PU)/(_ PV)].
-  by rewrite mulmxA mxtrace_mulC [X in _ <= X -> _]mxtrace_mulC mulmxA.
+  apply/(le_trans (ler_norm_sum _ _ _))/ler_sum=>[[i j]] _ /=.
+  rewrite normrM ger0_norm ?ler_wpM2l ?mulr_ge0//.
+  have: U \is unitarymx by rewrite unitarymx_mulmx_closed.
+  have: V \is unitarymx by rewrite unitarymx_mulmx_closed.
+  have mxtrace_cycle2 (A1 A2 A3 A4 : 'M[R]_m.+1) :
+    \tr (A1 *m (A2 *m (A3 *m A4))) =
+    \tr (A3 *m (A4 *m (A1 *m A2))).
+    by rewrite mulmxA mxtrace_mulC -mulmxA.
+  wlog : i j U V / (i <= j)%N => [IH PV PU|Pij PV PU].
+    case: (leqP i j)=>[/IH/(_ PV)/(_ PU)//|/ltnW/IH/(_ PU)/(_ PV)].
+    by rewrite (mxtrace_cycle2 (P i) U (P j) V)
+      [X in _ -> _ <= X]mxtrace_mulC.
 rewrite [P i *m (_ *m _)]mulmx_colrow linear_sum/= diag_mx_dmul mxtrace_diag.
 apply/(le_trans (ler_norm_sum  _ _ _))/ler_sum=>k _.
 rewrite !mxE mxtrace_mulC; apply/(le_trans (l2normC_cauchy _ _)).
@@ -2425,11 +2443,19 @@ move=>/eigen_dec; rewrite /eigenmx adjmxK => PA.
 move: (spectral_unique PU PD)=>[s] Ps.
 move: PA. rewrite mapf_mx.unlock -Ps map_col_perm !diag_perm -{1}PD.
 rewrite mulmxU// -!mulmxA -mulUmx// -mulUCmx// => P1.
-rewrite mulmxA mulmxU// -!mulmxA -mulUmx// -mulUCmx//.
-rewrite !mulmxA [RHS]mulmxACA -[RHS]mulmxA; apply/test2.
+rewrite -mulUCmx//.
+rewrite [LHS]mulmxA [LHS]mulmxA [X in _ = _ *m X]mulmxA.
+rewrite adjmxK.
+rewrite mulmxU//.
+rewrite -[RHS]mulmxA -(mulUCmx (U := perm_mx s))//.
+rewrite !mulmxA.
+rewrite -![RHS]mulmxA.
+rewrite -[X in X *m diag_mx (D ^ f)%sesqui]mulmxA.
+apply/test2.
+  rewrite mulmxA.
   apply/unitarymx_mulmx_closed; first apply/unitarymx_mulmx_closed=>[|//=].
   1,2: by rewrite adjmx_unitary.
-by move: P1; rewrite !mulmxA.
+by rewrite -[LHS]mulmxA -[X in _ *m X = _]mulmxA.
 Qed.
 
 Lemma mapf_mx_comp f1 f2 A : mapf_mx f1 (mapf_mx f2 A) = mapf_mx (f1 \o f2) A.
@@ -2441,7 +2467,7 @@ Qed.
 Lemma mapf_mx_pinv A : A \is normalmx -> pinvmx A = mapf_mx GRing.inv A.
 Abort.
 
-Lemma mapf_mx_adj A : A \is normalmx -> A^*t = mapf_mx Num.conj_op A.
+Lemma mapf_mx_adj A : A \is normalmx -> A^*t = mapf_mx conjC A.
 Proof.
 move=>/eigen_dec; rewrite /eigenmx adjmxK =>PA.
 by rewrite {1}PA !adjmxM !adjmxK diag_mx_adj conjmxE mulmxA; apply/mapf_mx_unique.
@@ -2548,7 +2574,7 @@ have [Pk|] := boolP (k < minn m n)%N; last first.
   rewrite -leqNgt=>Pk; exists 0; rewrite !mulmx0 normv0 mul0r svd_f_eq0//.
   by apply/(leq_trans _ Pk)/rank_leq_min.
 have P1 : (\rank P <= k)%N by apply rank_leq_row.
-pose Q := (ortho (@conjCfun C) 1%:M P).
+pose Q := (ortho (Num.Num_conj__canonical__GRing_RMorphism C) 1%:M P).
 have Q1 : ((n - k) <= \rank Q)%N by rewrite rank_ortho leq_sub2l.
 have c1 : (k.+1 <= n)%N by apply/(leq_trans Pk)/geq_minr.  
 pose Vk := \matrix_(i < k.+1, j < n) (svd_v A)^*t (widen_ord c1 i) j.
@@ -2621,7 +2647,7 @@ Proof.
 case: n A k P=>// n A k P _.
 have c1 : (k + (rev_ord k).+1 = n.+1)%N by rewrite addnS -addSn addnC/= subnK.
 have P1 : (\rank P <= rev_ord k)%N by apply rank_leq_row.
-pose Q := (ortho (@conjCfun C) 1%:M P).
+pose Q := (ortho (Num.Num_conj__canonical__GRing_RMorphism C) 1%:M P).
 have Q1 : (k.+1 <= \rank Q)%N.
   by rewrite rank_ortho ltn_subRL -{5}c1 addnC ltn_add2l ltnS.
 pose Vk := dsubmx (castmx (esym c1, erefl) ((svd_v A)^*t)).
@@ -2938,7 +2964,7 @@ rewrite -(ler_pXn2r (n := 2))// ?nnegrE// ?prodr_ge0//.
 rewrite expr2 -normrM -detM P2 adjmxM adjmxK mulmxA mulmxACA.
 apply/(le_trans (det_mulmxUlr _ _ _)).
 1,2: by apply/row_unitarymxP=>i j; rewrite !Wk_row PV (inj_eq widen_ord_inj).
-by rewrite -prodrXl; under eq_bigr do rewrite -svd_f_formV.
+by rewrite -prodrXl; under [leRHS]eq_bigr do rewrite -svd_f_formV.
 Qed.
 
 Theorem svd_f_lerD m n (A B : 'M[C]_(m,n)) i j :
@@ -3039,7 +3065,7 @@ Variable (C : numClosedFieldType).
 Lemma tensmx_eq0 m n p q (x : 'M[C]_(m,n)) (y : 'M[C]_(p,q)) : 
   (x *t y == 0) = (x == 0) || (y == 0).
 Proof.
-apply/Bool.eq_iff_eq_true; split; last first.
+apply/Coq.Bool.Bool.eq_iff_eq_true; split; last first.
   by move=>/orP[/eqP->|/eqP->]; rewrite ?linear0l ?linear0r eqxx.
 move=>/eqP/matrixP Pxy.
 case: eqP=>// /eqP Px /=; case: eqP=>// /eqP Py.

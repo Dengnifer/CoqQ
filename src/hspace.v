@@ -1,9 +1,10 @@
 (* -------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra.
-From mathcomp.analysis Require Import -(notations)forms.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
 From mathcomp.classical Require Import boolp.
-From mathcomp.analysis Require Import reals.
+From mathcomp.reals Require Import reals.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex spectral.
 
@@ -148,7 +149,7 @@ Reserved Notation "\cap_ ( i 'in' A ) F"
 Delimit Scope hspace_scope with HS.
 
 Local Open Scope hspace_scope.
-Fact hspace_display : unit. Proof. by []. Qed.
+Fact hspace_display : Order.disp_t. Proof. by []. Qed.
 
 Notation "x `<=` y" := (@Order.le hspace_display _ x y) : hspace_scope.
 Notation "x `<` y" := (@Order.lt hspace_display _ x y) : hspace_scope.
@@ -1421,7 +1422,9 @@ Lemma capOh_sub U V : U `<=` V ->
   ((~` U) `&` V) = supph (V%:VF - U%:VF).
 Proof.
 move=>/supph_sub P; rewrite -[LHS]hsOK [X in ~` X]ocomplI hsOK; apply/eqhP=>x.
-by rewrite memhOE hsOK memhOE hs2lfE supphP P !hsE/= /cplmt opprB !addrA [_ + \1]addrC.
+rewrite memhOE hsOK memhOE hs2lfE !hsE/= P /cplmt opprB !addrA [_ + \1]addrC.
+rewrite -[supplf _]hsE.
+by rewrite supphP.
 Qed.
 Lemma cuph_lub U V W : U `<=` W -> V `<=` W -> U `|` V `<=` W.
 Proof. by move=>P1 P2; rewrite leUx P1 P2. Qed.
@@ -1727,7 +1730,7 @@ Lemma sumoutp_comp (H G K: chsType) (F : finType) (l l' : F -> C)
   (f : 'PONB(F;H)) (g : F -> G) (h : F -> K):
   (sumoutp l f g) \o (sumoutp l' h f) = sumoutp (fun i=>l i * l' i) h g.
 Proof.
-rewrite !sumoutpE linear_suml; apply eq_bigr=>i _.
+rewrite !sumoutpE linear_sumlz; apply eq_bigr=>i _.
 rewrite /= linear_sumr (bigD1 i)//= big1=>[j/negPf nj|];
 rewrite/= -!(comp_lfunZl, comp_lfunZr) outp_comp ponb_dot.
 by rewrite eq_sym nj scale0r !scaler0.
@@ -1834,7 +1837,7 @@ Lemma sumoutp_proj (F : finType) (f : 'PONB(F;H)) :
   sumoutp (fun=>1) f f \is projlf.
 Proof.
 apply/projlfP; split; first by apply/hermlfP/sumoutp_herm=>x; rewrite real1.
-rewrite sumoutpE linear_suml; apply eq_bigr=>i _.
+rewrite sumoutpE linear_sumlz; apply eq_bigr=>i _.
 by rewrite linear_sumr (bigD1 i)//= big1=>[j/negPf nj|];
 rewrite ?scale1r outp_comp ponb_dot ?eqxx ?addr0 ?scale1r// eq_sym nj scale0r.
 Qed.
@@ -1962,7 +1965,7 @@ Proof. by rewrite -spectral_allP ?psdlf_herm ?is_psdlf. Qed.
 HB.instance Definition _ (U : 'F+(H)) := Herm_isPsdLf.Build H (spectral_all U) (spectral_all_psd U).
 Lemma spectral_all_obs (U : 'FO(H)) : spectral_all U \is obslf.
 Proof. by rewrite -spectral_allP ?obslf_herm ?is_obslf. Qed.
-HB.instance Definition _ (U : 'FO(H)) := Psd_isObsLf.Build H (spectral_all U) (spectral_all_obs U).
+HB.instance Definition _ (U : 'FO(H)) := isObsLf.Build H (spectral_all U) (spectral_all_obs U).
 Lemma spectral_all_den (U : 'FD(H)) : spectral_all U \is denlf.
 Proof. by rewrite -spectral_allP ?denlf_herm ?is_denlf. Qed.
 HB.instance Definition _ (U : 'FD(H)) := Obs_isDenLf.Build H (spectral_all U) (spectral_all_den U).
@@ -2119,7 +2122,7 @@ Proof. by rewrite -spectralP ?psdlf_herm ?is_psdlf. Qed.
 HB.instance Definition _ (U : 'F+(H)) := Herm_isPsdLf.Build H (spectral U) (spectral_psd U).
 Lemma spectral_obs (U : 'FO(H)) : spectral U \is obslf.
 Proof. by rewrite -spectralP ?obslf_herm ?is_obslf. Qed.
-HB.instance Definition _ (U : 'FO(H)) := Psd_isObsLf.Build H (spectral U) (spectral_obs U).
+HB.instance Definition _ (U : 'FO(H)) := isObsLf.Build H (spectral U) (spectral_obs U).
 Lemma spectral_den (U : 'FD(H)) : spectral U \is denlf.
 Proof. by rewrite -spectralP ?denlf_herm ?is_denlf. Qed.
 HB.instance Definition _ (U : 'FD(H)) := Obs_isDenLf.Build H (spectral U) (spectral_den U).

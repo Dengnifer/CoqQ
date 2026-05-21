@@ -1,6 +1,8 @@
 (* -------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
+From Coq.Bool Require Import Bool.
 
 (****************************************************************************)
 (*                     Module for orthomodular lattice                      *)
@@ -51,14 +53,14 @@ Local Open Scope order_scope.
 
 (* complement top bottom lattice *)
 
-HB.mixin Record has_ocompl (d : unit) T of TBLattice d T := {
+HB.mixin Record has_ocompl (d : Order.disp_t) T of TBLattice d T := {
   ocompl : T -> T;
   joinOx : forall a, join (ocompl a) a = top;
   meetOx : forall a, meet (ocompl a) a = bottom;
 }.
 
 #[short(type="complLatticeType")]
-HB.structure Definition ComplLattice (d : unit) :=
+HB.structure Definition ComplLattice (d : Order.disp_t) :=
   { T of TBLattice d T & has_ocompl d T }.
 
 Module ComplLatticeExports.
@@ -88,13 +90,13 @@ Notation "~`^d A" := (dual_ocompl A)
 End ComplLatticeSyntax.
 
 (* orthocomplement lattice *)
-HB.mixin Record ComplLattice_isOrthoLattice (d : unit) T of ComplLattice d T := {
+HB.mixin Record ComplLattice_isOrthoLattice (d : Order.disp_t) T of ComplLattice d T := {
   ocomplK : involutive (@ocompl _ T);
   leOP : {homo (@ocompl _ T) : a b /~ a <= b};
 }.
 
 #[short(type="orthoLatticeType")]
-HB.structure Definition OrthoLattice (d : unit):=
+HB.structure Definition OrthoLattice (d : Order.disp_t):=
   { T of ComplLattice d T & ComplLattice_isOrthoLattice d T }.
 
 Module OrthoLatticeExports.
@@ -120,20 +122,20 @@ Reserved Notation "x '_|_' y" (at level 69, format "x  _|_  y").
 Reserved Notation "x '_C_' y" (at level 69, format "x  _C_  y").
 Reserved Notation "x '_D_' y" (at level 69, format "x  _D_  y").
 Reserved Notation "x '_M_' y" (at level 69, format "x  _M_  y").
-Definition orthogonal (disp : unit) (T : orthoLatticeType disp) : rel T := 
+Definition orthogonal (disp : Order.disp_t) (T : orthoLatticeType disp) : rel T := 
     fun (x y : T) => (x <= ~` y).
-Definition commute (disp : unit) (T : orthoLatticeType disp) : rel T := 
+Definition commute (disp : Order.disp_t) (T : orthoLatticeType disp) : rel T := 
     fun (x y : T) => (x == ((x `&` y) `|` (x `&` ~` y))).
-Definition dual_commute (disp : unit) (T : orthoLatticeType disp) : rel T := 
+Definition dual_commute (disp : Order.disp_t) (T : orthoLatticeType disp) : rel T := 
     fun (x y : T) => (x == ((x `|` y) `&` (x `|` ~` y))).
-Definition sasaki_hook (disp : unit) (T : orthoLatticeType disp) (x y : T) : T := 
+Definition sasaki_hook (disp : Order.disp_t) (T : orthoLatticeType disp) (x y : T) : T := 
   ~` x `|` (x `&` y).
-Definition sasaki_projection (disp : unit) (T : orthoLatticeType disp) (x y : T) : T := 
+Definition sasaki_projection (disp : Order.disp_t) (T : orthoLatticeType disp) (x y : T) : T := 
   x `&` (~` x `|` y).
 (* we here give the alternative definition of orthogonally commutes *)
 (* x _M_ y iff exists x1 y1 z s.t.  x = x1 `|` z, y = y1 `|` z, x1 _|_ z *)
 (*   y1 _|_ z, x1 _|_ y1 . two definition are indeed equivalent *)
-Definition ortho_commute (disp : unit) (T : orthoLatticeType disp) : rel T := 
+Definition ortho_commute (disp : Order.disp_t) (T : orthoLatticeType disp) : rel T := 
   fun (x y : T) => commute x y && commute y x.
 Notation "x '_|_' y" := (orthogonal x y) : order_scope.
 Notation "x '_C_' y" := (commute x y) : order_scope.
@@ -143,14 +145,14 @@ Notation "x '`=>`' y" := (sasaki_hook x y) (at level 70) : order_scope.
 Notation "x '`&&`' y" := (sasaki_projection x y) (at level 70) : order_scope.
 
 (* orthomodular lattice *)
-Definition orthomodular_law (d : unit) (T : orthoLatticeType d) :=
+Definition orthomodular_law (d : Order.disp_t) (T : orthoLatticeType d) :=
   forall a b : T, a <= b -> a `|` ((~` a) `&` b) = b.
-HB.mixin Record hasOrthoModular (d : unit) T of OrthoLattice d T := {
+HB.mixin Record hasOrthoModular (d : Order.disp_t) T of OrthoLattice d T := {
   le_joinIO : forall a b : T, a <= b -> join a (meet (ocompl a) b) = b;
 }.
 
 #[short(type="oModularLatticeType")]
-HB.structure Definition OModularLattice (d : unit):=
+HB.structure Definition OModularLattice (d : Order.disp_t):=
   { T of OrthoLattice d T & hasOrthoModular d T }.
 
 Module OModularLatticeExports.
@@ -170,15 +172,15 @@ End OModularLatticeExports.
 HB.export OModularLatticeExports.
 
 (* modular lattice *)
-Definition modular_law (d : unit) (T : orthoLatticeType d) :=
+Definition modular_law (d : Order.disp_t) (T : orthoLatticeType d) :=
   forall a b c : T, a <= c -> a `|` (b `&` c) = (a `|` b) `&` c.
-HB.mixin Record hasModular (d : unit) T of OModularLattice d T := {
+HB.mixin Record hasModular (d : Order.disp_t) T of OModularLattice d T := {
   le_joinI : forall a b c : T,
     a <= c -> join a (meet b c) = meet (join a b) c;
 }.
 
 #[short(type="modularLatticeType")]
-HB.structure Definition ModularLattice (d : unit):=
+HB.structure Definition ModularLattice (d : Order.disp_t):=
   { T of OModularLattice d T & hasModular d T }.
 
 Module ModularLatticeExports.
@@ -198,7 +200,7 @@ End ModularLatticeExports.
 HB.export ModularLatticeExports.
 
 Section LatticeExtra.
-Variable (disp : unit) (T : latticeType disp).
+Variable (disp : Order.disp_t) (T : latticeType disp).
 Implicit Type (x y z : T).
 
 Lemma le_joinl z : {homo (join z) : x y / x <= y}.
@@ -228,7 +230,7 @@ Proof. by move=>x y Pxy; apply: leI2=>//; apply ltW. Qed.
 End LatticeExtra.
 
 Section ComplLatticeTheory.
-Variable (disp : unit) (T : complLatticeType disp).
+Variable (disp : Order.disp_t) (T : complLatticeType disp).
 Implicit Type (x y : T).
 
 Lemma joinxO x : x `|` ~` x = \top.
@@ -246,19 +248,19 @@ End ComplLatticeTheory.
 
 Module Import DualComplLattice.
 Section DualComplLattice.
-Context {disp : unit} {L : complLatticeType disp}.
+Context {disp : Order.disp_t} {L : complLatticeType disp}.
 HB.instance Definition _ := has_ocompl.Build (dual_display disp) L^d meetOx joinOx.
 End DualComplLattice.
 End DualComplLattice.
 (* add theories later *)
 
 Section OrthoLatticeTheory.
-Variable (disp : unit) (T : orthoLatticeType disp).
+Variable (disp : Order.disp_t) (T : orthoLatticeType disp).
 Implicit Type (x y : T).
 
 Lemma leO : {mono (@ocompl _ T) : a b /~ a <= b}.
 Proof.
-move=>a b; apply/Bool.eq_iff_eq_true; split.
+move=>a b; apply/Coq.Bool.Bool.eq_iff_eq_true; split.
 rewrite -{2}(ocomplK b) -{2}(ocomplK a).
 all: apply leOP.
 Qed.
@@ -385,9 +387,14 @@ Qed.
 Lemma orthomodular_le_join1_eqO : orthomodular_law T <->
   (forall x y, x <= ~`y -> x `|` y = \top -> x = ~` y).
 Proof.
-rewrite orthomodular_le_meet0_eqO; split=>P x y P1 P2;
-by move: (P (~` x) (~` y)); rewrite leO -?ocomplU -?ocomplI 
-  P2 ?ocompl1 ?ocompl0=>/(_ P1 erefl)/ocompl_inj.
+split=> P.
+- have Pm := proj1 orthomodular_le_meet0_eqO P.
+  move=> x y P1 P2.
+  by move: (Pm (~` x) (~` y)); rewrite leO -?ocomplU -?ocomplI
+    P2 ?ocompl1 ?ocompl0=>/(_ P1 erefl)/ocompl_inj.
+- apply: (proj2 orthomodular_le_meet0_eqO) => x y P1 P2.
+  by move: (P (~` x) (~` y)); rewrite leO -?ocomplU -?ocomplI
+    P2 ?ocompl1 ?ocompl0=>/(_ P1 erefl)/ocompl_inj.
 Qed.
 
 Lemma orthomodular_commuteC : orthomodular_law T <-> 
@@ -397,23 +404,28 @@ split; last first.
   move=>Pc x y le; move: {+}le=>/le_commute;
   rewrite Pc /commute ![y `&` _]meetC.
   by move: le; rewrite leEmeet=>/eqP->/eqP.
-move=>Po a b; apply/Bool.eq_iff_eq_true.
+move=>Po a b; apply/Coq.Bool.Bool.eq_iff_eq_true.
 suff P (x y : T) : x _C_ y -> y _C_ x by split=>/P.
 rewrite /commute=>/eqP P1; apply/eqP.
 rewrite -[RHS]ocomplK ocomplU ocomplI ocomplI ocomplK.
-move: {+}Po=>/orthomodular_le_meet0_eqO; apply.
+rewrite -[y `&` ~` x]ocomplK -ocomplI.
+apply: (proj1 orthomodular_le_meet0_eqO Po).
   by rewrite ocomplI !ocomplU !ocomplK leUx !leIl.
-rewrite -(meetxO y); f_equal; move: Po.
-rewrite orthomodular_le_meetUO=>/(_ (~` x `|` ~` y) (~` y) (leUr _ _)){3}<-.
+rewrite -(meetxO y); f_equal.
+move: (proj1 orthomodular_le_meetUO Po (~` x `|` ~` y) (~` y) (leUr _ _)).
+move=> {2}<-.
 by rewrite joinC; f_equal; 
-  rewrite {1}P1 joinC -joinA [X in _ `|` X]joinC meetKUC ocomplU !ocomplK.
+  rewrite ocomplI !ocomplK {1}P1 joinC -joinA [X in _ `|` X]joinC
+  meetKUC ocomplU !ocomplK.
 Qed.
 
 Lemma orthomodular_commuteOx : orthomodular_law T <-> 
   (forall x y, ~` x _C_ y = x _C_ y).
 Proof.
 split.
-by rewrite orthomodular_commuteC=>P x y; rewrite P commutexO P.
+- move=> Po.
+  have Pc := proj1 orthomodular_commuteC Po.
+  by move=> x y; rewrite Pc commutexO Pc.
 move=>P x y le; move: {+}le; rewrite -leO=>/le_commute; 
 rewrite P /commute ocomplK [y `&` x]meetC.
 by move: le; rewrite leEmeet=>/eqP->/eqP; rewrite joinC meetC.
@@ -422,17 +434,21 @@ Qed.
 Lemma orthomodular_commute_dual_eq : orthomodular_law T <-> 
   (forall x y, x _C_ y = x _D_ y).
 Proof.
-split; rewrite orthomodular_commuteOx=>P x y.
-by rewrite -P -commutexO -dual_commuteOO !ocomplK.
-by rewrite -commutexO commuteOO_dual -P.
+split=> P.
+- have POx := proj1 orthomodular_commuteOx P.
+  by move=> x y; rewrite -POx -commutexO -dual_commuteOO !ocomplK.
+- apply: (proj2 orthomodular_commuteOx) => x y.
+  by rewrite -commutexO commuteOO_dual -P.
 Qed.
 
 Lemma orthomodular_commute_ortho_eq : orthomodular_law T <-> 
   (forall x y, x _C_ y = x _M_ y).
 Proof.
-split; rewrite orthomodular_commuteC=>P x y.
-by rewrite /ortho_commute P andbb.
-by rewrite !P ortho_commuteC.
+split=> P.
+- have Pc := proj1 orthomodular_commuteC P.
+  by move=> x y; rewrite /ortho_commute Pc andbb.
+- apply: (proj2 orthomodular_commuteC) => x y.
+  by rewrite !P ortho_commuteC.
 Qed.
 
 End OrthoLatticeTheory.
@@ -441,10 +457,10 @@ Arguments ocompl_inj {disp T}.
 
 Module Import DualOrthoLattice.
 Section DualOrthoLattice.
-Context {disp : unit} {L : orthoLatticeType disp}.
+Context {disp : Order.disp_t} {L : orthoLatticeType disp}.
 
 Lemma dual_leOP : {homo (@ocompl _ L^d) : a b /~ a <= b}.
-Proof. by move=>a b; rewrite /ocompl/= /Order.le/= leO. Qed.
+Proof. by move=> a b; exact: (leOP b a). Qed.
 
 HB.instance Definition _ :=
   ComplLattice_isOrthoLattice.Build (dual_display disp) L^d ocomplK dual_leOP.
@@ -452,31 +468,46 @@ End DualOrthoLattice.
 End DualOrthoLattice.
 
 Section OModularLatticeTheory.
-Variable (disp : unit) (T : oModularLatticeType disp).
+Variable (disp : Order.disp_t) (T : oModularLatticeType disp).
 Implicit Type (x y a b : T).
 
 Lemma le_meetUO x y : y <= x -> x `&` (~` x `|` y) = y.
-Proof. by move: x y; rewrite -orthomodular_le_meetUO; exact le_joinIO. Qed.
+Proof.
+have P := (proj1 (@orthomodular_le_meetUO disp T)) le_joinIO.
+exact: P.
+Qed.
 
 Lemma le_meet0_eqO x y : ~` y <= x -> x `&` y = \bot -> x = ~` y.
-Proof. by move: x y; rewrite -orthomodular_le_meet0_eqO; exact le_joinIO. Qed.
+Proof.
+have P := (proj1 (@orthomodular_le_meet0_eqO disp T)) le_joinIO.
+exact: P.
+Qed.
 
 Lemma le_join1_eqO x y : x <= ~`y -> x `|` y = \top -> x = ~` y.
-Proof. by move: x y; rewrite -orthomodular_le_join1_eqO; exact le_joinIO. Qed.
+Proof.
+have P := (proj1 (@orthomodular_le_join1_eqO disp T)) le_joinIO.
+exact: P.
+Qed.
 
 Lemma commuteC : (commutative (@commute _ T)).
-Proof. by rewrite -orthomodular_commuteC; exact le_joinIO. Qed.
+Proof.
+have P := (proj1 (@orthomodular_commuteC disp T)) le_joinIO.
+exact: P.
+Qed.
 
 Lemma commuteOx x y : ~` x _C_ y = x _C_ y.
-Proof. by move: x y; rewrite -orthomodular_commuteOx; exact le_joinIO. Qed.
+Proof.
+have P := (proj1 (@orthomodular_commuteOx disp T)) le_joinIO.
+exact: P.
+Qed.
 
 Lemma commuteOO x y : ~` x _C_ ~` y = x _C_ y.
 Proof. by rewrite commuteOx commutexO. Qed.
 
 Lemma dual_commute_eq x y : x _D_ y = x _C_ y.
 Proof.
-symmetry; move: x y; rewrite -orthomodular_commute_dual_eq;
-exact le_joinIO.
+have P := (proj1 (@orthomodular_commute_dual_eq disp T)) le_joinIO.
+symmetry; exact: P.
 Qed.
 
 Lemma ortho_commute_eq x y : x _M_ y = x _C_ y.
@@ -484,7 +515,7 @@ Proof. by rewrite /ortho_commute commuteC andbb. Qed.
 
 Lemma commute_char2 a b : ((a `|` ~` b) `&` b == a `&` b) = a _C_ b.
 Proof.
-apply/Bool.eq_iff_eq_true; split.
+apply/Coq.Bool.Bool.eq_iff_eq_true; split.
 move=>/eqP P; rewrite commuteC /commute meetC -P joinC -[a `|` ~` b]joinC.
 by rewrite -[~` b `|` a]ocomplK ocomplU ocomplK eq_sym;
   apply/eqP/le_joinIO/leIl.
@@ -494,7 +525,7 @@ Qed.
 
 Lemma commute_char1 a b : ((a `|` ~` b) `&` b == (b `|` ~` a) `&` a) = a _C_ b.
 Proof.
-apply/Bool.eq_iff_eq_true; split;
+apply/Coq.Bool.Bool.eq_iff_eq_true; split;
 first by move=>/eqP P;
 rewrite -commute_char2 -{2}[b]meetxx meetA P meetC meetA joinKI meetC eqxx.
 move=>P; move: P {+}P; rewrite -{1}commute_char2=>/eqP->.
@@ -738,7 +769,7 @@ Proof. by rewrite /sasaki_projection leIl. Qed.
 
 Lemma leEshook x y : (x <= y) = (x `=>` y == \top).
 Proof.
-apply/Bool.eq_iff_eq_true; split; rewrite /sasaki_hook.
+apply/Coq.Bool.Bool.eq_iff_eq_true; split; rewrite /sasaki_hook.
 by rewrite leEmeet=>/eqP->; rewrite joinOx eqxx.
 move=>/eqP/(f_equal (meet x)); 
 rewrite meetx1 meetUrxl ?commuteOxx// ?commuteOx ?commutexIl//.
@@ -748,7 +779,7 @@ Qed.
 (* compatible import-export law *)
 Lemma commute_leIx x y z : x _C_ y -> (x `&` y <= z) = (x <= (y `=>` z)).
 Proof.
-move=>P; apply/Bool.eq_iff_eq_true; rewrite !leEmeet; split.
+move=>P; apply/Coq.Bool.Bool.eq_iff_eq_true; rewrite !leEmeet; split.
   rewrite /sasaki_hook meetUrxl.
   by rewrite meetA=>/eqP->; rewrite joinC eq_sym.
   by rewrite commuteOx commuteC.
@@ -770,7 +801,7 @@ Qed.
 
 Lemma eq_shookr x y : (x `=>` y == y) = (~` x <= y).
 Proof.
-apply/Bool.eq_iff_eq_true; split.
+apply/Coq.Bool.Bool.eq_iff_eq_true; split.
 by move=>/eqP<-; apply/leUl.
 move=>P; rewrite commuteHE. by rewrite -leEjoin.
 by rewrite -commuteOx; apply/le_commute.
@@ -778,7 +809,7 @@ Qed.
 
 Lemma eq_shookl x y : (x `=>` y == ~` x) = (x `&` y == \bot).
 Proof.
-apply/Bool.eq_iff_eq_true; split.
+apply/Coq.Bool.Bool.eq_iff_eq_true; split.
 rewrite /sasaki_hook eq_joinl=>/(leI2 (lexx x)).
 by rewrite meetA meetxx meetxO lex0.
 by rewrite /sasaki_hook=>/eqP->; rewrite joinx0 eqxx.
@@ -826,7 +857,7 @@ Proof. by rewrite -[RHS]shookOx ocomplK. Qed.
 End OModularLatticeTheory.
 
 Section OModularLatticeF2.
-Variable (disp : unit) (T : oModularLatticeType disp) (a b : T).
+Variable (disp : Order.disp_t) (T : oModularLatticeType disp) (a b : T).
 
 Inductive M02 := M02_0 | M02_1 | M02_a | M02_b | M02_aO | M02_bO.
 Definition M02_ocompl (x : M02) : M02 :=
@@ -1285,7 +1316,7 @@ Ltac OM_autocomp a b :=
   rewrite -?eq_meetl; apply /eqP; OM_autodec a b.
 
 Section OModularLatticeF2Theory.
-Variable (disp : unit) (T : oModularLatticeType disp).
+Variable (disp : Order.disp_t) (T : oModularLatticeType disp).
 Implicit Type (a b c : T).
 
 (* Sasaki conjunction including two variables *)
@@ -1551,14 +1582,10 @@ End OModularLatticeF2Theory.
 
 Module Import DualOModularLattice.
 Section DualOModularLattice.
-Context {disp : unit} {L : oModularLatticeType disp}.
+Context {disp : Order.disp_t} {L : oModularLatticeType disp}.
 
 Lemma dual_le_joinIO : orthomodular_law L^d.
-Proof.
-move=>a b; rewrite /ocompl/= /le/= /join/= {2}/meet/= -leO
-  =>/le_joinIO/(f_equal ocompl).
-by rewrite ocomplU ocomplI !ocomplK.
-Qed.
+Proof. by move=> a b; apply: le_meetUO. Qed.
 
 HB.instance Definition _ :=
   hasOrthoModular.Build (dual_display disp) L^d dual_le_joinIO.
@@ -1566,20 +1593,23 @@ End DualOModularLattice.
 End DualOModularLattice.
 
 Section ModularLatticeTheory.
-Variable (disp : unit) (T : modularLatticeType disp).
+Variable (disp : Order.disp_t) (T : modularLatticeType disp).
 Implicit Type (x y z : T).
 
 End ModularLatticeTheory.
 
 Module Import DualModularLattice.
 Section DualModularLattice.
-Context {disp : unit} {L : modularLatticeType disp}.
+Context {disp : Order.disp_t} {L : modularLatticeType disp}.
 
 Lemma dual_le_joinI : modular_law L^d.
 Proof.
-move=>a b c; rewrite /ocompl/= /le/= /join/= {2 3}/meet/= -leO=>/le_joinI=>P.
-move: (P (~` b))=>/(f_equal ocompl); rewrite {3 7}/ocompl/=.
-by rewrite !ocomplU !ocomplI ocomplU !ocomplK.
+move=> a b c; rewrite /Order.le /= => H.
+rewrite !Order.DualOrder.meetEdual !Order.DualOrder.joinEdual.
+have P := @le_joinI disp L c b a H.
+rewrite -[@meet disp L a (@join disp L b c)]meetC
+  [@join disp L b c]joinC -P.
+by rewrite [@meet disp L b a]meetC joinC.
 Qed.
 
 HB.instance Definition _ :=
@@ -1588,7 +1618,7 @@ End DualModularLattice.
 End DualModularLattice.
 
 (* on latticeType, build complLattice orthoLattice *)
-HB.factory Record TBLattice_isOrthoLattice (d : unit) T of TBLattice d T := {
+HB.factory Record TBLattice_isOrthoLattice (d : Order.disp_t) T of TBLattice d T := {
   ocompl : T -> T;
   joinOx : forall a, join (ocompl a) a = top;
   meetOx : forall a, meet (ocompl a) a = bottom;
@@ -1601,7 +1631,7 @@ HB.instance Definition _ := @ComplLattice_isOrthoLattice.Build d T ocomplK leOP.
 HB.end.
 
 (* build on orthocompl, since modular law is stronger than orthomodular law *)
-HB.factory Record OrthoLattice_isModularLattice (d : unit) T of OrthoLattice d T := {
+HB.factory Record OrthoLattice_isModularLattice (d : Order.disp_t) T of OrthoLattice d T := {
   le_joinI : forall a b c : T, a <= c -> join a (meet b c) = meet (join a b) c;
 }.
 HB.builders Context d T of OrthoLattice_isModularLattice d T.
@@ -1609,7 +1639,7 @@ HB.instance Definition _ := @hasOrthoModular.Build d T (modular_is_orthomodular 
 HB.instance Definition _ := @hasModular.Build d T le_joinI.
 HB.end.
 
-HB.factory Record TBLattice_isModularLattice (d : unit) T of TBLattice d T := {
+HB.factory Record TBLattice_isModularLattice (d : Order.disp_t) T of TBLattice d T := {
   ocompl : T -> T;
   joinOx : forall a, join (ocompl a) a = top;
   meetOx : forall a, meet (ocompl a) a = bottom;

@@ -1,5 +1,6 @@
 
-From mathcomp Require Import all_ssreflect all_algebra.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
 
 (*****************************************************************************)
 (*                      Reserved Notations for CoqQ                          *)
@@ -339,7 +340,7 @@ Reserved Notation "''Bra[' H ]_ ( S )"     (at level 8). (* only parsing *)
 
 Reserved Notation "'\1_' S" (at level 8, S at level 2, format "\1_ S").
 (* Reserved Notation " '\tr_(' q ) e " (at level 10, q at next level).  *)
-Reserved Notation "c %:D" (at level 2, left associativity, format "c %:D").
+Reserved Notation "c %:D" (at level 2, format "c %:D").
 Reserved Notation " 'o%D' " (at level 0).
 Reserved Notation " '⊗%D' " (at level 0).
 Reserved Notation " '·%D' " (at level 0).
@@ -352,7 +353,9 @@ Reserved Notation "''|' x >" (at level 2, x at level 60, format "''|' x >").
 Reserved Notation "''<' x |" (at level 2, x at level 60, format "''<' x |").
 Reserved Notation "''|' x >< y |" (at level 2, x at level 60, y at next level, format "''|' x >< y |").
 Reserved Notation "''<' x | y >" (at level 2, x at level 60, y at next level, format "''<' x | y >").
-Reserved Notation "''[' x ]" (at level 2, x at level 60, format "''[' x ]").
+(* Reserved only by the commented test block below; keeping it active makes
+   Rocq 9.1 parse the Dirac '[ _ ] notation as this generic bracket family. *)
+(* Reserved Notation "''[' x ]" (at level 0, format "''[' x ]"). *)
 
 Reserved Notation "''|' x ; y >" (at level 2, x at level 60, y custom reg, format "''|' x ; y >").
 Reserved Notation "''<' x ; y |" (at level 2, x at level 60, y custom reg, format "''<' x ; y |").
@@ -360,7 +363,7 @@ Reserved Notation "''|' x >< z ; w |" (at level 2, x at level 60, z at next leve
 Reserved Notation "''|' x ; y >< z ; w |" (at level 2, x at level 60, z at next level, y custom reg, w custom reg, format "''|' x ; y >< z ; w |").
 Reserved Notation "''<' x | z ; w >" (at level 2, x at level 60, z at next level, w custom reg, format "''<' x | z ; w >").
 Reserved Notation "''<' x ; y | z ; w >" (at level 2, x at level 60, z at next level, y custom reg, w custom reg, format "''<' x ; y | z ; w >").
-Reserved Notation "''[' x ; y ]" (at level 2, x at level 60, y custom reg, format "''[' x ; y ]").
+(* Reserved Notation "''[' x ; y ]" (at level 2, x at level 60, y custom reg, format "''[' x ; y ]"). *)
 
 Reserved Notation "''|' x , y >" (at level 2, x, y at level 60, format "''|' x ,  y >").
 (* Reserved Notation "''|' x , ( y ) >" (at level 2, x at level 60, y at next level). (* only parsing *) *)
@@ -371,9 +374,9 @@ Reserved Notation "''<' x , y ; z |" (at level 2, x, y at level 60, z at next le
 Reserved Notation "''|' x >< z , w |" (at level 2, x at level 60, z, w at next level, format "''|' x >< z ,  w |").
 (* Reserved Notation "''|' x >< z , ( w ) |" (at level 2, x at level 60, z,w at next level).  (* only parsing *) *)
 Reserved Notation "''|' x >< z , w ; t |" (at level 2, x at level 60, z, w, t at next level, format "''|' x >< z ,  w ; t |").
-Reserved Notation "''[' x , y ]" (at level 2, x at level 60, format "''[' x ,  y ]").
+(* Reserved Notation "''[' x , y ]" (at level 0, format "''[' x ,  y ]"). *)
 (* Reserved Notation "''[' x , ( y ) ]" (at level 2, x at level 60, y at next level). (* only parsing *) *)
-Reserved Notation "''[' x , y ; z ]" (at level 2, x at level 60, z at next level, format "''[' x ,  y ; z ]").
+(* Reserved Notation "''[' x , y ; z ]" (at level 2, x at level 60, z at next level, format "''[' x ,  y ; z ]"). *)
 
 (*
 Section test.

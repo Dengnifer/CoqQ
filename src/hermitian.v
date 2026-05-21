@@ -1,8 +1,10 @@
 (* -------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra perm.
-From mathcomp.analysis Require Import -(notations)forms.
-From mathcomp.analysis Require Import reals.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
+From mathcomp.fingroup Require Import perm.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
+From mathcomp.reals Require Import reals.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
 From mathcomp.real_closed Require Import mxtens.
@@ -37,7 +39,8 @@ Unset SsrOldRewriteGoalsOrder.
 (* Local Open Scope complex_scope. *)
 Local Open Scope ring_scope.
 
-Context (R : realType) (C := R[i]).
+#[local] Parameter R : realType.
+#[local] Definition C := R[i].
 
 HB.mixin Record Vector_isHermitianSpace T of Vector C T := {
   dotp : T -> T -> C;
@@ -64,7 +67,7 @@ HB.export HermitianSpaceExports.
 (* ------------------------------------------------------------------------- *)
 
 Notation "[< u ; v >]" := (dotp u v).
-Notation antilinear f := (linear_for (Num.conj_op \; *:%R) f).
+Notation antilinear f := (linear_for (conjC \; *:%R) f).
 
 (* ------------------------------------------------------------------------- *)
 Section HermitianSpaceTheory.
@@ -78,11 +81,11 @@ Proof. by apply/eqP; rewrite dotp_eq0. Qed.
 HB.instance Definition _ u := GRing.isLinear.Build C E C
   *%R (dotp u) (linear_dotp u).
 
-Lemma antilinear_dotpr u : linear_for (Num.conj_op \; *%R) ((dotp)^~ u).
+Lemma antilinear_dotpr u : linear_for (conjC \; *%R) ((dotp)^~ u).
 Proof. by move=>a v w /=; rewrite -conj_dotp linearP/= rmorphD/= rmorphM/= !conj_dotp. Qed.
 
 HB.instance Definition _ := bilinear_isBilinear.Build C E E C
-  (Num.conj_op \; *%R) *%R dotp (antilinear_dotpr, linear_dotp).
+  (conjC \; *%R) *%R dotp (antilinear_dotpr, linear_dotp).
 
 Lemma dot0p u : [< 0; u >] = 0. Proof. exact: linear0l. Qed.
 Lemma dotpNl w : {morph (dotp^~ w) : u / -u}. Proof. exact: linearNl. Qed.
@@ -105,7 +108,7 @@ Proof. exact: linearPl. Qed.
 
 Lemma dotp_suml (I : Type) (r : seq I) P (F : I -> E) u :
   [< \sum_(v <- r | P v) F v; u >] = \sum_(v <- r | P v) [< F v; u >].
-Proof. exact: linear_suml. Qed.
+Proof. exact: linear_sumlz. Qed.
 
 Lemma dotpZr x u v : [< u; x *: v >] = x * [< u; v >].
 Proof. exact: linearZ. Qed.
@@ -150,8 +153,19 @@ pose K := `|[< u; v >]|^+2 / `<| v |>^+2.
 have {}PE: P t0 = `<|u|>^+2 - K - K + K.
 - rewrite {}PE; congr (_ + _ + _ + _); rewrite {}/K {}/t0.
   - by rewrite mulNr mulrAC -normCKC.
-  - rewrite rmorphN !mulNr rmorphM mulrAC conjCK -normCK.
-    by rewrite conj_Creal // rpredV sqrtCK real_dotpp.
+  - rewrite rmorphN !mulNr rmorphM mulrAC.
+    change (Num.Num_conj__canonical__GRing_RMorphism C ([< u; v >]^*))
+      with (conjC (conjC [< u; v >])).
+    rewrite ?conjCK -normCKC.
+    have vnorm_real : (`<| v |> ^- 2) \is Num.real.
+      by apply/ger0_real; rewrite invr_ge0 ?exprn_ge0 ?sqrtC_ge0 ?ge0_dotp.
+    have vnorm_conj :
+      Num.Num_conj__canonical__GRing_RMorphism C (`<| v |> ^- 2) =
+        `<| v |> ^- 2.
+      change (Num.Num_conj__canonical__GRing_RMorphism C (`<| v |> ^- 2) =
+        `<| v |> ^- 2) with (conjC (`<| v |> ^- 2) = `<| v |> ^- 2).
+      by rewrite (conj_Creal vnorm_real).
+    by rewrite norm_conjC vnorm_conj.
   - rewrite normrN normrM normfV !sqrtCK norm_conjC.
     rewrite exprMn exprVn -mulrA; congr (_ * _).
     rewrite ger0_norm ?ge0_dotp // mulrC expr2 invfM !mulrA.
@@ -204,7 +218,13 @@ move=> x n; elim: n => [|n ih].
 rewrite !mulrS -{}ih; apply: (pexpIrn (lt0n 2));
   try by rewrite nnegrE 1?addr_ge0 // sqrtC_ge0 ge0_dotp.
 rewrite sqrrD !sqrtCK dotpD [RHS]addrAC; congr (_ + _).
-rewrite {2}linearMn rmorphMn conj_dotp -linearMn /= -mulr2n.
+rewrite {2}linearMn rmorphMn.
+have dotp_conj :
+  Num.Num_conj__canonical__GRing_RMorphism C [< x; x >] = [< x; x >].
+  change (Num.Num_conj__canonical__GRing_RMorphism C [< x; x >] = [< x; x >])
+    with (conjC [< x; x >] = [< x; x >]).
+  by rewrite conj_dotp.
+rewrite dotp_conj -linearMn /= -mulr2n.
 congr (_ *+ _); rewrite /hnorm ![in RHS](dotpMnr, dotpMnl).
 rewrite -mulrnA -mulr_natr natrM -expr2 sqrtCM.
 - by rewrite nnegrE ge0_dotp.
@@ -339,7 +359,14 @@ Qed.
 
 Lemma dotp_norml (u v : E) :
   [< normd u; v >] = `|u|^-1 * [< u; v >].
-Proof. by rewrite /normd dotpZl fmorphV conj_Creal ?normr_real. Qed. (* norm_conjC *)
+Proof.
+rewrite /normd dotpZl fmorphV.
+have norm_conj : Num.Num_conj__canonical__GRing_RMorphism C `|u| = `|u|.
+  change (Num.Num_conj__canonical__GRing_RMorphism C `|u| = `|u|)
+    with (conjC `|u| = `|u|).
+  by rewrite conj_Creal ?normr_real.
+by rewrite norm_conj.
+Qed. (* norm_conjC *)
 
 Lemma dotp_normr (u v : E) :
   [< u; normd v >] = `|v|^-1 * [< u; v >].
@@ -541,9 +568,9 @@ Variables (R : comRingType) (vT : vectType R).
 Hypothesis vT_proper : (dim vT > 0) %N.
 
 Definition lfun_comp_lalgMixin := GRing.Lmodule_isLalgebra.Build R
-  (@lfun_comp_ringType R vT vT_proper) (fun k x y => comp_lfunZl k x y).
+  (@lfun_comp_nzRingType R vT vT_proper) (fun k x y => comp_lfunZl k x y).
 Definition lfun_comp_lalgType : lalgType R :=
-  HB.pack 'End(vT) (@lfun_comp_ringType R vT vT_proper) lfun_comp_lalgMixin.
+  HB.pack 'End(vT) (@lfun_comp_nzRingType R vT vT_proper) lfun_comp_lalgMixin.
 
 Definition lfun_comp_algMixin := GRing.Lalgebra_isAlgebra.Build R lfun_comp_lalgType
   (fun k x y => comp_lfunZr k x y).
@@ -562,7 +589,7 @@ HB.instance Definition _ := Num.NormedZmodule.copy E
 Lemma dim_proper_cast : (dim E - 1).+1 = dim E.
 Proof. by rewrite -addn1 subnK// dim_proper. Qed.
 
-Canonical chsf_comp_ringType := lfun_comp_ringType (@dim_proper E).
+Canonical chsf_comp_ringType := lfun_comp_nzRingType (@dim_proper E).
 HB.instance Definition _ := GRing.SemiRing.copy 'End(E) ('End(E):ringType).
 Canonical chsf_comp_lalgType := lfun_comp_lalgType (@dim_proper E).
 Canonical chsf_comp_algType := lfun_comp_algType (@dim_proper E).
@@ -774,7 +801,16 @@ Proof. exists mx2h; [exact: h2mxK| exact: mx2hK]. Qed.
 Lemma mx2h_bij : bijective mx2h.
 Proof. exists h2mx; [exact: mx2hK| exact: h2mxK]. Qed.
 Lemma h2mxP : linear h2mx.
-Proof. by move=>a f v; rewrite !h2mxE !linearP/= mulmxDl -scalemxAl. Qed.
+Proof.
+move=>a f v; rewrite !h2mxE.
+have f2mx_lin : f2mx (a *: f + v) = a *: f2mx f + f2mx v.
+  suff -> : a *: f + v = Hom (a *: f2mx f + f2mx v) by [].
+  apply/lfunP=>u.
+  rewrite add_lfunE scale_lfunE.
+  rewrite -[f]f2mxK -[v]f2mxK /fun_of_lfun unlock/= /fun_of_lfun_def/=.
+  by rewrite -linearZ -linearD mulmxDr -scalemxAr.
+by rewrite f2mx_lin linearD linearZ/= mulmxDr mulmxDl -scalemxAr -scalemxAl.
+Qed.
 Lemma mx2hP : linear mx2h.
 Proof. exact: (can2_linearP h2mxP h2mxK mx2hK). Qed.
 
@@ -846,7 +882,7 @@ by move=>a v w; apply/lfunP=>t; rewrite lfunE/= lfunE/= !outpE linearP/=.
 Qed.
 
 HB.instance Definition _ := bilinear_isBilinear.Build C F E
-  'Hom(E, F) *:%R (Num.conj_op \;  *:%R) outp (linear_outpr, linear_outp).
+  'Hom(E, F) *:%R (conjC \;  *:%R) outp (linear_outpr, linear_outp).
 
 Lemma outp_eq0 (u : F) (v : E) :
   [> u ; v <] == 0 = ((u == 0) || (v == 0)).
@@ -878,7 +914,7 @@ Proof. exact: linearPl. Qed.
 
 Lemma outp_suml (I : Type) (r : seq I) P (f : I -> F) u :
   [> \sum_(v <- r | P v) f v; u <] = \sum_(v <- r | P v) [> f v; u <].
-Proof. exact: linear_suml. Qed.
+Proof. exact: linear_sumlz. Qed.
 
 Lemma outpZr (x : C) u v : [> u; x *: v <] = x^* *: [> u; v <].
 Proof. exact: linearZ. Qed.
@@ -1174,7 +1210,13 @@ Proof. by move=>v; rewrite /ncfdotp -normCKC exprn_ge0. Qed.
 Lemma ncfdotp0_eq0 : forall v, (ncfdotp v v == 0) = (v == 0).
 Proof. by move=>v; rewrite /ncfdotp -normCKC expf_eq0/= normr_eq0. Qed.
 Lemma conj_ncfdotp : forall u v, (ncfdotp u v)^* = ncfdotp v u.
-Proof. by move=>u v; rewrite /ncfdotp rmorphM conjCK mulrC. Qed.
+Proof.
+move=>u v; rewrite /ncfdotp rmorphM.
+change (Num.Num_conj__canonical__GRing_RMorphism C (conjC u))
+  with (conjC (conjC u)).
+change (Num.Num_conj__canonical__GRing_RMorphism C v) with (conjC v).
+by rewrite /Num.Num_conj__canonical__GRing_RMorphism /= conjCK mulrC.
+Qed.
 Lemma linear_ncfdotp : forall u, linear_for *%R (ncfdotp u).
 Proof. by move=>w a u v; rewrite /ncfdotp mulrDr /GRing.scale/= mulrCA. Qed.
 

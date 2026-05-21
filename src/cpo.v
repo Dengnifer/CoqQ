@@ -1,6 +1,6 @@
 (*--------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect.
+From mathcomp.ssreflect Require Import all_ssreflect.
 From mathcomp.classical Require Import boolp.
 
 (* -------------------------------------------------------------------- *)
@@ -27,12 +27,12 @@ Unset SsrOldRewriteGoalsOrder.
 Obligation Tactic := move=> /=.
 
 (* -------------------------------------------------------------------- *)
-Definition chain {d : unit} [T : porderType d] (c : nat -> T) :=
+Definition chain {d : Order.disp_t} [T : porderType d] (c : nat -> T) :=
   forall i : nat, c i <= c i.+1.
 
 (* -------------------------------------------------------------------- *)
 Section ChainTheory.
-Context {d : unit} {T : porderType d}.
+Context {d : Order.disp_t} {T : porderType d}.
 
 Lemma chain_shift (c : nat -> T) : chain c -> chain (c \o succn).
 Proof. by move=> ch_c i /=; apply: ch_c. Qed.
@@ -47,7 +47,7 @@ End ChainTheory.
 
 (* -------------------------------------------------------------------- *)
 
-HB.mixin Record isCpo (d : unit) T of POrder d T := {
+HB.mixin Record isCpo (d : Order.disp_t) T of POrder d T := {
   bot  : T;
   lub  : (nat -> T) -> T;
   le0c : forall x, bot <= x;
@@ -58,7 +58,7 @@ HB.mixin Record isCpo (d : unit) T of POrder d T := {
 }.
 
 #[short(type="cpoType")]
-HB.structure Definition Cpo (d : unit):=
+HB.structure Definition Cpo (d : Order.disp_t):=
   { T of POrder d T & isCpo d T }.
 
 Module CpoExports.
@@ -79,7 +79,7 @@ HB.export CpoExports.
 
 (* -------------------------------------------------------------------- *)
 Section CpoTheory.
-Context {d : unit} {T : cpoType d}.
+Context {d : Order.disp_t} {T : cpoType d}.
 
 (*
 Hint Extern 0 (is_true (bot <= _)) => (exact: le0c) : core.
@@ -130,7 +130,7 @@ HB.export ScottContinuousExports.
 
 (* -------------------------------------------------------------------- *)
 Section SCTheory.
-Context {dT dU : unit} {T : cpoType dT} {U : cpoType dU} (f : {scott T -> U}).
+Context {dT dU : Order.disp_t} {T : cpoType dT} {U : cpoType dU} (f : {scott T -> U}).
 
 Lemma sc_scott : scott f.
 Proof. exact: scott_subproof. Qed.
@@ -150,7 +150,7 @@ End SCTheory.
 
 (* -------------------------------------------------------------------- *)
 Section LFP.
-Context {d : unit} {T : cpoType d} (f : {scott T -> T}).
+Context {d : Order.disp_t} {T : cpoType d} (f : {scott T -> T}).
 
 Definition chaini i := iter i f bot.
 

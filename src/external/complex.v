@@ -1,10 +1,16 @@
 (* (c) Copyright 2006-2016 Microsoft Corporation and Inria.                  *)
 (* Distributed under the terms of CeCILL-B.                                  *)
 From HB Require Import structures.
-From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq div.
-From mathcomp Require Import choice fintype tuple bigop binomial order ssralg.
-From mathcomp Require Import zmodp poly ssrnum ssrint archimedean rat matrix.
-From mathcomp Require Import mxalgebra mxpoly closed_field polyrcf realalg.
+From mathcomp.boot Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq div.
+From mathcomp.boot Require Import choice fintype tuple bigop binomial.
+From mathcomp.order Require Import order.
+From mathcomp.algebra Require Import ssralg.
+From mathcomp.algebra Require Import zmodp poly archimedean rat matrix.
+From mathcomp.algebra.num_theory Require Import ssrnum.
+From mathcomp.algebra Require Import ssrint.
+From mathcomp.algebra Require Import mxalgebra mxpoly.
+From mathcomp.field Require Import closed_field.
+From mathcomp.real_closed Require Import polyrcf realalg.
 
 (**********************************************************************)
 (*   This files defines the extension R[i] of a real field R,         *)
@@ -28,7 +34,7 @@ Reserved Notation "x +i* y"
 Reserved Notation "x -i* y"
   (at level 40, left associativity, format "x  -i*  y").
 Reserved Notation "R [i]"
-  (at level 2, left associativity, format "R [i]").
+  (at level 2, format "R [i]").
 
 Local Notation sgr := Num.sg.
 Local Notation sqrtr := Num.sqrt.
@@ -43,13 +49,13 @@ Definition real_complex_def (F : ringType) (phF : phant F) (x : F) :=
   Complex x 0.
 Notation real_complex F := (@real_complex_def _ (Phant F)).
 Notation "x %:C" := (real_complex _ x)
-  (at level 2, left associativity, format "x %:C")  : complex_scope.
+  (at level 2, format "x %:C")  : complex_scope.
 Notation "x +i* y" := (Complex x y) : complex_scope.
 Notation "x -i* y" := (Complex x (- y)) : complex_scope.
 Notation "x *i " := (Complex 0 x) (at level 8, format "x *i") : complex_scope.
 Notation "''i'" := (Complex 0 1) : complex_scope.
 Notation "R [i]" := (complex R)
-  (at level 2, left associativity, format "R [i]").
+  (at level 2, format "R [i]").
 
 (* Module ComplexInternal. *)
 Module ComplexEqChoice.
@@ -337,7 +343,7 @@ set u := _ *+ 2; set v := _ *+ 2.
 rewrite [a ^+ _ + _ + _]addrAC [b ^+ _ + _ + _]addrAC -[X in X - _]addrA.
 rewrite [u + _]addrC [X in _ - X]addrAC [b ^+ _ + _]addrC.
 rewrite [u]lock [v]lock !addrA; set x := (a ^+ 2 + _ + _ + _).
-rewrite -addrA [leLHS]addrC addKr -!lock addrC.
+rewrite [X in X <= _]addrC -addrA addKr -!lock addrC.
 have [huv|] := ger0P (u + v); last first.
   by move=> /ltW /le_trans -> //; rewrite pmulrn_lge0 // mulr_ge0 ?sqrtr_ge0.
 rewrite -(@ler_pXn2r _ 2) -?topredE //=; last first.
@@ -361,7 +367,7 @@ HB.export ComplexField.
 (* indeed, this would prevent C fril having a normed module over C *)
 
 Definition conjc {R : ringType} (x : R[i]) := let: a +i* b := x in a -i* b.
-Notation "x ^*" := (conjc x) (at level 2, format "x ^*") : complex_scope.
+Notation "x ^*" := (conjc x) : complex_scope.
 Local Open Scope complex_scope.
 Delimit Scope complex_scope with C.
 
@@ -739,7 +745,7 @@ rewrite addrA; congr (_ + _).
 symmetry; rewrite -!alg_polyC scalerA; congr (_%:A).
 rewrite [a * _]mulrC divfK // /r2 mulrA mulrACA -invfM -natrM -subr_sqr.
 rewrite sqr_sqrtc sqrrN /d opprB addrC addrNK -2!mulrA.
-by rewrite mulrACA -natf_div // mul1r mulrAC divff ?mul1r.
+by rewrite mulrACA [a * _]mulrC divfK // mulrAC divff ?mul1r ?pnatr_eq0.
 Qed.
 
 Lemma monic_canonical_form (b c : R[i]) :

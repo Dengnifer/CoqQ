@@ -1,9 +1,14 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra bigop.
-From mathcomp.analysis Require Import -(notations)forms.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.boot Require Import bigop.
+From mathcomp.algebra Require Import all_algebra.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
 Require Import spectral.
 From mathcomp.classical Require Import boolp classical_sets.
-From mathcomp.analysis Require Import reals topology normedtype sequences exp prodnormedzmodule.
+From mathcomp.reals Require Import reals prodnormedzmodule.
+From mathcomp.analysis Require Import sequences exp.
+From mathcomp.analysis.topology_theory Require Import topology.
+From mathcomp.analysis.normedtype_theory Require Import normedtype.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
 Require Import mcextra mcaextra notation prodvect hermitian tensor
@@ -270,7 +275,7 @@ Lemma mseriesMl u x:
   series (x \o*x u) = x \o*x series u.
 Proof.
 by apply: funext=> n;
-rewrite /series /= linear_suml.
+rewrite /series /= linear_sumlz.
 Qed.
 
 Lemma mseriesMr u x:
@@ -405,7 +410,7 @@ rewrite /series /conv /= big_mkord cauchy_BMreindex
   first exact: normM.
   near: n; exists (N + M)%N => // n /= HNMn.
   rewrite -(big_mkord xpredT (fun i => `|u (n - i.+1)%N| *
-    `|\sum_(j < i.+1) v j - y|)) (big_cat_nat _ _ _ (leq0n N)) //=;
+    `|\sum_(j < i.+1) v j - y|)) (big_cat_nat (n:=N) (leq0n N)) //=;
   last by rewrite -(leq_add2r M) (leq_trans HNMn (leq_addr _ _)).
   have ->: e / 2 = e / 2 / 2 + e / 2 / 2
   by rewrite -(mulr1 (e/2/2)) -mulrDr;
@@ -431,17 +436,17 @@ rewrite /series /conv /= big_mkord cauchy_BMreindex
       ltr_pM2r // (ltr_pdivrMr _ _ (ltr_wpDr Hx' ltr01)) mul1r.
     apply: (le_lt_trans _ (ltr_pwDl ltr01 (lexx x')));
     apply: (le_trans (y:= series (fun i : nat => normr (u i)) n)).
-    rewrite [leRHS]big_nat_rev [leRHS](big_cat_nat _ (n:=N)) //=;
+    rewrite [leRHS]big_nat_rev [leRHS](big_cat_nat (n:=N) (leq0n N)) //=;
     last by rewrite -(leq_add2r M) (leq_trans HNMn (leq_addr _ _)).
     by apply: (ler_wpDl (sumr_ge0 _ (fun _ _ => normr_ge0 _)));
     apply: ler_sum_nat => i _; rewrite add0n.
     move: Snu; rewrite cvgn_limnE // => [[ <- Cnsu]];
     apply: etnondecreasing_cvgn_le =>// i j Hij.
-    by rewrite /series /= [leRHS](big_cat_nat _ (n:=i)) //=;
+    by rewrite /series /= [leRHS](big_cat_nat (n:=i) (leq0n i)) //=;
     apply: (ler_wpDr (sumr_ge0 _ _)).
 - have ->: \sum_(s < n) (u (n - s.+1)%N *x y) = \sum_(s < n) (u s *x y)
   by rewrite -(big_mkord xpredT (fun s => u s *x y)) big_rev_mkord subn0.
-  rewrite -linear_suml -linearBl;
+  rewrite -linear_sumlz -linearBl;
   apply: (le_lt_trans (normM _ _ _));
   apply: (le_lt_trans (ler_wpM2l (normr_ge0 _) (ler_wpDl ler01 (lexx _)))).
   rewrite -ltr_pdivlMr -?(big_mkord xpredT);
@@ -461,9 +466,9 @@ have Hsu: cvgn (series u) by apply: mnormed_cvg.
 have ->: [sequence \sum_(i < n) \sum_(j < n) (u i *x v j)]_n
   = (series u) \*x (series v) by
   apply: funext => n;
-  rewrite /series /= linear_suml big_mkord;
+  rewrite /series /= linear_sumlz !big_mkord;
   apply: eq_bigr => ? _ /=;
-  rewrite linear_sumr big_mkord.
+  rewrite linear_sumr.
 have <-: series (u `* v) = [sequence \sum_(s<n) \sum_(k<s.+1) (u (s-k)%N *x v k) ]_n by
   apply: funext => n;
   rewrite /series /conv /= big_mkord.
@@ -494,9 +499,9 @@ rewrite -mlimM //;
 try by apply: mnormed_cvg.
 have ->: series u \*x series v = [sequence \sum_(i<n) \sum_(j<n) (u i *x v j)]_n by
   apply: funext => n;
-  rewrite /series /= linear_suml big_mkord;
+  rewrite /series /= linear_sumlz !big_mkord;
   apply: eq_bigr => ? _ /=;
-  rewrite linear_sumr big_mkord.
+  rewrite linear_sumr.
 by rewrite mlim_seriesM.
 Qed.
 
@@ -601,7 +606,7 @@ apply: (cnondecreasing_is_cvgn
     apply: mnormed_le_exp.
   - rewrite -mulr_sumr ler_wpM2l // -raddf_sum ler_r2c.
     apply: nondecreasing_cvgn_le.
-    - apply: nondecreasing_series => m t.
+    - apply: nondecreasing_series => m _ _.
       apply: exp_coeff_ge0.
       rewrite -ler0c RRe_real ?ger0_real //.
     - apply: is_cvg_series_exp_coeff.
@@ -682,17 +687,18 @@ rewrite IHn commer_eqn mulr_sumr mulr_suml.
 have ->: \sum_(0 <= i < n.+1)
           A * (('C(n, i))%:R *: (A ^+ (n - i) * B * (- A) ^+ i))
     = A ^+ (n.+1) * B * (-A) ^+ 0 + \sum_(0 <= i < n)
-      'C(n,i.+1)%:R *: (A ^+ (n.+1 - i.+1) * B * (-A) ^+ i.+1)
-by rewrite sum_nat_recl // bin0 scale1r !mulrA subn0 exprS;
-f_equal; apply: eq_big_nat => k Hk;
-rewrite -scalerAr !mulrA -exprS subnS subSS prednK ?subn_gt0.
+      'C(n,i.+1)%:R *: (A ^+ (n.+1 - i.+1) * B * (-A) ^+ i.+1).
+  rewrite sum_nat_recl // bin0 scale1r !mulrA subn0 exprS.
+  f_equal; apply: eq_big_nat => k Hk.
+  rewrite comp_lfunZr !mulrA -exprS subnS subSS prednK ?subn_gt0 //.
+  by rewrite comp_lfunZr.
 have ->: \sum_(0 <= i < n.+1)
         ('C(n, i))%:R *: (A ^+ (n - i) * B * (- A) ^+ i) * - A
     = \sum_(0 <= i < n) 'C(n,i)%:R *: (A ^+ (n.+1 - i.+1) * B * (-A) ^+ i.+1)
     + A ^+ 0 * B * (-A) ^+ (n.+1)
 by rewrite sum_nat_recr // binn scale1r -!mulrA subnn exprSr
   addrC [RHS]addrC; f_equal; apply: eq_bigr => k _;
-rewrite -scalerAl -!mulrA -exprSr subSS.
+rewrite comp_lfunZl -!mulrA -exprSr subSS comp_lfunZl comp_lfunZl -mulrA.
 by rewrite sum_nat_recr // sum_nat_recl // bin0 binn
   !scale1r subn0 subnn -!addrA; f_equal;
 rewrite addrA addrC [RHS]addrC -big_split; f_equal;
@@ -702,20 +708,21 @@ Qed.
 Local Notation expM := (expM (@comp_lfun C H H H)).
 Local Notation expM_coeff := (expM_coeff (@comp_lfun C H H H)).
 
+Lemma chsf_compE A B : A * B = A \o B.
+Proof. by []. Qed.
+
 Lemma sum_xcom n A B:
   \sum_(k < n.+1)
     (expM_coeff A (n-k)%N) * (B * (expM_coeff (-A) k))
   = n`!%:R^-1 *: ^n[A, B].
 Proof.
 rewrite /expM_coeff xcom_sum_bino scaler_sumr big_mkord;
-apply: eq_bigr => [[k Hk]];
-rewrite -(@bin_fact n k) // !natrM scalerA !invfM mulrC !mulrA divff;
+apply: eq_bigr => [[k Hk]] _;
+rewrite /expx /= -(@bin_fact n k) // !natrM scalerA !invfM mulrC !mulrA divff;
 last by rewrite lt0r_neq0 // ltr0n bin_gt0.
-by rewrite -scalerAl -scalerAr -scalerAl scalerA mul1r.
+by rewrite !chsf_compE -[in LHS]comp_lfunZl -[in LHS]comp_lfunZl
+  -[in LHS]comp_lfunZr scalerA mul1r mulrC.
 Qed.
-
-Lemma chsf_compE A B : A * B = A \o B.
-Proof. by []. Qed.
 
 Lemma expM_trans_xcom A B:
   (expM A) * B * (expM (-A)) = limn [series (n`!%:R^-1) *: ^n[A,B]]_n.
@@ -727,18 +734,19 @@ rewrite /expM -{1}LB !chsf_compE -!mlimM /=.
 all: try exact: expM_is_cvg.
 have ->: (fun i => series (expM_coeff A) i \o B \o series (expM_coeff (-A)) i)
   = [sequence \sum_(i < n) \sum_(j < n)
-          ((expM_coeff A i) \o (B \o (expM_coeff (-A) j)))]_n by
-apply: funext => n;
-  rewrite /series /= -!chsf_compE !mulr_suml big_mkord;
-  apply: eq_bigr => ? _ /=;
-  rewrite mulr_sumr big_mkord;
-  under eq_bigr do rewrite comp_lfunA. 
+          ((expM_coeff A i) \o (B \o (expM_coeff (-A) j)))]_n.
+  apply: funext => n.
+  rewrite /series /= -!chsf_compE !mulr_suml !big_mkord.
+  apply: eq_bigr => ? _ /=.
+  rewrite mulr_sumr.
+  by apply: eq_bigr => ? _; rewrite !chsf_compE -comp_lfunA.
 have ->: [series (n`!%:R^-1 *: ^ n [A, B])]_n
   = [sequence \sum_(s < n) \sum_(k < s.+1)
 ((expM_coeff A (s-k)%N) \o (B \o (expM_coeff (-A) k)))]_n by
   apply: funext => n;
   rewrite /series /= big_mkord;
-  under eq_bigr do rewrite sum_xcom.
+  under eq_bigr do rewrite -sum_xcom;
+  under eq_bigr do rewrite ?chsf_compE.
 apply: (mlim_seriesM _ (v := fun i => B \o (expM_coeff (-A)) i));
 first exact: normed_expM_is_cvg.
 rewrite mseriesMr /=;

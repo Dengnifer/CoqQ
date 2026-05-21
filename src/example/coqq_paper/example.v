@@ -1,11 +1,15 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra all_fingroup.
-From mathcomp.classical Require Import boolp.
-From mathcomp.analysis Require Import -(notations)forms.
-From mathcomp.analysis Require Import reals exp trigo.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
+From mathcomp.fingroup Require Import all_fingroup.
+From mathcomp.classical Require Import boolp classical_sets.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
+From mathcomp.reals Require Import reals.
+From Coq.Bool Require Import Bool.
+From mathcomp.analysis Require Import exp trigo.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
-From mathcomp Require Import finset.
+From mathcomp.boot Require Import finset.
 Require Import Relation_Definitions.
 Require Import Setoid.
 
@@ -33,6 +37,7 @@ Local Open Scope ring_scope.
 Local Open Scope set_scope.
 Local Open Scope lfun_scope.
 Local Open Scope dirac_scope.
+Local Notation "''[' f ; x ]" := (tlin x x f%VF) : dirac_scope.
 Local Open Scope reg_scope.
 
 Set Implicit Arguments.
@@ -49,7 +54,7 @@ Definition bitstr_dot n (b1 b2 : n.-tuple bool) : nat :=
   (\sum_i (b1~_i * b2~_i))%N.
 
 Lemma ParaHadamard_tuple (b : n.-tuple bool) :
-  \ten_(i < n) '[''H; x.[i]] \· '|''b ; x>
+  \ten_(i < n) '[''H; <{x.[i]}>] \· '|''b ; x>
   = \sum_k sqrtC 2%:R ^- n *: ((-1) ^ bitstr_dot b k *: '|''k ; x>).
 Proof.
 rewrite -tlinTV tlin_ket t2tv_tuple tentf_tuple_apply tketTV.
@@ -73,9 +78,9 @@ exact: ParaHadamard_tuple. tac_qwhile_auto.
 Qed.
 
 Lemma RS_ParaHadamard_tuple0 :
-    ⊨s [pt,st] { \ten_i '| '0; x.[i] > } 
+    ⊨s [pt,st] { \ten_i '| '0; <{x.[i]}> > } 
           [for i do [ut x.[i] := ''H]]
-        { \ten_i '| '+; x.[i] > }.
+        { \ten_i '| '+; <{x.[i]}> > }.
 Proof.
 apply: (RS_forward _ (AxV_UTFP _))=>/=; last by tac_qwhile_auto.
 rewrite -tlinTV -tketTV tlin_ketG tentf_tuple_apply tketTV.
@@ -83,9 +88,9 @@ by under eq_bigr do rewrite Hadamard_cb.
 Qed.
 
 Lemma RS_ParaHadamardV_tuple0 :
-    ⊨s [pt,st] { \ten_i '|'+; x.[i] > } 
+    ⊨s [pt,st] { \ten_i '|'+; <{x.[i]}> > } 
           [for i do [ut x.[i] := ''H]]
-        { \ten_i '|'0; x.[i] > }.
+        { \ten_i '|'0; <{x.[i]}> > }.
 Proof.
 apply: (RS_forward _ (AxV_UTFP _))=>/=; last by tac_qwhile_auto.
 rewrite -tlinTV -tketTV tlin_ket tentf_tuple_apply tketTV.
@@ -106,8 +111,8 @@ Definition rev_circuit :=
     [ut (x.[half_ord i] , x.[rev_ord (half_ord i)]) := SWAP ]].
 
 Lemma rev_unitaryE (t : 'Ht T.[n]) :
-  \ten_(i < n./2) '[ SWAP ; (x.[half_ord i] , x.[rev_ord (half_ord i)]) ]
-  \· '|t; x> = '|t; (tuple i => x.[rev_ord i]) >.
+  \ten_(i < n./2) '[ SWAP ; <{(x.[half_ord i], x.[rev_ord (half_ord i)])}> ]
+  \· '|t; x> = '|t; <{(tuple i => x.[rev_ord i])}> >.
 Proof.
 rewrite (onb_vec t2tv t)/= -!tket_sum dotd_sumr; apply eq_bigr=>i _.
 rewrite -!tketZ dotdZr; f_equal; rewrite t2tv_tuple !tketTV.
@@ -132,14 +137,14 @@ Proof. by rewrite -(inj_eq rev_ord_inj) !frevE; exact: disx. Qed. *)
 Lemma RS_rev_circuit (t : 'Ht T.[n]) :
   ⊨s [pt,st] { '|t; x> } 
                 rev_circuit
-             { '|t; (tuple i => x.[rev_ord i]) > }.
+             { '|t; <{(tuple i => x.[rev_ord i])}> > }.
 Proof.
 apply: (RS_forward _ (AxV_UTFP_seq _ _))=>//=.
 apply: rev_unitaryE. tac_qwhile_auto.
 Qed.
 
 Lemma RS_rev_circuitV (t : 'Ht T.[n]) :
-  ⊨s [pt,st] { '|t; (tuple i => x.[rev_ord i])> } 
+  ⊨s [pt,st] { '|t; <{(tuple i => x.[rev_ord i])}> > } 
                 rev_circuit
              { '|t; x> }.
 Proof.
@@ -260,8 +265,8 @@ by rewrite mulrDr /omegan !mul1r exprS invfM mulrA mulfV// mul1r addrK.
 Qed. *)
 
 Lemma RS_QFT_sub n (sb : n.-tuple bool) (b : bool) (s : 'QReg[ Bool * Bool.[n]]) :
-    let: prev := '|''b; s.1 > \⊗ (\ten_i '|''(sb~_i); s.2.[i] >) in
-    let: postv :=  '|'ph (bitstr2rat (b :: sb)); s.1 > \⊗ (\ten_i '|''(sb~_i); s.2.[i] >) in
+    let: prev := '|''b; s.1 > \⊗ (\ten_i '|''(sb~_i); <{s.2.[i]}> >) in
+    let: postv :=  '|'ph (bitstr2rat (b :: sb)); s.1 > \⊗ (\ten_i '|''(sb~_i); <{s.2.[i]}> >) in
     ⊨s [pt,st] { prev  } ([ut s.1 := ''H] ;; (QFT_sub s)) { postv }.
 Proof.
 elim: n s sb=>[s sb |n IH s bs].
@@ -277,7 +282,8 @@ rewrite big_ord_recr/= bigdE !tnthN.
 under eq_bigr do rewrite tnthNS widen_lift.
 rewrite [SPRE]tendA [SPOST]tendA.
 apply (RS_SC ('|'ph (bitstr2rat (b :: bsh)); s.1> 
-  \⊗ (\ten_i '|''(bsh~_i); s.2.[nlift ord_max i] >) \⊗ '|''bsl; s.2.[ord_max] >))=>/=; last first.
+  \⊗ (\ten_i '|''(bsh~_i); <{s.2.[nlift ord_max i]}> >)
+  \⊗ '|''bsl; <{s.2.[ord_max]}> >))=>/=; last first.
   apply: RV_UT=>/=; rewrite [LHS]tendAC [in RHS]tendAC dotdTll/==>[||].
     tac_qwhile_auto. tac_qwhile_auto.
   f_equal; rewrite !tketT tlin_ket; f_equal.
@@ -297,8 +303,8 @@ tac_qwhile_auto.
 Qed.
 
 Lemma QFTbv_rev n (s : 'QReg[Bool.[n]]) (sb : n.-tuple bool) :
-  '|QFTbv sb; (tuple i => s.[rev_ord i])> = 
-    \ten_(i < n) '|'ph (bitstr2rat (drop i sb)); s.[i] >.
+  '|QFTbv sb; <{(tuple i => s.[rev_ord i])}> > = 
+    \ten_(i < n) '|'ph (bitstr2rat (drop i sb)); <{s.[i]}> >.
 Proof.
 rewrite QFTbvTE tketTV [in RHS](reindex_inj rev_ord_inj)/= bigd.
 by apply eq_bigr=>i _; rewrite eq_qrE subnS predn_sub.
@@ -306,7 +312,7 @@ Qed.
 
 Lemma RS_QFT_iter n (s : 'QReg[Bool.[n]]) (sb : n.-tuple bool) :
     ⊨s [pt,st] { '|''sb ; s > } (QFT_iter s) 
-        { '|QFTbv sb ; (tuple i => s.[rev_ord i]) > }.
+        { '|QFTbv sb ; <{(tuple i => s.[rev_ord i])}> > }.
 Proof.
 rewrite QFTbv_rev.
 elim: n s sb=>[s sb|n IH s sb].
@@ -314,8 +320,8 @@ elim: n s sb=>[s sb|n IH s sb].
 rewrite !big_ord_recl/= !bigdE.
 case/tupleP: sb=>b sb.
 rewrite QFT_iterE/=.
-apply (RS_SC ('|'ph (bitstr2rat (b :: sb)); s.[0] >
-  \⊗ ('|''sb; (tuple i => s.[nlift 0 i])>)))=>/=.
+apply (RS_SC ('|'ph (bitstr2rat (b :: sb)); <{s.[0]}> >
+  \⊗ ('|''sb; <{(tuple i => s.[nlift 0 i])}> >)))=>/=.
   move: RS_QFT_sub=>/(_ _ sb b <{(s.[0], (tuple i => s.[nlift 0 i]))}>)/=.
   apply: eq_state_hoare.
     - rewrite eq_qrE t2tv_tuple tketTV big_ord_recl bigdE tnth0 bigd.
@@ -391,7 +397,7 @@ have : exists i, β i != 0.
 move=>[i/negPf Pi]. rewrite /c lt_def normr_ge0 andbT hnormE sqrtC_eq0.
 rewrite /x_uns linear_sumr/= psumr_eq0=>[j _|].
 2: rewrite -big_all big_negb_all big_orE; apply/existsP; exists i=>/=.
-1: rewrite linear_suml/= (bigD1 j)//=. 2: rewrite linear_suml/= (bigD1 i)//=.
+1: rewrite linear_sumlz/= (bigD1 j)//=. 2: rewrite linear_sumlz/= (bigD1 i)//=.
 all: rewrite big1=>[k/negPf nk|];
 rewrite dotpZl dotpZr onb_dot ?nk ?mulr0// eqxx mulr1 addr0 -normCKC ?exprn_ge0//.
 by rewrite sqrf_eq0 normr_eq0 mulf_eq0 Pi/= invr_eq0 realc_eq0 lambda_gt0.
@@ -416,8 +422,13 @@ Let v k (i : 'I_k.+1) : 'Ht Bool :=
   [bmv sqrtC (1 - `|cc|^+2/i%:R^+2) ; cc / i%:R].
 Lemma v_ns k i : [< @v k i ; @v k i >] = 1.
 Proof.
-rewrite /v; case: eqP=>[_|/eqP]; rude_bmx=>//.
-rewrite -lt0n=>P; rewrite -!normCKC [ `|sqrtC _|]ger0_norm.
+rewrite /v; case E: (i == 0).
+  by rude_bmx; rewrite conjC1.
+have Pi_gt0 : (0 < i)%N.
+  move: E; rewrite -val_eqE /=.
+  by case: (i : nat).
+rude_bmx=>//.
+rewrite -!normCKC [ `|sqrtC _|]ger0_norm.
 rewrite sqrtC_ge0 subr_ge0 ler_pdivrMr ?exprn_gt0// ?ltr0n// mul1r.
 apply: lerXn2r; rewrite ?nnegrE//.
 by apply: (le_trans cc_bound); rewrite ler1n.
@@ -488,14 +499,14 @@ Proof.
 by apply/projlfP; rewrite /pp0 tentf_adj adj_outp adjf1 
   tentf_comp comp_lfun1l outp_comp onb_dot scale1r.
 Qed.
-HB.instance Definition _ := isProjLf.Build ('Ht 'I_m * Bool) pp0 pp0_proj.
+HB.instance Definition _ := isProjLf.Build ('Ht ('I_m * Bool)) pp0 pp0_proj.
 (* Local Canonical pp0_projfType := ProjfType pp0_proj. *)
 Lemma pp1_proj : pp1 \is projlf.
 Proof.
 by apply/projlfP; rewrite /pp1 tentf_adj !adj_outp
   tentf_comp !outp_comp !ns_dot !scale1r.
 Qed.
-HB.instance Definition _ := isProjLf.Build ('Ht 'I_m * Bool) pp1 pp1_proj.
+HB.instance Definition _ := isProjLf.Build ('Ht ('I_m * Bool)) pp1 pp1_proj.
 (* Local Canonical pp1_projfType := ProjfType pp1_proj. *)
 Lemma pp0_ortho_pp1 : (pp0 \o pp1)%VF = 0.
 Proof. by rewrite /pp0 /pp1 tentf_comp outp_comp onb_dot/= scale0r tentf0. Qed.
@@ -534,20 +545,74 @@ rewrite /HHL_body /R.
   rewrite adjfK dotdTll/=; try tac_qwhile_auto.
   rewrite tlin_ket VUnitaryE/= uniformtvE card_ord/= -tketZ tendZl /vv -tket_sum -tket_sum tend_sumr.
 + apply: (RS_SC _ _ (AxV_UT _))=>/=.
-  rewrite adjfK dotdZr dotd_sumr.
-  under eq_bigr do rewrite tend_suml dotd_sumr/=.
+  rewrite adjfK dotdZr.
+  rewrite [in SPOST] dotd_sumr/=.
+  set W := '[ Multiplexer
+    (fun x0 : 'I_n.+1 => expmxip u λ (x0%:R * t0 / pi / n.+1%:R));
+    <{(p,q)}>].
+  rewrite [in SPOST] linear_sum/=.
   have P1: [disjoint mset <{(p,q)}> & mset r] by tac_qwhile_auto.
-  under eq_bigr do under eq_bigr do rewrite -tketT tendA tketT 
+  have -> : \sum_(i < m.+1) (sqrtC n.+1%:R)^-1 *:
+      (W \· (\sum_(i0 < n.+1) '|''i0; p> \⊗
+        '|β i *: u i ⊗t v (δ i); (q,r)>))
+    = \sum_(i < m.+1) (sqrtC n.+1%:R)^-1 *:
+      \sum_(i0 < n.+1) (W \· ('|''i0; p> \⊗
+        '|β i *: u i ⊗t v (δ i); (q,r)>)).
+    apply eq_bigr=>i _; f_equal.
+    elim: (index_enum 'I_n.+1)=>[|j s IH].
+      rewrite !big_nil.
+      by rewrite ten0d dotd0.
+    rewrite !big_cons.
+    by rewrite tendDl dotdDr IH.
+  under [in SPOST]eq_bigr do under eq_bigr do rewrite -tketT.
+  under [in SPOST]eq_bigr do under eq_bigr do rewrite tendA.
+  under [in SPOST]eq_bigr do under eq_bigr do rewrite tketT /W
     (dotdTll _ _ _ P1 P1)/= tlin_ket.
 + apply: (RS_SC _ _ (AxV_UT _))=>/=.
 + apply: (RS_forward (R := \sum_j('|''(δ j) ⊗t v (δ j); (p,r)> \⊗ '|β j *: u j; q>))).
-  rewrite linear_sum/= dotd_sumr; apply eq_bigr=>i _.
+  rewrite linear_sum/=.
+  apply eq_bigr=>i _.
+  rewrite dotdZr.
+  have -> : '[QFT^A; p] \· (\sum_(i0 < n.+1)
+      ('|Multiplexer
+          (fun x0 : 'I_n.+1 => expmxip u λ (x0%:R * t0 / pi / n.+1%:R))
+          (''i0 ⊗t β i *: u i); (p, q)> \⊗ '|v (δ i); r>))
+    = \sum_(i0 < n.+1)
+      ('[QFT^A; p] \·
+        ('|Multiplexer
+            (fun x0 : 'I_n.+1 => expmxip u λ (x0%:R * t0 / pi / n.+1%:R))
+            (''i0 ⊗t β i *: u i); (p, q)> \⊗ '|v (δ i); r>)).
+    elim: (index_enum 'I_n.+1)=>[|j s IH].
+      rewrite !big_nil.
+      by rewrite dotd0.
+    rewrite !big_cons.
+    by rewrite dotdDr IH.
   rewrite -/IQFT -tketT tendAC -tendA.
   under eq_bigr do rewrite 2!linearZ/= MultiplexerEt expmxipEt -tentvZS -linearZr/= -tketT -tendA.
-  rewrite -tend_suml -tendZl tket_sum tketZ dotdTll/=; try tac_qwhile_auto.
-  f_equal; rewrite tlin_ket.
+  under eq_bigr do rewrite tketT.
+  have -> : \sum_(i0 < n.+1)
+      ('[IQFT; p] \·
+        ('|expip (λ i * (i0%:R * t0 / pi / n.+1%:R)) *: ''i0; p> \⊗
+         '|β i *: u i ⊗t v (δ i); (q, r)>))
+    = \sum_(i0 < n.+1)
+      ('|IQFT (expip (λ i * (i0%:R * t0 / pi / n.+1%:R)) *: ''i0); p> \⊗
+       '|β i *: u i ⊗t v (δ i); (q, r)>).
+    apply eq_bigr=>i0 _.
+    rewrite tketGTl//.
+    by tac_qwhile_auto.
+  rewrite -tend_suml -tendZl tket_sum tketZ.
+  rewrite [in LHS]tketT.
+  f_equal.
   under eq_bigr do rewrite mulrA -[ _ / pi]mulrA [_%:R * _]mulrC !mulrA -Hyp -[ _ / pi]mulrC.
   under eq_bigr do rewrite !mulrA (mulVf (pi_neq0 _)) mul1r -[_%:R * _ * _]mulrA -natrM -runityE.
+  have -> : (sqrtC n.+1%:R)^-1 *:
+      \sum_(i0 < n.+1) IQFT (runity n.+1 (δ i * i0) *: ''i0)
+    = IQFT ((sqrtC n.+1%:R)^-1 *:
+      \sum_(i0 < n.+1) runity n.+1 (δ i * i0) *: ''i0).
+    rewrite linearZ/=; f_equal.
+    elim: (index_enum 'I_n.+1)=>[|j s IH].
+      by rewrite !big_nil linear0.
+    by rewrite !big_cons linearD IH.
   by rewrite -QFTvE IQFTEt.
 + apply: (RS_SC _ _ (AxV_UT _))=>/=.
   rewrite dotd_sumr.
@@ -566,7 +631,7 @@ rewrite /HHL_body /R.
 + apply: RV_UTF.
 rewrite/= !VUnitaryE/= uniformtvE card_ord decb 2!linear_sum/= -tket_sum dotd_sumr.
 apply eq_bigr=>i _.
-rewrite linearZl/= [in RHS]linearZ/= -[in RHS]tketZ linear_suml/= linear_sum/= -tket_sum.
+rewrite linearZl/= [in RHS]linearZ/= -[in RHS]tketZ linear_sumlz/= linear_sum/= -tket_sum.
 under eq_bigr do rewrite 2!linearZ/= MultiplexerEt expmxipEt -tentvZS -linearZr/= -tketT
   mulrA -[ _ / pi]mulrA [_%:R * _]mulrC !mulrA -Hyp -[ _ / pi]mulrC 
   !mulrA (mulVf (pi_neq0 _)) mul1r -[_%:R * _ * _]mulrA -natrM -runityE.
@@ -743,7 +808,8 @@ apply: (RS_SC _ (RS_HLF_sub _ _ _ _)).
 by move=>i; rewrite inE=>/andP[] _; exact: ltn_neq.
 apply: (RS_forward _ (AxV_UTFP_seq _ _))=>/=[|//|]; last by tac_qwhile_auto.
 rewrite/= dotdZr dotd_sumr.
-under eq_bigr do rewrite dotdZr (ParaHadamard_tuple x) linear_sum/=.
+under [X in sqrtC 2 ^- N.+1 *: X = _]eq_bigr do
+  rewrite dotdZr (ParaHadamard_tuple x) linear_sum/=.
 rewrite exchange_big !linear_sum/=; apply eq_bigr=>bs _.
 under eq_bigr do rewrite scalerA mulrC scalerA -mulrA -scalerA.
 rewrite -linear_sum/= scalerA -invfM -expr2 exprAC sqrtCK -scaler_suml; do 2 f_equal.
@@ -947,7 +1013,7 @@ Lemma solution_proj : solution \is projlf.
 Proof.
 apply/projlfP; split.
 by rewrite /solution raddf_sum/=; under eq_bigr do rewrite adj_outp.
-rewrite /solution linear_suml/=; apply eq_bigr=>i Pi.
+rewrite /solution linear_sumlz/=; apply eq_bigr=>i Pi.
 rewrite linear_sumr/= (bigD1 i)//= big1=>[j/andP[] _/negPf nj|];
 by rewrite outp_comp ?ns_dot ?scale1r ?addr0// onb_dot eq_sym nj scale0r.
 Qed.
@@ -1037,11 +1103,14 @@ Qed.
 Lemma abs_expip_sin a : `|1 - expip (2%:R * a)| = 2%:R * `|sin (pi * a)|%:C :> C.
 Proof.
 have ->: 2%:R * `|sin (pi * a)|%:C = `|2%:R * sinp a|%:C.
-by rewrite [sinp]unlock normrM ger0_norm// realcM natrC.
+rewrite [sinp]unlock normrM.
+have ->: `|2%:R| = 2%:R :> R by rewrite ger0_norm ?ler0n.
+by rewrite realcM natrC.
 rewrite [expip]unlock [sinp]unlock /expi; simpc; f_equal.
 rewrite sqrrN sqrrB -!addrA cos2Dsin2 expr1n mul1r addrC -addrA -mulr2n addrC.
 rewrite -mulrnBl mulrC -mulrA [in LHS]mulr_natl cos2x_sin opprB addrC addrNK.
-by rewrite -mulr_natl -(mulr_natl (_ * _)) mulrA -expr2 -exprMn sqrtr_sqr (mulrC a).
+rewrite -mulr_natl -(mulr_natl (_ * _)) mulrA.
+by rewrite (mulrC a pi) -[2 * 2]expr2 -exprMn sqrtr_sqr.
 Qed.
 
 #[local] Lemma foo5 a : a%:R - theta * n.+1%:R =  (a%:R / n.+1%:R - theta) * n.+1%:R.
@@ -1189,7 +1258,7 @@ rewrite [RHS](reindex (fun x => h + x)); last first.
 apply eq_bigl=>y; apply/eqb_iff; split=>P.
 by move: (groupM Ph1 P).
 move: (groupM (groupVr Ph1) P).
-by rewrite/invg/=/mulg/= addrA addNr add0r.
+by rewrite FinRing.zmodVgE FinRing.zmodMgE addrA addNr add0r.
 exists (fun x => - h + x)=>y _; by rewrite addrA ?(addNr, addrN) add0r.
 by move/eqP; rewrite -[X in _ == X]mul1r -subr_eq0 -mulrBl mulf_eq0 subr_eq0 Ph2/==>/eqP.
 Qed.
@@ -1276,7 +1345,10 @@ rewrite -scaler_suml charZZ_sum_eq0 ?scale0r//; move: Pi.
 rewrite inE not_existsP=>/negP; apply contra_not=>P; apply/HC_inP=>j Pj.
 by move: (P j); rewrite -implyNE=>/(_ Pj)/negP; rewrite negbK=>/eqP.
 rewrite addr0 -linear_sum/= !scalerA /HC_state; f_equal. 
-rewrite -{2}(sqrtCK #|H|%:R) expr2 mulrA mulrACA mulVf ?sqrtC_eq0//
+rewrite -{2}(sqrtCK #|H|%:R) expr2 mulrA.
+rewrite [((sqrtC #|H|%:R)^-1 / sqrtC #|G|%:R) * _]mulrC.
+rewrite -!mulrA.
+rewrite mulrA mulfV ?sqrtC_eq0//
   mul1r sqrtCM// 1?mulrC// ?sqrtC_inv// nnegrE invr_ge0//.
 Qed.
 
@@ -1286,10 +1358,10 @@ rewrite /FG linearZl linearZr/=; f_equal.
 rewrite /tau {1}exchange_big/= linear_sumr/= [LHS](eq_bigr (fun i=>
 (phi t \o (\sum_j charZZ j i *: [> ''j ; ''i <]) )%VF))=>[i _|]; last first.
 by rewrite -linear_sumr [in LHS]exchange_big/=.
-rewrite exchange_big linear_suml [RHS]linear_sumr/=; apply eq_bigr=>j _.
-rewrite [LHS]linear_suml (bigD1 (i + repr t))//= big1=>[k/negPf nk|];
+rewrite exchange_big linear_sumlz [RHS]linear_sumr/=; apply eq_bigr=>j _.
+rewrite [LHS]linear_sumlz (bigD1 (i + repr t))//= big1=>[k/negPf nk|];
 rewrite linearZl/= outp_comp ?ns_dot ?onb_dot ?nk ?scale0r ?scaler0//.
-rewrite addr0 scale1r /phi linear_suml/= (bigD1 j)//= big1=>[k/negPf nk|];
+rewrite addr0 scale1r /phi linear_sumlz/= (bigD1 j)//= big1=>[k/negPf nk|];
 rewrite linearZl linearZr/= outp_comp ?ns_dot ?onb_dot ?nk ?scale0r ?scaler0//.
 by rewrite addr0 scale1r scalerA -charZZ_D mulrC.
 Qed.
@@ -1353,7 +1425,7 @@ rewrite exchange_big/= !linear_sum; apply eq_bigr=>i _/=.
 rewrite linearZ/= tentf_apply -comp_lfunE FG_tauC !lfunE/= FG_H_state.
 rewrite Phi_HC_state tentvZl !scalerA tentv_suml; f_equal.
 by rewrite sqrtC_inv// -sqrtCM ?nnegrE// ?invr_ge0// [_^-1 * _]mulrC -expr2 sqrtCK.
-by under eq_bigr do rewrite tentvZS.
+apply eq_bigr=>j _; by rewrite ?tentvZl ?tentvZr.
 Qed.
 
 Lemma unitaryf_norm (U : chsType) (f : 'FU(U)) (v : U) :
@@ -1382,6 +1454,14 @@ Proof. by rewrite /charZZ normr_prod big1// =>k _; rewrite expip_norm. Qed.
   #|[set rcoset H x0 | x0 : G]|%:R = #|G|%:R / #|H|%:R :> C.
 Proof. by apply/(@mulfI _ #|H|%:R)=>//; rewrite -natrM mulrC mulfVK// LagrangeA. Qed.
 
+#[local] Lemma H_rcoset_cardR :
+  #|[set rcoset H x0 | x0 : G]|%:R = #|G|%:R / #|H|%:R :> R.
+Proof.
+have nzH : (#|H|%:R : R) != 0 by rewrite pnatr_eq0 -lt0n cardG_gt0.
+apply/(@mulfI _ (#|H|%:R : R))=>//.
+by rewrite -natrM [RHS]mulrC mulfVK// LagrangeA.
+Qed.
+
 Lemma Hff_neq (j k : {set G}) :
   j = (H :* repr j)%g -> k = (H :* repr k)%g -> j != k ->
   ff (repr j) == ff (repr k) = false.
@@ -1393,7 +1473,7 @@ Qed.
 Lemma vf_norm1 : `|vf| = 1.
 Proof. by rewrite -vfE !unitaryf_norm tentv_t2tv ns_norm. Qed.
 
-Lemma cardHC : #|HC|%:R = #|G|%:R / #|H|%:R :> C.
+#[local] Lemma cardHCR : #|HC|%:R = #|G|%:R / #|H|%:R :> R.
 Proof.
 move: vf_norm1=>/(f_equal (fun x=>x^+2)).
 rewrite expr1n hnormZ exprMn ortho_norm=>[i j _ _ /negPf ni|].
@@ -1402,11 +1482,27 @@ rewrite (eq_bigr (fun=>#|G|%:R / #|H|%:R))=>[i Pi|].
 rewrite tentv_norm ns_norm mul1r ortho_norm=>[j k/inr Pj/inr Pk njk|].
 by rewrite dotpZl dotpZr onb_dot (can_eq (addKr ord0)) Hff_neq// !mulr0.
 under eq_bigr do rewrite hnormZ charZZ_norm mul1r ns_norm expr1n.
-by rewrite sumr_const H_rcoset_card.
+rewrite sumr_const.
+by rewrite H_rcoset_card.
 rewrite sumr_const -[_ *+ #|HC|]mulr_natl ger0_norm ?divr_ge0// mulrC expr2.
 rewrite !mulrA mulfVK// mulfK// -[X in _ -> _ = X]mulr1=>P1.
-rewrite -{4}P1 [RHS]mulrC !mulrA mulfVK// mulfK//.
+rewrite mulr1.
+have nzH : (#|H|%:R : R) != 0 by rewrite pnatr_eq0 -lt0n cardG_gt0.
+have nzG : (#|G|%:R : R) != 0.
+  by rewrite pnatr_eq0 -lt0n; apply/card_gt0P; exists i0; rewrite inE.
+apply: (@mulfI _ (#|H|%:R / #|G|%:R)).
+  by rewrite mulf_neq0 ?invr_eq0.
+have -> : (#|H|%:R : R) / (#|G|%:R : R) * (#|HC|%:R : R) =
+    (#|HC|%:R : R) * (#|H|%:R : R) / (#|G|%:R : R).
+  by rewrite mulrC mulrA.
+transitivity (1 : R).
+  apply/(@complexI R).
+  by rewrite !realcM !realcI !natrC P1.
+by rewrite mulrACA -mulrA [#|G|%:R * _]mulrA mulfV// mul1r mulfV.
 Qed.
+
+Lemma cardHC : #|HC|%:R = #|G|%:R / #|H|%:R :> C.
+Proof. by rewrite -!natrC -realcI -realcM cardHCR. Qed.
 
 Lemma RS_HSP pt st : ⊨s [pt,st] { :1 } HSP { '|vf ; (x,y)>}.
 Proof.
@@ -1499,8 +1595,11 @@ rewrite (bigD1 k)//= big1=>[l/andP[Pl/negPf nl]|].
 case: eqP; rewrite ?mulr0//; move: jk=>/eqP->/addrI/Hff_eq/rcoset_eqP.
 by move: Pk Pl=>/inr<-/inr<- kl; rewrite kl eqxx in nl.
 by rewrite jk mulr1 addr0 normrM charZZ_norm mulr1 ger0_norm// divr_ge0.
-rewrite addr0 sumr_const cardPX -mulr_natr H_rcoset_card cardHC.
-by rewrite invfM invrK expr2 mulrACA mulfVK// mulrAC mulfV// mul1r mulrC.
+rewrite addr0 sumr_const cardPX -[_ *+ #|[set rcoset H x0 | x0 : G]|]mulr_natl.
+rewrite H_rcoset_card cardHC.
+have GH_HG : #|G|%:R / #|H|%:R * (#|H|%:R / #|G|%:R) = 1 :> C.
+  by rewrite mulrACA -mulrA [#|H|%:R * _]mulrA mulfV// mul1r mulfV.
+by rewrite invfM invrK expr2 mulrA GH_HG mul1r mulrC.
 Qed.
 
 Lemma RS_HSP_notin pt st i t : 

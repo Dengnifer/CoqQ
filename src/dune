@@ -1,6 +1,23 @@
 (coq.theory
  (name quantum)
  (package coq-mathcomp-quantum)
+(theories HB
+           Stdlib
+           mathcomp.boot
+           mathcomp.bigenough
+           mathcomp.ssreflect
+           mathcomp.order
+           mathcomp.algebra
+           mathcomp.field
+           mathcomp.fingroup
+           mathcomp.solvable
+           mathcomp.finmap
+           mathcomp.classical
+           mathcomp.reals
+           mathcomp.analysis
+           mathcomp.real_closed
+           elpi
+           elpi_elpi)
  (flags -w -ambiguous-paths
         -w -notation-overridden
         -w -redundant-canonical-projection

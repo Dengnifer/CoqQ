@@ -1,10 +1,14 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
 From mathcomp.classical Require Import boolp cardinality mathcomp_extra
   classical_sets functions.
-From mathcomp.analysis Require Import ereal reals signed topology function_spaces
-  prodnormedzmodule normedtype sequences.
-From mathcomp.analysis Require Import -(notations)forms.
+From mathcomp.reals Require Import reals signed prodnormedzmodule.
+From mathcomp.analysis Require Import ereal sequences.
+From mathcomp.analysis.topology_theory Require Import topology function_spaces.
+From mathcomp.analysis.normedtype_theory Require Import normedtype.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
+From Coq.Bool Require Import Bool.
 Require Import mcextra mcaextra notation mxpred.
 
 (******************************************************************************)
@@ -59,7 +63,7 @@ Proof. by apply: closed1; apply: norm_hausdorff. Qed.
 
 End closed_eq.
 
-Lemma lim_eq_near {T : Type} (V : topologicalType) 
+Lemma lim_eq_near {T : Type} (V : ptopologicalType) 
   {F : set_system T} {FF : ProperFilter F} (u v : T -> V) : 
     hausdorff_space V ->
     (\forall n \near F, u n = v n) -> lim (u @ F) = lim (v @ F).
@@ -74,7 +78,7 @@ by move=>c ?; apply/esym/(cvg_lim hV)/(cvg_trans _ c)/near_eq_cvg.
 Unshelve. end_near.
 Qed.
 
-Lemma lim_eq {T: Type} {V : topologicalType} {F : set_system T} (u v : T -> V) :
+Lemma lim_eq {T: Type} {V : ptopologicalType} {F : set_system T} (u v : T -> V) :
   u =1 v -> lim (u @ F) = lim (v @ F).
 Proof. by move=>/funext->. Qed.
 
@@ -146,17 +150,19 @@ Lemma mx_normEV (K: numDomainType) p q :
 Proof. by apply/funext. Qed.
 
 Lemma ball_dim0 (K: numFieldType) m n (x : 'M[K]_(m,n)) e y : 
-  (m == 0%N) || (n == 0%N) -> ball x e y.
+  0 < e -> (m == 0%N) || (n == 0%N) -> ball x e y.
 Proof.
-move=>/orP[/eqP/esym Pm|/eqP/esym Pn]. 
+move=> e_gt0 /orP[/eqP/esym Pm|/eqP/esym Pn]. 
 case: m / Pm x y=>x y. 2: case: n / Pn x y=>x y.
-1,2: by rewrite /ball/=/mx_ball=>i j; case: i=>//; case: j.
+1,2: by rewrite /ball/=/mx_ball; split=>// i j; case: i=>//; case: j.
 Qed.
 
 Lemma mxball_normE (K: numFieldType) m n (x : 'M[K]_(m,n)) e y : 
+  0 < e ->
   ball x e y <-> (m == 0%N) || (n == 0%N) || (mx_norm (x-y) < e).
+move=> e_gt0.
 case: m x y=>[x/= y|]; last case: n=>[m x/= y|n m x y/=].
-1,2: by split=>// _; apply/ball_dim0.
+1,2: by split=>// _; apply: ball_dim0; rewrite ?eqxx.
 by rewrite -ball_normE/=.
 Qed.
 
@@ -283,7 +289,7 @@ move=> x s/= /nbhs_ballP [/=e egt0 Pb]; apply/nbhs_ballP.
 exists e =>//=; move=> y /= Pxy.
 apply (Pb (vec_mx y)); move: Pxy; clear Pb.
 case: m x s y=>[x _ y _|]; last case: n=>[m' x _ y _|n' m' x s y].
-1,2: by apply: ball_dim0; rewrite eqxx.
+1,2: by apply: ball_dim0; rewrite ?egt0 ?eqxx.
 by rewrite -!ball_normE/= -linearB/= -!mx_normEV mxvec_normV.
 Qed.
 
@@ -293,7 +299,7 @@ move=> x s/= /nbhs_ballP [/=e egt0 Pb];
 apply/nbhs_ballP; exists e =>//=;
 move=> y /= Pxy; apply (Pb (mxvec y)); move: Pxy; clear Pb.
 case: m x s y=>[x _ y _|]; last case: n=>[m' x _ y _|n' m' x s y].
-1,2: by apply: ball_dim0; rewrite ?muln0 ?mul0n eqxx.
+1,2: by apply: ball_dim0; rewrite ?egt0 ?muln0 ?mul0n ?eqxx.
 by rewrite -!ball_normE/= -{1}(mxvecK x) -{1}(mxvecK y) 
   -linearB/= -!mx_normEV mxvec_normV.
 Qed.
@@ -305,14 +311,18 @@ rewrite !openE; split=>/=.
 move=>P1 y/= [x Px eqxy]; move: (P1 x Px) =>/=; rewrite /interior.
 move/nbhs_ballP=>[/=e egt0 Pb]; apply/nbhs_ballP.
 exists e=>// z/= Pz; exists (vec_mx z); last by rewrite vec_mxK.
-by apply Pb; move: Pz; rewrite !mxball_normE/= muln_eq0 
-  -(mxvecK x) -linearB/= mxvec_normV eqxy.
+have PzE := @mxball_normE R 1 (m * n) (mxvec x) e z egt0.
+have PxE := @mxball_normE R m n x e (vec_mx z) egt0.
+by apply Pb; move: Pz; rewrite -eqxy PzE PxE/= muln_eq0
+  [mx_norm (x - vec_mx z)]mxvec_norm linearB/= vec_mxK.
 move=>P1 y/= Py. 
 have P3: (exists2 x : 'M_(m, n), A x & mxvec x = mxvec y) by exists y.
 move: (P1 (mxvec y) P3); rewrite /interior.
 move/nbhs_ballP=>[/=e egt0 Pb]; apply/nbhs_ballP.
 exists e=>// z/= Pz; move: Pz (Pb (mxvec z)).
-rewrite !mxball_normE/= muln_eq0 -linearB/= mxvec_norm=>P4 P5.
+have P4E := @mxball_normE R m n y e z egt0.
+have P5E := @mxball_normE R 1 (m * n) (mxvec y) e (mxvec z) egt0.
+rewrite P4E/= P5E/= muln_eq0 -linearB/= mxvec_norm=>P4 P5.
 by move: (P5 P4)=>[t Pt] /eqP; rewrite (inj_eq (can_inj mxvecK))=>/eqP <-.
 Qed.
 
@@ -330,8 +340,11 @@ Qed.
 Lemma mxvec_closed_set (A: set 'M[R]_(m,n)) :
   closed A <-> closed (mxvec @` A).
 Proof.
-split. by rewrite -openC mxvec_open_set -closedC -{2}(setCK A) -mxvec_setN.
-by rewrite -openC mxvec_setN -mxvec_open_set -closedC setCK.
+split.
+  by move=> clA; rewrite -openC mxvec_setN -mxvec_open_set;
+    exact: closed_openC.
+by move=> clA; rewrite -openC mxvec_open_set -mxvec_setN;
+  exact: closed_openC.
 Qed.
 
 Lemma mx_set_compact_trivial (x : set 'M[R]_(m,n)) :
@@ -367,34 +380,74 @@ Variable (R: numFieldType) (m n : nat).
 Local Notation M := 'M[R]_(m.+1,n.+1).
 Variable (mnorm : vnorm M).
 
-Let mnorm_max := (\big[maxr/0%:nng]_i (mnorm (delta_mx i.1 i.2))%:nng)%:num.
-Let mnorm_elem i := ((mnorm (delta_mx i.1 i.2))%:nng)%:num.
-Let mxnorm_elem (x : M) i j := (`|x i j|%:nng)%:num.
-Let R0 := (0 : R)%:nng%:num.
+Let mnorm_max := \big[Order.max/0]_i mnorm (delta_mx i.1 i.2).
+Let mnorm_elem i := mnorm (delta_mx i.1 i.2).
+Let mxnorm_elem (x : M) i j := `|x i j|.
+Let R0 := 0 : R.
 
 Lemma mnorm_ubounded_ND : exists2 c : R, 0 < c & forall x, mnorm x <= c * `|x|.
 Proof.
-exists ((m.+1 * n.+1)%:R * mnorm_max); last first.
+exists (mnorm_max *+ (m.+1 * n.+1)); last first.
 move=>x; rewrite {1}(matrix_sum_delta x) pair_big/=.
 apply: (le_trans (normv_sum _ _ _)).
-have <-: \sum_(i: 'I_m.+1 * 'I_n.+1) (mnorm_max * `|x|) = (m.+1 * n.+1)%:R * mnorm_max * `|x|.
-by rewrite sumr_const card_prod !card_ord -mulr_natl mulrA.
+have <-: \sum_(i: 'I_m.+1 * 'I_n.+1) (mnorm_max * `|x|) = (mnorm_max *+ (m.+1 * n.+1)) * `|x|.
+by rewrite sumr_const card_prod !card_ord mulrnAl.
 apply: ler_sum=>/= i _; rewrite normvZ mulrC; apply ler_pM.
 by apply normv_ge0. by apply normr_ge0.
 suff: mnorm_elem i <= mnorm_max by [].
-rewrite /mnorm_elem /mnorm_max num_le; by apply: le_bigmax_cond.
+rewrite /mnorm_elem /mnorm_max.
+set F := fun j => mnorm (delta_mx j.1 j.2).
+have F_real j : F j \is Num.real.
+  by rewrite /F; apply/ger0_real; apply normv_ge0.
+have fold_real s :
+  foldr (applybig \o (fun j => BigBody j Num.max true (F j))) 0 s \is Num.real.
+  elim: s=>//= j s IH; rewrite /applybig/=.
+  by apply max_real; [apply F_real | apply IH].
+rewrite bigop.unlock /index_enum unlock /reducebig -/F.
+have mem_i : i \in Finite.enum _ by rewrite -enumT mem_enum.
+move: mem_i; elim: (Finite.enum _)=>[|j s IH] //=.
+rewrite inE; move=>/orP[/eqP->|Pis].
+  rewrite /applybig/= /Num.max; case: ifP=>[/ltW//|_].
+  by rewrite lexx.
+rewrite /applybig/= /Num.max; case: ifP=>[_|Hlt].
+  by apply IH.
+apply: le_trans (IH Pis) _.
+rewrite real_leNgt ?fold_real ?F_real//.
+apply/negP=>H.
+by move: Hlt; rewrite H.
 suff: mxnorm_elem x i.1 i.2 <= `|x|. by [].
-rewrite /mxnorm_elem -mx_normEV mx_normE num_le.
-by apply: le_bigmax_cond.
-apply mulr_gt0. by rewrite ltr0n.
-suff: R0 < mnorm_max. by [].
-rewrite /mnorm_max /R0 num_lt. apply/bigmax_gtP. right.
-exists (ord0, ord0)=>//=.
-rewrite -num_lt/= lt_def normv_ge0 andbT.
-have: (delta_mx ord0 ord0 != (0 : M)).
-apply/negP=>/eqP/matrixP/(_ ord0 ord0). rewrite !mxE !eqxx/=.
-move/eqP. apply/negP. by apply oner_neq0.
-apply contraNN. by move/eqP/normv0_eq0=>->.
+rewrite /mxnorm_elem -mx_normEV mx_normE.
+rewrite -[leLHS]nngE num_le; exact: le_bigmax.
+rewrite mulrn_wgt0 ?muln_gt0 ?ltn0Sn//.
+suff: 0 < mnorm_max by [].
+rewrite /mnorm_max.
+set F := fun j => mnorm (delta_mx j.1 j.2).
+have F_real j : F j \is Num.real.
+  by rewrite /F; apply/ger0_real; apply normv_ge0.
+have fold_real s :
+  foldr (applybig \o (fun j => BigBody j Num.max true (F j))) 0 s \is Num.real.
+  elim: s=>//= j s IH; rewrite /applybig/=.
+  by apply max_real; [apply F_real | apply IH].
+have F0pos : 0 < F (ord0, ord0).
+  rewrite /F lt_def normv_ge0 andbT.
+  have: (delta_mx ord0 ord0 != (0 : M)).
+  apply/negP=>/eqP/matrixP/(_ ord0 ord0). rewrite !mxE !eqxx/=.
+  move/eqP. apply/negP. by apply oner_neq0.
+  apply contraNN. by move/eqP/normv0_eq0=>->.
+rewrite bigop.unlock /index_enum unlock /reducebig -/F.
+have mem0 : ((ord0, ord0) : 'I_m.+1 * 'I_n.+1) \in
+    Finite.enum (('I_m.+1 * 'I_n.+1)%type) by rewrite -enumT mem_enum.
+move: mem0; elim: (Finite.enum _)=>[|j s IH] //=.
+rewrite inE; move=>/orP[/eqP<-|Pj].
+  rewrite /applybig/= /Num.max; case: ifP=>Hlt.
+  by apply: (lt_trans F0pos Hlt).
+  by exact F0pos.
+rewrite /applybig/= /Num.max; case: ifP=>Hlt.
+  by apply IH.
+apply: lt_le_trans (IH Pj) _.
+rewrite real_leNgt ?fold_real ?F_real//.
+apply/negP=>H.
+by move: Hlt; rewrite H.
 Qed.
 
 Lemma open_mxnorm_gt (y : R) : open [set x : M | `|x| > y].
@@ -493,8 +546,10 @@ Proof. by move=>x; rewrite ler_pdivrMr// mulrC. Defined.
 Lemma open_mnorm_gt (y : R) : open [set x : M | mnorm x > y].
 Proof.
 move=> x /=; rewrite -subr_gt0 => xDy_gt0.
-apply/nbhs_ballP. exists ((mnorm x - y)/cu)=>/=[]; first by rewrite divr_gt0.
-move=>z/mxball_normE/orP[/orP[]/=P|].
+set e := (mnorm x - y) / cu.
+have e_gt0 : 0 < e by rewrite /e divr_gt0.
+apply/nbhs_ballP. exists e=>//=.
+move=>z/(@mxball_normE R m n x e z e_gt0)/orP[/orP[]/=P|].
 1,2: by move: xDy_gt0; rewrite !mx_dim0C ?P// ?orbT// subr_gt0.
 move=>P/=; move: (le_lt_trans (cuPV _) P).
 rewrite ltr_pM2r ?invr_gt0// ltrBrDl addrC -ltrBrDl.
@@ -504,8 +559,10 @@ Qed.
 Lemma open_mnorm_lt (y : R) : open [set x : M | mnorm x < y].
 Proof.
 move=> x /=; rewrite -subr_gt0 => xDy_gt0.
-apply/nbhs_ballP. exists ((y - mnorm x)/cu)=>/=[]; first by rewrite divr_gt0.
-move=>z/mxball_normE/orP[/orP[]/=P|].
+set e := (y - mnorm x) / cu.
+have e_gt0 : 0 < e by rewrite /e divr_gt0.
+apply/nbhs_ballP. exists e=>//=.
+move=>z/(@mxball_normE R m n x e z e_gt0)/orP[/orP[]/=P|].
 1,2: by move: xDy_gt0; rewrite !mx_dim0C ?P// ?orbT// subr_gt0.
 move=>P/=; move: (le_lt_trans (cuPV _) P).
 rewrite ltr_pM2r ?invr_gt0// ltrBrDl.
@@ -726,10 +783,10 @@ Lemma ethausdorff : hausdorff_space C. Proof. apply: norm_hausdorff. Qed.
 Lemma etclosed_real : closed [set x : C | x \is Num.real].
 Proof.
 rewrite closure_id closureEcvg predeqE=>x/=; split=>[xr|[G PG[] Gx] P].
-  exists (at_point x); first by exact: at_point_filter.
-  split; last by move=>a/=/(_ _ xr); rewrite/at_point.
-  rewrite/cvg_to/==>t/=; rewrite {2}/nbhs/at_point/=.
-  by move=>[e]/= egt0; rewrite/= ball_normE=>/(_ x)P; apply/P/ballxx.
+  exists (principal_filter x); first by exact: principal_filter_proper.
+  split; last by move=>a/= Ga; apply/principal_filterP; exact: (Ga x xr).
+  rewrite/cvg_to/==>t/=; rewrite {2}/nbhs/principal_filter/=.
+  by move=>[e]/= egt0; rewrite/= ball_normE=>/(_ x)P y ->; apply/P/ballxx.
 have P1: c2r @ G --> c2r x 
   by apply: continuous_cvg=>//; apply: c2r_continuous.
 suff P2: G `<=` r2c @ (c2r @ G).
@@ -1520,8 +1577,10 @@ apply/nbhs_ballP. have P2: 0 < `|a i j|.
 rewrite lt_def normr_ge0 andbT.
 by move: Pij; apply contraNN=>/eqP/Num.Theory.normr0P.
 exists (e * `|a i j|) =>//=. apply Num.Theory.mulr_gt0=>//.
-move=> y /= Pxy. apply (Pb (t y)). move: Pxy.
-rewrite /ball/= /mx_ball=>/(_ i j). rewrite /ball/=.
+move=> y /= Pxy. apply (Pb (t y)).
+have Pxyij : ball (x i j) (e * `|a i j|) (y i j).
+  by case: Pxy=>_ Pxy; exact: (Pxy i j).
+move: Pxyij; rewrite /ball/=.
 rewrite /t -mulrBl Num.Theory.normrM Num.Theory.normrV ?GRing.unitfE//.
 rewrite Num.Theory.ltr_pdivrMr// =>P3.
 Qed.
@@ -1681,7 +1740,11 @@ Proof. by move=>P1; have := cvgP _ (mxcvgn_lfun P1 _); apply. Qed.
 Lemma mxlimn_lfun m n p q (f : 'M[C]_(m,n) -> 'M[C]_(p,q))
   (u : nat -> 'M[C]_(m,n)) : 
   linear f -> cvgn u -> limn (f \o u) = f (limn u).
-Proof. move=>P1 ?; apply: cvg_lim => //. apply mxhausdorff. by apply: mxcvgn_lfun. Qed.
+Proof.
+move=>P1 Pu; apply: cvg_lim; first apply: mxhausdorff.
+have Pu_lim : u @ \oo --> limn u by apply/mxcvgn_limnE; split.
+by apply: (mxcvgn_lfun P1 Pu_lim).
+Qed.
 
 Lemma mxclosed_comp m n p q (f : 'M[C]_(m,n) -> 'M[C]_(p,q))
   (A : set 'M[C]_(p,q)) :
@@ -1728,7 +1791,11 @@ Proof. by move=>P1; have := cvgP _ (mxcvgn_sfun P1 _); apply. Qed.
 Lemma mxlimn_sfun m n (f : 'M[C]_(m,n) -> C)
   (u : nat -> 'M[C]_(m,n)) : 
   scalar f -> cvgn u -> limn (f \o u) = f (limn u).
-Proof. move=>P1 ?; apply: cvg_lim => //. by apply: mxcvgn_sfun. Qed.
+Proof.
+move=>P1 Pu; apply: cvg_lim; first apply: ethausdorff.
+have Pu_lim : u @ \oo --> limn u by apply/mxcvgn_limnE; split.
+by apply: (mxcvgn_sfun P1 Pu_lim).
+Qed.
 
 Lemma mxcclosed_comp m n (f : 'M[C]_(m,n) -> C)
   (A : set C) :
@@ -1913,7 +1980,7 @@ Module MxCPorder.
 
 Section Definitions.
 Variables (R: realType) (C : extNumType R) (m n : nat).
-Variable (disp: unit) (B : Order.POrder.axioms_ disp 'M[C]_(m,n)).
+Variable (disp: Order.disp_t) (B : Order.POrder.axioms_ disp 'M[C]_(m,n)).
 Local Notation M := 'M[C]_(m,n).
 Local Notation "x '⊑' y" := (@Order.le disp (@Order.POrder.Pack disp M B) x y) 
   (at level 70, y at next level).
@@ -1940,7 +2007,7 @@ Section Property.
 Import Num.Def Num.Theory.
 Variable (R: realType) (C: extNumType R) (m n : nat).
 Local Notation M := 'M[C]_(m,n).
-Variable (disp: unit) (B : Order.POrder.axioms_ disp 'M[C]_(m,n)).
+Variable (disp: Order.disp_t) (B : Order.POrder.axioms_ disp 'M[C]_(m,n)).
 Variable (mxorder : mxcporder B disp).
 
 Local Notation "x '⊏' y" := (@Order.lt disp (@Order.POrder.Pack disp M B) x y) (at level 70, y at next level).
@@ -1969,7 +2036,7 @@ Implicit Type (u v : M^nat).
 
 Lemma submx_ge0 (x y : M) : ((0 : M) ⊑ x - y) = (y ⊑ x).
 Proof. 
-apply/Bool.eq_iff_eq_true; split=>[/(@lemx_add2r y)|/(@lemx_add2r (-y))];
+apply/Coq.Bool.Bool.eq_iff_eq_true; split=>[/(@lemx_add2r y)|/(@lemx_add2r (-y))];
 by rewrite ?addrNK ?add0r// addrN.
 Qed.
 
@@ -2001,7 +2068,7 @@ Qed.
 (* different canonical route. prevent eq_op porderType ringType *)
 Lemma ltmx_def (x y : M) : (x ⊏ y) = (y != x) && (x ⊑ y).
 Proof.
-rewrite lt_def; congr (~~ _ && _); apply/Bool.eq_iff_eq_true.
+rewrite lt_def; congr (~~ _ && _); apply/Coq.Bool.Bool.eq_iff_eq_true.
 split=>/eqP/=->; by rewrite eqxx.
 Qed.
 
@@ -2266,6 +2333,7 @@ HB.mixin Record FinNormedModule_isVOrderFinNormedModule (R : numFieldType) V of
     closed_gev0 : closed [set x : V | (Order.le 0 x)] ;
   }.
 
+(*
 Module VOrderFinNormedModule.
 
 Section ClassDef.
@@ -2694,6 +2762,129 @@ Notation "[ 'vorderFinNormedModType' C 'of' T ]" := (VOrderFinNormedModule.clone
   (at level 0, format "[ 'vorderFinNormedModType'  C  'of'  T ]") : form_scope.
 End VOrderFinNormedModuleExports.
 HB.export VOrderFinNormedModuleExports.
+*)
+
+Module VOrderFinNormedModule.
+
+Record type (R : numFieldType) := Pack {
+  vorder_sort : vorderType R;
+  fin_class : FinNormedModule.axioms_ R vorder_sort;
+  fin_zeroE : @GRing.zero (FinNormedModule.Pack fin_class) =
+    @GRing.zero vorder_sort;
+  fin_oppE : forall x : vorder_sort,
+    @GRing.opp (FinNormedModule.Pack fin_class) x =
+    @GRing.opp vorder_sort x;
+  fin_addE : forall x y : vorder_sort,
+    @GRing.add (FinNormedModule.Pack fin_class) x y =
+    @GRing.add vorder_sort x y;
+  fin_scaleE : forall (a : R) (x : vorder_sort),
+    @GRing.scale R (FinNormedModule.Pack fin_class) a x =
+    @GRing.scale R vorder_sort a x;
+  closed_gev0_ax : @closed (FinNormedModule.Pack fin_class)
+    [set x : vorder_sort | Order.le 0 x]
+}.
+
+Definition sort R (V : type R) : Type := vorder_sort V.
+Coercion sort : type >-> Sortclass.
+
+Definition to_VOrder R (V : type R) : vorderType R := vorder_sort V.
+Coercion to_VOrder : type >-> VOrder.type.
+
+Definition to_FinNormedModule R (V : type R) : finNormedModType R :=
+  FinNormedModule.Pack (fin_class V).
+Coercion to_FinNormedModule : type >-> FinNormedModule.type.
+Canonical to_FinNormedModule.
+
+Definition to_NormedZmodule R (V : type R) : normedZmodType R :=
+  @Num.NormedZmodule.Pack R (sort V)
+    (Num.NormedZmodule.class (to_FinNormedModule V : normedZmodType R)).
+Canonical to_NormedZmodule.
+
+Definition to_Topological R (V : type R) : topologicalType :=
+  @Topological.Pack (sort V)
+    (Topological.class (to_FinNormedModule V : topologicalType)).
+Canonical to_Topological.
+
+Definition to_Pointed R (V : type R) : pointedType :=
+  @Pointed.Pack (sort V)
+    (Pointed.class (to_FinNormedModule V : pointedType)).
+Canonical to_Pointed.
+
+Definition to_Filtered R (V : type R) : filteredType (sort V) :=
+  @Filtered.Pack (sort V) (sort V)
+    (Filtered.class (to_FinNormedModule V : filteredType (sort V))).
+Canonical to_Filtered.
+
+Definition to_Nbhs R (V : type R) : nbhsType :=
+  @Nbhs.Pack (sort V)
+    (Nbhs.class (to_FinNormedModule V : nbhsType)).
+Canonical to_Nbhs.
+
+Definition to_PointedNbhs R (V : type R) : pnbhsType :=
+  @PointedNbhs.Pack (sort V)
+    (PointedNbhs.class (to_FinNormedModule V : pnbhsType)).
+Canonical to_PointedNbhs.
+
+Definition to_Uniform R (V : type R) : uniformType :=
+  @Uniform.Pack (sort V)
+    (Uniform.class (to_FinNormedModule V : uniformType)).
+Canonical to_Uniform.
+
+Definition to_PseudoMetric R (V : type R) : pseudoMetricType R :=
+  @PseudoMetric.Pack R (sort V)
+    (PseudoMetric.class (to_FinNormedModule V : pseudoMetricType R)).
+Canonical to_PseudoMetric.
+
+Definition to_PseudoMetricNormedZmod R (V : type R) : pseudoMetricNormedZmodType R :=
+  @PseudoMetricNormedZmod.Pack R (sort V)
+    (PseudoMetricNormedZmod.class
+      (to_FinNormedModule V : pseudoMetricNormedZmodType R)).
+Canonical to_PseudoMetricNormedZmod.
+
+Definition to_NormedModule R (V : type R) : normedModType R :=
+  @NormedModule.Pack R (sort V)
+    (NormedModule.class (to_FinNormedModule V : normedModType R)).
+Canonical to_NormedModule.
+
+Definition to_Lmodule R (V : type R) : lmodType R :=
+  @GRing.Lmodule.Pack R (sort V)
+    (GRing.Lmodule.class (to_FinNormedModule V : lmodType R)).
+Canonical to_Lmodule.
+
+Definition to_Vector R (V : type R) : vectType R :=
+  @vector.Vector.Pack R (sort V)
+    (vector.Vector.class (to_FinNormedModule V : vectType R)).
+Canonical to_Vector.
+
+Definition class R (V : type R) := @closed_gev0_ax R V.
+
+Definition clone R (T : Type) (V : type R) := V.
+
+End VOrderFinNormedModule.
+
+Notation vorderFinNormedModType := VOrderFinNormedModule.type.
+Coercion VOrderFinNormedModule.sort : VOrderFinNormedModule.type >-> Sortclass.
+Coercion VOrderFinNormedModule.to_VOrder : VOrderFinNormedModule.type >-> VOrder.type.
+Coercion VOrderFinNormedModule.to_FinNormedModule :
+  VOrderFinNormedModule.type >-> FinNormedModule.type.
+Coercion VOrderFinNormedModule.to_NormedZmodule :
+  VOrderFinNormedModule.type >-> Num.NormedZmodule.type.
+Coercion VOrderFinNormedModule.to_PseudoMetricNormedZmod :
+  VOrderFinNormedModule.type >-> PseudoMetricNormedZmod.type.
+Coercion VOrderFinNormedModule.to_NormedModule :
+  VOrderFinNormedModule.type >-> NormedModule.type.
+
+Module VOrderFinNormedModuleExports.
+#[deprecated(since="mathcomp 2.0.0", note="Use VOrderFinNormedModule.clone instead.")]
+Notation "[ 'vorderFinNormedModType' C 'of' T 'for' cT ]" :=
+  (VOrderFinNormedModule.clone C T%type cT)
+  (at level 0, format "[ 'vorderFinNormedModType'  C  'of'  T  'for'  cT ]") : form_scope.
+#[deprecated(since="mathcomp 2.0.0", note="Use VOrderFinNormedModule.clone instead.")]
+Notation "[ 'vorderFinNormedModType' C 'of' T ]" :=
+  (VOrderFinNormedModule.clone C T%type _)
+  (at level 0, format "[ 'vorderFinNormedModType'  C  'of'  T ]") : form_scope.
+End VOrderFinNormedModuleExports.
+HB.export VOrderFinNormedModuleExports.
 
 Section FinNormedModTypeComplete.
 Context {R : realType} {C : extNumType R} {V : finNormedModType C}.
@@ -2795,92 +2986,40 @@ have P1: a = f (g a) by [].
 by rewrite [in X in X -> _]P1 -bijective_of_mx_cvgnE.
 Qed.
 
-Lemma bijective_to_mx_limnE (m n: nat) (f: V -> 'M[C]_(m,n)) (u : nat -> V)
-  (lf: linear f) (bf: bijective f) :
-  cvgn u -> limn (f \o u)%FUN = f (limn u).
+Lemma v2r_continuous : continuous (@v2r _ V : V -> 'M[C]_(1, dim V)).
 Proof.
-move=>?; apply: cvg_lim; first by apply: mxhausdorff.
-by rewrite -bijective_to_mx_cvgnE.
+apply: (bijective_to_mx_continuous _ v2r_bij); exact: linearP.
 Qed.
 
-Lemma bijective_of_mx_limnE (m n: nat) (f: 'M[C]_(m,n) -> V) 
-  (u : nat -> 'M[C]_(m,n)) (lf: linear f) (bf: bijective f) :
-  cvgn u -> limn (f \o u)%FUN = f (limn u).
+Lemma r2v_continuous : continuous (@r2v _ V : 'M[C]_(1, dim V) -> V).
 Proof.
-move=> ?; apply: cvg_lim; first by apply: norm_hausdorff.
-by rewrite -bijective_of_mx_cvgnE.
+apply: (bijective_of_mx_continuous _ r2v_bij); exact: linearP.
 Qed.
-
-Local Notation MV := 'rV[C]_(dim V).
-
-Lemma v2r_continuous : continuous (@v2r _ V).
-Proof. apply: (bijective_to_mx_continuous _ v2r_bij); exact: linearP. Qed.
-
-Lemma r2v_continuous : continuous (@r2v _ V).
-Proof. apply: (bijective_of_mx_continuous _ r2v_bij); exact: linearP. Qed.
-
-Lemma v2r_cvgnE (u : nat -> V) (a : V): u @ \oo --> a = ((v2r \o u)%FUN @ \oo --> v2r a).
-Proof. apply: (bijective_to_mx_cvgnE _ _ _ v2r_bij); exact: linearP. Qed.
-
-Lemma r2v_cvgnE (u : nat -> MV) (a : MV) : u @ \oo --> a = ((r2v \o u)%FUN @ \oo --> r2v a).
-Proof. apply: (bijective_of_mx_cvgnE _ _ _ r2v_bij); exact: linearP. Qed.
-
-Lemma v2r_is_cvgnE (u : nat -> V) : cvgn u = cvgn (v2r \o u)%FUN.
-Proof. apply: (bijective_to_mx_is_cvgnE _ _ v2r_bij); exact: linearP. Qed.
-
-Lemma r2v_is_cvgnE (u : nat -> MV) : cvgn u = cvgn (r2v \o u)%FUN.
-Proof. apply: (bijective_of_mx_is_cvgnE _ _ r2v_bij). exact: linearP. Qed.
-
-Lemma v2r_limnE (u : nat -> V) : cvgn u -> limn (v2r \o u)%FUN = v2r (limn u).
-Proof. apply: (bijective_to_mx_limnE _ v2r_bij); exact: linearP. Qed.
-
-Lemma r2v_limnE (u : nat -> MV) : cvgn u -> limn (r2v \o u)%FUN = r2v (limn u).
-Proof. apply: (bijective_of_mx_limnE _ r2v_bij); exact: linearP. Qed.
 
 (* Definition finNormedMod_vnorm := VNorm.Pack (VNorm.Class (
   isVNorm.Build C V (@normr C V) (@ler_normD C V) (@normr0_eq0 C V) (@normrZ C V))). *)
 
-(* vnorm V transform to vnorm of matrix *)
-Program Definition v2r_vnorm_mixin (f : vnorm V) := @isVNorm.Build C 'rV[C]_(dim V) (fun x=>f (r2v x)) _ _ _.
-Next Obligation. 
-by move=>f x y /=; rewrite linearD/= lev_normD.
-Qed.
-Next Obligation.
-by move=>f x /= /normv0_eq0; rewrite -{2}(r2vK x)=>->; rewrite linear0.
-Qed.
-Next Obligation.
-by move=>f a x/=; rewrite !linearZ/= normvZ.
-Qed.
-Definition v2r_vnorm (f : vnorm V) := VNorm.Pack (VNorm.Class (v2r_vnorm_mixin f)).
-
-Program Definition r2v_vnorm_mixin (f : vnorm _) := @isVNorm.Build C V (fun x=>f (v2r x)) _ _ _.
-Next Obligation.
-by move=>f x y /=; rewrite linearD/= lev_normD.
-Qed.
-Next Obligation.
-by move=>f x /= /normv0_eq0; rewrite -{2}(v2rK x)=>->; rewrite linear0.
-Qed.
-Next Obligation.
-by move=>f a x/=; rewrite !linearZ/= normvZ.
-Qed.
-Definition r2v_vnorm (f : vnorm _) := VNorm.Pack (VNorm.Class (r2v_vnorm_mixin f)).
-
-Lemma r2vK_vnorm (f : vnorm _) x : v2r_vnorm (r2v_vnorm f) x = f x.
-Proof. by rewrite /= r2vK. Qed.
-Lemma v2rK_vnorm (f : vnorm V) x : r2v_vnorm (v2r_vnorm f) x = f x.
-Proof. by rewrite /= v2rK. Qed.
-Lemma r2v_vnormE (f : vnorm _) x : f x = r2v_vnorm f (r2v x).
-Proof. by rewrite /= r2vK. Qed.
-Lemma v2r_vnormE (f : vnorm V) x : f x = v2r_vnorm f (v2r x).
-Proof. by rewrite /= v2rK. Qed.
-
 Lemma compact_norm_le (e : C) : compact [set x : V | `|x| <= e].
 Proof.
-rewrite (_ : mkset _ = r2v @` [set x | v2r_vnorm normr x <= e]).
-apply: continuous_compact; last by apply: compact_mnorm_le.
-apply: continuous_subspaceT=>x ?; apply: r2v_continuous.
-rewrite predeqE=>/=x; split=>[Px|[y Py1 <-//]].
-by exists (v2r x); rewrite/= v2rK.
+pose mn (x : 'M[C]_(1, dim V)) := `|r2v x|.
+have mnD : forall x y, mn (x + y) <= mn x + mn y.
+  by move=>x y; rewrite /mn linearD/= lev_normD.
+have mn0 : forall x, mn x = 0 -> x = 0.
+  by move=>x/normv0_eq0; rewrite /mn -{2}(r2vK x)=>->; rewrite linear0.
+have mnZ : forall (a : C) x, mn (a *: x) = `|a| * mn x.
+  by move=>a x; rewrite /mn linearZ/= normvZ.
+pose mvn := VNorm.Pack (VNorm.Class (isVNorm.Build C 'M[C]_(1, dim V) mn mnD mn0 mnZ)).
+have Km : compact [set x : 'M[C]_(1, dim V) | mvn x <= e].
+  exact: (@compact_mnorm_le R C 1 (dim V) mvn e).
+have Cr : {within [set x : 'M[C]_(1, dim V) | mvn x <= e],
+    continuous (@r2v _ V : 'M[C]_(1, dim V) -> V)}.
+  exact: continuous_subspaceT r2v_continuous.
+rewrite (_ : mkset _ = (@r2v _ V : 'M[C]_(1, dim V) -> V) @`
+  [set x : 'M[C]_(1, dim V) | mvn x <= e]).
+  exact: (continuous_compact Cr Km).
+rewrite predeqE=>x; split=>[Px|[y Py <-]].
+  by exists (v2r x); rewrite ?v2rK// /mvn /mn/= v2rK.
+by move: Py; rewrite /mvn /mn/=.
 Qed.
 
 Lemma V_complete (F : set_system V) :
@@ -2893,14 +3032,9 @@ Arguments bijective_to_mx_cvgnE [R C V m n f u a].
 Arguments bijective_of_mx_cvgnE [R C V m n f u a].
 Arguments bijective_to_mx_is_cvgnE [R C V m n f u].
 Arguments bijective_of_mx_is_cvgnE [R C V m n f u].
-Arguments bijective_to_mx_limnE [R C V m n f u].
-Arguments bijective_of_mx_limnE [R C V m n f u].
 
 #[non_forgetful_inheritance]
 HB.instance Definition _ (R : realType) (C : extNumType R) (V : finNormedModType C) :=
-  Uniform_isComplete.Build V (@V_complete R C V).
-#[non_forgetful_inheritance]
-HB.instance Definition _ (R : realType) (C : extNumType R) (V : vorderFinNormedModType C) :=
   Uniform_isComplete.Build V (@V_complete R C V).
 
 Section FinNormedModTheory.
@@ -2968,8 +3102,25 @@ Proof. exact: cvgn_subseqPN. Qed.
 Lemma normv_bounded (f g : vnorm V):
   exists2 c : C, 0 < c & forall x, f x <= c * g x.
 Proof.
-move: (mnorm_bounded (v2r_vnorm f) (v2r_vnorm g))=>[c cgt0 Pc].
-exists c=>// x; by rewrite !v2r_vnormE.
+pose mf (x : 'M[C]_(1, dim V)) := f (r2v x).
+have mfD : forall x y, mf (x + y) <= mf x + mf y.
+  by move=>x y; rewrite /mf linearD/= lev_normD.
+have mf0 : forall x, mf x = 0 -> x = 0.
+  by move=>x/normv0_eq0; rewrite /mf -{2}(r2vK x)=>->; rewrite linear0.
+have mfZ : forall (a : C) x, mf (a *: x) = `|a| * mf x.
+  by move=>a x; rewrite /mf linearZ/= normvZ.
+pose vf := VNorm.Pack (VNorm.Class (isVNorm.Build C 'M[C]_(1, dim V) mf mfD mf0 mfZ)).
+pose mg (x : 'M[C]_(1, dim V)) := g (r2v x).
+have mgD : forall x y, mg (x + y) <= mg x + mg y.
+  by move=>x y; rewrite /mg linearD/= lev_normD.
+have mg0 : forall x, mg x = 0 -> x = 0.
+  by move=>x/normv0_eq0; rewrite /mg -{2}(r2vK x)=>->; rewrite linear0.
+have mgZ : forall (a : C) x, mg (a *: x) = `|a| * mg x.
+  by move=>a x; rewrite /mg linearZ/= normvZ.
+pose vg := VNorm.Pack (VNorm.Class (isVNorm.Build C 'M[C]_(1, dim V) mg mgD mg0 mgZ)).
+move: (mnorm_bounded vf vg)=>[c cgt0 Pc].
+exists c=>// x; move: (Pc (v2r x)).
+by rewrite /vf /vg /= /mf /mg v2rK.
 Qed.
 
 Lemma normv_ubounded (f : vnorm V) : 
@@ -3007,10 +3158,18 @@ Qed.
 
 Lemma normv_continuous (nv : vnorm V) : continuous nv.
 Proof.
-suff <-: (v2r_vnorm nv) \o v2r = nv.
-apply: continuous_comp_simp. apply: v2r_continuous.
-apply: continuous_mnorm.
-by apply/funext=>x /=; rewrite v2rK.
+pose mn (x : 'M[C]_(1, dim V)) := nv (r2v x).
+have mnD : forall x y, mn (x + y) <= mn x + mn y.
+  by move=>x y; rewrite /mn linearD/= lev_normD.
+have mn0 : forall x, mn x = 0 -> x = 0.
+  by move=>x/normv0_eq0; rewrite /mn -{2}(r2vK x)=>->; rewrite linear0.
+have mnZ : forall (a : C) x, mn (a *: x) = `|a| * mn x.
+  by move=>a x; rewrite /mn linearZ/= normvZ.
+pose mvn := VNorm.Pack (VNorm.Class (isVNorm.Build C 'M[C]_(1, dim V) mn mnD mn0 mnZ)).
+suff <-: mvn \o v2r = nv.
+  apply: continuous_comp_simp; first by apply: v2r_continuous.
+  exact: continuous_mnorm.
+by apply/funext=>x /=; rewrite /mvn /mn /= v2rK.
 Qed.
 
 Context {T : Type} (F : set_system T) {FF : ProperFilter F}.
@@ -3080,7 +3239,8 @@ Variable (f : {bilinear U -> V -> W}) (x : V).
 
 #[local, non_forgetful_inheritance]
 HB.instance Definition _ :=
-  GRing.isAdditive.Build _ _ (applyr f x) (@additivel_subproof _ _ _ _ _ _ f x).
+  GRing.isZmodMorphism.Build _ _ (applyr f x)
+    (@zmod_morphisml_subproof _ _ _ _ _ _ f x).
 #[local, non_forgetful_inheritance]
 HB.instance Definition _ :=
   GRing.isScalable.Build _ _ _ _ (applyr f x) (@linearl_subproof _ _ _ _ _ _ f x).
@@ -3109,7 +3269,8 @@ Variable (f : {bilinear U -> V -> W}) (x : U).
 
 #[local, non_forgetful_inheritance]
 HB.instance Definition _ :=
-  GRing.isAdditive.Build _ _ (f x) (@additiver_subproof _ _ _ _ _ _ f x).
+  GRing.isZmodMorphism.Build _ _ (f x)
+    (@zmod_morphismr_subproof _ _ _ _ _ _ f x).
 #[local, non_forgetful_inheritance]
 HB.instance Definition _ :=
   GRing.isScalable.Build _ _ _ _ (f x) (@linearr_subproof _ _ _ _ _ _ f x).
@@ -3208,13 +3369,82 @@ Proof. apply open_of_mx_linearP; exact: linearP. Qed.
 
 End LinearContinuous.
 
+Section BijectiveMxLimn.
+Context {R : realType} {C : extNumType R} {V : finNormedModType C}.
+Import VectorInternalTheory.
+
+Lemma bijective_to_mx_limnE (m n: nat) (f: V -> 'M[C]_(m,n)) (u : nat -> V)
+  (lf: linear f) (bf: bijective f) :
+  cvgn u -> limn (f \o u)%FUN = f (limn u).
+Proof.
+move=>Pu; apply: cvg_lim; first by apply: mxhausdorff.
+by rewrite -bijective_to_mx_cvgnE.
+Qed.
+
+Lemma bijective_of_mx_limnE (m n: nat) (f: 'M[C]_(m,n) -> V)
+  (u : nat -> 'M[C]_(m,n)) (lf: linear f) (bf: bijective f) :
+  cvgn u -> limn (f \o u)%FUN = f (limn u).
+Proof.
+move=>Pu; apply: cvg_lim; first by apply: norm_hausdorff.
+by rewrite -bijective_of_mx_cvgnE.
+Qed.
+
+Local Notation MV := 'M[C]_(1, dim V).
+
+Lemma v2r_cvgnE (u : nat -> V) (a : V):
+  u @ \oo --> a = ((v2r \o u)%FUN @ \oo --> v2r a).
+Proof.
+exact: (@bijective_to_mx_cvgnE R C V 1 (dim V) (@v2r _ V) u a
+  (linearP (@v2r _ V)) v2r_bij).
+Qed.
+
+Lemma r2v_cvgnE (u : nat -> MV) (a : MV) :
+  u @ \oo --> a = ((r2v \o u)%FUN @ \oo --> r2v a).
+Proof.
+exact: (@bijective_of_mx_cvgnE R C V 1 (dim V) (@r2v _ V) u a
+  (linearP (@r2v _ V)) r2v_bij).
+Qed.
+
+Lemma v2r_is_cvgnE (u : nat -> V) : cvgn u = cvgn (v2r \o u)%FUN.
+Proof.
+exact: (@bijective_to_mx_is_cvgnE R C V 1 (dim V) (@v2r _ V) u
+  (linearP (@v2r _ V)) v2r_bij).
+Qed.
+
+Lemma r2v_is_cvgnE (u : nat -> MV) : cvgn u = cvgn (r2v \o u)%FUN.
+Proof.
+exact: (@bijective_of_mx_is_cvgnE R C V 1 (dim V) (@r2v _ V) u
+  (linearP (@r2v _ V)) r2v_bij).
+Qed.
+
+Lemma v2r_limnE (u : nat -> V) : cvgn u -> limn (v2r \o u)%FUN = v2r (limn u).
+Proof.
+exact: (@bijective_to_mx_limnE 1 (dim V) (@v2r _ V) u
+  (linearP (@v2r _ V)) v2r_bij).
+Qed.
+
+Lemma r2v_limnE (u : nat -> MV) : cvgn u -> limn (r2v \o u)%FUN = r2v (limn u).
+Proof.
+exact: (@bijective_of_mx_limnE 1 (dim V) (@r2v _ V) u
+  (linearP (@r2v _ V)) r2v_bij).
+Qed.
+
+End BijectiveMxLimn.
+
+Arguments bijective_to_mx_limnE [R C V m n f u].
+Arguments bijective_of_mx_limnE [R C V m n f u].
+
 Section VOrderFinNormedModTheory.
 Context {R : realType} {C : extNumType R} {V : vorderFinNormedModType C}.
 Local Notation M := 'rV[C]_(dim V).
+Local Notation VF := (VOrderFinNormedModule.to_FinNormedModule V).
 Import VectorInternalTheory.
 
-Lemma closed_gev0: closed [set x : V | (0 : V) ⊑ x].
-Proof. by case: V=>?[?????????????????[]]. Qed.
+Definition vfinset (A : set V) : set VF := fun x : VF => A (x : V).
+
+Lemma closed_gev0:
+  closed (vfinset [set x : V | (0 : V) ⊑ x]).
+Proof. exact: VOrderFinNormedModule.closed_gev0_ax. Qed.
 
 Definition v2r_vorderle (x y : M) := r2v x ⊑ r2v y.
 (* Definition v2r_vorderlt (x y : M) := r2v x ⊏ r2v y. *)
@@ -3223,7 +3453,11 @@ Definition v2r_vorderle (x y : M) := r2v x ⊑ r2v y.
 Proof. by rewrite /v2r_vorderlt lt_def (can_eq r2vK). Qed. *)
 
 Lemma v2r_vorderle_anti : antisymmetric v2r_vorderle.
-Proof. by move=>x y; rewrite /v2r_vorderle=>/le_anti/r2v_inj. Qed.
+Proof.
+move=>x y; rewrite /v2r_vorderle=>Pxy.
+apply: (can_inj r2vK).
+by apply/le_anti.
+Qed.
 
 Lemma v2r_vorderle_refl : reflexive v2r_vorderle.
 Proof. by move=>x; exact: le_refl. Qed.
@@ -3238,20 +3472,32 @@ HB.instance Definition v2r_vorderle_porderMixin := Order.Le_isPOrder.Build
 Definition v2r_vorderle_porderType : porderType ring_display :=
   HB.pack 'rV[C]_(dim V) v2r_vorderle_porderMixin.
 
-Lemma v2r_lemx_add2r : forall (z x y : M), x ⊑ y -> x + z ⊑ y + z.
-Proof. by move=>z x y; rewrite /Order.le/= /v2r_vorderle !linearD/= levD2r. Qed.
+Local Notation "x '⊑m' y" := (@Order.le ring_display v2r_vorderle_porderType x y)
+  (at level 70, y at next level).
 
-Lemma v2r_lemx_pscale2lP : forall (e : C) (x y : M), 0 < e -> x ⊑ y -> e *: x ⊑ e *: y.
-Proof. 
-by move=>e x y egt0; rewrite /Order.le/= 
-  /v2r_vorderle !linearZ/=; apply: lev_pscale2lP.
+Lemma v2r_lemx_add2r : forall (z x y : M), x ⊑m y -> x + z ⊑m y + z.
+Proof.
+move=>z x y; rewrite /Order.le/= /v2r_vorderle !linearD/= => Pxy.
+pose W := VOrderFinNormedModule.vorder_sort V.
+change (is_true ((r2v x : W) <= (r2v y : W))) in Pxy.
+rewrite !VOrderFinNormedModule.fin_addE.
+exact: (@lev_add2rP C W (r2v z) (r2v x) (r2v y) Pxy).
 Qed.
 
-Lemma v2r_closed_gemx0: closed [set x : M | (0 : M) ⊑ x].
+Lemma v2r_lemx_pscale2lP : forall (e : C) (x y : M), 0 < e -> x ⊑m y -> e *: x ⊑m e *: y.
+Proof. 
+move=>e x y egt0; rewrite /Order.le/= /v2r_vorderle !linearZ/=.
+rewrite !VOrderFinNormedModule.fin_scaleE.
+by apply: lev_pscale2lP.
+Qed.
+
+Lemma v2r_closed_gemx0: closed [set x : M | (0 : M) ⊑m x].
 Proof.
-rewrite (_ : mkset _ = r2v @^-1` [set x : V | (0 : V) ⊑ x]).
+rewrite (_ : mkset _ = r2v @^-1`
+  vfinset [set x : V | (0 : V) ⊑ x]).
 apply: closed_comp=>[? _|]; [apply: r2v_continuous | apply: closed_gev0].
-by rewrite predeqE {1}/Order.le/= /v2r_vorderle linear0.
+by rewrite predeqE {1}/Order.le/= /v2r_vorderle linear0
+  VOrderFinNormedModule.fin_zeroE.
 Qed.
 
 Definition v2r_mxcporder := MxCPorder
@@ -3287,31 +3533,36 @@ by rewrite propeqE; split => bu i; move: (bu i);
   rewrite {2}/GRing.opp/= levN2.
 Qed.
 
-Lemma open_ngev0 : open [set x : V | ~ (0 : V) ⊑ x].
+Lemma open_ngev0 : open (vfinset [set x : V | ~ (0 : V) ⊑ x]).
 Proof. rewrite openC; apply closed_gev0. Qed.
 
-Lemma open_ngev y :  open [set x : V | ~ y ⊑ x].
+Lemma open_ngev y :  open (vfinset [set x : V | ~ y ⊑ x]).
 Proof.
-rewrite (_ : mkset _ = [set t | [set x | ~ (0 : V) ⊑ x] (- y + t)]).
-by move: (@addr_continuous _ _ (-y))=>/continuousP/=/(_ _ open_ngev0).
-by apply/funext=>x; rewrite /= addrC subv_ge0.
+rewrite (_ : mkset _ = [set t : VF |
+  vfinset [set x : V | ~ (0 : V) ⊑ x] (- (y : VF) + t)]).
+by move: (@addr_continuous _ VF (- (y : VF)))=>/continuousP/=/(_ _ open_ngev0).
+by apply/funext=>x; rewrite /vfinset/= VOrderFinNormedModule.fin_addE
+  VOrderFinNormedModule.fin_oppE addrC subv_ge0.
 Qed.
 
-Lemma open_nlev0 : open [set x : V | ~ x ⊑ (0 : V)].
+Lemma open_nlev0 : open (vfinset [set x : V | ~ x ⊑ (0 : V)]).
 Proof.
-rewrite (_ : mkset _ = [set t | [set x | ~ (0 : V) ⊑ x] (- t)]).
-by move: (@opp_continuous _ V)=>/continuousP/=/(_ _ open_ngev0).
-by apply/funext=>x; rewrite /= -{2}oppr0 levN2. 
+rewrite (_ : mkset _ = [set t : VF |
+  vfinset [set x : V | ~ (0 : V) ⊑ x] (- t)]).
+by move: (@opp_continuous _ VF)=>/continuousP/=/(_ _ open_ngev0).
+by apply/funext=>x; rewrite /vfinset/= VOrderFinNormedModule.fin_oppE
+  -{2}oppr0 levN2. 
 Qed.
 
-Lemma open_nlev y :  open [set x : V | ~ x ⊑ y].
+Lemma open_nlev y :  open (vfinset [set x : V | ~ x ⊑ y]).
 Proof.
-rewrite (_ : mkset _ = [set t | [set x : V | ~ - y ⊑ x] (- t)]).
-by move: (@opp_continuous _ V)=>/continuousP/=/(_ _ (open_ngev (-y))).
-by apply/funext=>x; rewrite /= levN2.
+rewrite (_ : mkset _ = [set t : VF |
+  vfinset [set x : V | ~ - y ⊑ x] (- t)]).
+by move: (@opp_continuous _ VF)=>/continuousP/=/(_ _ (open_ngev (-y))).
+by apply/funext=>x; rewrite /vfinset/= VOrderFinNormedModule.fin_oppE levN2.
 Qed.
 
-Lemma closed_gev x : closed [set y : V | x ⊑ y ].
+Lemma closed_gev x : closed (vfinset [set y : V | x ⊑ y]).
 Proof. 
 set A := ~` [set y : V | ~ (x ⊑ y)].
 have ->: (fun x0 : V => is_true (x ⊑ x0)) = A.
@@ -3319,7 +3570,7 @@ by rewrite predeqE /A => y/=; rewrite notK.
 rewrite closedC. apply/open_ngev. 
 Qed.
 
-Lemma closed_lev x : closed [set y : V | y ⊑ x ].
+Lemma closed_lev x : closed (vfinset [set y : V | y ⊑ x]).
 Proof. 
 set A := ~` [set y : V | ~ (y ⊑ x)].
 have ->: (fun x0 : V => is_true (x0 ⊑ x)) = A.
@@ -3327,7 +3578,7 @@ by rewrite predeqE /A => y/=; rewrite notK.
 rewrite closedC. apply/open_nlev. 
 Qed.
 
-Lemma closed_eqv x : closed [set y : V | y = x].
+Lemma closed_eqv x : closed (vfinset [set y : V | y = x]).
 Proof. exact: closed_eq. Qed.
 (* rewrite (_ : mkset _ = [set y : V | x ⊑ y ] `&` [set y : V | y ⊑ x ]).
 apply: closedI; [apply: closed_gev | apply: closed_lev].
@@ -3335,92 +3586,120 @@ by rewrite predeqE=>v/=; split=>[->//|/andP/le_anti->].
 Qed. *)
 
 Lemma lim_gev_near {T : Type} {F : set_system T} {FF : ProperFilter F} 
-  (x : V) (u : T -> V) :
-    cvg (u @ F) -> (\forall n \near F, x ⊑ u n) -> x ⊑ lim (u @ F).
-Proof. by move=> /[swap] /(closed_cvg (fun y => x ⊑ y))P; apply/P/closed_gev. Qed.
+  (x : V) (u : T -> VF) :
+    cvg (u @ F) -> (\forall n \near F, x ⊑ (u n : V)) ->
+    x ⊑ (lim (u @ F) : V).
+Proof.
+by move=> /[swap] /(closed_cvg (vfinset [set y : V | x ⊑ y]))P;
+  apply/P/closed_gev.
+Qed.
 
-Lemma limn_gev_near (x : V) (u : V ^nat) : 
-  cvgn u -> (\forall n \near \oo, x ⊑ u n) -> x ⊑ limn u.
+Lemma limn_gev_near (x : V) (u : nat -> VF) : 
+  cvgn u -> (\forall n \near \oo, x ⊑ (u n : V)) -> x ⊑ (limn u : V).
 Proof. exact: lim_gev_near. Qed.
 
 Lemma lim_lev_near {T : Type} {F : set_system T} {FF : ProperFilter F} 
-  (x : V) (u : T -> V) :
-    cvg (u @ F) -> (\forall n \near F, u n ⊑ x) -> lim (u @ F) ⊑ x.
-Proof. by move=> /[swap] /(closed_cvg (fun y : V => y ⊑ x))P; apply/P/closed_lev. Qed.
+  (x : V) (u : T -> VF) :
+    cvg (u @ F) -> (\forall n \near F, (u n : V) ⊑ x) ->
+    (lim (u @ F) : V) ⊑ x.
+Proof.
+by move=> /[swap] /(closed_cvg (vfinset [set y : V | y ⊑ x]))P;
+  apply/P/closed_lev.
+Qed.
 
-Lemma limn_lev_near (x : V) (u : V ^nat) : 
-  cvgn u -> (\forall n \near \oo, u n ⊑ x) -> limn u ⊑ x.
+Lemma limn_lev_near (x : V) (u : nat -> VF) : 
+  cvgn u -> (\forall n \near \oo, (u n : V) ⊑ x) -> (limn u : V) ⊑ x.
 Proof. exact: lim_lev_near. Qed.
 
 Lemma lev_lim_near {T : Type} {F : set_system T} {FF : ProperFilter F} 
-  (u v : T -> V) :
+  (u v : T -> VF) :
     cvg (u @ F) -> cvg (v @ F) -> 
-      (\forall n \near F, u n ⊑ v n) -> lim (u @ F) ⊑ lim (v @ F).
+      (\forall n \near F, (u n : V) ⊑ (v n : V)) ->
+      (lim (u @ F) : V) ⊑ (lim (v @ F) : V).
 Proof.
-move=> uv cu cv; rewrite -(subv_ge0) -limB//.
-apply: lim_gev_near=>//. apply: is_cvgB=>//.
-by apply: filterS cv => k; rewrite (subv_ge0).
+move=> cu cv uv; rewrite -(subv_ge0).
+rewrite -VOrderFinNormedModule.fin_addE -VOrderFinNormedModule.fin_oppE -limB//.
+apply: lim_gev_near; first by apply: is_cvgB.
+apply: filterS uv => k H.
+rewrite /Algebra.add /Algebra.opp /=.
+rewrite VOrderFinNormedModule.fin_addE VOrderFinNormedModule.fin_oppE.
+by rewrite subv_ge0.
 Qed.
 
-Lemma lev_limn_near (u_ v_ : V ^nat) : cvgn u_ -> cvgn v_ ->
-  (\forall n \near \oo, u_ n ⊑ v_ n) -> limn u_ ⊑ limn v_.
+Lemma lev_limn_near (u_ v_ : nat -> VF) : cvgn u_ -> cvgn v_ ->
+  (\forall n \near \oo, (u_ n : V) ⊑ (v_ n : V)) ->
+  (limn u_ : V) ⊑ (limn v_ : V).
 Proof. exact: lev_lim_near. Qed.
 
 Lemma lim_gev {T : Type} {F : set_system T} {FF : ProperFilter F} 
-  (x : V) (u : T -> V) :
-    cvg (u @ F) -> lbounded_by x u -> x ⊑ lim (u @ F).
+  (x : V) (u : T -> VF) :
+    cvg (u @ F) -> (forall i, x ⊑ (u i : V)) -> x ⊑ (lim (u @ F) : V).
 Proof. by move=>P1 P2; apply: (lim_gev_near P1); apply: nearW. Qed.
 
-Lemma limn_gev (x : V) (u : V ^nat) : cvgn u -> lbounded_by x u -> x ⊑ limn u.
+Lemma limn_gev (x : V) (u : nat -> VF) :
+  cvgn u -> (forall i, x ⊑ (u i : V)) -> x ⊑ (limn u : V).
 Proof. exact: lim_gev. Qed.
 
 Lemma lim_lev {T : Type} {F : set_system T} {FF : ProperFilter F} 
-  (x : V) (u : T -> V) :
-    cvg (u @ F) -> ubounded_by x u -> lim (u @ F) ⊑ x.
+  (x : V) (u : T -> VF) :
+    cvg (u @ F) -> (forall i, (u i : V) ⊑ x) -> (lim (u @ F) : V) ⊑ x.
 Proof. by move=>P1 P2; apply: (lim_lev_near P1); apply: nearW. Qed.  
 
-Lemma limn_lev (x : V) (u : V ^nat) : cvgn u -> ubounded_by x u -> limn u ⊑ x.
+Lemma limn_lev (x : V) (u : nat -> VF) :
+  cvgn u -> (forall i, (u i : V) ⊑ x) -> (limn u : V) ⊑ x.
 Proof. exact: lim_lev. Qed.
 
 Lemma lev_lim {T : Type} {F : set_system T} {FF : ProperFilter F} 
-  (u v : T -> V) :
+  (u v : T -> VF) :
     cvg (u @ F) -> cvg (v @ F) -> 
-      (forall n, u n ⊑ v n) -> lim (u @ F) ⊑ lim (v @ F).
+      (forall n, (u n : V) ⊑ (v n : V)) ->
+      (lim (u @ F) : V) ⊑ (lim (v @ F) : V).
 Proof. by move=>P1 P2 P3; apply: (lev_lim_near P1 P2); apply: nearW. Qed.
 
-Lemma lev_limn (u v : V^nat) : cvgn u -> cvgn v ->
-  (forall n, u n ⊑ v n) -> limn u ⊑ limn v.
+Lemma lev_limn (u v : nat -> VF) : cvgn u -> cvgn v ->
+  (forall n, (u n : V) ⊑ (v n : V)) -> (limn u : V) ⊑ (limn v : V).
 Proof. exact: lev_lim. Qed.
 
 Lemma nondecreasing_cvgn_lev (u : V ^nat) :
-       nondecreasing_seq u -> cvgn u -> ubounded_by (limn u) u.
+       nondecreasing_seq u -> cvgn (fun n => (u n : VF)) ->
+       ubounded_by (limn (fun n => (u n : VF)) : V) u.
 Proof.
-move=>Ph Pc i; apply: limn_gev_near=>//; exists i=>// j; apply Ph.
+move=>Ph Pc i; apply: (limn_gev_near (u := fun n => (u n : VF)))=>//.
+by exists i=>// j; apply Ph.
 Qed.
 
 Lemma nonincreasing_cvgn_gev (u : V ^nat) : 
-  nonincreasing_seq u -> cvgn u -> lbounded_by (limn u) u.
+  nonincreasing_seq u -> cvgn (fun n => (u n : VF)) ->
+  lbounded_by (limn (fun n => (u n : VF)) : V) u.
 Proof.
-move=>Ph Pc i; apply: limn_lev_near=>//; exists i=>// j; apply Ph.
+move=>Ph Pc i; apply: (limn_lev_near (u := fun n => (u n : VF)))=>//.
+by exists i=>// j; apply Ph.
 Qed.
 
 Lemma vnondecreasing_is_cvgn (f : nat -> V) (b : V) :
-  nondecreasing_seq f -> ubounded_by b f -> cvgn f.
+  nondecreasing_seq f -> ubounded_by b f -> cvgn (fun n => (f n : VF)).
 Proof.
-move=>P1 P2. pose g := (v2r \o f).
-have P3: nondecreasing_seq g by move=>n m /P1; rewrite {2}/Order.le/= /v2r_vorderle !v2rK.
-have P4: ubounded_by (v2r b) g by move=>i; rewrite /Order.le/= /v2r_vorderle !v2rK.
+move=>P1 P2. pose g n := v2r (f n : VF).
+have P3: nondecreasing_seq g by move=>n m /P1; rewrite {2}/Order.le/= /v2r_vorderle /g !v2rK.
+have P4: ubounded_by (v2r (b : VF)) g by move=>i; rewrite /Order.le/= /v2r_vorderle /g !v2rK.
 move: (mxnondecreasing_is_cvgn v2r_mxcporder P3 P4).
-have <-: r2v \o g = f by apply/funext=>x/=; rewrite v2rK.
 move=> /cvg_ex[l fxl]; apply/cvg_ex; exists (r2v l).
+have <-: r2v \o g = (fun n => (f n : VF)) by apply/funext=>x/=; rewrite /g v2rK.
 by apply: continuous_cvg => //; apply: r2v_continuous.
 Qed.
 
 Lemma vnonincreasing_is_cvgn (f : nat -> V) (b : V) :
-    nonincreasing_seq f -> lbounded_by b f -> cvgn f.
+    nonincreasing_seq f -> lbounded_by b f -> cvgn (fun n => (f n : VF)).
 Proof.
-rewrite -(nondecreasing_oppv) -(ubounded_by_opp) -is_cvgNE.
-exact: vnondecreasing_is_cvgn.
+move=>P1 P2.
+have P1' : nondecreasing_seq (- f) by rewrite nondecreasing_oppv.
+have P2' : ubounded_by (- b) (- f) by rewrite ubounded_by_opp.
+rewrite -is_cvgNE.
+suff -> : - (fun n => (f n : VF)) = (fun n => (- f n : VF)).
+  exact: (vnondecreasing_is_cvgn P1' P2').
+apply/funext=>n.
+change (@GRing.opp VF (f n) = @GRing.opp V (f n)).
+exact: VOrderFinNormedModule.fin_oppE.
 Qed.
 
 End VOrderFinNormedModTheory.
@@ -3447,13 +3726,16 @@ End VOrderFinNormedModTheory.
 
 Section test.
 Context {R : realType} {C : extNumType R} {V : vorderFinNormedModType C}.
+Local Notation VF := (VOrderFinNormedModule.to_FinNormedModule V).
 
 Import Num.Def Num.Theory.
 
-Lemma compact_ge0_norm1 : compact [set x : V | (0 : V) ⊑ x /\ `|x| = 1].
+Lemma compact_ge0_norm1 :
+  compact [set x : VF | (0 : V) ⊑ (x : V) /\ `|x| = 1].
 Proof.
-apply: (subclosed_compact _ (compact_norm_le (V := V) (e := 1)))=>[|?/=[] _ ->//].
-rewrite (_ : mkset _ = [set x : V | (0 : V) ⊑ x] `&` (fun x=>`|x|) @^-1` [set x : C | x = 1]).
+apply: (subclosed_compact _ (compact_norm_le (V := VF) (e := 1)))=>[|?/=[] _ ->//].
+rewrite (_ : mkset _ = [set x : VF | (0 : V) ⊑ (x : V)] `&`
+  (fun x : VF => `|x|) @^-1` [set x : C | x = 1]).
 apply: closedI. apply: closed_gev0.
 apply: closed_comp=>[? _ |]; [apply: norm_continuous | apply: closed_eq].
 by apply/funext=>x /=.
@@ -3465,17 +3747,23 @@ Qed.
 Let TT (i : option bool) : topologicalType :=
   match i with
   | None => C
-  | Some _ => V
+  | Some _ => VF
   end.
 Let TA (i : option bool) : set (TT i) :=
   match i with
   | None => [set x : C | 0 <= x <= 1]
-  | Some _ => [set x : V | (0 : V) ⊑ x /\ `|x| = 1]
+  | Some _ => [set x : VF | (0 : V) ⊑ (x : V) /\ `|x| = 1]
   end.
-Let SV := [set x : V | exists a y z, 0 <= a <= 1 /\ 
-((0 : V) ⊑ y /\ `|y| = 1) /\ ((0 : V) ⊑ z /\ `|z| = 1) /\ a *: y + (1-a) *: z = x].
-Let SA := [set x : C | exists a y z, 0 <= a <= 1 /\ 
-((0 : V) ⊑ y /\ `|y| = 1) /\ ((0 : V) ⊑ z /\ `|z| = 1) /\ `|a *: y + (1-a) *: z| = x].
+Let SV := [set x : VF | exists a : C, exists y : VF, exists z : VF,
+  0 <= a <= 1 /\
+  ((0 : V) ⊑ (y : V) /\ `|y| = 1) /\
+  ((0 : V) ⊑ (z : V) /\ `|z| = 1) /\
+  a *: y + (1-a) *: z = x].
+Let SA := [set x : C | exists a : C, exists y : VF, exists z : VF,
+  0 <= a <= 1 /\
+  ((0 : V) ⊑ (y : V) /\ `|y| = 1) /\
+  ((0 : V) ⊑ (z : V) /\ `|z| = 1) /\
+  `|a *: y + (1-a) *: z| = x].
 #[local] Lemma SA_SV : SA = (fun x => `|x|) @` SV.
 Proof.
 apply/funext=>x/=; rewrite propeqE; split.
@@ -3529,9 +3817,25 @@ Qed.
 
 #[local] Lemma not_SA0 : ~ SA 0.
 Proof.
-move=>[a[y[z[/andP[Pa1 Pa2][[y_ge0 +][[z_ge0 +]]]]]]]/eqP; rewrite normrE addv_ss_eq0.
-rewrite !scaler_eq0 -[y == 0]normr_eq0 -[z == 0]normr_eq0=>->->.
-by rewrite !oner_eq0 !orbF=>/andP[]/eqP->; rewrite subr0 oner_eq0.
+move=>[a[y[z[/andP[Pa1 Pa2][[y_ge0 y_norm][[z_ge0 z_norm]]]]]]]/eqP.
+rewrite normrE=>/eqP Psum0.
+have Psum0v : (a *: (y : V) + (1 - a) *: (z : V) == (0 : V)).
+  apply/eqP; move: Psum0.
+  rewrite -VOrderFinNormedModule.fin_zeroE
+    -VOrderFinNormedModule.fin_addE
+    -!VOrderFinNormedModule.fin_scaleE.
+  by move=>->.
+have y_neq0 : ((y : V) != 0).
+  apply/eqP=>y0.
+  move: y0; rewrite -VOrderFinNormedModule.fin_zeroE=>y0.
+  by move: y_norm; rewrite y0 normr0=>/eqP; rewrite eq_sym oner_eq0.
+have z_neq0 : ((z : V) != 0).
+  apply/eqP=>z0.
+  move: z0; rewrite -VOrderFinNormedModule.fin_zeroE=>z0.
+  by move: z_norm; rewrite z0 normr0=>/eqP; rewrite eq_sym oner_eq0.
+move: Psum0v; rewrite addv_ss_eq0.
+rewrite !scaler_eq0 (negPf y_neq0) (negPf z_neq0) !orbF.
+by move=>/andP[]/eqP->; rewrite subr0 oner_eq0.
 by apply/orP; left; rewrite !scalev_ge0// subr_ge0.
 Qed.
 
@@ -3542,37 +3846,49 @@ by apply/negP=>/eqP Px; apply: not_SA0; rewrite -Px.
 by move: P1=>[?[?[?[?[?[?]]]]]]<-.
 Qed.
 
-Lemma lev_add_norm_lbound : { c : C | 0 < c <= 1 /\ (forall X Y, 
-  ((0 : V) ⊑ X) && ((0 : V) ⊑ Y) -> c * (`|X| + `|Y|) <= `|X + Y|)}.
+Lemma lev_add_norm_lbound : { c : C | 0 < c <= 1 /\ (forall X Y : VF,
+  ((0 : V) ⊑ (X : V)) && ((0 : V) ⊑ (Y : V)) ->
+  c * (`|X| + `|Y|) <= `|X + Y|)}.
 Proof.
-move: (pselect (exists x : V, (0 : V) ⊏ x))=>[]; last first.
+move: (pselect (exists x : VF, (0 : V) ⊏ (x : V)))=>[]; last first.
 move=>/forallNP P1; exists 1; split=>[|X Y /andP[]].
 by apply/andP; split.
-by rewrite le_eqVlt =>/orP[|/P1//]/eqP<-; rewrite normr0 !add0r mul1r.
+rewrite le_eqVlt=>/orP[/eqP X0|/P1//] _.
+move: X0; rewrite -VOrderFinNormedModule.fin_zeroE=>X0.
+by rewrite -X0 normr0 !add0r mul1r.
 move=>/cid[x x_gt0].
-have Px0 : forall (x : V), (0 : V) ⊏ x -> `|x| > 0.
-  by move=>y; rewrite !lt_def normr_eq0=>/andP[]->//=.
-have Px: forall (x : V), (0 : V) ⊏ x -> `|1/`|x| *: x| = 1.
+have Px0 : forall (x : VF), (0 : V) ⊏ (x : V) -> `|x| > 0.
+  move=>y; rewrite normr_gt0 lt_def=>/andP[y_neq0 _].
+  apply/eqP=>y0.
+  move: y_neq0; rewrite y0 VOrderFinNormedModule.fin_zeroE.
+  by rewrite eqxx.
+have Px: forall (x : VF), (0 : V) ⊏ (x : V) -> `|1/`|x| *: x| = 1.
   by move=>y /Px0 Py; rewrite normrZ normrM normr1 mul1r 
   gtr0_norm ?invr_gt0// mulVf// lt0r_neq0.
 have Ps1: SA 1.
   exists 0; exists (1/`|x| *: x); exists (1/`|x| *: x); do ! split.
-  by apply/andP; split. 1,3: by rewrite scalev_ge0// ltW. 1,2: by apply: Px.
+  by apply/andP; split.
+  1,3: by rewrite VOrderFinNormedModule.fin_scaleE scalev_ge0// ltW.
+  1,2: by apply: Px.
   by rewrite scale0r add0r subr0 scale1r Px.
 have /cid2[c Pc1 Pc2]: exists2 x : C, SA x & forall y : C, SA y -> x <= y.
   by apply: extNum_compact_min=>[i/SA_ge0/=/gtr0_real//||]; 
     [apply: compact_SA | exists 1].
 have cle1 : c <= 1 by apply: Pc2.
 exists c; split=>[|X Y]; first by apply/andP; split=>//; apply: SA_ge0.
-rewrite 2 !le_eqVlt=>/andP[]/orP[/eqP<- _|X_gt0/orP[/eqP<-|Y_gt0]].
-1,2: rewrite !normr0 ?(add0r, addr0) ler_piMl//.
+rewrite 2 !le_eqVlt=>/andP[] /orP[/eqP X0|X_gt0] Hy.
+  move: X0; rewrite -VOrderFinNormedModule.fin_zeroE=>X0.
+  by rewrite -X0 normr0 !add0r ler_piMl.
+move: Hy=>/orP[/eqP Y0|Y_gt0].
+  move: Y0; rewrite -VOrderFinNormedModule.fin_zeroE=>Y0.
+  by rewrite -Y0 normr0 !addr0 ler_piMl.
 pose a : C := `|X| / (`|X| + `|Y|).
 pose Z := a *: (1 / `|X| *: X) + (1-a) *: (1 / `|Y| *: Y).
 have PZ: SV Z.
 exists a; exists (1 / `|X| *: X); exists (1 / `|Y| *: Y); do ! split.
   by apply/andP; split; rewrite /a ?divr_ge0// ler_pdivrMr 
     ?mul1r ?lerDl// addr_gt0// Px0.
-  1,3: by rewrite scalev_ge0// ltW.
+  1,3: by rewrite VOrderFinNormedModule.fin_scaleE scalev_ge0// ltW.
   1,2: by apply: Px.
 have: SA `|Z| by rewrite SA_SV/=; exists Z.
 move=>/Pc2; rewrite/Z !scalerA.

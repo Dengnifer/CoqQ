@@ -1,10 +1,14 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra perm.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
+From mathcomp.fingroup Require Import perm.
 From mathcomp.classical Require Import boolp cardinality mathcomp_extra
   classical_sets functions.
-From mathcomp.analysis Require Import ereal reals exp trigo signed
-  derive topology prodnormedzmodule normedtype sequences.
-From mathcomp.analysis Require Import -(notations)forms.
+From mathcomp.reals Require Import reals signed prodnormedzmodule.
+From mathcomp.analysis Require Import ereal exp trigo derive sequences.
+From mathcomp.analysis.topology_theory Require Import topology.
+From mathcomp.analysis.normedtype_theory Require Import normedtype.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
 Require Import mcextra autonat.
@@ -46,21 +50,6 @@ Definition wrap (f : map_class) := Wrap f.
 End BilinearWrap.
 End BilinearWrap.
 
-(* similar to linear, using Bilinear.type directly instead of Bilinear.map *)
-Notation "{ 'bilinear' U '->' V '->' W '|' s '&' t }" := 
-  (@Bilinear.type _ U%type V%type W%type s t)
-  (at level 0, U at level 97, V at level 98, W at level 99, 
-  format "{ 'bilinear'  U  ->  V  ->  W  |  s  &  t }") : ring_scope.
-Notation "{ 'bilinear' U '->' V  '->'  W '|' s }" := 
-  (@Bilinear.type _ U%type V%type W%type s.1 s.2)
-  (at level 0, U at level 97, V at level 98, W at level 99, 
-  format "{ 'bilinear'  U  ->  V  ->  W  |  s }") : ring_scope.
-Notation "{ 'bilinear' U '->' V '->' W }" := 
-  (@Bilinear.type _ U%type V%type W%type *:%R *:%R)
-  (at level 0, U at level 97, V at level 98, W at level 99, 
-  format "{ 'bilinear'  U  ->  V  ->  W }") : ring_scope.
-Notation "{ 'biscalar' U }" := (@Bilinear.type _ U%type U%type _ *%R *%R)
-  (at level 0, format "{ 'biscalar'  U }") : ring_scope.
 Notation "[ 'bilinear' 'of' f 'as' g ]" := (Bilinear.clone _ _ _ _ _ _ f g)
   (at level 0, format "[ 'bilinear'  'of'  f  'as'  g ]") : form_scope.
 Notation "[ 'bilinear' 'of' f ]" := (Bilinear.clone _ _ _ _ _ _ f _)
@@ -123,7 +112,7 @@ HB.instance Definition _ := bilinear_isBilinear.Build R 'Hom(vT, rT) 'Hom(aT, vT
 
 End BiLinearComplfun.
 
-Lemma eq_lim (T : Type) (T' : topologicalType) (F : set_system T) (f g : T -> T') :
+Lemma eq_lim (T : Type) (T' : pnbhsType) (F : set_system T) (f g : T -> T') :
   f =1 g -> lim (f @ F)%classic = lim (g @ F)%classic.
 Proof. by move=> /funext->. Qed.
 
@@ -133,10 +122,10 @@ Implicit Type (x y : R).
 Notation C := R[i].
 
 (* for convert conjc and conjC *)
-Lemma conjcC : (@conjc R) = Num.conj_op. Proof. by []. Qed.
-Lemma conjCc : (@Num.conj_op _ : R[i] -> R[i]) = (@conjc R). Proof. by []. Qed.
+Lemma conjcC : (@conjc R) = conjC. Proof. by []. Qed.
+Lemma conjCc : (@conjC _ : R[i] -> R[i]) = (@conjc R). Proof. by []. Qed.
 Lemma conjC_inj (x y : R[i]) : x^* = y^* -> x = y.
-Proof. by move=> P; rewrite -(conjcK x) P conjcK. Qed.
+Proof. by move=> P; rewrite -(conjCK x) P conjCK. Qed.
 
 Lemma natrC n : n%:R%:C = n%:R :> C. Proof. exact: raddfMn. Qed.
 Lemma realcN x : (- x)%:C = - x%:C. Proof. exact: raddfN. Qed.
@@ -201,9 +190,9 @@ Proof. by rewrite -expr2 sqrtCK. Qed.
 Definition divc_simp := (invcM, divcM1, divcM2, divcM3, divcM4, 
   conjcM, conjc_inv_, conjc_sqrt, sqrtcMK).
 
-Lemma conjCN1 : (-1 : C)^* = -1. Proof. by rewrite rmorphN conjC1. Qed.
+Lemma conjCN1 : (-1 : C)^* = -1. Proof. by rewrite conjCc /conjc /= oppr0. Qed.
 Lemma oppcK (x : C) : - (- x) = x. Proof. exact: opprK. Qed.
-Definition sign_simp := (conjC0, conjC1, conjCN1, mulN1r, mulrN1, 
+Definition sign_simp := (conjc0, conjc1, conjC0, conjC1, conjCN1, mulN1r, mulrN1, 
   mulNr, mulrN, mulr1, mul1r, invrN, oppcK, addNr, addrN).
 
 Lemma sqrtCV_nat (x : nat) n :
@@ -304,10 +293,10 @@ Section Extra_continuity_pseudoMetricNormedZmodType.
 Context {K : numFieldType} {V : pseudoMetricNormedZmodType K}.
 
 Lemma addr_continuous  (x : V) : continuous (fun z => x + z).
-Proof. by move=> t; apply: (cvg_comp2 (cvg_cst _) cvg_id (@add_continuous _ _ (_, _))). Qed.
+Proof. by move=> t; apply: cvgD; [exact: cvg_cst | exact: cvg_id]. Qed.
 
 Lemma addl_continuous (x : V) : continuous (fun z => z + x).
-Proof. by move=> t; apply: (cvg_comp2 cvg_id (cvg_cst _) (@add_continuous _ _ (_, _))). Qed.
+Proof. by move=> t; apply: cvgD; [exact: cvg_id | exact: cvg_cst]. Qed.
 
 Lemma opp_continuous : continuous (@GRing.opp V).
 Proof.
@@ -336,23 +325,21 @@ End Extra_continuity_pseudoMetricNormedZmodType.
 
 Section NatShift.
 
-Lemma is_cvgn_centern N (V : topologicalType) (u_ : nat -> V) :
+Lemma is_cvgn_centern N (V : ptopologicalType) (u_ : nat -> V) :
   cvgn [sequence u_ (n - N)%N]_n = cvgn u_.
 Proof.
-rewrite propeqE; split.
-by rewrite cvg_centern=>/cvgP.
-by rewrite -(cvg_centern N)=>/cvgP.
+by rewrite propeqE; split;
+  [rewrite cvg_centern|rewrite -(cvg_centern N)] => /cvgP.
 Qed.
 
-Lemma is_cvgn_shiftn N (V : topologicalType) (u_ : nat -> V) :
+Lemma is_cvgn_shiftn N (V : ptopologicalType) (u_ : nat -> V) :
   cvgn [sequence u_ (n + N)%N]_n = cvgn u_.
 Proof.
-rewrite propeqE; split.
-by rewrite cvg_shiftn=>/cvgP.
-by rewrite -(cvg_shiftn N)=>/cvgP.
+by rewrite propeqE; split;
+  [rewrite cvg_shiftn|rewrite -(cvg_shiftn N)] => /cvgP.
 Qed.
 
-Lemma is_cvgn_shiftS (V : topologicalType) (u_ : nat -> V) :
+Lemma is_cvgn_shiftS (V : ptopologicalType) (u_ : nat -> V) :
   cvgn [sequence u_ n.+1]_n = cvgn u_.
 Proof.
 rewrite -[RHS](is_cvgn_shiftn 1).
@@ -1018,10 +1005,11 @@ have nz_cos c: c \in `[0, x] -> cos c != 0.
   - by rewrite cos_pihalf.
 have dt: forall y, y \in `]0, x[ -> is_derive y 1 tan (cos y ^- 2).
 - move=> y rg_y; apply: is_derive_tan.
-  by apply: nz_cos; apply: subset_itv rg_y.
+  apply: nz_cos; move: rg_y; rewrite !in_itv /= => /andP[gt0_y lt_yx].
+  by rewrite (ltW gt0_y) (ltW lt_yx).
 have ct: {within `[0, x], continuous tan}%classic.
 - apply: continuous_in_subspaceT=>c; rewrite mem_setE /= => rg_c.
-  by apply/continuous_tan/nz_cos; apply: subset_itv rg_c.
+  by apply/continuous_tan; apply: nz_cos.
 have [d +] := MVT gt0_x dt ct; rewrite in_itv /= => /andP[gt0_d lt_dx].
 rewrite tan0 !subr0 => ->; rewrite ler_peMl //; first by apply/ltW.
 rewrite invf_ge1; last first.
@@ -1052,7 +1040,9 @@ move=> {}a /andP[+ le1_a]; rewrite le_eqVlt => /orP[|lt0_a].
 have := @MVT R sin cos 0 a lt0_a (fun x _ => is_derive_sin x).
 case; first by apply/continuous_subspaceT/continuous_sin.
 move=> c rg_c; rewrite sin0 !subr0 => ->.
-by rewrite ler_piMl //; [apply/ltW | apply/cos_le1].
+apply: ler_piMl.
+- exact: ltW lt0_a.
+- exact: cos_le1.
 Qed.
 
 Lemma ger_abs_sin (a : R) : `|a| <= pi / 2%:R -> (2%:R * `|a| / pi) <= `|sin a|.
@@ -1081,7 +1071,9 @@ have fF (c : R): c \in `[a, pi / 2%:R] -> is_derive c 1 f (F c).
   set d := (X in is_derive _ _ _ X -> _) => h; suff <-: d = F c by done.
   by rewrite {h}/d {}/F /= [LHS]mulrC mulr1 [c * cos c]mulrC.
 have h1 (c : R): c \in `]a, pi / 2%:R[ -> is_derive c 1 f (F c).
-- by move=> rg_c; apply: fF; apply: subset_itv rg_c.
+- move=> rg_c; apply: fF.
+  move: rg_c; rewrite !in_itv /= => /andP[lt_ac lt_c_pi].
+  by rewrite (ltW lt_ac) (ltW lt_c_pi).
 have h2: {within `[a, pi / 2%:R], continuous f}%classic.
   (* this should be a direct consequence of `fF`! *)
 - apply: continuous_in_subspaceT => c rg_c.
@@ -1144,7 +1136,7 @@ rewrite !normrM 2?ger0_norm ?invr_ge0 ?ler0n// ltr_pdivrMl ?ltr0n//
   mulrC ltr_pM2r ?ltr0n// lter_distl ltrBlDl addrC; apply/andP; 
   by split; apply/ltr_wpDl; rewrite ?ler0n// ltr_nat; apply: (leq_trans _ P2).
 by rewrite !mulf_eq0 invr_eq0 !negb_or !natrS_neq0/= subr_eq0 eqr_nat.
-by rewrite mulrC mulfVK ?natrS_neq0// mulrBr 
+by rewrite mulrAC mulVf ?natrS_neq0// mul1r mulrBr 
   expipB -!natrM !expip2n invr1 mulr1 subrr mul0r mul0n.
 Qed.
 

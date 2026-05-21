@@ -1,8 +1,11 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
 From mathcomp.classical Require Import boolp classical_sets.
-From mathcomp.analysis Require Import -(notations)forms.
-From mathcomp.analysis Require Import reals topology normedtype.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
+From mathcomp.reals Require Import reals.
+From mathcomp.analysis.topology_theory Require Import topology.
+From mathcomp.analysis.normedtype_theory Require Import normedtype.
 From quantum.external Require Import complex.
 (* From mathcomp.real_closed Require Import complex. *)
 Require Import mcextra mcaextra notation quantum
@@ -10,7 +13,8 @@ Require Import mcextra mcaextra notation quantum
 
 From quantum Require Import hermitian prodvect tensor mxpred
   cpo extnum ctopology.
-Require Import Coq.Program.Equality String.
+From Coq.Program Require Import Equality.
+From Coq.Strings Require Import String.
 
 (****************************************************************************)
 (*  Extra of hspace.v, formalizing infinite caps and cups of Hilbert        *)
@@ -221,7 +225,7 @@ Lemma supph_trlf0_le (A : 'F+) (Q : {hspace U}) :
 Proof.
 move=>P; apply/supph_leP=>i; move: P=>/eqP;
 rewrite [in X in X -> _](spectralE A) /spectral
-  sumoutpE linear_suml/= linear_sum/=.
+  sumoutpE linear_sumlz/= linear_sum/=.
 under eq_bigr do rewrite linearZl linearZ/= outp_compl outp_trlf adj_dotEl.
 rewrite psumr_eq0.
   move=>/=j _; rewrite mulr_ge0//. apply/ltW/eigenval_psd.
@@ -299,7 +303,9 @@ pose c := [< x ; y >] * (([<x ; x >]^-1)^*)%R.
 exists ((-c) *: x + y); split; last first.
 by exists c; rewrite addrA -scalerDl subrr scale0r add0r.
 rewrite inE /Pdiff /=; split; first by apply/Ps.
-rewrite /c dotpDl dotpZl rmorphN rmorphM conj_dotp mulNr -mulrA conjCK.
+rewrite /c dotpDl dotpZl rmorphN rmorphM.
+rewrite [X in - (X * _) * _ + _ = _]conj_dotp
+  [X in - (_ * X) * _ + _ = _]conjCK mulNr -mulrA.
 case E: (x == 0).
 by move: E=>/eqP->; rewrite dotp0 !mul0r addr0 oppr0.
 by rewrite mulVf ?mulr1 ?addNr// dotp_eq0 E.
@@ -1291,9 +1297,10 @@ have: [set x : 'End(U) | x \is psdlf]%classic (limn f).
   apply closed_psdlf. by apply: nearW=>x/=; apply: Pi.
 rewrite/==>Pf.
 apply/le_anti/andP; split.
-  rewrite -lehO -supphE capsO; apply/cups_glb=>i _.
-  rewrite -supphE (PsdLf_BuildE (Pi _)) (PsdLf_BuildE Pf) supph_lef=>[/=|//].
-  apply: (nondecreasing_cvgn_lev nc cf).
+	  rewrite -lehO -supphE capsO; apply/cups_glb=>i _.
+	  rewrite -supphE (PsdLf_BuildE (Pi _)) (PsdLf_BuildE Pf) supph_lef=>[/=|//].
+	  pose LFV := quantum_lfun__canonical__extnum_VOrderFinNormedModule U.
+	  exact: (@nondecreasing_cvgn_lev _ _ LFV _ nc cf i).
 pose fd i := \Dim (kerh (f i)).
 have nfd : nonincreasing_seq fd.
   by move=>m n /nc; rewrite /fd (PsdLf_BuildE (Pi _)) 

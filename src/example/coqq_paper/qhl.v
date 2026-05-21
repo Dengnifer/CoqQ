@@ -1,11 +1,15 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
 From mathcomp.classical Require Import boolp classical_sets functions.
-From mathcomp.analysis Require Import -(notations)forms.
-From mathcomp.analysis Require Import reals topology normedtype sequences.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
+From mathcomp.reals Require Import reals.
+From mathcomp.analysis Require Import sequences.
+From mathcomp.analysis.topology_theory Require Import topology.
+From mathcomp.analysis.normedtype_theory Require Import normedtype.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
-From mathcomp Require Import finset.
+From mathcomp.boot Require Import finset.
 
 Require Import mcextra mcaextra autonat notation mxpred extnum ctopology.
 Require Import hermitian quantum hspace inhabited prodvect tensor qreg qmem.
@@ -219,7 +223,8 @@ have sf: scalar f by move=>a b' c; rewrite /f/= linearPr/= linearP/=.
 set cg := (fun n=>\Tr (R \o y) - cf n).
 set cg1 := [sequence if (n <= 0)%N then (fun i:nat=>0) n else [sequence cg (k - 1)%N]_k n]_n.
 have: cg1 @ \oo --> \Tr (R \o y).
-  rewrite cvg_restrict cvg_centern -[X in _ --> X]subr0.
+  rewrite cvg_restrict cvg_centern.
+  have -> : \Tr (R \o y) = \Tr (R \o y) - 0 by rewrite subr0.
   apply ccvgnB; [apply: cvg_cst | by []].
 rewrite ccvgn_limnE=>[[P1 P3]].
 have scf: scalar f by move=>a b' c; rewrite /f/= linearPr/= linearP/=.
@@ -594,12 +599,15 @@ Lemma R_IF_L pt st T (F: finType) (x : 'QReg[T]) (M : 'QM) (f : F -> cmd_) S
   (forall i, ⊨l [pt,st] { P i } (f i) { Q }) ->
   ⊨l [pt,st] { \sum_i (tf2f x x (M i))^A \O P i \O tf2f x x (M i)} (cond_ x M f) { Q }.
 Proof.
+have trlf_pairC (H : chsType) (A B C D : 'End(H)) :
+    \Tr (((A \o B) \o C) \o D) = \Tr (((C \o D) \o A) \o B).
+  by rewrite -!comp_lfunA [LHS]lftraceC -!comp_lfunA [LHS]lftraceC !comp_lfunA.
 case: pt; rewrite local_hoare.unlock.
 - case: st=>IH y/=; rewrite fsemE ifso_elemE linear_sumr linear_sum/=;
-  rewrite linear_suml !linear_sum/= ?ler_sum//; first apply eq_bigr; move=>i _;
+  rewrite linear_sumlz !linear_sum/= ?ler_sum//; first apply eq_bigr; move=>i _;
   move: (IH i (elemso (liftf_fun (tm2m x x M)) i y))=>/= P1;
   rewrite soE liftf_funE !liftf_lf_sdot -?P1; last apply/(le_trans _ P1)/lec_eq;
-  by rewrite soE liftf_lf_adj !comp_lfunA lftraceC !comp_lfunA.
+  by rewrite soE !liftf_funE !tm2mE liftf_lf_adj -!comp_lfunA [LHS]lftraceC !comp_lfunA.
 have P0: liftf_lf (\sum_i (tf2f x x (M i))^A \O P i \O tf2f x x (M i))^⟂ = 
   \sum_i liftf_lf ((tf2f x x (M i))^A \O (P i)^⟂ \O tf2f x x (M i)).
   rewrite /cplmt linearB/= liftf_lf1 linear_sum/=.
@@ -608,10 +616,10 @@ have P0: liftf_lf (\sum_i (tf2f x x (M i))^A \O P i \O tf2f x x (M i))^⟂ =
   rewrite -(qmeasure_tpE (liftf_fun (tm2m x x M))); apply eq_bigr=>i _.
   by rewrite /= liftf_funE !liftf_lf_sdot liftf_lf1 comp_lfun1r liftf_lf_adj.
 case: st=>IH y/=; rewrite fsemE ifso_elemE linear_sumr linear_sum/= P0;
-rewrite linear_suml linear_sum/= ?ler_sum//; first apply eq_bigr; move=>i _;
+rewrite linear_sumlz linear_sum/= ?ler_sum//; first apply eq_bigr; move=>i _;
 move: (IH i (elemso (liftf_fun (tm2m x x M)) i y))=>/= P1;
 rewrite soE liftf_funE !liftf_lf_sdot ?P1; last apply/(le_trans P1)/lec_eq;
-by rewrite soE liftf_lf_adj !comp_lfunA lftraceC !comp_lfunA.
+by rewrite soE !liftf_funE !tm2mE liftf_lf_adj -!comp_lfunA [LHS]lftraceC !comp_lfunA.
 Qed.
 Global Arguments R_IF_L [pt st T F x M f S P W Q].
 
@@ -864,9 +872,12 @@ by move=>i/=; rewrite -alter_LPT.
 move=>cC; rewrite vlimn_mapV=>[|//|//]; apply P2.
 rewrite ptt=>A B IH cA cB; rewrite hoare_wp.
 rewrite -!linear_lim//=. by apply: linear_is_cvg.
-case: st IH=>IH; [apply: eq_lim=>i/=|apply: lev_lim=>[||i/=]].
-1,4: by move: (IH i); rewrite hoare_wp.
-all: by do ? [apply: linear_is_cvg=>//].
+case: st IH=>IH.
+  by apply: eq_lim=>i/=; move: (IH i); rewrite hoare_wp.
+pose LFV := quantum_lfun__canonical__extnum_VOrderFinNormedModule 'H[msys]_setT.
+apply: (@lev_limn _ _ LFV)=>[||i/=].
+1,2: by do ? [apply: linear_is_cvg=>//].
+by move: (IH i); rewrite hoare_wp.
 Qed.
 Global Arguments R_lim_L [pt st S T A B c].
 
@@ -1055,11 +1066,12 @@ Qed.
 End LocalHoare.
 
 Local Open Scope dirac_scope.
+Local Notation "''[' f ; x ]" := (tlin x x f%VF) : dirac_scope.
 Section DiracHoare.
 Implicit Type (S W Wl Wr: {set mlab}).
 
 Lemma dirac_localP pt st S T (P: 'F_S) c (Q: 'F_T) :
-  ⊨ [pt,st] { '[ P ] } c { '[ Q ] } <-> ⊨l [pt,st] { P } c { Q }.
+  (⊨ [pt,st] { lind P } c { lind Q })%D <-> ⊨l [pt,st] { P } c { Q }.
 Proof.
 split; rewrite dirac_hoare.unlock.
 move=>[S'[T']][/sqr_linP/orP[/eqP<-|/eqP->]][/sqr_linP/orP[/eqP<-|/eqP->]].
@@ -1301,8 +1313,8 @@ Lemma R_LP_P T (x : 'QReg[T]) (M : 'QM) b (D: cmd_) S (P Q : 'D_S) :
   P S S ⊑ \1 -> Q S S ⊑ \1 -> ⊨p { Q } D { R } -> ⊨p { R } (while_ x M b D) { P }.
 Proof.
 move=>R PP PQ.
-suff ->: R = '[(tf2f x x (M (~~b)))^A \O P S S \O (tf2f x x (M (~~b))) 
-                + (tf2f x x (M b))^A \O Q S S \O (tf2f x x (M b))].
+  suff ->: R = lind ((tf2f x x (M (~~b)))^A \O P S S \O (tf2f x x (M (~~b)))
+                + (tf2f x x (M b))^A \O Q S S \O (tf2f x x (M b))).
   by rewrite !dirac_sqrP/= !lind_id; apply: R_LP'_LP; [apply PP|apply PQ].
 by rewrite /R /dform linearD/= -!sdotd_correct QMemory.tlin.unlock !lind_adj -!sqrdiracE.
 Qed.
@@ -1444,8 +1456,8 @@ Global Arguments Ax_Inv_P [S P c].
 
 Lemma R_Inner S (u v : 'H_S) (c : cmd_) :
   `|u| <= 1 -> 
-  ⊫t { :1 } c { '[ [> u ; u <] ] } ->
-  ⊫t { (`|[< u ; v >]| ^+2)%:D } c { '[ [> v ; v <] ] }.
+  ⊫t { :1 } c { lind [> u ; u <] } ->
+  ⊫t { (`|[< u ; v >]| ^+2)%:D } c { lind [> v ; v <] }.
 Proof.
 rewrite numd1I numdZ1 numd1I !dirac_sqrP/= !(lind_id,diracE);
 by exact: R_Inner_LT.
@@ -1454,8 +1466,8 @@ Qed.
 Lemma R_PInner S T (u : 'H_(S :|: T)) (v : 'H_S) (F : finType) 
   (onb : 'ONB(F;'H_T)) (c : cmd_) :
   `|u| <= 1 -> [disjoint S & T] ->
-  ⊫t { :1 } c { '[ [> u ; u <] ] } ->
-  ⊫t { (\sum_i (`|[< v ⊗v (onb i) ; u >]| ^+2))%:D } c { '[ [> v ; v <] ] }.
+  ⊫t { :1 } c { lind [> u ; u <] } ->
+  ⊫t { (\sum_i (`|[< v ⊗v (onb i) ; u >]| ^+2))%:D } c { lind [> v ; v <] }.
 Proof.
 by rewrite numd1I numdZ1 numd1I !dirac_sqrP/= !(lind_id,diracE); exact: R_PInner_LT.
 Qed.
@@ -2056,14 +2068,14 @@ Global Arguments Ax_UTP [pt st F P T x Uf W Q].
 
 Lemma Ax_UTP_tuple pt st n T (x : 'QReg[T.[n]])
   (Uf : 'I_n -> 'FU('Ht T)) W (Q : 'D_W) :
-  let U := \ten_i '[Uf i; x.[i]] in 
+  let U := \ten_i '[Uf i; <{x.[i]}>] in 
   ⊨ [pt,st] { U^A \· Q \· U} [for i do [ut x.[i] := Uf i]] { Q }.
 Proof. by apply: Ax_UTP=>/=; tac_qwhile_auto. Qed.
 Global Arguments Ax_UTP_tuple [pt st n T x ].
 
 Lemma Ax_UTP_ffun pt st n (T : 'I_n -> qType) (x : 'QReg[{qffun T}])
   (Uf : forall i, 'FU('Ht (T i))) W (Q : 'D_W) :
-  let U := \ten_i '[Uf i; x.-[i]] in 
+  let U := \ten_i '[Uf i; <{x.-[i]}>] in 
   ⊨ [pt,st] { U^A \· Q \· U} [for i do [ut x.-[i] := Uf i]] { Q }.
 Proof. by apply: Ax_UTP=>/=; tac_qwhile_auto. Qed.
 Global Arguments Ax_UTP_ffun [pt st n T x ].
@@ -2095,14 +2107,14 @@ Global Arguments Ax_UTFP [pt st F P T x Uf W Q].
 
 Lemma Ax_UTFP_tuple pt st n T (x : 'QReg[T.[n]])
   (Uf : 'I_n -> 'FU('Ht T)) W (Q : 'D_W) :
-  let U := \ten_i '[Uf i; x.[i]] in 
+  let U := \ten_i '[Uf i; <{x.[i]}>] in 
   ⊨ [pt,st] { Q } [for i do [ut x.[i] := Uf i]] { U \· Q \· U^A }.
 Proof. by apply: Ax_UTFP=>/=; tac_qwhile_auto. Qed.
 Global Arguments Ax_UTFP_tuple [pt st n T x ].
 
 Lemma Ax_UTFP_ffun pt st n (T : 'I_n -> qType) (x : 'QReg[{qffun T}])
   (Uf : forall i, 'FU('Ht (T i))) W (Q : 'D_W) :
-  let U := \ten_i '[Uf i; x.-[i]] in 
+  let U := \ten_i '[Uf i; <{x.-[i]}>] in 
   ⊨ [pt,st] { Q } [for i do [ut x.-[i] := Uf i]] { U \· Q \· U^A }.
 Proof. by apply: Ax_UTFP=>/=; tac_qwhile_auto. Qed.
 Global Arguments Ax_UTFP_ffun [pt st n T x ].
@@ -2131,14 +2143,14 @@ Global Arguments AxV_UTP [pt st F P T x Uf W Q].
 
 Lemma AxV_UTP_tuple pt st n T (x : 'QReg[T.[n]])
   (Uf : 'I_n -> 'FU('Ht T)) W (Q : 'Ket_W) :
-  let U := \ten_i '[Uf i; x.[i]] in 
+  let U := \ten_i '[Uf i; <{x.[i]}>] in 
   ⊨s [pt,st] { U^A \· Q } [for i do [ut x.[i] := Uf i]] { Q }.
 Proof. by apply: AxV_UTP=>/=; tac_qwhile_auto. Qed.
 Global Arguments AxV_UTP_tuple [pt st n T x ].
 
 Lemma AxV_UTP_ffun pt st n (T : 'I_n -> qType) (x : 'QReg[{qffun T}])
   (Uf : forall i, 'FU('Ht (T i))) W (Q : 'Ket_W) :
-  let U := \ten_i '[Uf i; x.-[i]] in 
+  let U := \ten_i '[Uf i; <{x.-[i]}>] in 
   ⊨s [pt,st] { U^A \· Q } [for i do [ut x.-[i] := Uf i]] { Q }.
 Proof. by apply: AxV_UTP=>/=; tac_qwhile_auto. Qed.
 Global Arguments AxV_UTP_ffun [pt st n T x ].
@@ -2167,14 +2179,14 @@ Global Arguments AxV_UTFP [pt st F P T x Uf W Q].
 
 Lemma AxV_UTFP_tuple pt st n T (x : 'QReg[T.[n]])
   (Uf : 'I_n -> 'FU('Ht T)) W (Q : 'Ket_W) :
-  let U := \ten_i '[Uf i; x.[i]] in 
+  let U := \ten_i '[Uf i; <{x.[i]}>] in 
   ⊨s [pt,st] { Q } [for i do [ut x.[i] := Uf i]] { U \· Q }.
 Proof. by apply: AxV_UTFP=>/=; tac_qwhile_auto. Qed.
 Global Arguments AxV_UTFP_tuple [pt st n T x ].
 
 Lemma AxV_UTFP_ffun pt st n (T : 'I_n -> qType) (x : 'QReg[{qffun T}])
   (Uf : forall i, 'FU('Ht (T i))) W (Q : 'Ket_W) :
-  let U := \ten_i '[Uf i; x.-[i]] in 
+  let U := \ten_i '[Uf i; <{x.-[i]}>] in 
   ⊨s [pt,st] { Q } [for i do [ut x.-[i] := Uf i]] { U \· Q }.
 Proof. by apply: AxV_UTFP=>/=; tac_qwhile_auto. Qed.
 Global Arguments AxV_UTFP_ffun [pt st n T x ].
@@ -2219,7 +2231,7 @@ Lemma tAx_InP_tuple pt st n T (x : 'QReg[T.[n]])
   (forall i, [disjoint W & mset <{x.[i]}>]) ->
   ⊨ [pt,st] { (\prod_i [< (v i)%:V ; A i (v i)%:V >]) *: (Q : 'D) } 
     [for i do [it x.[i] := v i]]
-    { (\ten_i '[A i; x.[i]]) \⊗ Q }.
+    { (\ten_i '[A i; <{x.[i]}>]) \⊗ Q }.
 Proof. by move=>IH; apply: tAx_InP=>//=; tac_qwhile_auto. Qed.
 Global Arguments tAx_InP_tuple [pt st n T x v A W Q].
 
@@ -2228,7 +2240,7 @@ Lemma tAx_InP_ffun pt st n (T : 'I_n -> qType) (x : 'QReg[{qffun T}])
   (forall i, [disjoint W & mset <{x.-[i]}>]) ->
   ⊨ [pt,st] { (\prod_i [< (v i)%:V ; A i (v i)%:V >]) *: (Q : 'D) } 
     [for i do [it x.-[i] := v i]]
-    { (\ten_i '[A i; x.-[i]]) \⊗ Q }.
+    { (\ten_i '[A i; <{x.-[i]}>]) \⊗ Q }.
 Proof. by move=>IH; apply: tAx_InP=>//=; tac_qwhile_auto. Qed.
 Global Arguments tAx_InP_ffun [pt st n T x v A W Q].
 
@@ -2260,7 +2272,7 @@ Lemma tAx_InFP_tuple pt st n T (x : 'QReg[T.[n]])
   (v : 'I_n -> 'NS('Ht T)) (A : 'I_n -> 'End{T}) W (Q : 'D_W):
   (forall i, [disjoint W & mset <{x.[i]}>]) ->
   ⊨ [pt,st] { Q } [for i do [it x.[i] := (v i)]]
-    { (\ten_i '[[> v i ; v i <]; x.[i]]) \⊗ Q }.
+    { (\ten_i '[[> v i ; v i <]; <{x.[i]}>]) \⊗ Q }.
 Proof. by move=>IH; apply: tAx_InFP=>//=; tac_qwhile_auto. Qed.
 Global Arguments tAx_InFP_tuple [pt st n T x v A W Q].
 
@@ -2268,7 +2280,7 @@ Lemma tAx_InFP_ffun pt st n (T : 'I_n -> qType) (x : 'QReg[{qffun T}])
   (v : forall i, 'NS('Ht (T i))) (A : forall i, 'End{T i}) W (Q : 'D_W):
   (forall i, [disjoint W & mset <{x.-[i]}>]) ->
   ⊨ [pt,st] { Q } [for i do [it x.-[i] := (v i)]]
-    { (\ten_i '[[> v i ; v i <]; x.-[i]]) \⊗ Q }.
+    { (\ten_i '[[> v i ; v i <]; <{x.-[i]}>]) \⊗ Q }.
 Proof. by move=>IH; apply: tAx_InFP=>//=; tac_qwhile_auto. Qed.
 Global Arguments tAx_InP_ffun [pt st n T x v A W Q].
 
@@ -2308,7 +2320,7 @@ Lemma tAxV_InP_tuple pt st n T (x : 'QReg[T.[n]])
   (forall i, [disjoint W & mset <{x.[i]}>]) ->
   ⊨s [pt,st] { (\prod_i [< (v i)%:V ; (u i) >]) *: (Q : 'D) } 
     [for i do [it x.[i] := (v i)]]
-    { (\ten_i '|u i; x.[i] >) \⊗ Q }.
+    { (\ten_i '|u i; <{x.[i]}> >) \⊗ Q }.
 Proof. by move=>IH; apply: tAxV_InP=>//=; tac_qwhile_auto. Qed.
 Global Arguments tAxV_InP_tuple [pt st n T x v u W Q].
 
@@ -2317,7 +2329,7 @@ Lemma tAxV_InP_ffun pt st n (T : 'I_n -> qType) (x : 'QReg[{qffun T}])
   (forall i, [disjoint W & mset <{x.-[i]}>]) ->
   ⊨s [pt,st] { (\prod_i [< (v i)%:V ; (u i) >]) *: (Q : 'D) } 
     [for i do [it x.-[i] := (v i)]]
-    { (\ten_i '|u i; x.-[i] >) \⊗ Q }.
+    { (\ten_i '|u i; <{x.-[i]}> >) \⊗ Q }.
 Proof. by move=>IH; apply: tAxV_InP=>//=; tac_qwhile_auto. Qed.
 Global Arguments tAxV_InP_ffun [pt st n T x v u W Q].
 
@@ -2349,7 +2361,7 @@ Lemma tAxV_InFP_tuple pt st n T (x : 'QReg[T.[n]])
   (v : 'I_n -> 'NS('Ht T)) (u : 'I_n -> 'Ht T) W (Q : 'Ket_W):
   (forall i, [disjoint W & mset <{x.[i]}>]) ->
   ⊨s [pt,st] { Q } [for i do [it x.[i] := v i]]
-    { (\ten_i '|v i; x.[i] >) \⊗ Q }.
+    { (\ten_i '|v i; <{x.[i]}> >) \⊗ Q }.
 Proof. by move=>IH; apply: tAxV_InFP=>//=; tac_qwhile_auto. Qed.
 Global Arguments tAxV_InFP_tuple [pt st n T x v u W Q].
 
@@ -2357,7 +2369,7 @@ Lemma tAxV_InFP_ffun pt st n (T : 'I_n -> qType) (x : 'QReg[{qffun T}])
   (v : forall i, 'NS('Ht (T i))) (u : forall i, 'Ht (T i)) W (Q : 'Ket_W):
   (forall i, [disjoint W & mset <{x.-[i]}>]) ->
   ⊨s [pt,st] { Q } [for i do [it x.-[i] := v i]]
-    { (\ten_i '|v i; x.-[i] >) \⊗ Q }.
+    { (\ten_i '|v i; <{x.-[i]}> >) \⊗ Q }.
 Proof. by move=>IH; apply: tAxV_InFP=>//=; tac_qwhile_auto. Qed.
 Global Arguments tAxV_InFP_ffun [pt st n T x v u W Q].
 
@@ -2373,7 +2385,7 @@ Qed.
 Lemma tR_PInnerl T1 T2 (x : 'QReg[T1]) (y : 'QReg[T2]) (dis: [disjoint mset x & mset y])
   (u : 'Ht (T1 * T2)) (v : 'Ht T1) (c : cmd_) : 
   `|u| <= 1 ->
-  ⊫t { :1 } c { '[ [> u ; u <] ; (x,y) ] } ->
+  ⊫t { :1 } c { '[ [> u ; u <] ; <{(x,y)}> ] } ->
   ⊫t { (\sum_i (`|[< v ⊗t ''i ; u >]| ^+2))%:D } c { '[ [> v ; v <] ; x ] }.
 Proof.
 move: dis; rewrite -disj_setE QMemory.tlin.unlock =>dis Pu H.
@@ -2387,7 +2399,7 @@ Qed.
 Lemma tR_PInnerr T1 T2 (x : 'QReg[T1]) (y : 'QReg[T2])
   (dis: [disjoint mset x & mset y]) (u : 'Ht (T1 * T2)) (v : 'Ht T2) (c : cmd_) : 
   `|u| <= 1 ->
-  ⊫t { :1 } c { '[ [> u ; u <] ; (x,y) ] } ->
+  ⊫t { :1 } c { '[ [> u ; u <] ; <{(x,y)}> ] } ->
   ⊫t { (\sum_i (`|[< ''i ⊗t v ; u >]| ^+2))%:D } c { '[ [> v ; v <] ; y ] }.
 Proof.
 move: dis; rewrite -swaptf_norm disjoint_sym=>dis /(tR_PInnerl (x:=y) (y:=x) dis v (c:=c)).

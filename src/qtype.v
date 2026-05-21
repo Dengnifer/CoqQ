@@ -1,8 +1,13 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra finmap finalg.
-From mathcomp.analysis Require Import -(notations)forms.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra finalg.
+From mathcomp.finmap Require Import finmap.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
 From mathcomp.classical Require Import boolp classical_sets.
-From mathcomp.analysis Require Import reals exp trigo normedtype derive topology.
+From mathcomp.reals Require Import reals.
+From mathcomp.analysis Require Import exp trigo derive.
+From mathcomp.analysis.topology_theory Require Import topology.
+From mathcomp.analysis.normedtype_theory Require Import normedtype.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
 From mathcomp.real_closed Require Import mxtens.
@@ -131,7 +136,7 @@ Proof. by apply/unitarylfP; rude_bmx; rewrite !divc_simp ?sign_simp// split2. Qe
 HB.instance Definition _ := isUnitaryLf.Build ('Hs bool) Hadamard Hadamard_unitary.
 
 Lemma PauliX_unitary : PauliX \is unitarylf.
-Proof. by apply/unitarylfP; rude_bmx. Qed.
+Proof. by apply/unitarylfP; rude_bmx; simpc. Qed.
 HB.instance Definition _ := isUnitaryLf.Build ('Hs bool) PauliX PauliX_unitary.
 
 Lemma PauliY_unitary : PauliY \is unitarylf.
@@ -159,7 +164,10 @@ Proof. by rewrite onb_dot eqxx. Qed.
 HB.instance Definition _ b := isNormalState.Build ('Hs bool) (pmbasis b) (eqP (@pmbasis_ns b)).
 
 Lemma dotp_cbpm (b1 b2 : bool) : [<''b1 ; '±b2 >] = (-1)^(b1 && b2) / sqrtC 2%:R.
-Proof. by case: b1; case: b2; rude_bmx; rewrite// !sign_simp. Qed.
+Proof.
+by case: b1; case: b2; rude_bmx; rewrite ?conjC0 ?conjC1 ?divc_simp
+  ?sign_simp ?mul0r ?addr0 ?oppr0 ?add0r.
+Qed.
 
 Lemma dotp_pmcb (b1 b2 : bool) : [<'±b1 ; ''b2 >] = (-1)^(b1 && b2) / sqrtC 2%:R.
 Proof. by case: b1; case: b2; rude_bmx; rewrite !divc_simp// !sign_simp. Qed.
@@ -189,7 +197,7 @@ Lemma HadamardK : cancel ''H ''H.
 Proof. by move=>x; rewrite -[RHS]id_lfunE -Hadamard_id lfunE/=. Qed.
 
 Lemma PauliX_adj : ''X^A = ''X.
-Proof. by unfoldlf; rude_bmx. Qed.
+Proof. by unfoldlf; rude_bmx; simpc. Qed.
 Lemma PauliX_tr : (''X^T)%VF = ''X.
 Proof. by unfoldlf; rude_bmx. Qed.
 Lemma PauliX_conj : ''X^C = ''X.
@@ -241,9 +249,9 @@ Qed.
 HB.instance Definition _ (r : R) :=
   isUnitaryLf.Build ('Hs bool) (PhGate r) (@PhGate_unitary r).
 Definition PhGate_adj (r : R) : (PhGate r)^A = PhGate (-r).
-Proof. by rude_bmx=>//; rewrite -expipNC. Qed.
+Proof. by rude_bmx; rewrite ?conjC0 ?conjC1 // -expipNC. Qed.
 Definition PhGate_conj (r : R) : (PhGate r)^C = PhGate (-r).
-Proof. by rude_bmx=>//; rewrite -expipNC. Qed.
+Proof. by rude_bmx; rewrite ?conjC0 ?conjC1 // -expipNC. Qed.
 Definition PhGate_tr (r : R) : ((PhGate r)^T)%VF = PhGate r.
 Proof. by rude_bmx. Qed.
 
@@ -257,8 +265,8 @@ Definition phstate (r : R) : ('Hs bool) :=
 Notation "''ph' r" := (phstate r) (at level 2, format "''ph'  r").
 Lemma phstate_ns r : [<'ph r; 'ph r>] == 1%:R.
 Proof.
-by rude_bmx; rewrite !divc_simp conjCc -expipNC -expipD addNr 
-  expip0 mul1r -mulr2n -mulr_natr mulVf.
+by rude_bmx; rewrite !divc_simp -expipNC -expipD addNr expip0 mul1r
+  -mulr2n -[X in X == _]mulr_natr mulVf ?pnatr_eq0.
 Qed.
 HB.instance Definition _ (r : R) :=
   isNormalState.Build ('Hs bool) (phstate r) (eqP (@phstate_ns r)).
@@ -269,7 +277,7 @@ Proof. by rude_bmx=>//; rewrite mulrC. Qed.
 Lemma dotp_phcb (r : R) b : [< 'ph r ; ''b >] = (sqrtC 2%:R)^-1 * expip (2%:R * b%:R * (-r)).
 Proof.
 rude_bmx; case: b=>/=; rewrite ?mulr0 !divc_simp ?mul0r ?add0r ?expip0//.
-by rewrite !mulr1 addr0 conjCc -expipNC mulrN.
+by rewrite !mulr1 addr0 -expipNC mulrN.
 Qed.
 Lemma dotp_phcb0 r : [< 'ph r ; '0 >] = ((sqrtC 2%:R)^-1)%R.
 Proof. by rewrite dotp_phcb mulr0 mul0r expip0 mulr1. Qed.
@@ -277,7 +285,7 @@ Lemma dotp_phcb1 r : [< 'ph r ; '1 >] = (sqrtC 2%:R)^-1 * (expip (2%:R * (-r))).
 Proof. by rewrite dotp_phcb mulr1. Qed.
 
 Lemma dotp_cbph b (r : R) : [< ''b ; 'ph r >] = (sqrtC 2%:R)^-1 * expip (2%:R * b%:R * r).
-Proof. by rewrite -conj_dotp dotp_phcb !divc_simp conjCc -expipNC mulrN opprK. Qed.
+Proof. by rewrite -conj_dotp dotp_phcb !divc_simp -expipNC mulrN opprK. Qed.
 Lemma dotp_cb0ph r : [< '0; 'ph r >] = ((sqrtC 2%:R)^-1)%R.
 Proof. by rewrite dotp_cbph mulr0 mul0r expip0 mulr1. Qed.
 Lemma dotp_cb1ph r : [< '1; 'ph r >] = (sqrtC 2%:R)^-1 * (expip (2%:R * r)).
@@ -352,8 +360,7 @@ Qed.
 Lemma RxGate_adj r : (RxGate r)^A = RxGate (-r).
 Proof.
 rewrite /RxGate; rude_bmx; rewrite !simp_muli (cosp.unlock,sinp.unlock).
-1,4: by rewrite mulrN cosN.
-all: by rewrite -[RHS]mulNr -realcN mulrN sinN.
+all: by simpc; rewrite ?mulrN ?sinN ?cosN ?opprK.
 Qed.
 Lemma RxGate0 : RxGate 0 = \1.
 Proof.
@@ -370,7 +377,7 @@ Qed.
 Lemma RyGate_adj r : (RyGate r)^A = RyGate (-r).
 Proof.
 rewrite /RyGate; rude_bmx; rewrite !simp_muli (cosp.unlock, sinp.unlock).
-all: by rewrite mulrN ?sinN ?cosN// -?realcN// opprK.
+all: by simpc; rewrite ?mulrN ?sinN ?cosN ?opprK.
 Qed.
 Lemma RzGateD (r1 r2 : R) : (RzGate r1) \o (RzGate r2) = RzGate (r1 + r2).
 Proof.
@@ -381,8 +388,8 @@ all: by rewrite addrC -!real2c cosp.unlock sinp.unlock -cosD -mulrDr.
 Qed.
 Lemma RzGate_adj r : (RzGate r)^A = RzGate (-r).
 Proof.
-rewrite /RzGate; rude_bmx; rewrite !simp_muli// cosp.unlock sinp.unlock.
-all: by simpc; rewrite ?mulrN sinN cosN// opprK.
+rewrite /RzGate; rude_bmx; rewrite ?simp_muli// ?cosp.unlock ?sinp.unlock.
+all: by simpc; rewrite ?mulrN ?sinN ?cosN ?opprK.
 Qed.
 
 Lemma sumbtv_out : [> '0 ; '0 <] + [> '1 ; '1 <] = \1.
@@ -500,7 +507,7 @@ Proof.
 pose U := \sum_i [> ponb_ext g i ; ponb_ext f i<].
 have UU: U \is unitarylf.
 apply/unitarylfP; rewrite /U linear_sumr/= -(sumonb_out (ponb_ext f)).
-by apply eq_bigr=>i _; rewrite linear_sum linear_suml/= (bigD1 i)//= big1=>[j/negPf nj|];
+by apply eq_bigr=>i _; rewrite linear_sum linear_sumlz/= (bigD1 i)//= big1=>[j/negPf nj|];
 rewrite adj_outp outp_comp onb_dot ?nj ?scale0r// eqxx scale1r addr0.
 exists (UnitaryLf_Build UU)=>i/=.
 rewrite /U sum_lfunE (bigD1 (inl i))//= big1=>[j/negPf nj|];
@@ -547,7 +554,7 @@ Lemma uniformtvE T :
 Proof. by rewrite [uniformtv]unlock. Qed.
 Lemma uniformtv_ns T : [< uniformtv T ; uniformtv T >] == 1%:R.
 Proof.
-apply/eqP; rewrite uniformtvE linearZl_LR linearZr/= linear_suml/=.
+apply/eqP; rewrite uniformtvE linearZl_LR linearZr/= linear_sumlz/=.
 rewrite (eq_bigr (fun _=>1%:R))=>[i _|].
 by rewrite linear_sum/= (bigD1 i)//= big1=>[j/negPf nj|];
    rewrite onb_dot ?eqxx ?addr0// eq_sym nj.
@@ -560,7 +567,7 @@ Global Arguments uniformtv {T}.
 
 Lemma dotp_uniformtvcb T (i : T) : [< uniformtv ; ''i >] = (sqrtC #|T|%:R)^-1.
 Proof.
-rewrite uniformtvE linearZl_LR linear_suml/= (bigD1 i)//= big1=>[j/negPf nj|];
+rewrite uniformtvE linearZl_LR linear_sumlz/= (bigD1 i)//= big1=>[j/negPf nj|];
 by rewrite onb_dot ?nj// eqxx addr0 mulr1 !divc_simp.
 Qed.
 Lemma uniformtv_bool : uniformtv = '+.
@@ -576,7 +583,7 @@ Lemma Multiplexer_unitary T1 T2 (f : T1 -> 'FU('Hs T2)) :
   Multiplexer f \is unitarylf.
 Proof.
 apply/unitarylfP; rewrite MultiplexerE -tentf11 -[in RHS](sumonb_out (t2tv)).
-rewrite linear_sum/= !linear_suml/=; apply eq_bigr=>i _.
+rewrite linear_sum/= !linear_sumlz/=; apply eq_bigr=>i _.
 rewrite tentf_adj adj_outp linear_sumr/= (bigD1 i)//= big1=>[j/negPf nj|];
 rewrite tentf_comp outp_comp onb_dot 1?eq_sym ?nj ?scale0r ?ten0tf//.
 by rewrite eqxx scale1r unitaryf_form addr0.
@@ -635,7 +642,7 @@ Lemma QFTvE n t : @QFTv n t =
 Proof. by rewrite [@QFTv]unlock. Qed.
 Lemma QFTv_onb n i j : [<@QFTv n i ; @QFTv n j >] = (i == j)%:R.
 Proof.
-rewrite !QFTvE linearZl_LR/= linearZr/= linear_suml/=.
+rewrite !QFTvE linearZl_LR/= linearZr/= linear_sumlz/=.
 rewrite (eq_bigr (fun i0 : 'I_n.+1=>expip (2%:R * (j%:R - i%:R) * i0%:R / n.+1%:R)))=>[k _|].
 rewrite linear_sumr (bigD1 k)//= big1=>[l/negPf nl|];
 by rewrite linearZl_LR/= linearZr/= onb_dot 1?eq_sym ?nl ?mulr0// eqxx mulr1 addr0 
@@ -659,7 +666,7 @@ Lemma QFTE n : @QFT n = \sum_i [> QFTv i ; ''i<].
 Proof. by rewrite [@QFT]unlock. Qed.
 Lemma QFT_unitary n : @QFT n \is unitarylf.
 Proof.
-apply/unitarylfP; rewrite QFTE -(sumonb_out t2tv) !linear_sum/= linear_suml/=.
+apply/unitarylfP; rewrite QFTE -(sumonb_out t2tv) !linear_sum/= linear_sumlz/=.
 apply eq_bigr=>i _; rewrite adj_outp linear_sumr/= (bigD1 i)//= big1=>[j/negPf nj|];
 by rewrite outp_comp onb_dot 1?eq_sym ?nj ?scale0r// eqxx scale1r addr0.
 Qed.
@@ -786,6 +793,7 @@ rewrite {1}t2tv_dffun tentv_dffun_dot -[in RHS]conj_dotp dotp_uniformtvcb.
 under eq_bigr do rewrite -conj_dotp dotp_uniformtvcb.
 rewrite -rmorph_prod card_dep_ffun foldrE big_map big_enum; f_equal.
 rewrite -invf_prod -sqrt_prod -?natr_prod =>[? _ //|]; do 3 f_equal.
+by rewrite conjCc.
 Qed.
 
 Lemma uniformtv_ffun (F : finType) (T : ihbFinType)  :
@@ -1043,7 +1051,7 @@ Proof. by rewrite unlock. Qed.
 Lemma expmxip_unitary t : expmxip t \is unitarylf.
 Proof. 
 apply/unitarylfP; rewrite -(sumonb_out onb) expmxipE !linear_sumr/=.
-apply eq_bigr=>i _. rewrite linear_sum/= linear_suml/= (bigD1 i)//= big1=>[j/negPf nj|];
+apply eq_bigr=>i _. rewrite linear_sum/= linear_sumlz/= (bigD1 i)//= big1=>[j/negPf nj|];
 rewrite adjfZ adj_outp -comp_lfunZl -comp_lfunZr outp_comp onb_dot ?nj ?scale0r ?scaler0//.
 by rewrite eqxx scale1r addr0 scalerA -expipNC -expipD addNr expip0 scale1r.
 Qed.

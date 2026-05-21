@@ -1,12 +1,17 @@
-From mathcomp Require Import all_ssreflect all_algebra complex.
-From mathcomp.analysis Require Import -(notations)forms.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
+(* From mathcomp.real_closed Require Import complex. *)
+From mathcomp.algebra Require Import -(notations)sesquilinear.
 Require Import spectral.
 From mathcomp.classical Require Import boolp classical_sets mathcomp_extra.
-From mathcomp.analysis Require Import reals topology normedtype sequences distr realsum realseq ereal discrete.
+From mathcomp.reals Require Import reals.
+From mathcomp.analysis Require Import sequences all_analysis all_analysis all_analysis ereal all_analysis.
+From mathcomp.analysis.topology_theory Require Import topology.
+From mathcomp.analysis.normedtype_theory Require Import normedtype.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
 Require Import mcextra mcaextra notation prodvect hermitian tensor
-  cpo EqdepFacts Eqdep_dec mxpred extnum ctopology setdec inhabited qtype.
+  cpo EqdepFacts Eqdep_dec mxpred extnum ctopology setdec inhabited qtype summable.
 Import Order.TTheory GRing.Theory Num.Theory Num.Def MxLownerOrder.
 Import VectorInternalTheory.
 
@@ -42,7 +47,7 @@ Proof. by apply sqr_ge0_le. Qed.
 Lemma ge_addr (R : numDomainType) (x y z : R) :
   (- z + x <= y) = (x <= y + z). 
 Proof.
-by rewrite -subr_ge0 -[LHS]subr_ge0 opprD addrA opprK.
+by rewrite addrC lerBlDr.
 Qed.
 
 Variable H : chsType.
@@ -294,14 +299,14 @@ Proof.
     !ave_real // HA HB conjCi addrAC !addrA !add_lfunE !opp_lfunE !scale_lfunE
     !id_lfunE !dotpDr !dotpNr !dotpZr !Hortho !mulr0 !subr0 mulNr.
   have ->: delta u A ^+ 2 + delta u B ^+ 2 + 'i * ave u (commer A B)
-    = `| (C + 'i *: D) u | ^+2 * `|v| ^+2
-  by rewrite !delta_sqr_norm // -!dotp_norm Hv mulr1
+    = `| (C + 'i *: D) u | ^+2 * `|v| ^+2.
+  rewrite !delta_sqr_norm // -!dotp_norm Hv mulr1
     (commer_subconst _ _ (ave u A) (ave u B)) -/C -/D
     add_lfunE scale_lfunE dotpDl !dotpDr !dotpZl !dotpZr
-    conjCi !mulNr mulrA mulCii mulNr mul1r opprK -!addrA;
-  f_equal => [_ _ -> // |];
-  rewrite addrA [RHS]addrC -mulrBr; f_equal; f_equal;
-  rewrite -!adj_dotEr -dotpBr HC HD -!comp_lfunE -sub_lfunE.
+    conjCi !mulNr mulrA mulCii mulNr mul1r opprK -!addrA.
+  f_equal.
+  rewrite addrA [RHS]addrC -mulrBr; f_equal; f_equal.
+  by rewrite -!adj_dotEr -dotpBr HC HD -!comp_lfunE -sub_lfunE.
   by rewrite -!dotp_norm CauchySchwartz.
 Qed.
 
@@ -325,8 +330,26 @@ Proof.
   move => u v Hortho Hv; rewrite comparable_ge_max.
   by apply /andP; split;
     rewrite (Maccone_Pati_uncertainty_2p, Maccone_Pati_uncertainty_2m).
-  by rewrite real_comparable // CrealE rmorphD rmorphM rmorphXn
-    conj_normC ave_commer_im // ?rmorphN conjCi mulrNN.
+  have Hci :
+    Num.Num_conj__canonical__GRing_RMorphism
+      (complex_complex__canonical__Num_ClosedField hermitian.R) 'i = - 'i.
+    change (@Num.conj hermitian.C 'i = - 'i). exact: conjCi.
+  have Hcomm :
+    Num.Num_conj__canonical__GRing_RMorphism
+      (complex_complex__canonical__Num_ClosedField hermitian.R)
+      (ave u (commer A B)) = - ave u (commer A B).
+    change (@Num.conj hermitian.C (ave u (commer A B)) =
+      - ave u (commer A B)).
+    exact: ave_commer_im.
+  have Hnorm (w : H) :
+    Num.Num_conj__canonical__GRing_RMorphism
+      (complex_complex__canonical__Num_ClosedField hermitian.R)
+      `|[< u; w >]| = `|[< u; w >]|.
+    change (@Num.conj hermitian.C `|[< u; w >]| = `|[< u; w >]|).
+    by rewrite conj_Creal ?normr_real.
+  rewrite real_comparable // CrealE rmorphD rmorphM rmorphXn
+    ?conj_normC ?ave_commer_im // ?rmorphN ?conjCi ?mulrNN.
+  all: by rewrite Hci Hcomm !Hnorm ?mulrNN ?mulrN ?mulNr ?opprK.
 Qed.
 
 End Uncertainty.
@@ -352,15 +375,41 @@ Proof. by move => [] /=; rewrite ?mulr1n ?normrN normr1. Qed.
 Definition b2pm4 (a : bool * bool * (bool * bool)) :=
   ((x1,x2),(y1,y2)). 
 
-Lemma CHSH_inequality: forall mu : {distr (bool * bool * (bool * bool)) / R},
+Record distr (T : finType) := Distr {
+  distr_fun :> T -> R;
+  distr_ge0 : forall x, 0 <= distr_fun x;
+  distr_sum1 : \sum_(x : T) distr_fun x = 1
+}.
+
+Local Notation "f \* g" := (fun x => f x * g x) (at level 40, left associativity).
+Local Notation "f \+ g" := (fun x => f x + g x) (at level 50, left associativity).
+Local Notation "f \- g" := (fun x => f x - g x) (at level 50, left associativity).
+
+Definition expect (T : finType) (mu : distr T) (f : T -> R) : R :=
+  \sum_(x : T) mu x * f x.
+Local Notation "\E_[ mu ] f" := (expect mu f)
+  (at level 2, format "\E_[ mu ]  f").
+
+Lemma CHSH_pointwise_le2 (a : bool * bool * (bool * bool)) :
+  x1 a * y1 a + x1 a * y2 a + x2 a * y1 a - x2 a * y2 a <= 2%:R.
+Proof.
+move: a=>[[[][]][[][]]] /=; rewrite /x1 /x2 /y1 /y2 /bool2pm /=.
+all: repeat rewrite ?mulr1 ?mul1r ?mulrN ?mulNr ?opprK ?addrK
+  ?addrNK ?addrN ?addNr ?addr0 ?add0r ?subrr ?lerxx.
+all: rewrite -?natrD.
+all: try by [].
+all: apply: (le_trans _ (@ler0n R 2)).
+all: by rewrite -opprD oppr_le0 addr_ge0 ?ler01.
+Qed.
+
+Lemma CHSH_inequality: forall mu : distr (bool * bool * (bool * bool))%type,
   \E_[mu] (x1 \* y1 \+ x1 \* y2 \+ x2 \* y1 \- x2 \* y2) <= (2%:R).
 Proof.
-  move => mu; rewrite exp_le_bd //.
-  move => [[[][]][[][]]] /= ; rewrite /x1 /x2 /y1 /y2 /=;
-  rewrite ?mulr1n ?mulrN ?mulNr ?opprK mulr1
-    ?addrK ?addrNK ?addrN ?addNr ?add0r -?opprD ?normrN;
-  (have <- : `|1| + `|1| = 2%:R by move => t; rewrite normr1);
-  apply ler_normD.
+move=>mu; rewrite /expect -[leRHS]mulr1
+  -[X in _ <= _ * X](distr_sum1 mu) mulrC big_distrl.
+apply ler_sum=>a _.
+apply: ler_wpM2l; first exact: distr_ge0.
+exact: CHSH_pointwise_le2.
 Qed.
 
 Lemma tentf_Z (T1 T2 S1 S2 : ihbFinType) (f : 'Hom[T1,T2]) (g : 'Hom[S1,S2]) a v:

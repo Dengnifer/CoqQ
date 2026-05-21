@@ -1,5 +1,6 @@
 (* -------------------------------------------------------------------- *)
-From mathcomp Require Import all_ssreflect all_algebra.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
 
 (* -------------------------------------------------------------------- *)
 Set   Implicit Arguments.
@@ -19,7 +20,7 @@ Context {K : fieldType} {E : vectType K}.
 
 Lemma spanZ (x : K) (u : E) : x != 0 -> (<[x *: u]> = <[u]>)%VS.
 Proof.
-move=> nz_x; rewrite (rwP eqP) eqEsubv; apply/andP; split.
+move=> nz_x; apply/eqP; rewrite eqEsubv; apply/andP; split.
 - apply/subvP => v /vlineP[/= k ->]; apply/vlineP.
   by exists (k * x); rewrite scalerA.
 - apply/subvP => v /vlineP[/= k ->]; apply/vlineP.

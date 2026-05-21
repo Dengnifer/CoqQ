@@ -1,8 +1,10 @@
 (* -------------------------------------------------------------------- *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
 From mathcomp.classical Require Import boolp.
-From mathcomp.analysis Require Import -(notations)forms reals.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
+From mathcomp.reals Require Import reals.
 From quantum.external Require Import complex.
 Require Import mcextra mcaextra notation hermitian quantum inhabited.
 
@@ -347,7 +349,7 @@ Notation "c '*:' k" := (K_scale c%DS k%DK) (at level 40) : ket_scope.
 Notation "c '*:' b" := (B_scale c%DS b%DB) (at level 40) : bra_scope.
 Notation "c '*:' o" := (O_scale c%DS o%DO) (at level 40) : opt_scope.
 Notation "a * b" := (S_mul a%DS b%DS) (at level 40, left associativity) : scalar_scope.
-Notation "s '^*'" := (S_conj s%DS) (at level 2) : scalar_scope.
+Notation "s '^*'" := (S_conj s%DS) (at level 1, left associativity) : scalar_scope.
 Notation "b '^A'" := (B_adj b%DB) (at level 8) : ket_scope.
 Notation "k '^A'" := (K_adj k%DK) (at level 8) : bra_scope.
 Notation "o '^A'" := (O_adj o%DO) (at level 8) : opt_scope.
@@ -412,9 +414,9 @@ Lemma mulsDl (S1 S2 S : S_scalar) :
   (S1 + S2) * S =s S1 * S + S2 * S.
 Proof. by rewrite /= mulrDl. Qed.
 Lemma conjs0 : 0 ^* =s 0.
-Proof. by rewrite /= -conjC0. Qed.
+Proof. by rewrite /= conjC0. Qed.
 Lemma conjs1 : 1 ^* =s 1.
-Proof. by rewrite /= -conjC1. Qed.
+Proof. by rewrite /= conjC1. Qed.
 Lemma conjsD S1 S2 : (S1 + S2) ^* =s S1 ^* + S2 ^*.
 Proof. by rewrite /= rmorphD. Qed.
 Lemma conjsM S1 S2 : (S1 * S2) ^* =s S2 ^* * S1 ^*.
@@ -885,10 +887,10 @@ Lemma R_SCALAR_4 (S1 S2 S3 : S_scalar) :
 Proof. by rewrite/= mulrDr. Qed.
 Lemma R_SCALAR_5 :
   0^* =s 0.
-Proof. by rewrite /= -conjC0. Qed.
+Proof. by rewrite /= conjC0. Qed.
 Lemma R_SCALAR_6 :
   1^* =s 1.
-Proof. by rewrite /= -conjC1. Qed.
+Proof. by rewrite /= conjC1. Qed.
 Lemma R_SCALAR_7 (S1 S2 : S_scalar) :
   (S1 + S2)^* =s S1^* + S2^*.
 Proof. by rewrite/= rmorphD. Qed.
@@ -2638,7 +2640,7 @@ Notation "1" := (S_1) : scalar_scope.
 Notation "'δ(' a ',' b ')'" := (S_delta a%DA b%DA) (at level 30, format "'δ(' a ','  b ')'") : scalar_scope.
 Notation "a + b" := (S_add a%DS b%DS) (at level 50, left associativity) : scalar_scope.
 Notation "a * b" := (S_mul a%DS b%DS) (at level 40, left associativity) : scalar_scope.
-Notation "s '^*'" := (S_conj s%DS) (at level 2) : scalar_scope.
+Notation "s '^*'" := (S_conj s%DS) (at level 1, left associativity) : scalar_scope.
 Notation "b '·' k" := (BK_inner b%DB k%DK) (at level 40) : scalar_scope.
 
 Notation "'`' n" := (K_var n) (at level 2, format "'`' n") : ket_scope.
@@ -2878,10 +2880,10 @@ Lemma R_SCALAR_4 S1 S2 S3 ca (av : A_value ca)  :
 Proof. by simplify; rewrite/= mulrDr. Qed.
 Lemma R_SCALAR_5 ca (av : A_value ca) :
   0^* =s 0 >> av.
-Proof. by simplify; rewrite /= -conjC0. Qed.
+Proof. by simplify; rewrite /= conjC0. Qed.
 Lemma R_SCALAR_6 ca (av : A_value ca) :
   1^* =s 1 >> av.
-Proof. by simplify; rewrite /= -conjC1. Qed.
+Proof. by simplify; rewrite /= conjC1. Qed.
 Lemma R_SCALAR_7 S1 S2  ca (av : A_value ca) :
   (S1 + S2)^* =s S1^* + S2^* >> av.
 Proof. by simplify; rewrite/= rmorphD. Qed.
@@ -3919,15 +3921,15 @@ with subst_O (n : aname) (s : A_base) (Oo : O_opt) :=
         else O_sum (subst_ST n s st) l (subst_O n s Oo)
   end.
 
-Notation "X .[ i := x ] " := (subst_A i x%DA X%DA) 
-  (at level 2, left associativity, format "X .[ i  :=  x ]") : base_scope.
-Notation "X .[ i := x ] " := (subst_AT i x%DA X%AT) : atsyn_scope.
-Notation "X .[ i := x ] " := (subst_DT i x%DA X%DT) : dtsyn_scope.
-Notation "X .[ i := x ] " := (subst_ST i x%DA X%ST) : sttype_scope.
-Notation "X .[ i := x ] " := (subst_S i x%DA X%DS) : scalar_scope.
-Notation "X .[ i := x ] " := (subst_K i x%DA X%DK) : ket_scope.
-Notation "X .[ i := x ] " := (subst_B i x%DA X%DB) : bra_scope.
-Notation "X .[ i := x ] " := (subst_O i x%DA X%DO) : opt_scope.
+Notation "X .[ i := x ]" := (subst_A i x%DA X%DA) 
+  (at level 1, left associativity, format "X .[ i  :=  x ]") : base_scope.
+Notation "X .[ i := x ]" := (subst_AT i x%DA X%AT) : atsyn_scope.
+Notation "X .[ i := x ]" := (subst_DT i x%DA X%DT) : dtsyn_scope.
+Notation "X .[ i := x ]" := (subst_ST i x%DA X%ST) : sttype_scope.
+Notation "X .[ i := x ]" := (subst_S i x%DA X%DS) : scalar_scope.
+Notation "X .[ i := x ]" := (subst_K i x%DA X%DK) : ket_scope.
+Notation "X .[ i := x ]" := (subst_B i x%DA X%DB) : bra_scope.
+Notation "X .[ i := x ]" := (subst_O i x%DA X%DO) : opt_scope.
 
 Lemma A_set_cast A1 A2 (eqA : A1 = A2) (v : eval_AType A1) :
   A_set (cast_A eqA v) = A_set v.
@@ -5433,7 +5435,7 @@ Proof.
 move=>P; simplify; contra1.
 all: case E1: (sttype_checker _ _)=>[A1|//];
   rewrite (free_K_type _ _ P) E; simplify; split=>//.
-rewrite linear_sum/= linear_suml/=.
+rewrite linear_sum/= linear_sumlz/=.
 by under [in RHS]eq_bigr do rewrite (free_K_sem _ _ P).
 Qed.
 
@@ -5513,7 +5515,7 @@ Proof.
 move=>P; simplify; contra1.
 all: case E1: (sttype_checker _ _)=>[A1|//];
   rewrite (free_K_type _ _ P) E; simplify; split=>//.
-rewrite linear_suml/=.
+rewrite linear_sumlz/=.
 by under [in RHS]eq_bigr do rewrite V_set_id (free_K_sem _ _ P).
 Qed.
 
@@ -5523,7 +5525,7 @@ Proof.
 move=>P; simplify; contra1.
 all: case E1: (sttype_checker _ _)=>[A1|//];
   rewrite (free_B_type _ _ P) E; simplify; split=>//.
-rewrite linear_suml/=.
+rewrite linear_sumlz/=.
 by under [in RHS]eq_bigr do rewrite V_set_id (free_B_sem _ _ P).
 Qed.
 
@@ -5533,7 +5535,7 @@ Proof.
 move=>P; simplify; contra1.
 all: case E1: (sttype_checker _ _)=>[A1|//];
   rewrite (free_O_type _ _ P) E; simplify; split=>//.
-rewrite linear_suml/=.
+rewrite linear_sumlz/=.
 by under [in RHS]eq_bigr do rewrite O_set_id (free_O_sem _ _ P).
 Qed.
 
@@ -5543,7 +5545,7 @@ Proof.
 move=>P; simplify; contra1.
 all: case E1: (sttype_checker _ _)=>[A1|//];
   rewrite (free_B_type _ _ P) E; simplify; split=>//.
-rewrite linear_suml/=.
+rewrite linear_sumlz/=.
 by under [in RHS]eq_bigr do rewrite O_set_id (free_B_sem _ _ P).
 Qed.
 

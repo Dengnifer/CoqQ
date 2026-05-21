@@ -1,7 +1,10 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra perm fingroup.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
+From mathcomp.fingroup Require Import perm fingroup.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
+From Coq.Bool Require Import Bool.
 Require Import Eqdep_dec.
 
 Import Order.TTheory GRing.Theory Num.Theory ComplexField Num.Def complex.
@@ -19,9 +22,9 @@ Unset SsrOldRewriteGoalsOrder.
 Local Open Scope ring_scope.
 
 Notation "x %:C" := (real_complex _ x)
-  (at level 2, left associativity, format "x %:C") : ring_scope.
+  (at level 2, format "x %:C") : ring_scope.
 Notation "x %:VF" := (x : 'Hom(_,_)) 
-  (at level 2, left associativity, format "x %:VF") : lfun_scope.
+  (at level 2, format "x %:VF") : lfun_scope.
 Notation "t ~_ i" := (tnth t i) (at level 3, i at level 2).
 Notation nlift := (fintype.lift).
 Notation "A :<=: B" := (A \subset B) (at level 70, no associativity) : set_scope.
@@ -57,27 +60,6 @@ Proof. exists (@r2v _ V). exact: v2rK. exact: r2vK. Qed.
 
 Lemma r2v_bij (R : ringType) (V : vectType R) : bijective (@r2v _ V).
 Proof. exists (@v2r _ V). exact: r2vK. exact: v2rK. Qed.
-Lemma f2mxP (R : fieldType) (U V: vectType R) : linear (@f2mx _ U V).
-Proof.
-move=> a f g; have E: forall u, (a *: f + g) (r2v u) = a *: f (r2v u) + g (r2v u).
-by move=> u; rewrite !lfunE /= !lfunE.
-apply/eqP/mulmxP => u; move: (E u).
-rewrite /fun_of_lfun unlock /= /fun_of_lfun_def /= !r2vK -linearP /=.
-by rewrite -linearZ /= -mulmxDr; apply r2v_inj.
-Qed.
-(* #[export] *)
-HB.instance Definition _ (R : fieldType) (U V: vectType R) := 
-  GRing.isLinear.Build R _ _ _ (@f2mx R U V) (@f2mxP R U V).
-
-(* Canonical h2mx_linear (R : fieldType) (U V: vectType R) := 
-  (HB.pack (@f2mx R U V) (GRing.isLinear.Build _ _ _ _ (@f2mx R U V)
-    (@f2mxP R U V)) : GRing.Linear.type _ _). *)
-
-Lemma vecthomP (R : fieldType) (U V: vectType R) : linear (@Hom _ U V).
-Proof. by move=>c x y; apply/lfunP=>z; rewrite unlock/= !linearP. Qed.
-HB.instance Definition _ (R : fieldType) (U V: vectType R) := 
-  GRing.isLinear.Build R _ _ _ (@Hom _ U V) (@vecthomP R U V).
-
 Lemma f2mxK (R : fieldType) (U V : vectType R) : cancel (@f2mx _ U V) (Hom).
 Proof. move=>x; by apply/val_inj. Qed.
 
@@ -107,8 +89,34 @@ apply/lfunP=>u; rewrite !lfunE/= /fun_of_lfun unlock /=.
 by rewrite /fun_of_lfun_def /= mulmx1 v2rK.
 Qed.
 
-Lemma f2mx0 (R : fieldType) (G: vectType R) : f2mx (0%VF : 'End(G)) = 0.
-Proof. exact: linear0. Qed.
+Lemma f2mx0 (R : fieldType) (U V : vectType R) : f2mx (0%VF : 'Hom(U,V)) = 0.
+Proof.
+suff: (0%VF : 'Hom(U,V)) = Hom 0 by move/(f_equal f2mx).
+apply/lfunP=>u; rewrite !lfunE/= /fun_of_lfun unlock /=.
+by rewrite /fun_of_lfun_def /= mulmx0 linear0.
+Qed.
+
+Lemma f2mxD (R : fieldType) (U V : vectType R) (f g : 'Hom(U,V)) :
+  f2mx (f + g) = f2mx f + f2mx g.
+Proof.
+suff: f + g = Hom (f2mx f + f2mx g) by move/(f_equal f2mx); rewrite vecthomK.
+apply/lfunP=>u; rewrite !lfunE/= /fun_of_lfun unlock /=.
+by rewrite /fun_of_lfun_def /= mulmxDr linearD.
+Qed.
+
+Lemma f2mxZ (R : fieldType) (U V : vectType R) (a : R) (f : 'Hom(U,V)) :
+  f2mx (a *: f) = a *: f2mx f.
+Proof.
+suff: a *: f = Hom (a *: f2mx f) by move/(f_equal f2mx); rewrite vecthomK.
+apply/lfunP=>u; rewrite !lfunE/= /fun_of_lfun unlock /=.
+by rewrite /fun_of_lfun_def /= -scalemxAr linearZ.
+Qed.
+
+Lemma f2mx_is_linear (R : fieldType) (U V : vectType R) : linear (@f2mx R U V).
+Proof. by move=>a f g; rewrite f2mxD f2mxZ. Qed.
+
+Lemma vecthom_is_linear (R : fieldType) (U V : vectType R) : linear (@Hom R U V).
+Proof. by move=>a A B; apply/f2mx_inj; rewrite f2mxD f2mxZ !vecthomK. Qed.
 
 Lemma f2mx_comp (R: ringType) (U V W: vectType R) (f : 'Hom(U,V)) (g: 'Hom(W,U)) :
   f2mx (f \o g) = f2mx g *m f2mx f.
@@ -613,7 +621,7 @@ Lemma neq0_lt0n (m : nat) : (m == 0)%N <> true -> (0 < m)%N.
 Proof. by move/negP; rewrite lt0n. Qed.
 
 Lemma split2r (C : numFieldType) (x : C) : x / 2 + x / 2 = x.
-Proof. by rewrite -mulr2n -mulr_natr mulfVK// pnatr_eq0. Qed.
+Proof. by rewrite -splitr. Qed.
 Lemma split21 (C : numFieldType) : 2^-1 + 2^-1 = 1 :> C.
 Proof. by rewrite -[RHS]split2r mul1r. Qed.
 Definition split2 := (split21, split2r).
@@ -623,7 +631,7 @@ Definition im_complex_def (F : ringType) (phF : phant F) (x : F) :=
   Complex 0 x.
 Notation im_complex F := (@im_complex_def _ (Phant F)).
 Notation "x %:Ci" := (im_complex _ x)
-  (at level 2, left associativity, format "x %:Ci")  : ring_scope.
+  (at level 2, format "x %:Ci")  : ring_scope.
 Lemma im_complex_is_additive (R: ringType) : additive (im_complex R).
 Proof. by move=>a b; simpc. Qed.
 
@@ -692,25 +700,32 @@ Qed. *)
 Section EnumOrd.
 Variable (n : nat) (F : finType).
 
-Lemma enum_ord_eq  (eqt : #|F| = n) j t : 
-(enum_val (cast_ord (esym eqt) j) == t) = (j == cast_ord eqt (enum_rank t)).
+Lemma enum_ord_eq  (eqt : #|F| = n) (j : 'I_n) (t : F) : 
+(@fintype.enum_val F predT (cast_ord (esym eqt) j) == t) =
+  (j == cast_ord eqt (@fintype.enum_rank F t)).
 Proof.
 case: eqP=>[ <-|]; last case: eqP=>// ->.
-1,2: by rewrite ?enum_valK cast_ord_comp cast_ord_id ?eqxx// enum_rankK.
+1,2: by rewrite ?fintype.enum_valK cast_ord_comp cast_ord_id
+  ?eqxx// fintype.enum_rankK.
 Qed.
 
 Lemma bij_enum_ord (eqt : n = #|F|) (P : pred F) :
-{on P, bijective (fun x : 'I_n => enum_val (cast_ord eqt x))}.
+{on P, bijective
+  (fun x : 'I_n => @fintype.enum_val F predT (cast_ord eqt x))}.
 Proof.
-exists (fun x : F => cast_ord (esym eqt) (enum_rank x))=>t _;
-rewrite ?enum_valK cast_ord_comp cast_ord_id// enum_rankK//.
+exists (fun x : F => cast_ord (esym eqt) (@fintype.enum_rank F x))=>t _;
+rewrite ?fintype.enum_valK cast_ord_comp cast_ord_id//
+  fintype.enum_rankK//.
 Qed.
 
 Lemma bij_ord_enum (eqt : #|F| = n) :
-{on [pred: 'I_n | true], bijective (fun x : F => cast_ord eqt (enum_rank x))}.
+{on [pred: 'I_n | true],
+  bijective (fun x : F => cast_ord eqt (@fintype.enum_rank F x))}.
 Proof.
-exists (fun x : 'I_n => enum_val (cast_ord (esym eqt) x))=>t _;
-rewrite ?enum_valK cast_ord_comp cast_ord_id// enum_rankK//.
+exists (fun x : 'I_n =>
+  @fintype.enum_val F predT (cast_ord (esym eqt) x))=>t _;
+rewrite ?fintype.enum_valK cast_ord_comp cast_ord_id//
+  fintype.enum_rankK//.
 Qed.
 
 End EnumOrd.
@@ -1038,12 +1053,13 @@ Proof. by move=>/negPf P; rewrite uphalf_half P add0n. Qed.
 
 Definition half_ord m (i : 'I_m./2) := widen_ord (half_leqn _) i.
 Lemma half_ord_rev_neq m (i j : 'I_m./2) : half_ord i != rev_ord (half_ord j).
-Proof. mc_nat. Qed.
-(* case: m i j; last case. 1,2: by move=>i; case: i.
+Proof.
+case: m i j; last case. 1,2: by move=>i; case: i.
 move=>n i j; apply/ltn_neq=>/=; rewrite leq_subRL.
 by case: j=>/= m P; apply/(leq_trans P)/ltnW; rewrite !ltnS half_leqn.
 case: i; case: j=>i Pi j Pj/=; apply/(leq_trans (leq_add Pi Pj)).
-by rewrite addnn halfK leq_subr. *)
+by rewrite addnn halfK leq_subr.
+Qed.
 
 Lemma ord_half_subproof (m : nat) : (half (m.+1) < m.+1)%N.
 Proof. by rewrite -uphalfE ltnS uphalf_leqn. Qed.
@@ -1155,7 +1171,7 @@ Lemma tuple_ffunE (K : Type) (m : nat) (f : m.-tuple K) (i : 'I_m) :
 Proof. by rewrite -tnth_ffun_tuple finfun_of_tupleK. Qed.
 
 Lemma eqb_iff (b1 b2 : bool): (b1 <-> b2) <-> b1 = b2.
-Proof. by split=>[/Bool.eq_iff_eq_true|->]. Qed.
+Proof. by split=>[/Coq.Bool.Bool.eq_iff_eq_true|->]. Qed.
 Lemma eq_iff (T : eqType) (t1 t2 : T) : t1 == t2 <-> t1 = t2.
 Proof. by split=>[/eqP|->]. Qed.
 
@@ -1166,7 +1182,7 @@ Proof. by apply/inj_pair2_eq_dec=>a b; case: (@eqP _ a b); [left|right]. Qed.
 Global Arguments inj_existT {A P p x y}.
 
 (* bigmax *)
-Lemma le_max2l (disp : unit) (T : porderType disp) (a : T) :
+Lemma le_max2l (disp : Order.disp_t) (T : porderType disp) (a : T) :
   {homo (@Order.max _ T a) : x y / (x <= y)%O >-> (x <= y)%O }.
 Proof.
 move=>x y Pxy; rewrite/Order.max; case E: (a < x)%O.
@@ -1184,7 +1200,7 @@ move=>x y Pxy; rewrite/Order.max; case E: (x < a).
 by case F: (y < a)%O=>//; move: (le_lt_trans Pxy F); rewrite E.
 Qed.
 
-Lemma lt_min2r (disp : unit) (T : porderType disp) (a : T) :
+Lemma lt_min2r (disp : Order.disp_t) (T : porderType disp) (a : T) :
   {homo (@Order.min _ T ^~ a) : x y / (x <= y)%O >-> (x <= y)%O }.
 Proof.
 move=>x y Pxy; rewrite/Order.min; case E: (x < a)%O.
@@ -1203,12 +1219,12 @@ apply: (comparabler_trans (y := y)).
 by apply/le_comparable. by apply/gt_comparable.
 Qed.
 
-Variant bigmax_x0_or_in (disp : unit) (T : porderType disp) (x0 : T) 
+Variant bigmax_x0_or_in (disp : Order.disp_t) (T : porderType disp) (x0 : T) 
   (I : eqType) (r : seq I) (P : pred I) (F : I -> T) : T -> Type :=
   | bigmax_eq_x0 : @bigmax_x0_or_in disp T x0 I r P F x0
   | bigmax_in_seq (i : I) of (i \in r) & P i: @bigmax_x0_or_in disp T x0 I r P F (F i).
 
-Lemma bigmax_eq_elemP (disp : unit) (T : porderType disp) (x0 : T) 
+Lemma bigmax_eq_elemP (disp : Order.disp_t) (T : porderType disp) (x0 : T) 
   (I : eqType) (r : seq I) (P : pred I) (F : I -> T) :  
     @bigmax_x0_or_in disp T x0 I r P F (\big[Order.max/x0]_(i <- r | P i) F i).
 Proof.
@@ -1388,7 +1404,10 @@ Qed.
 Lemma big_setD (R : zmodType) A B (F : I -> R) :
   \sum_(i in (A :\: B)) F i = 
     (\sum_(i in A :|: B) F i) - (\sum_(i in B) F i).
-Proof. by rewrite -setUDV big_setU/= ?disjointXD// addrC addKr. Qed.
+Proof.
+rewrite -setUDV big_setU/= ?disjointXD//.
+by rewrite addrC addrA addNr add0r.
+Qed.
 
 Lemma subsetX_disjoint A B : (A :<=: B) = [disjoint A & ~: B].
 Proof. by rewrite subset_disjoint; apply/eq_disjoint_r=>i; rewrite !inE. Qed.
@@ -1401,7 +1420,7 @@ End SetExtra.
 (* -------------------------------------------------------------------- *)
 (* Import Order.TTheory GRing.Theory Num.Theory ComplexField Num.Def complex. *)
 
-From mathcomp Require Import finmap.
+From mathcomp.finmap Require Import finmap.
 
 Local Open Scope fset_scope.
 
@@ -1427,9 +1446,9 @@ Section FSetMonoids.
 Import Monoid.
 Variable (I : choiceType).
 HB.instance Definition _ := 
-  isMulLaw.Build {fset I} fset0 _ (@fset0I I) (@fsetI0 I).
+  Monoid.isMulLaw.Build {fset I} fset0 _ (@fset0I I) (@fsetI0 I).
 HB.instance Definition _ := 
-  isAddLaw.Build {fset I} _ _ (@fsetIUl I) (@fsetIUr I).
+  Monoid.isAddLaw.Build {fset I} _ _ (@fsetIUl I) (@fsetIUr I).
 End FSetMonoids.
 
 (* ==================================================================== *)

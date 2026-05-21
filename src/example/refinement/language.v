@@ -1,8 +1,11 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
 From mathcomp.classical Require Import boolp classical_sets.
-From mathcomp.analysis Require Import -(notations)forms.
-From mathcomp.analysis Require Import reals topology normedtype.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
+From mathcomp.reals Require Import reals.
+From mathcomp.analysis.topology_theory Require Import topology.
+From mathcomp.analysis.normedtype_theory Require Import normedtype.
 From quantum.external Require Import complex.
 (* From mathcomp.real_closed Require Import complex. *)
 Require Import mcextra mcaextra notation hermitian quantum
@@ -11,7 +14,8 @@ Require Import mcextra mcaextra notation hermitian quantum
 From quantum Require Import prodvect tensor mxpred cpo extnum
   ctopology qreg qmem.
 From quantum.dirac Require Import hstensor.
-Require Import Coq.Program.Equality String.
+From Coq.Program Require Import Equality.
+From Coq.Strings Require Import String.
 (* Require Import Relation_Definitions Setoid. *)
 
 (*****************************************************************************)
@@ -431,7 +435,7 @@ Proof.
 split=>[ Ph | /supph_le_trlf0P P1 x Px].
   apply /supph_trlf0_le =>/=.
   rewrite heigenE sumoutpE linear_sum/=
-    linear_suml/= linear_sum/= big1// =>i _.
+    linear_sumlz/= linear_sum/= big1// =>i _.
   rewrite scale1r; move: (heigen_mem i).
   by rewrite memhE_line hlineE=>/Ph/=/supph_le_trlf0P.
 apply/supph_trlf0_le=>/=; apply/le_anti/andP; split; 
@@ -718,12 +722,23 @@ set f := \sum_(i < n) _; have Pf: f \is psdlf.
   under eq_bigr do rewrite (QOperation_BuildE (fsem_qo (Pl _))).
   by rewrite (CPMap_BuildE (comprso_cp _ _ _)) is_psdlf.
 rewrite (QOperation_BuildE (fsem_qo Pe)) (PsdLf_BuildE Pf).
-set E1 := _ (_ Pe); set f1 := _ Pf; move: E1 f1 => E1 f1.
+set E1 := _ (_ Pe).
+have E1_refl (U : {hspace 'H_[set: mlab]}) : E1 U U by rewrite /E1.
+set f1 := _ Pf; move: E1 E1_refl f1 => E1 E1_refl f1.
 rewrite kerhD/= caphC; f_equal.
-by rewrite dualso_comp soE kerh_cp_supp/= -kerh_cp_supp/= 
-  dualso_formE hermf_adjE/= -th2hE -liftfhE shookhE supphE.
-by rewrite -kerh_cp_supp/= dualso_formE hermf_adjE/= 
-  -th2hE -liftfhE shookhE supph_id.
+have Ecp : E ^*o \is cpmap by rewrite dualso_cpE; exact: cptn_cpmap (fsem_qo Pe).
+rewrite dualso_comp soE (CPMap_BuildE Ecp) kerh_cp_supp/=.
+have Ef1psd : E ^*o f1 \is psdlf.
+  by rewrite (CPMap_BuildE Ecp); apply: cp_psdlf.
+rewrite (PsdLf_BuildE Ef1psd) -kerh_cp_supp/=.
+rewrite dualso_formE hermf_adjE/= -th2hE -liftfhE shookhE.
+have ->: supph (E ^*o f1) = ~` kerh (E ^*o f1) by rewrite supphE.
+rewrite dualso_formE hermf_adjE/=.
+have ->: liftf_lf (tf2f x x (~` P)) = liftfh x (~` P) :> 'End(_) 
+  by rewrite -th2hE -liftfhE.
+have ->: liftfh x (~` P) `=>` R =
+    kerh ((liftfh x (~` P) \o ~` R) \o liftfh x (~` P)) by rewrite shookhE.
+by apply: E1_refl.
 Qed.
 
 (*****************************************************************************)
@@ -882,7 +897,7 @@ transitivity (\cups_(x0 in [set l | (forall n : nat, fsem c (l n))])
   rewrite -so_liml. apply: Pc.
   rewrite supphE kerh_limn ?capsO.
     - apply: so_is_cvgl. apply: Pc.
-    - apply/chain_homo=>i; rewrite big_ord_recr/= soE !sum_soE levDl -psdlfE.
+    - apply/chain_homo=>i; rewrite big_ord_recr/= soE sum_soE levDl -psdlfE.
       under eq_bigr do rewrite (QOperation_BuildE (fsem_qo (Pl _))).
       by rewrite (CPMap_BuildE (comprso_cp _ _ _)) is_psdlf.
     - move=>n; rewrite soE; apply/psdlf_sum=>/=i _.
@@ -911,7 +926,7 @@ rewrite /sp (CPMap_BuildE Pt) supph_cups -(cupsUr _ _ (fsem_nonempty c)).
 apply eq_cupsr=>E Pe.
 rewrite big_ord_recl big_ord0 comp_so1r soE/=.
 under eq_bigr do rewrite/= bump0 big_ord_recl/= comp_soErl comp_soA.
-rewrite -linear_suml/= [X in _ + X]soE -/t [X in _ + t X]soE.
+rewrite -linear_sumlz/= [X in _ + X]soE -/t [X in _ + t X]soE.
 rewrite (CPMap_BuildE Pt) (QOperation_BuildE (fsem_qo Pe)) supphD 
   -[X in _ `|` X]supph_cp_supp -[in X in _ `|` supph (_ X)]supph_cp_supp/=.
 by do ! f_equal; rewrite -th2hE -liftfhE formsoE hermf_adjE sprojhE.

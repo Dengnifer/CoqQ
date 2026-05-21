@@ -1,20 +1,28 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra archimedean interval finmap.
-From mathcomp Require Import perm fingroup.
-From mathcomp.analysis Require Import -(notations)forms.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra archimedean interval.
+From mathcomp.finmap Require Import finmap.
+From mathcomp.fingroup Require Import perm fingroup.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
 From quantum.external Require Import complex.
 From mathcomp.real_closed Require Import mxtens.
-From mathcomp Require Import mathcomp_extra boolp classical_sets functions.
-From mathcomp Require Import signed reals ereal topology normedtype sequences real_interval.
-From mathcomp Require Import esum measure lebesgue_measure lebesgue_integral numfun exp.
-From mathcomp Require Import convex itv realfun derive hoelder.
+From mathcomp.classical Require Import mathcomp_extra boolp classical_sets functions.
+From mathcomp.reals Require Import signed reals real_interval.
+From mathcomp.analysis Require Import ereal sequences.
+From mathcomp.analysis.topology_theory Require Import topology.
+From mathcomp.analysis.normedtype_theory Require Import normedtype.
+From mathcomp.analysis Require Import esum lebesgue_measure numfun exp.
+From mathcomp.analysis.measure_theory Require Import measure.
+From mathcomp.analysis.lebesgue_integral_theory Require Import lebesgue_integral.
+From mathcomp.algebra Require Import interval.
+From mathcomp.analysis Require Import convex realfun derive hoelder.
 Require Import notation mcextra mcaextra cpo mxpred svd majorization extnum ctopology.
 From quantum.external Require Import spectral.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-Import Order.TTheory GRing.Theory Num.Def Num.Theory.
+Import Order Order.TTheory GRing.Theory Num.Def Num.Theory.
 Import numFieldTopology.Exports ExtNumTopology.
 
 (******************************************************************************)
@@ -867,8 +875,12 @@ apply: (le_trans (y := (\sum_(i : 'I_m * 'I_n)
 rewrite ge0_ler_powR//= ?nnegrE ?sumr_ge0//.
   apply ler_sum=>i _; rewrite ge0_ler_powR//= ?nnegrE//; 
   apply/bigmax_geP; by [left | right; exists i].
-by rewrite sumr_const -mulr_natl card_prod !card_ord 
-  powRM// -powRrM mulfV//= powRr1// ltW.
+rewrite sumr_const card_prod !card_ord.
+rewrite -[X in (X `^ _ <= _)%R]mulr_natl.
+rewrite powRM ?(ltW P2) ?powR_ge0//.
+rewrite -powRrM ?(ltW P1)//.
+rewrite (_ : k.+1%:R / k.+1%:R = 1); last by rewrite divff ?pnatr_eq0.
+by rewrite powRr1 ?(ltW P1).
 rewrite lpnormrc.unlock ltr01 limM.
 by rewrite lim_cst//; move: (powR1n_limn P2); 
   rewrite -cvg_shiftS/==>/cvg_lim->//; rewrite mul1r.
@@ -888,7 +900,7 @@ Lemma lpnormrc_gep0 p (m n : nat) (A : 'M[C]_(m,n)) :
   lpnormrc 0 A <= lpnormrc p A.
 Proof.
 case E: (p < 1); first by rewrite lpnormrc.unlock ltr01 E.
-apply: (le_trans (y := lpnormrc (Num.ExtraDef.archi_bound (p-1)).+1%:R A)).
+apply: (le_trans (y := lpnormrc (Num.bound (p-1)).+1%:R A)).
 move: (lpnormrc_cvg (A := A))=>/cvg_lim <-//.
 apply: etnonincreasing_cvgn_ge.
 by move=>k1 k2 Pk; apply: lpnormrc_nincr; rewrite ler1Sn/= ler_nat ltnS.
@@ -985,7 +997,9 @@ apply: (le_trans (y := \sum_i (\big[maxr/0]_i ``| A i.1 i.2 |) `^ p)).
     by rewrite ltW.
     by apply/bigmax_geP; left.
   by apply/bigmax_geP; right; exists i.
-by rewrite sumr_const -mulr_natr card_prod !card_ord.
+rewrite sumr_const.
+rewrite cardE -cardT card_prod !card_ord.
+by rewrite mulr_natr.
 Qed.
 
 Lemma lpnormrc_p0ge p (m n : nat) (A : 'M[C]_(m,n)) :
@@ -1096,7 +1110,10 @@ apply: (le_trans (y := (\sum_i
   apply/(le_trans (ler_normrc_sum _ _ _)).
   under eq_bigr do rewrite normrcM.
   apply: hoelder_seq=>//=.
-under eq_bigr do rewrite (powRM _ (powR_ge0 _ _) (powR_ge0 _ _)).
+  rewrite (eq_bigr (fun i =>
+    ((\sum_k ``| A i.1 k | `^ p) `^ p^-1) `^ p *
+    ((\sum_k ``| B k i.2 | `^ q) `^ (q:R)^-1) `^ p));
+  last by move=>i _; rewrite powRM ?powR_ge0.
 apply: (le_trans (y := (\sum_i
     ((\sum_k ``| A i.1 k | `^ p) * (\sum_k ``| B k i.2 | `^ q) `^ (p/(q:R))
     ))`^ p^-1)).
@@ -1125,7 +1142,10 @@ apply: (le_trans (y := (\sum_i
   apply/(le_trans (ler_normrc_sum _ _ _)).
   under eq_bigr do rewrite normrcM.
   by apply: hoelder_seq=>//=; rewrite addrC.
-under eq_bigr do rewrite (powRM _ (powR_ge0 _ _) (powR_ge0 _ _)).
+rewrite (eq_bigr (fun i =>
+  ((\sum_k ``| A i.1 k | `^ q) `^ (q:R)^-1) `^ p *
+  ((\sum_k ``| B k i.2 | `^ p) `^ p^-1) `^ p));
+last by move=>i _; rewrite powRM ?powR_ge0.
 apply: (le_trans (y := (\sum_i ((\sum_k ``| A i.1 k | `^ q) `^ (p/(q:R)) * 
   (\sum_k ``| B k i.2 | `^ p)))`^ p^-1)).
 rewrite ge0_ler_powR// ?nnegrE ?invr_ge0// ?sumr_ge0// =>[??|??|]; 
@@ -1429,7 +1449,8 @@ case: (ecindexP q)=>[r->|->->|->->].
 - rewrite lpnormrc.unlock ltxx !ltNge (ci_p_ge1 r) ci_q_ge1/=.
   rewrite !pair_bigV/= !big_ord1 exchange_big big_ord1/= mxE invr1 !powRr1//.
   apply/(le_trans (ler_normrc_sum _ _ _ )).
-  under eq_bigr do rewrite normrcM.
+  rewrite (eq_bigr (fun k => ``| u 0 k | * ``| v k 0 |));
+  last by move=>k _; rewrite normrcM.
   by apply hoelder_fin.
 - rewrite lpnormrc.unlock ltxx ltr01 invr1 !powRr1 ?sumr_ge0// 
     !pair_bigV !big_ord1/= exchange_big big_ord1/= powRr1// mxE mulr_sumr.
@@ -1498,7 +1519,7 @@ rewrite [in ltRHS]mulrC ltrBlDl -ltrBlDr -powRN -powRD;
 case: (leP (1 - e / lpnormrc 1 A) 0)=>P.
   by apply/(le_lt_trans P)/powR_gt0.
 rewrite -ltr_ln ?posrE// ?powR_gt0// ln_powR -ltr_pdivrMr ?ln_gt0//.
-rewrite invr1 -ltrBlDl opprK addrC -invf_ltp ?posrE// ?(lt_trans ltr01 Pp)//.
+rewrite invr1 -ltrBlDl opprK addrC -invf_pgt ?posrE// ?(lt_trans ltr01 Pp)//.
 rewrite -(ltrD2r (-1)); apply/(le_lt_trans _ P1).
 by rewrite -normrN opprB ger0_norm// subr_ge0 ltW.
 Qed.
@@ -1508,7 +1529,7 @@ Lemma lpnormrc_cvg1 (m n : nat) (A : 'M[C]_(m,n)) :
 Proof.
 apply/cvgrPdist_lt=>/= e Pe.
 move: (lpnormrc_cvg1R (A := A))=>/cvgrPdist_lt/(_ e Pe)[t /= Pt Pb].
-exists ((Num.ExtraDef.archi_bound (t^-1)).+1)=>// p /= Pp.
+exists ((Num.bound (t^-1)).+1)=>// p /= Pp.
 move: (leq_ltn_trans (leq0n _) Pp)=>Pp0.
 apply/Pb=>//=; last by rewrite ltrDl invr_gt0 ltr0n.
 rewrite opprD addNKr normrN ger0_norm ?invr_ge0// invf_plt ?posrE// ?ltr0n//.
@@ -1841,7 +1862,9 @@ Lemma lpnorm_conjmx p q r (M: 'M[C]_(q,r)) : lpnorm p (M^*m) = lpnorm p M.
 Proof.
 rewrite lpnorm.unlock lpnormrc.unlock.
 under eq_bigr do rewrite mxE normrc_conjC.
-by under [X in if _ then X else _] eq_bigr do rewrite mxE normrc_conjC.
+case: ifP=>// _.
+congr (_%:C); congr (_ `^ _).
+by apply eq_bigr=>i _; rewrite mxE normrc_conjC.
 Qed.
 
 Lemma lpnorm_adjmx p q r (M: 'M[C]_(q,r)) : lpnorm p (M^*t) = lpnorm p M.
@@ -2954,8 +2977,8 @@ Lemma row_tens m n l k (A : 'M[C]_(m,n)) (B : 'M_(l,k)) i :
   row i (A *t B) = row (mxtens_unindex i).1 A *t row (mxtens_unindex i).2 B.
 Proof.
 case: (mxtens_indexP i)=>a b; rewrite !mxtens_indexK/= tensvE.
-apply/matrixP=>? j; rewrite ord1 castmxE/= cast_ord_id mxtens_1index.
-by case: (mxtens_indexP j)=>c d; rewrite mxE !tensmxE !mxE.
+apply/matrixP=>? j; rewrite ord1 castmxE/= cast_ord_id.
+by case: (mxtens_indexP j)=>c d; rewrite cast_ord_id mxE !tensmxE !mxE mxtens_indexK.
 Qed.
 
 Lemma i1norm_tens m n l k (A : 'M[C]_(m,n)) (B : 'M_(l,k)) :
@@ -3096,9 +3119,9 @@ have [/eqP ->|Pv] := boolP (lpnormrc 2 v == 0).
 rewrite ler_pdivrMr ?lt_def ?Pv//= lpnormrc.unlock ltr01 ltrn1/=.
 apply/bigmax_leP; split=>[|/=[i j] _].
   by apply/mulr_ge0=>//; apply/bigmax_geP; left.
-apply: (le_trans (y := (\sum_k ``|A i k| * ``|v k 0|))).
+  apply: (le_trans (y := (\sum_k ``|A i k| * ``|v k 0|))).
   rewrite mxE/= ord1; apply/(le_trans (ler_normrc_sum _ _ _));
-  by under eq_bigr do rewrite normrcM.
+  by under [leLHS]eq_bigr do rewrite normrcM.
 apply/(le_trans (hoelder_fin _ (2 : R) _ _))=>//.
 rewrite pair_bigV/= exchange_big/= big_ord1 ler_wpM2r//.
 apply/bigmax_geP; right; exists i=>//=.
@@ -3150,7 +3173,7 @@ End ipqnorm.
 
 #[global] Hint Extern 0 (is_true (0 <= ipqnorm _ _ _)) => apply: ipqnorm_ge0 : core.
 
-Lemma bigmax_eq_elem (d : unit) (T : porderType d) (I : eqType) 
+Lemma bigmax_eq_elem (d : Order.disp_t) (T : porderType d) (I : eqType) 
   (r : seq I) i0 (P : pred I) (F : I -> T) x : 
     P i0 -> (x <= F i0)%O -> i0 \in r ->
     (forall i, P i -> F i <= F i0)%O ->
@@ -3161,7 +3184,7 @@ by rewrite big_cons Pi0 max_l//; apply/bigmax_le.
 by rewrite big_cons; case E: (P j)=>///IH IH1; rewrite max_r// IH1; apply H.
 Qed.
 
-Lemma bigmax_find (d : unit) (T : porderType d) (I : finType) i0 (P : pred I) 
+Lemma bigmax_find (d : Order.disp_t) (T : porderType d) (I : finType) i0 (P : pred I) 
   (F : I -> T) x : 
   P i0 -> (x <= F i0)%O -> (forall i, P i -> F i <= F i0)%O ->
     (\big[Order.max/x]_(i | P i) F i)%O = F i0.
@@ -4386,7 +4409,7 @@ End schnorm_baisc.
 Section CmxLownerOrder.
 Import MxLownerOrder.
 Variable (R : realType).
-Local Notation C := R[i].
+Local Notation C := (ExtNum.clone R R[i] _).
 
 Lemma form_nng_neq0 n x : reflect (exists u: 'cV[C]_n, 
   (0 < \tr (u^*t *m u)) && (\tr (u^*t *m x *m u) \isn't Num.nneg))
@@ -4418,7 +4441,7 @@ move/ltr_distlCDr: P3.
 by rewrite ltr0_norm// addrN -real_ltNge ?real0// ?num_real// orbC=>->.
 Qed.
 
-Lemma psdmx_closed n : (closed [set x : 'M[C]_n | (0 : 'M[C]_n) <= x])%classic.
+Lemma psdmx_closed n : (closed [set x : 'M[C]_n | ((0 : 'M[C]_n) <= x)%O])%classic.
 Proof.
 case: n=>[x/= _|n]; first by rewrite !mx_dim0. 
 rewrite (_ : mkset _ = ~` [set x | ~ (0 : 'M[C]_n.+1) <= x]); last first.
@@ -4435,7 +4458,10 @@ rewrite mulrC -lter_pdivlMl// mulrC. apply: (le_lt_trans _ Pb).
 by move: (Pc (y - x))=>/=; rewrite mulrC -normrN opprB.
 Qed.
 
-Program Definition lowner_mxcporder n := MxCPorder _ _ (@psdmx_closed n).
+Program Definition lowner_mxcporder n :=
+  @MxCPorder R C n n ring_display
+    (Order.POrder.class (matrix_matrix__canonical__Order_POrder C n))
+    _ _ (@psdmx_closed n).
 Next Obligation. exact: lemx_add2rP. Qed.
 Next Obligation. exact: lemx_pscale2lP. Qed.
 
@@ -4457,7 +4483,7 @@ Proof. exact: (mxubounded_by_opp (lowner_mxcporder n)). Qed.
 
 (* different canonical route. prevent eq_op porderType ringType *)
 Lemma ltcmx_def n (x y : 'M[C]_n) : (x ⊏ y) = (y != x) && (x ⊑ y).
-Proof. exact: ltmx_def. Qed.
+Proof. by rewrite lt_def. Qed.
 
 Lemma subcmx_gt0 n (x y : 'M[C]_n) : ((0 : 'M[C]_n) ⊏ y - x) = (x ⊏ y).
 Proof. exact: (submx_gt0 (lowner_mxcporder n)). Qed.

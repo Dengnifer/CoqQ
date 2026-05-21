@@ -1,8 +1,10 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra finmap.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
+From mathcomp.finmap Require Import finmap.
 From mathcomp.classical Require Import boolp.
-From mathcomp.analysis Require Import -(notations)forms.
-From mathcomp.analysis Require Import reals.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
+From mathcomp.reals Require Import reals.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
 Require Import Relation_Definitions.
@@ -433,9 +435,9 @@ have Pd : [disjoint mset x & \bigcup_i ucmd_vset (u i)]
   by apply/bigcup_disjoint=>i _; apply/ucmd_var_disj_vsetP/P2i.
 have UU : U \is unitarylf.
 rewrite unitarylfE /U adjf_sum linear_sumr/= -tenf11 
-  -(sumonb_out (tv2v_fun _ x t)) /tv2v_fun/=/tv2v_fun linear_suml/=.
+  -(sumonb_out (tv2v_fun _ x t)) /tv2v_fun/=/tv2v_fun linear_sumlz/=.
 apply/eqP; apply eq_bigr=>i _.
-rewrite linear_suml/= [LHS](bigD1 i)//= [X in _ + X]big1.
+rewrite linear_sumlz/= [LHS](bigD1 i)//= [X in _ + X]big1.
 by move=>j /negPf nji; rewrite tenf_adj -tenf_comp// tf2f_adj 
   tf2f_comp adj_outp outp_comp onb_dot nji scale0r linear0 linear0l.
 by rewrite tenf_adj -tenf_comp// tf2f_adj tf2f_comp unitaryfEl 
@@ -479,7 +481,8 @@ HB.instance Definition _ u := isBound1Lf.Build _ _ _ (usem_bound1 u).
 (* HB fails here if we infer PU from typeclass_instance *)
 Canonical usem_isofType u {PU} := IsoLf_Build (unitarylf_iso (@usem_wf_unitary u PU)).
 Canonical usem_gisofType u {PU} := GisoLf_Build (unitarylf_giso (@usem_wf_unitary u PU)).
-Canonical usem_normalfType u {PU} := NormalLf.copy (usem u) (@usem_gisofType u PU).
+Canonical usem_normalfType u {PU} :=
+  NormalLf_Build (isolf_normal (unitarylf_iso (@usem_wf_unitary u PU))).
 
 Lemma usem_big I (r : seq I) (P : pred I) (f : I -> ucmd_) :
   usem (\big[sequ_/uskip_]_(i <- r | P i) f i) = 
@@ -625,7 +628,7 @@ Lemma qif_change_basisG T F (q : 'QReg[T]) (psi phi : 'ONB(F;'Ht T))
   <{[ qif psi[q] = i then c i fiq ]}> =u 
     <{[ ([q] *= onb_change psi phi) ; (qif phi[q] = i then c i fiq) ; ([q] *= onb_change phi psi) ]}>.
 Proof.
-rewrite eq_usem.unlock !usemE linear_suml/= linear_sumr/=; apply eq_bigr=>i _.
+rewrite eq_usem.unlock !usemE linear_sumlz/= linear_sumr/=; apply eq_bigr=>i _.
 move: (H i)=>/ucmd_var_disj_vsetP Hi.
 move: (usem_local (c i))=>[U ->].
 rewrite !comp_lfunA -liftf_lf_comp ![_ \o liftf_lf U]liftf_lf_compC// -!comp_lfunA; f_equal.
@@ -760,7 +763,7 @@ Lemma qif_nestrGB T1 T2 (q1 : 'QReg[T1]) (q2 : 'QReg[T2]) (F1 F2 : finType)
   <{[ qif tentv_onbasis phi1 phi2[(q1, q2)] = i then c i.1 i.2 fiq ]}>.
 Proof.
 rewrite eq_usem.unlock !usemE.
-under eq_bigr do rewrite usemE linear_sumr/= linear_suml/=.
+under eq_bigr do rewrite usemE linear_sumr/= linear_sumlz/=.
 rewrite exchange_big pair_big/=. apply eq_bigr=>[[i j]] _.
 rewrite /tentv_fun/= !comp_lfunA -comp_lfunA; do 2 f_equal.
 by rewrite -tentv_out -tf2f_pair -tenf_castC !liftf_lf_cast -liftf_lf_compT// disjoint_sym -disj_setE.
@@ -780,7 +783,7 @@ Lemma qif_nestlGB T1 T2 (q1 : 'QReg[T1]) (q2 : 'QReg[T2]) (F1 F2 : finType)
   <{[ qif tentv_onbasis phi1 phi2[(q1, q2)] = i then c i.1 i.2 fiq ]}>.
 Proof.
 rewrite eq_usem.unlock !usemE.
-under eq_bigr do rewrite usemE linear_sumr/= linear_suml/=.
+under eq_bigr do rewrite usemE linear_sumr/= linear_sumlz/=.
 rewrite pair_big/=. apply eq_bigr=>[[i j]] _.
 rewrite /tentv_fun/= !comp_lfunA -comp_lfunA; do 2 f_equal.
 by rewrite -tentv_out -tf2f_pair !liftf_lf_cast -liftf_lf_compT// -disj_setE.
@@ -897,7 +900,7 @@ Lemma qif_sequG T (q : 'QReg[T]) (F : finType) (phi : 'ONB(F;'Ht T))
   <{[ (qif phi[q] = i then c i fiq) ; (qif phi[q] = i then d i fiq) ]}> =u 
     <{[ qif phi[q] = i then (sequ_ (c i) (d i)) fiq ]}>.
 Proof.
-rewrite eq_usem.unlock !usemE linear_suml/=.
+rewrite eq_usem.unlock !usemE linear_sumlz/=.
 apply eq_bigr=>i _; rewrite linear_sumr/= (bigD1 i)//= big1=>[j /negPf nji|];
 rewrite !comp_lfunA -[X in X \o _ \o _]comp_lfunA 
   -liftf_lf_comp tf2f_comp outp_comp onb_dot ?eqxx.
@@ -930,10 +933,11 @@ Lemma sequ_distrrG T (q : qreg T) (F : finType) (M : 'ONB(F;'Ht T)) c f
   <{[ c ; (qif M[q] = i then f i fiq) ]}> =u 
     <{[ qif M[q] = i then sequ_ c (f i) fiq ]}>.
 Proof.
-rewrite eq_usem.unlock !usemE linear_suml/=.
+rewrite eq_usem.unlock !usemE linear_sumlz/=.
 apply eq_bigr=>i _; rewrite usemE -!comp_lfunA; do 2 f_equal.
 move: (usem_local c)=>[U ->].
-by rewrite liftf_lf_compC// disjoint_sym ucmd_var_disj_vsetP.
+rewrite liftf_lf_compC//.
+by apply/ucmd_var_disj_vsetP.
 Qed.
 
 Lemma sequ_distrlG T (q : qreg T) (F : finType) (M : 'ONB(F;'Ht T)) c f
@@ -944,7 +948,8 @@ Proof.
 rewrite eq_usem.unlock !usemE linear_sumr/=.
 apply eq_bigr=>i _; rewrite usemE !comp_lfunA; do 2 f_equal.
 move: (usem_local c)=>[U ->].
-by rewrite liftf_lf_compC// ucmd_var_disj_vsetP.
+rewrite liftf_lf_compC//.
+by rewrite disjoint_sym; apply/ucmd_var_disj_vsetP.
 Qed.
 
 Lemma sequ_distrrB q phi c c0 c1 {H : `{{ucmd_var_disj q c}}} :
@@ -985,10 +990,10 @@ set x1 := liftf_lf (\sum_(j <- l | _) _).
 set x2 := \sum_(j <- l | _) _.
 set x3 := liftf_lf (f a).
 have P4: x1 \o x3 = 0.
-by rewrite /x1 /x3 -liftf_lf_comp linear_suml/= big_seq_cond big1 ?linear0// 
+by rewrite /x1 /x3 -liftf_lf_comp linear_sumlz/= big_seq_cond big1 ?linear0// 
   =>i /andP[] Pi _; move: (notin_in_neq Pa Pi); rewrite eq_sym; apply: P2.
 have P5: x2 \o x3 = 0.
-  rewrite /x2 /x3 linear_suml/= big_seq_cond big1// =>i /andP[] Pi _.
+  rewrite /x2 /x3 linear_sumlz/= big_seq_cond big1// =>i /andP[] Pi _.
   move: (notin_in_neq Pa Pi); rewrite eq_sym -!comp_lfunA -liftf_lf_comp=>/P2->;
   by rewrite linear0 !comp_lfun0r.
 rewrite linearDr/= linearBr/= comp_lfun1r linearDl/= linearBl/= 
@@ -1011,7 +1016,7 @@ have Pi i : usem (qcond_ x phi (fun j : evalQT T => if j == i then f i else uski
   rewrite usemE (bigD1 i)//= eqxx addrC; f_equal;
     last by rewrite (projT2 (cid (usem_local (f i)))).
   have <-: \sum_i (fi i) = \1 by rewrite /fi -linear_sum/= sumonb_out tf2f1.
-  rewrite [in RHS](bigD1 i)//= addrC addKr linear_sum/=.
+  rewrite [in RHS](bigD1 i)//= [X in X - _]addrC addrK linear_sum/=.
   by apply eq_bigr=>j /negPf ->; rewrite usemE comp_lfun1r 
     -liftf_lf_comp tf2f_comp outp_comp ns_dot scale1r.
 under [RHS]eq_bigr do rewrite Pi.

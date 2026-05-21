@@ -1,11 +1,17 @@
 (* -------------------------------------------------------------------- *)
 (* Change numClosedFieldType to C *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra finmap fingroup perm.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
+From mathcomp.fingroup Require Import fingroup perm.
+From mathcomp.finmap Require Import finmap.
 From quantum.external Require Import spectral.
 From mathcomp.classical Require Import boolp classical_sets.
-From mathcomp.analysis Require Import reals signed topology normedtype sequences exp.
-From mathcomp.analysis Require Import -(notations)forms.
+From mathcomp.reals Require Import reals signed.
+From mathcomp.analysis Require Import sequences exp.
+From mathcomp.analysis.topology_theory Require Import topology.
+From mathcomp.analysis.normedtype_theory Require Import normedtype.
+From mathcomp.algebra Require Import -(notations)sesquilinear.
 (* From mathcomp.real_closed Require Import complex. *)
 From quantum.external Require Import complex.
 From mathcomp.real_closed Require Import mxtens.
@@ -672,97 +678,26 @@ HB.structure Definition GisoLf (U V : chsType) :=
 HB.instance Definition _ (U : chsType) (f : isofType U U) := 
   isNormalLf.Build U f (isolf_normal (@is_isolf _ _ f)).
 
+(*
+  GisoLf already contains IsoLf, so the IsoLf -> NormalLf inheritance above
+  covers gisofType U U. Keeping a second direct route makes HB generation
+  prohibitively slow on Rocq 9.2 / HB 1.10.
 #[non_forgetful_inheritance]
 HB.instance Definition _ (U : chsType) (f : gisofType U U) := 
   isNormalLf.Build U f (isolf_normal (@is_isolf _ _ f)).
+*)
 
 (* factories *)
-HB.factory Record isHermLf (U : chsType) (f : 'End(U)) := {
-  is_hermlf : f \is hermlf;
-}.
-HB.builders Context U f of isHermLf U f.
-  HB.instance Definition _ := isNormalLf.Build U f (hermlf_normal is_hermlf).
-  HB.instance Definition _ := Normal_isHermLf.Build U f is_hermlf.
-HB.end.
-
-HB.factory Record isPsdLf (U : chsType) (f : 'End(U)) := {
-  is_psdlf : f \is psdlf;
-}.
-HB.builders Context U f of isPsdLf U f.
-  HB.instance Definition _ := isHermLf.Build U f (psdlf_herm is_psdlf).
-  HB.instance Definition _ := Herm_isPsdLf.Build U f is_psdlf.
-HB.end.
-
-HB.factory Record Psd_isObsLf (U : chsType) f of PsdLf U f :=
-  { is_obslf : f \is obslf}.
-HB.builders Context U f of Psd_isObsLf U f.
-  HB.instance Definition _ := isBound1Lf.Build U U f (obslf_bound1 is_obslf).
-  HB.instance Definition _ := ObsLf.Class (PsdLf.on f) (Bound1Lf.on f).
-HB.end.
-
-HB.factory Record isObsLf (U : chsType) (f : 'End(U)) := {
-  is_obslf : f \is obslf;
-}.
-HB.builders Context U f of isObsLf U f.
-  HB.instance Definition _ := isPsdLf.Build U f (obslf_psd is_obslf).
-  HB.instance Definition _ := Psd_isObsLf.Build U f is_obslf.
-HB.end.
-
-HB.factory Record isDenLf (U : chsType) (f : 'End(U)) := {
-  is_denlf : f \is denlf;
-}.
-HB.builders Context U f of isDenLf U f.
-  HB.instance Definition _ := isObsLf.Build U f (denlf_obs is_denlf).
-  HB.instance Definition _ := Obs_isDenLf.Build U f is_denlf.
-HB.end.
-
-HB.factory Record isDen1Lf (U : chsType) (f : 'End(U)) := {
-  is_den1lf : f \is den1lf;
-}.
-HB.builders Context U f of isDen1Lf U f.
-  HB.instance Definition _ := isDenLf.Build U f (den1lf_den is_den1lf).
-  HB.instance Definition _ := Den_isDen1Lf.Build U f is_den1lf.
-HB.end.
-
-HB.factory Record isProjLf (U : chsType) (f : 'End(U)) := {
-  is_projlf : f \is projlf;
-}.
-HB.builders Context U f of isProjLf U f.
-  HB.instance Definition _ := isObsLf.Build U f (projlf_obs is_projlf).
-  HB.instance Definition _ := Obs_isProjLf.Build U f is_projlf.
-HB.end.
-
-HB.factory Record isProj1Lf (U : chsType) (f : 'End(U)) := {
-  is_proj1lf : f \is proj1lf;
-}.
-HB.builders Context U f of isProj1Lf U f.
-  HB.instance Definition _ := isDen1Lf.Build U f (proj1lf_den1 is_proj1lf).
-  HB.instance Definition _ := Obs_isProjLf.Build U f (proj1lf_proj is_proj1lf).
-HB.end.
-
-HB.factory Record isIsoLf (U V : chsType) (f : 'Hom(U,V)) := {
-  is_isolf : f \is isolf;
-}.
-HB.builders Context U V f of isIsoLf U V f.
-  HB.instance Definition _ := isBound1Lf.Build U V f (isolf_bound1 is_isolf).
-  HB.instance Definition _ := Bound1_isIsoLf.Build U V f is_isolf.
-HB.end.
-
-HB.factory Record isGisoLf (U V : chsType) (f : 'Hom(U,V)) := {
-  is_gisolf : f \is gisolf;
-}.
-HB.builders Context U V f of isGisoLf U V f.
-  HB.instance Definition _ := isIsoLf.Build U V f (gisolf_iso is_gisolf).
-  HB.instance Definition _ := Iso_isGisoLf.Build U V f is_gisolf.
-HB.end.
-
-HB.factory Record isUnitaryLf (U : chsType) (f : 'End(U)) := {
-  is_unitarylf : f \is unitarylf;
-}.
-HB.builders Context U f of isUnitaryLf U f.
-  HB.instance Definition _ := isGisoLf.Build U U f (unitarylf_giso is_unitarylf).
-  HB.instance Definition _ := isNormalLf.Build U f (isolf_normal is_unitarylf).
-HB.end.
+Module isHermLf.
+Definition Build (U : chsType) (f : 'End(U)) (H : f \is hermlf) :
+    HermLf.axioms_ f.
+Proof.
+exact:
+  (let n := @isNormalLf.Axioms_ U f (hermlf_normal H) in
+  @HermLf.Class U f n (@Normal_isHermLf.Axioms_ U f n H)).
+Qed.
+End isHermLf.
+Arguments isHermLf.Build U f H : clear implicits.
 
 Section LfSubType.
 Variable (U V : chsType).
@@ -770,51 +705,51 @@ Variable (U V : chsType).
 Section LfBuild.
 Variable (x : 'End(U)) (y : 'Hom(U,V)).
 
-Definition NormalLf_Build (H : x \is normallf) :=
+Definition NormalLf_Build (H : x \is normallf) : normalfType U :=
   NormalLf.Pack (NormalLf.Class (isNormalLf.Axioms_ x H)).
-Definition HermLf_Build (H : x \is hermlf) :=
+Definition HermLf_Build (H : x \is hermlf) : hermfType U :=
   HermLf.Pack (HermLf.Class (Normal_isHermLf.Axioms_ 
     (isNormalLf.Axioms_ x (hermlf_normal H)) H)).
-Definition PsdLf_Build (H : x \is psdlf) :=
+Definition PsdLf_Build (H : x \is psdlf) : psdfType U :=
   PsdLf.Pack (PsdLf.Class (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_ 
   (isNormalLf.Axioms_ x (psdlf_normal H)) (psdlf_herm H)) H)).
-Definition ObsLf_Build (H : x \is obslf) :=
+Definition ObsLf_Build (H : x \is obslf) : obsfType U :=
   ObsLf.Pack (ObsLf.Class (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_ 
   (isNormalLf.Axioms_ x (obslf_normal H)) (obslf_herm H)) (obslf_psd H)) 
   (isBound1Lf.Axioms_ _ x (obslf_bound1 H))).
-Definition DenLf_Build (H : x \is denlf) :=
+Definition DenLf_Build (H : x \is denlf) : denfType U :=
   DenLf.Pack (DenLf.Class (@Obs_isDenLf.Axioms_ _ _ _ _
   (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_ (isNormalLf.Axioms_ x 
   (denlf_normal H)) (denlf_herm H)) (denlf_psd H))
   (isBound1Lf.Axioms_ _ x (denlf_bound1 H)) H)).
-Definition Den1Lf_Build (H : x \is den1lf) :=
+Definition Den1Lf_Build (H : x \is den1lf) : den1fType U :=
   Den1Lf.Pack (Den1Lf.Class (Den_isDen1Lf.Axioms_
   (@Obs_isDenLf.Axioms_ _ _ _ _
   (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_ (isNormalLf.Axioms_ x 
   (den1lf_normal H)) (den1lf_herm H)) (den1lf_psd H))
   (isBound1Lf.Axioms_ _ x (den1lf_bound1 H)) (den1lf_den H)) H)).
-Definition ProjLf_Build (H : x \is projlf) :=
+Definition ProjLf_Build (H : x \is projlf) : projfType U :=
   ProjLf.Pack (ProjLf.Class (@Obs_isProjLf.Axioms_ _ _ _ _ 
   (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_ (isNormalLf.Axioms_ x 
   (projlf_normal H)) (projlf_herm H)) (projlf_psd H))
   (isBound1Lf.Axioms_ _ x (projlf_bound1 H)) H)).
-Definition Proj1Lf_Build (H : x \is proj1lf) :=
+Definition Proj1Lf_Build (H : x \is proj1lf) : proj1fType U :=
   Proj1Lf.Pack (Proj1Lf.Class (@Obs_isProjLf.Axioms_ _ _ _ _ 
   (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_ (isNormalLf.Axioms_ x 
   (proj1lf_normal H)) (proj1lf_herm H)) (proj1lf_psd H))
   (isBound1Lf.Axioms_ _ x (proj1lf_bound1 H)) (proj1lf_proj H))
   (Den_isDen1Lf.Axioms_
   (Obs_isDenLf.Axioms_ _ (proj1lf_den H)) (proj1lf_den1 H))).
-Definition Bound1Lf_Build (H : y \is bound1lf) :=
+Definition Bound1Lf_Build (H : y \is bound1lf) : bound1fType U V :=
   Bound1Lf.Pack (Bound1Lf.Class (isBound1Lf.Axioms_ _ y H)).
-Definition IsoLf_Build (H : y \is isolf) :=
+Definition IsoLf_Build (H : y \is isolf) : isofType U V :=
   IsoLf.Pack (IsoLf.Class (Bound1_isIsoLf.Axioms_ y 
   (isBound1Lf.Axioms_ _ y (isolf_bound1 H)) H)).
-Definition GisoLf_Build (H : y \is gisolf) :=
+Definition GisoLf_Build (H : y \is gisolf) : gisofType U V :=
   GisoLf.Pack (GisoLf.Class (Iso_isGisoLf.Axioms_ _
   (Bound1_isIsoLf.Axioms_ y (isBound1Lf.Axioms_ _ y 
   (gisolf_bound1 H)) (gisolf_iso H)) H)).
-Definition UnitaryLf_Build (H : x \is unitarylf) :=
+Definition UnitaryLf_Build (H : x \is unitarylf) : gisofType U U :=
   GisoLf.Pack (GisoLf.Class (Iso_isGisoLf.Axioms_ _
   (Bound1_isIsoLf.Axioms_ x (isBound1Lf.Axioms_ _ x 
   (unitarylf_bound1 H)) (unitarylf_iso H)) (unitarylf_giso H))).
@@ -852,7 +787,7 @@ Program Definition normalf_subType :=
   @isSub.Build 'End(U) (fun f => f \is normallf) (normalfType U) 
   (@NormalLf.sort U) NormalLf_Build _ (fun _ _ => erefl).
 Next Obligation.
-intros; move: (@is_normallf _ u) (X _ (@is_normallf _ u)).
+move=> K X u; move: (@is_normallf _ u) (X _ (@is_normallf _ u)).
 by case: u=>/= u [[Pu1]] Pu2; rewrite (eq_irrelevance Pu1 Pu2).
 Qed.
 HB.instance Definition _ := normalf_subType.
@@ -863,7 +798,7 @@ Program Definition hermf_subType := @isSub.Build 'End(U)
   (fun f => f \is hermlf) (hermfType U) (@HermLf.sort U) 
   HermLf_Build _ (fun _ _ => erefl).
 Next Obligation.
-intros; move: (@is_hermlf _ u) (X _ (@is_hermlf _ u)).
+move=> K X u; move: (@is_hermlf _ u) (X _ (@is_hermlf _ u)).
 by case: u=>/= u [[Pu1]] [Pu2] Pu3; 
   rewrite /HermLf_Build (eq_irrelevance Pu2 Pu3) (eq_irrelevance (_ _) Pu1).
 Qed.
@@ -875,7 +810,7 @@ Program Definition psdf_subType := @isSub.Build 'End(U)
   (fun f => f \is psdlf) (psdfType U) (@PsdLf.sort U) 
   PsdLf_Build _ (fun _ _ => erefl).
 Next Obligation.
-intros; move: (@is_psdlf _ u) (X _ (@is_psdlf _ u)).
+move=> K X u; move: (@is_psdlf _ u) (X _ (@is_psdlf _ u)).
 by case: u=>/= u [[Pu1]] [Pu2] [Pu3] Pu4;
   rewrite /PsdLf_Build (eq_irrelevance Pu3 Pu4)
   (eq_irrelevance (_ _) Pu1) (eq_irrelevance (_ _) Pu2).
@@ -888,7 +823,7 @@ Program Definition bound1f_subType :=
   @isSub.Build 'Hom(U,V) (fun f => f \is bound1lf) (bound1fType U V) 
   (@Bound1Lf.sort U V) Bound1Lf_Build _ (fun _ _ => erefl).
 Next Obligation.
-intros; move: (@is_bound1lf _ _ u) (X _ (@is_bound1lf _ _ u)).
+move=> K X u; move: (@is_bound1lf _ _ u) (X _ (@is_bound1lf _ _ u)).
 by case: u=>/= u [[Pu1]] Pu2; rewrite (eq_irrelevance Pu1 Pu2).
 Qed.
 HB.instance Definition _ := bound1f_subType.
@@ -899,11 +834,14 @@ Program Definition obsf_subType := @isSub.Build 'End(U)
   (fun f => f \is obslf) (obsfType U) (@ObsLf.sort U) 
   ObsLf_Build _ (fun _ _ => erefl).
 Next Obligation.
-intros.
+move=> K X u.
 move: (psdlf_bound1lf_obs (@is_psdlf _ u) (@is_bound1lf _ _ u))=>Pu.
-by move: (X _ Pu); case: u Pu =>/= u [[Pu1]] [Pu2] [Pu3] [Pu4] Pu5;
-  rewrite /ObsLf_Build (eq_irrelevance (_ _) Pu1) (eq_irrelevance (_ _) Pu2) 
-    (eq_irrelevance (_ _) Pu3) (eq_irrelevance (_ _) Pu4).
+move: (X _ Pu); case: u Pu=>/= u [[Pu1]] [Pu2] [Pu3] [Pu4] Pu5.
+rewrite /ObsLf_Build.
+rewrite (eq_irrelevance (obslf_normal Pu5) Pu1).
+rewrite (eq_irrelevance (obslf_herm Pu5) Pu2).
+rewrite (eq_irrelevance (obslf_psd Pu5) Pu3).
+by rewrite (eq_irrelevance (obslf_bound1 Pu5) Pu4).
 Qed.
 HB.instance Definition _ := obsf_subType.
 HB.instance Definition _ := [Equality of (obsfType U) by <:].
@@ -913,11 +851,14 @@ Program Definition denf_subType := @isSub.Build 'End(U)
   (fun f => f \is denlf) (denfType U) (@DenLf.sort U) 
   DenLf_Build _ (fun _ _ => erefl).
 Next Obligation.
-intros. move: (@is_denlf _ u) (X _ (@is_denlf _ u)).
-by case: u=>/= u [[Pu1]] [Pu2] [Pu3] [Pu4] [Pu5] Pu6;
-  rewrite /DenLf_Build (eq_irrelevance Pu5 Pu6) (eq_irrelevance (_ _) Pu1) 
-    (eq_irrelevance (_ _) Pu2) (eq_irrelevance (_ _) Pu3) 
-    (eq_irrelevance (_ _) Pu4).
+move=> K X u. move: (@is_denlf _ u) (X _ (@is_denlf _ u)).
+case: u=>/= u [[Pu1]] [Pu2] [Pu3] [Pu4] [Pu5] Pu6.
+rewrite /DenLf_Build.
+rewrite (eq_irrelevance Pu5 Pu6).
+rewrite (eq_irrelevance (denlf_normal Pu6) Pu1).
+rewrite (eq_irrelevance (denlf_herm Pu6) Pu2).
+rewrite (eq_irrelevance (denlf_psd Pu6) Pu3).
+by rewrite (eq_irrelevance (denlf_bound1 Pu6) Pu4).
 Qed.
 HB.instance Definition _ := denf_subType.
 HB.instance Definition _ := [Equality of (denfType U) by <:].
@@ -927,11 +868,15 @@ Program Definition den1f_subType := @isSub.Build 'End(U)
   (fun f => f \is den1lf) (den1fType U) (@Den1Lf.sort U) 
   Den1Lf_Build _ (fun _ _ => erefl).
 Next Obligation.
-intros. move: (@is_den1lf _ u) (X _ (@is_den1lf _ u)).
-by case: u=>/= u [[Pu1]] [Pu2] [Pu3] [Pu4] [Pu5] [Pu6] Pu7;
-  rewrite /Den1Lf_Build (eq_irrelevance Pu6 Pu7) (eq_irrelevance (_ _) Pu1) 
-    (eq_irrelevance (_ _) Pu2) (eq_irrelevance (_ _) Pu3) 
-    (eq_irrelevance (_ _) Pu4) (eq_irrelevance (_ _) Pu5).
+move=> K X u. move: (@is_den1lf _ u) (X _ (@is_den1lf _ u)).
+case: u=>/= u [[Pu1]] [Pu2] [Pu3] [Pu4] [Pu5] [Pu6] Pu7.
+rewrite /Den1Lf_Build.
+rewrite (eq_irrelevance Pu6 Pu7).
+rewrite (eq_irrelevance (den1lf_normal Pu7) Pu1).
+rewrite (eq_irrelevance (den1lf_herm Pu7) Pu2).
+rewrite (eq_irrelevance (den1lf_psd Pu7) Pu3).
+rewrite (eq_irrelevance (den1lf_bound1 Pu7) Pu4).
+by rewrite (eq_irrelevance (den1lf_den Pu7) Pu5).
 Qed.
 HB.instance Definition _ := den1f_subType.
 HB.instance Definition _ := [Equality of (den1fType U) by <:].
@@ -941,11 +886,14 @@ Program Definition projf_subType := @isSub.Build 'End(U)
   (fun f => f \is projlf) (projfType U) (@ProjLf.sort U) 
   ProjLf_Build _ (fun _ _ => erefl).
 Next Obligation.
-intros. move: (@is_projlf _ u) (X _ (@is_projlf _ u)).
-by case: u=>/= u [[Pu1]] [Pu2] [Pu3] [Pu4] [Pu5] Pu6;
-  rewrite /ProjLf_Build (eq_irrelevance Pu5 Pu6) (eq_irrelevance (_ _) Pu1) 
-    (eq_irrelevance (_ _) Pu2) (eq_irrelevance (_ _) Pu3) 
-    (eq_irrelevance (_ _) Pu4).
+move=> K X u. move: (@is_projlf _ u) (X _ (@is_projlf _ u)).
+case: u=>/= u [[Pu1]] [Pu2] [Pu3] [Pu4] [Pu5] Pu6.
+rewrite /ProjLf_Build.
+rewrite (eq_irrelevance Pu5 Pu6).
+rewrite (eq_irrelevance (projlf_normal Pu6) Pu1).
+rewrite (eq_irrelevance (projlf_herm Pu6) Pu2).
+rewrite (eq_irrelevance (projlf_psd Pu6) Pu3).
+by rewrite (eq_irrelevance (projlf_bound1 Pu6) Pu4).
 Qed.
 HB.instance Definition _ := projf_subType.
 HB.instance Definition _ := [Equality of (projfType U) by <:].
@@ -955,13 +903,17 @@ Program Definition proj1f_subType := @isSub.Build 'End(U)
   (fun f => f \is proj1lf) (proj1fType U) (@Proj1Lf.sort U) 
   Proj1Lf_Build _ (fun _ _ => erefl).
 Next Obligation.
-intros; move: (den1lf_projlf_proj1 (@is_den1lf _ u) (@is_projlf _ u))=>Pu.
+move=> K X u; move: (den1lf_projlf_proj1 (@is_den1lf _ u) (@is_projlf _ u))=>Pu.
 move: (X _ Pu); case: u Pu
   =>/= u [[Pu1]] [Pu2] [Pu3] [Pu4] [Pu5] [Pu6] [Pu7] Pu8.
-by rewrite /Proj1Lf_Build (eq_irrelevance (_ _) Pu1)
-    (eq_irrelevance (_ _) Pu2) (eq_irrelevance (_ _) Pu3) 
-    (eq_irrelevance (_ _) Pu4) (eq_irrelevance (_ _) Pu5) 
-    (eq_irrelevance (_ _) Pu6) (eq_irrelevance (_ _) Pu7).
+rewrite /Proj1Lf_Build.
+rewrite (eq_irrelevance (proj1lf_normal Pu8) Pu1).
+rewrite (eq_irrelevance (proj1lf_herm Pu8) Pu2).
+rewrite (eq_irrelevance (proj1lf_psd Pu8) Pu3).
+rewrite (eq_irrelevance (proj1lf_bound1 Pu8) Pu4).
+rewrite (eq_irrelevance (proj1lf_proj Pu8) Pu5).
+rewrite (eq_irrelevance (proj1lf_den Pu8) Pu6).
+by rewrite (eq_irrelevance (proj1lf_den1 Pu8) Pu7).
 Qed.
 HB.instance Definition _ := proj1f_subType.
 HB.instance Definition _ := [Equality of (proj1fType U) by <:].
@@ -971,9 +923,11 @@ Program Definition isof_subType :=
   @isSub.Build 'Hom(U,V) (fun f => f \is isolf) (isofType U V) 
   (@IsoLf.sort U V) IsoLf_Build _ (fun _ _ => erefl).
 Next Obligation.
-intros; move: (@is_isolf _ _ u) (X _ (@is_isolf _ _ u)).
-by case: u=>/= u [[Pu1]] [Pu2] Pu3; rewrite /IsoLf_Build 
-  (eq_irrelevance Pu2 Pu3) (eq_irrelevance (_ _) Pu1).
+move=> K X u; move: (@is_isolf _ _ u) (X _ (@is_isolf _ _ u)).
+case: u=>/= u [[Pu1]] [Pu2] Pu3.
+rewrite /IsoLf_Build.
+rewrite (eq_irrelevance Pu2 Pu3).
+by rewrite (eq_irrelevance (isolf_bound1 Pu3) Pu1).
 Qed.
 HB.instance Definition _ := isof_subType.
 HB.instance Definition _ := [Equality of (isofType U V) by <:].
@@ -983,15 +937,81 @@ Program Definition gisof_subType :=
   @isSub.Build 'Hom(U,V) (fun f => f \is gisolf) (gisofType U V) 
   (@IsoLf.sort U V) GisoLf_Build _ (fun _ _ => erefl).
 Next Obligation.
-intros; move: (@is_gisolf _ _ u) (X _ (@is_gisolf _ _ u)).
-by case: u=>/= u [[Pu1]] [Pu2] [Pu3] Pu4; rewrite /GisoLf_Build 
-  (eq_irrelevance Pu3 Pu4) (eq_irrelevance (_ _) Pu1) (eq_irrelevance (_ _) Pu2).
+move=> K X u; move: (@is_gisolf _ _ u) (X _ (@is_gisolf _ _ u)).
+case: u=>/= u [[Pu1]] [Pu2] [Pu3] Pu4.
+rewrite /GisoLf_Build.
+rewrite (eq_irrelevance Pu3 Pu4).
+rewrite (eq_irrelevance (gisolf_bound1 Pu4) Pu1).
+by rewrite (eq_irrelevance (gisolf_iso Pu4) Pu2).
 Qed.
 HB.instance Definition _ := gisof_subType.
 HB.instance Definition _ := [Equality of (gisofType U V) by <:].
 HB.instance Definition _ := [Choice of (gisofType U V) by <:].
 
 End LfSubType.
+
+Module isPsdLf.
+Definition Build (U : chsType) (f : 'End(U)) (H : f \is psdlf) :
+    PsdLf.axioms_ f :=
+  PsdLf.class (@PsdLf_Build U f H).
+End isPsdLf.
+Arguments isPsdLf.Build U f H : clear implicits.
+
+Module isObsLf.
+Definition Build (U : chsType) (f : 'End(U)) (H : f \is obslf) :
+    ObsLf.axioms_ f :=
+  ObsLf.class (@ObsLf_Build U f H).
+End isObsLf.
+Arguments isObsLf.Build U f H : clear implicits.
+
+Module isDenLf.
+Definition Build (U : chsType) (f : 'End(U)) (H : f \is denlf) :
+    DenLf.axioms_ f :=
+  DenLf.class (@DenLf_Build U f H).
+End isDenLf.
+Arguments isDenLf.Build U f H : clear implicits.
+
+Module isDen1Lf.
+Definition Build (U : chsType) (f : 'End(U)) (H : f \is den1lf) :
+    Den1Lf.axioms_ f :=
+  Den1Lf.class (@Den1Lf_Build U f H).
+End isDen1Lf.
+Arguments isDen1Lf.Build U f H : clear implicits.
+
+Module isProjLf.
+Definition Build (U : chsType) (f : 'End(U)) (H : f \is projlf) :
+    ProjLf.axioms_ f :=
+  ProjLf.class (@ProjLf_Build U f H).
+End isProjLf.
+Arguments isProjLf.Build U f H : clear implicits.
+
+Module isProj1Lf.
+Definition Build (U : chsType) (f : 'End(U)) (H : f \is proj1lf) :
+    Proj1Lf.axioms_ f :=
+  Proj1Lf.class (@Proj1Lf_Build U f H).
+End isProj1Lf.
+Arguments isProj1Lf.Build U f H : clear implicits.
+
+Module isIsoLf.
+Definition Build (U V : chsType) (f : 'Hom(U,V)) (H : f \is isolf) :
+    IsoLf.axioms_ f :=
+  IsoLf.class (@IsoLf_Build U V f H).
+End isIsoLf.
+Arguments isIsoLf.Build U V f H : clear implicits.
+
+Module isGisoLf.
+Definition Build (U V : chsType) (f : 'Hom(U,V)) (H : f \is gisolf) :
+    GisoLf.axioms_ f :=
+  GisoLf.class (@GisoLf_Build U V f H).
+End isGisoLf.
+Arguments isGisoLf.Build U V f H : clear implicits.
+
+Module isUnitaryLf.
+Definition Build (U : chsType) (f : 'End(U)) (H : f \is unitarylf) :
+    GisoLf.axioms_ f :=
+  GisoLf.class (@UnitaryLf_Build U f H).
+End isUnitaryLf.
+Arguments isUnitaryLf.Build U f H : clear implicits.
 
 Reserved Notation "''FB1'" .
 Reserved Notation "''FB1_' S"     (at level 8, S at level 2, format "''FB1_' S").
@@ -1597,7 +1617,7 @@ Proof. by rewrite conjfAT denlf_tr denlf_adj. Qed.
 Lemma den1lf_adj (A:'End(V)) : A^A \is den1lf = (A \is den1lf).
 Proof.
 apply/eqb_iff; split=>/den1lfP P; apply/den1lfP; move: P;
-by rewrite psdlf_adj lftrace_adj=>[[->/(f_equal Num.conj_op)]];
+by rewrite psdlf_adj lftrace_adj=>[[->/(f_equal conjC)]];
 rewrite ?conjCK conjC1.
 Qed.
 Lemma den1lf_tr (A:'End(V)) : A^T \is den1lf = (A \is den1lf).
@@ -1941,7 +1961,7 @@ Program Definition PartialState_subType (U : chsType) :=
   (@PartialState.sort U) (fun (u : U) (H : [< u ; u >] <= 1) => 
   PartialState.Pack (PartialState.Class (isPartialState.Axioms_ u H))) _ (fun _ _ => erefl).
 Next Obligation.
-intros; move: (@ps_dot _ u) (X _ (@ps_dot _ u)).
+move=> U K X u; move: (@ps_dot _ u) (X _ (@ps_dot _ u)).
 by case: u=>/= u [[Pu1]] Pu2; rewrite (eq_irrelevance Pu1 Pu2).
 Qed.
 HB.instance Definition _ (U : chsType) := @PartialState_subType U.
@@ -1955,7 +1975,7 @@ Program Definition NormalState_subType (U : chsType) :=
   (Partial_isNormalState.Axioms_ (isPartialState.Axioms_ u _) (eqP H)))) _ (fun _ _ => erefl).
 Next Obligation. by move=>??/eqP->. Qed.
 Next Obligation.
-intros; move: (@ns_dot _ u)=>/eqP Pu; move: (X _ Pu).
+move=> U K X u; move: (@ns_dot _ u)=>/eqP Pu; move: (X _ Pu).
 case: u Pu=>/= u [[Pu1]] [Pu2] Pu3.
 by rewrite (eq_irrelevance (_ Pu3) Pu1) (eq_irrelevance (_ Pu3) Pu2).
 Qed.
@@ -2049,7 +2069,7 @@ Lemma onb2eb_unitary : onb2eb \is unitarylf.
 Proof.
 apply/unitarylfPV; rewrite onb2eb_adj /onb2eb /eb2onb linear_sumr/=.
 rewrite [LHS](eq_bigr (fun i=>[> eb ''i; eb ''i <])).
-by move=>i _; rewrite linear_suml/= (bigD1 i)//= big1=>[j/negPf nj|];
+by move=>i _; rewrite linear_sumlz/= (bigD1 i)//= big1=>[j/negPf nj|];
 rewrite outp_comp onb_dot ?nj ?scale0r// eqxx scale1r addr0.
 symmetry; rewrite -sumeb_out; apply: reindex; apply bij_ord_enum.
 Qed.
@@ -2058,7 +2078,7 @@ Lemma sumonb_out : \sum_i [> f i ; f i <] = \1.
 Proof.
 move: onb2eb_unitary=>/unitarylfP<-. symmetry.
 rewrite onb2eb_adj /eb2onb /onb2eb linear_sumr/=; apply eq_bigr=>i _.
-rewrite (bigD1 i)//= comp_lfunDl linear_suml big1/==>[j/negPf nj|];
+rewrite (bigD1 i)//= comp_lfunDl linear_sumlz big1/==>[j/negPf nj|];
 by rewrite outp_comp eb_dot -enum_ord_eq cast_ord_comp cast_ord_id enum_rankK 
   ?nj ?scale0r// eqxx scale1r addr0.
 Qed.
@@ -2120,7 +2140,7 @@ Lemma onb_lfun2 (E : 'Hom(U,V)) :
   E = \sum_i \sum_j [< ov j ; E (ou i) >] *: [> ov j ; ou i <].
 Proof.
 rewrite [LHS](onb_lfun ou); apply eq_bigr=>i _.
-by rewrite {1}(onb_vec ov (E (ou i))) linear_suml/=;
+by rewrite {1}(onb_vec ov (E (ou i))) linear_sumlz/=;
 under eq_bigr do rewrite linearZl_LR.
 Qed.
 
@@ -2128,7 +2148,7 @@ Lemma onb_lfun2id (E : 'End(U)) :
   E = \sum_i \sum_j [< ou j ; E (ou i) >] *: [> ou j ; ou i <].
 Proof.
 rewrite [LHS](onb_lfun ou); apply eq_bigr=>i _.
-by rewrite {1}(onb_vec ou (E (ou i))) linear_suml/=;
+by rewrite {1}(onb_vec ou (E (ou i))) linear_sumlz/=;
 under eq_bigr do rewrite linearZl_LR.
 Qed.
 
@@ -2545,12 +2565,15 @@ apply/lef_dot=>u; rewrite lfunE/= linear0 outpE
 Qed.
 Lemma outp_psd (v : H) : [> v ; v <] \is psdlf.
 Proof. by rewrite psdlfE outp_ge0. Qed.
-HB.instance Definition _ v := isPsdLf.Build H [> v ; v <] (@outp_psd v).
+HB.instance Definition _ v := isHermLf.Build H [> v ; v <] (psdlf_herm (@outp_psd v)).
+HB.instance Definition _ v := Herm_isPsdLf.Build H [> v ; v <] (@outp_psd v).
 
 Lemma outp_den (v : 'PS(H)) : [> v ; v <] \is denlf.
 Proof. by apply/denlfP; split; [apply/is_psdlf | rewrite outp_trlf ps_dot]. Qed.
-HB.instance Definition _ (v : 'PS(H)) := Psd_isObsLf.Build 
-  H [> v ; v <] (denlf_obs (@outp_den v)).
+HB.instance Definition _ (v : 'PS(H)) := isBound1Lf.Build
+  H H [> v ; v <] (obslf_bound1 (denlf_obs (@outp_den v))).
+HB.instance Definition _ (v : 'PS(H)) :=
+  ObsLf.Class (PsdLf.on [> v ; v <]) (Bound1Lf.on [> v ; v <]).
 HB.instance Definition _ (v : 'PS(H)) := Obs_isDenLf.Build 
   H [> v ; v <] (@outp_den v).
 
@@ -2946,7 +2969,7 @@ Lemma comp_krausso (U V W : chsType) (F G : finType) (f : F -> 'Hom(U,V))
   krausso f :o krausso g = krausso (fun i : F * G => f i.1 \o g i.2).
 Proof.
 apply/superopP=>x; rewrite comp_soE !kraussoE.
-under eq_bigr do rewrite linear_sumr linear_suml/=.
+under eq_bigr do rewrite linear_sumr linear_sumlz/=.
 by rewrite pair_big/=; apply eq_bigr=>i _; rewrite adjf_comp !comp_lfunA.
 Qed.
 
@@ -2955,7 +2978,7 @@ Lemma compr_krausso (U V W : chsType) (F G : finType) (f : F -> 'Hom(U,V))
   krausso f o: krausso g = krausso (fun i : F * G => g i.2 \o f i.1).
 Proof.
 apply/superopP=>x. rewrite comp_soE !kraussoE.
-under eq_bigr do rewrite linear_sumr linear_suml/=.
+under eq_bigr do rewrite linear_sumr linear_sumlz/=.
 by rewrite exchange_big pair_big/=; apply eq_bigr=>i _; rewrite adjf_comp !comp_lfunA.
 Qed.
 
@@ -3001,7 +3024,9 @@ Variable (U V: chsType).
 Lemma so_vect_iso : Vector.axiom (dim 'End(U) * dim 'End(V)) 'SO(U,V).
 Proof.
 move: (lfun_vect_iso 'End(U) 'End(V))=>[f lf bf].
-exists (f \o @so_val U V)%FUN=>[a x y /= | ]; first by rewrite !soK lf.
+case: lf=> lfZ lfD.
+exists (f \o @so_val U V)%FUN=>[a x y /= | ]; first
+  by rewrite !soK lfD lfZ.
 by apply bij_comp=>//; exists (@Superop U V)=>[x|//]; apply/val_inj.
 Qed.
 HB.instance Definition _ := Lmodule_hasFinDim.Build C 'SO(U,V) so_vect_iso.
@@ -3112,10 +3137,10 @@ Proof.
 rewrite /ptrace1 [RHS]tens_mx_cast1lE; f_equal.
 rewrite {2}[x]lfun_sum_delta exchange_big !linear_sum/= linear_sumr/=;
 apply eq_bigr=>i _.
-rewrite so2choi.unlock linear_suml/= linear_sumr/= (bigD1 i)//= [X in _ + X]big1.
-  move=>j /negPf nji; rewrite linear_suml/= linear_sumr/= big1// =>k _.
+rewrite so2choi.unlock linear_sumlz/= linear_sumr/= (bigD1 i)//= [X in _ + X]big1.
+  move=>j /negPf nji; rewrite linear_sumlz/= linear_sumr/= big1// =>k _.
   by rewrite mulmxA tensmx_mul mul_delta_mx_cond eq_sym nji mulr0n !linear0l.
-rewrite addr0 !linear_sum/= !linear_suml/= !linear_sumr/= linear_suml/=.
+rewrite addr0 !linear_sum/= !linear_sumlz/= !linear_sumr/= linear_sumlz/=.
 apply eq_bigr=>j _.
 rewrite !tensmx_mul mul1mx !mulmx1 mulmxA mul_delta_mx !linearZ/=.
 rewrite linearZr/= -linearZl/=; f_equal; apply/matrixP=> a b; rewrite !ord1.
@@ -3209,12 +3234,12 @@ sum_k sum_ij xij *: <k| E |i><j| *m y |k>
 Lemma tr_choi_sep E (x: 'End(U)) (y: 'End(V)) : 
 \tr (so2choi E *m (h2mx (x^T) *t (h2mx y))) = \Tr (E x \o y).
 Proof.
-rewrite so2choi.unlock linear_suml/= linear_sum/=.
-under eq_bigr do rewrite linear_suml/= linear_sum/=.
+rewrite so2choi.unlock linear_sumlz/= linear_sum/=.
+under eq_bigr do rewrite linear_sumlz/= linear_sum/=.
 under eq_bigr do under eq_bigr do
   rewrite /= tensmx_mul mxtrace_tens -h2mx_comp.
-rewrite [in RHS](lfun_sum_delta x) linear_sum linear_suml linear_sum exchange_big.
-apply eq_bigr=>i _. rewrite /= linear_sum linear_suml linear_sum/=.
+rewrite [in RHS](lfun_sum_delta x) linear_sum linear_sumlz linear_sum exchange_big.
+apply eq_bigr=>i _. rewrite /= linear_sum linear_sumlz linear_sum/=.
 apply eq_bigr=>j _. rewrite linearZ/= linearZl/= linearZ/=.
 congr (_ * _); rewrite /mxtrace (bigD1 j)// big1/= =>[k /negPf nk|].
 by rewrite delta_mx_mulEr eq_sym nk mul0r.
@@ -3279,7 +3304,7 @@ Proof.
 rewrite so2choi.unlock/=; under [RHS]eq_bigr do (under eq_bigr do rewrite soE 
   linear_sum linear_sumr; rewrite exchange_big/=).
 rewrite exchange_big. apply eq_bigr=>k _.
-rewrite linear_suml/=. apply eq_bigr=>i _.
+rewrite linear_sumlz/=. apply eq_bigr=>i _.
 rewrite linear_sum/= linear_sumr/=. apply eq_bigr=>j _.
 rewrite adjmx_tens tensmx_mul adjmxM !adjmx_delta mulmxA mulmxACA !mul_delta_mx.
 by rewrite !h2mx_comp adj_lfun.unlock delta_lfE !mx2hK.
@@ -3294,10 +3319,10 @@ Lemma krausso_tnE (F: finType) (f : F -> 'Hom(U,V)) :
 Proof.
 apply/eqb_iff; split=>[/tnmapP P|/lef_trden P].
 apply/lef_trden=>x; move: (P x).
-rewrite kraussoE comp_lfun1l; apply: le_trans; rewrite linear_suml/= !linear_sum/=.
+rewrite kraussoE comp_lfun1l; apply: le_trans; rewrite linear_sumlz/= !linear_sum/=.
 by apply ler_sum=>i _; rewrite -!comp_lfunA [X in X <= _]lftraceC comp_lfunA.
 apply/tnmapP=>x; move: (P x).
-rewrite kraussoE comp_lfun1l; apply: le_trans; rewrite linear_suml/= !linear_sum/=.
+rewrite kraussoE comp_lfun1l; apply: le_trans; rewrite linear_sumlz/= !linear_sum/=.
 by apply ler_sum=>i _; rewrite -!comp_lfunA [X in _ <= X]lftraceC comp_lfunA.
 Qed.
 
@@ -3305,10 +3330,10 @@ Lemma krausso_tpE (F: finType) (f : F -> 'Hom(U,V)) :
   krausso f \is tpmap = (trace_presv f).
 Proof.
 apply/eqb_iff; split=>[/tpmapP P|/trlf_intror P].
-  apply/trlf_intror=>x; move: (P x); rewrite comp_lfun1l kraussoE linear_suml/= !linear_sum/==><-.
+  apply/trlf_intror=>x; move: (P x); rewrite comp_lfun1l kraussoE linear_sumlz/= !linear_sum/==><-.
   by apply eq_bigr=>i _; rewrite -!comp_lfunA [LHS]lftraceC comp_lfunA.
 apply/tpmapP=>x; move: (P x); rewrite comp_lfun1l=><-.
-rewrite kraussoE linear_suml/= !linear_sum/=.
+rewrite kraussoE linear_sumlz/= !linear_sum/=.
 by apply eq_bigr=>i _; rewrite -!comp_lfunA [RHS]lftraceC comp_lfunA.
 Qed.
 
@@ -3438,7 +3463,7 @@ Lemma dualso_krausE (F: finType) (f : F -> 'Hom(U,V)) (A : 'End(V)) :
   dualso (krausso f) A = \sum_i ((f i)^A \o A \o (f i)).
 Proof.
 apply/eqP/trlf_introl=>x.
-rewrite -dualso_trlfE soE linear_sumr linear_suml !linear_sum.
+rewrite -dualso_trlfE soE linear_sumr linear_sumlz !linear_sum.
 apply eq_bigr =>/= i _.
 by rewrite -!comp_lfunA lftraceC !comp_lfunA.
 Qed.
@@ -3658,7 +3683,7 @@ Program Definition cpmap_subType (U V : chsType) :=
   (@CPMap.sort U V) (fun (x : 'SO(U,V)) (H : x \is cpmap) => 
   CPMap_Build H) _ (fun _ _ => erefl).
 Next Obligation.
-intros; move: (@is_cpmap _ _ u) (X _ (@is_cpmap _ _ u)).
+move=> U V K X u; move: (@is_cpmap _ _ u) (X _ (@is_cpmap _ _ u)).
 by case: u=>/= u [[Pu1]] Pu2; rewrite (eq_irrelevance Pu1 Pu2).
 Qed.
 HB.instance Definition _ (U V : chsType) := @cpmap_subType U V.
@@ -3670,7 +3695,7 @@ Program Definition qoperation_subType (U V : chsType) :=
   (@QOperation.sort U V) (fun (x : 'SO(U,V)) (H : x \is cptn) => 
   QOperation_Build H) _ (fun _ _ => erefl).
 Next Obligation.
-intros; move: (@is_tnmap _ _ u) (@is_cpmap _ _ u)=>P1 P2.
+move=> U V K X u; move: (@is_tnmap _ _ u) (@is_cpmap _ _ u)=>P1 P2.
 move: (X _ (cpmap_tnmap_cptn P2 P1)); case: u P1 P2=>/= u [[Pu1]] [Pu2] Pu3 Pu4.
 by rewrite /QOperation_Build (eq_irrelevance (cptn_cpmap _) Pu1) 
   (eq_irrelevance (cptn_tnmap _) Pu2).
@@ -3684,7 +3709,7 @@ Program Definition qchannel_subType (U V : chsType) :=
   (@QChannel.sort U V) (fun (x : 'SO(U,V)) (H : x \is cptp) => 
   QChannel_Build H) _ (fun _ _ => erefl).
 Next Obligation.
-intros; move: (@is_tpmap _ _ u) (@is_cpmap _ _ u)=>P1 P2.
+move=> U V K X u; move: (@is_tpmap _ _ u) (@is_cpmap _ _ u)=>P1 P2.
 move: (X _ (cpmap_tpmap_cptp P2 P1));
 case: u P1 P2=>/= u [[Pu1]] [Pu2] [Pu3] Pu4 Pu5.
 by rewrite /QChannel_Build (eq_irrelevance (cptp_cpmap _) Pu1) 
@@ -3699,7 +3724,7 @@ Program Definition dualqo_subType (U V : chsType) :=
   (@DualQO.sort U V) (fun (x : 'SO(U,V)) (H : x^*o \is cptn) => 
   DualQO_Build H) _ (fun _ _ => erefl).
 Next Obligation.
-intros. move: (@is_cpmap _ _ u) (@is_dualtn _ _ u); rewrite -dualso_cpE=>P1 P2.
+move=> U V K X u. move: (@is_cpmap _ _ u) (@is_dualtn _ _ u); rewrite -dualso_cpE=>P1 P2.
 move: (X _ (cpmap_tnmap_cptn P1 P2)); case: u P1 P2=>/= u [[Pu1]] [Pu2] Pu3 Pu4.
 by rewrite /DualQO_Build (eq_irrelevance (dualso_cpP _) Pu1) 
   (eq_irrelevance (cptn_tnmap _) Pu2).
@@ -3713,7 +3738,7 @@ Program Definition qunital_subType (U V : chsType) :=
   (@QUnital.sort U V) (fun (x : 'SO(U,V)) (H : x^*o \is cptp) => 
   QUnital_Build H) _ (fun _ _ => erefl).
 Next Obligation.
-intros; move: (@is_cpmap _ _ u) (@is_dualtp _ _ u); rewrite -dualso_cpE=>P1 P2.
+move=> U V K X u; move: (@is_cpmap _ _ u) (@is_dualtp _ _ u); rewrite -dualso_cpE=>P1 P2.
 move: (X _ (cpmap_tpmap_cptp P1 P2)); case: u P1 P2=>/= u [[Pu1]] [Pu2] [Pu3] Pu4 Pu5.
 by rewrite /QUnital_Build (eq_irrelevance (dualso_cpP  _) Pu1) 
   (eq_irrelevance (cptn_tnmap _) Pu2) (eq_irrelevance (cptp_tpmap _) Pu3).
@@ -4008,13 +4033,13 @@ Local Notation F := 'SO(U,V).
 Definition trsfnorm (f: F) := \tr| f2mx (so_val f) |.
 
 Lemma trsfnorm0_eq0 (f: F) : trsfnorm f = 0 -> f = 0.
-Proof. by move/trnorm0_eq0=>P1; apply/val_inj/f2mx_inj; rewrite P1/= soK linear0. Qed.
+Proof. by move/trnorm0_eq0=>P1; apply/val_inj/f2mx_inj; rewrite P1/= soK f2mx0. Qed.
 
 Lemma trsfnorm_triangle (f g: F) : trsfnorm (f + g) <= trsfnorm f + trsfnorm g.
-Proof. by rewrite /trsfnorm soK !linearD/=; exact: trnorm_triangle. Qed.
+Proof. by rewrite /trsfnorm soK f2mxD; exact: trnorm_triangle. Qed.
 
 Lemma trsfnormZ (a: C) (f: F) : trsfnorm (a *: f) = `|a| * trsfnorm f.
-Proof. by rewrite /trsfnorm soK !linearZ/=; exact: trnormZ. Qed.
+Proof. by rewrite /trsfnorm soK f2mxZ; exact: trnormZ. Qed.
 
 HB.instance Definition _ := isVNorm.Build C F trsfnorm
   trsfnorm_triangle trsfnorm0_eq0 trsfnormZ.
@@ -4308,7 +4333,7 @@ pose xl := (svd_u mx *m diag_mx (svds_d mx) *m (svd_u mx)^*t).
 pose xr := (svd_v mx *m diag_mx (svds_d mx) *m (svd_v mx)^*t).
 have mAE k : h2mx (A k) = mA k by [].
 have: `|f y|^+2 <= `|\Tr (f (mx2h yl) \o (mx2h xr)) | * `|\Tr (f (mx2h yr) \o (mx2h xl)) |.
-  rewrite Px2 /lftrace -PA !kraussoE !linear_suml !linear_sum/=.
+  rewrite Px2 /lftrace -PA !kraussoE !linear_sumlz !linear_sum/=.
   under eq_bigr do rewrite !h2mx_comp h2mx_adj [h2mx y]svdsE [h2mx x]svdsE -/mx -/my mAE.
   (* mulmx_diag_colrow mulmx_diag_colrow !(linear_sumr, linear_sum)/=. *)
   under [in X in _ <= X * _]eq_bigr do
@@ -4320,9 +4345,10 @@ have: `|f y|^+2 <= `|\Tr (f (mx2h yl) \o (mx2h xr)) | * `|\Tr (f (mx2h yr) \o (m
     B^*t *m (Ux *m diag_mx (svds_d X) *m Vx^*t)) = \sum_k 
     (sqrtC ((svds_d X) 0 k.1 * (svds_d Y) 0 k.2) * (row k.1 Vx^*t *m B *m col k.2 Uy) 0 0) *
     (sqrtC ((svds_d X) 0 k.1 * (svds_d Y) 0 k.2) * (row k.1 Ux^*t *m B *m col k.2 Vy) 0 0)^*.
-      rewrite !mulmx_diag_colrow !linear_sumr/= linear_sum;
-      under eq_bigr do rewrite !linear_suml/= linear_sum/=.
-      rewrite pair_big/=; apply eq_bigr =>k _.
+      rewrite [Uy *m _ *m _]mulmx_diag_colrow [Ux *m _ *m _]mulmx_diag_colrow.
+      rewrite !linear_sumr/= linear_sum;
+      rewrite [in RHS]pair_bigV/=; apply eq_bigr =>i0 _.
+      rewrite !mulmx_suml linear_sum/=; apply eq_bigr =>i1 _.
       rewrite linearZ/= linearZr/= linearZ/= 2!linearZl_LR/= linearZ/= mulrA !mulmxA 
         mxtrace_mulC !mulmxA -mulmxA -mulmxA [X in _ *m X]mulmxA trace_mx11 mxE big_ord1.
       rewrite conjcM !mulrA. f_equal.
@@ -4565,22 +4591,22 @@ Lemma superop_hausdorff U V : hausdorff_space 'SO(U,V).
 Proof. exact: Vhausdorff. Qed.
 
 Lemma f2mx_continuous U V : continuous (@f2mx _ U V).
-Proof. exact: linear_to_mx_continuous. Qed.
+Proof. apply: linear_to_mx_continuousP. exact: f2mx_is_linear. Qed.
 
 Lemma vecthom_continuous U V : continuous (@Hom _ U V).
-Proof. exact: linear_of_mx_continuous. Qed.
+Proof. apply: linear_of_mx_continuousP. exact: vecthom_is_linear. Qed.
 
 Lemma f2mx_cvgnE U V (f : nat -> 'Hom(U,V)) (a : 'Hom(U,V)) :
   f @ \oo --> a = ((f2mx \o f)%FUN @ \oo --> f2mx a).
-Proof. apply: (bijective_to_mx_cvgnE _ f2mx_bij); exact: linearP. Qed.
+Proof. apply: (bijective_to_mx_cvgnE _ f2mx_bij); exact: f2mx_is_linear. Qed.
 
 Lemma f2mx_is_cvgnE U V (f : nat -> 'Hom(U,V)) :
   cvgn f = cvgn (f2mx \o f)%FUN.
-Proof. apply: (bijective_to_mx_is_cvgnE _ f2mx_bij); exact: linearP. Qed.
+Proof. apply: (bijective_to_mx_is_cvgnE _ f2mx_bij); exact: f2mx_is_linear. Qed.
 
 Lemma f2mx_limnE U V (f : nat -> 'Hom(U,V)) :
   cvgn f -> limn (f2mx \o f)%FUN = f2mx (limn f).
-Proof. apply: (bijective_to_mx_limnE _ f2mx_bij); exact: linearP. Qed.
+Proof. apply: (bijective_to_mx_limnE _ f2mx_bij); exact: f2mx_is_linear. Qed.
 
 Lemma h2mx_continuous U V : continuous (@h2mx U V).
 Proof. exact: linear_to_mx_continuous. Qed.
@@ -4660,7 +4686,10 @@ Qed.
 HB.instance Definition lfun_vorderFinNormedModMixin := 
   FinNormedModule_isVOrderFinNormedModule.Build C 'End(U) closed_gef0.
 Canonical quantum_lfun__canonical__extnum_VOrderFinNormedModule := 
-  VOrderFinNormedModule.Pack (VOrderFinNormedModule.Class lfun_vorderFinNormedModMixin).
+  @VOrderFinNormedModule.Pack C ('End(U) : vorderType C)
+    (FinNormedModule.class ('End(U) : finNormedModType C))
+    erefl (fun _ => erefl) (fun _ _ => erefl) (fun _ _ => erefl)
+    closed_gef0.
 
 End LfunVOrderFinNomredMod.
 
@@ -4669,15 +4698,23 @@ Local Open Scope classical_set_scope.
 Variable (U : chsType).
 
 Lemma closed_lef (g : 'End(U)) : closed [set f : 'End(U) | f ⊑ g].
-Proof. exact: closed_lev. Qed.
+Proof.
+rewrite (_ : mkset _ = h2mx @^-1` [set y | y ⊑ h2mx g]).
+by apply/funext=>y/=; rewrite lef_h2mx.
+apply: closed_comp=>[x _|]; [apply: h2mx_continuous | apply: cmxclosed_le].
+Qed.
 
 Lemma closed_gef (g : 'End(U)) : closed [set f : 'End(U) | g ⊑ f].
-Proof. exact: closed_gev. Qed.
+Proof.
+rewrite (_ : mkset _ = h2mx @^-1` [set y | h2mx g ⊑ y]).
+by apply/funext=>y/=; rewrite lef_h2mx.
+apply: closed_comp=>[x _|]; [apply: h2mx_continuous | apply: cmxclosed_ge].
+Qed.
 
 Lemma closed_psdlf : closed [set f : 'End(U) | f \is psdlf].
 Proof.
 rewrite (_ : mkset _ = [set y | (0 : 'End(U)) ⊑ y]).
-by apply/funext=>y/=; rewrite psdlfE. apply: closed_gev.
+by apply/funext=>y/=; rewrite psdlfE. apply: closed_gef.
 Qed.
 
 Lemma trlf_continuous : continuous (@lftrace U).
@@ -4769,11 +4806,14 @@ Lemma dflub_lub : forall c : nat -> 'FD(V), chain c -> (forall i, c i ⊑ dflub 
   /\ (forall x, (forall i, c i ⊑ x) -> dflub c ⊑ x).
 Proof.
 move=>c Pc. move: (chaindf2f Pc) (chaindf_ub c)=>P1 P2.
-move: (vnondecreasing_is_cvgn P1 P2)=>P3.
-move: (nondecreasing_cvgn_lev P1 P3)=>P4.
+pose LFV := quantum_lfun__canonical__extnum_VOrderFinNormedModule V.
+move: (@vnondecreasing_is_cvgn _ _ LFV _ _ P1 P2)=>P3.
+move: (@nondecreasing_cvgn_lev _ _ LFV _ P1 P3)=>P4.
 rewrite /dflub; case: eqP=>P5; last by exfalso; apply P5; apply limn_denlf.
 split. by move=>i; rewrite leEsub/= P4.
-by move=>x Px; rewrite leEsub/=; apply: limn_lev.
+move=>x Px; rewrite leEsub/=.
+apply: (@limn_lev _ _ LFV (df2f x) (df2f \o c) P3)=>i.
+by move: (Px i); rewrite leEsub.
 Qed.
 
 Lemma dflub_ub : forall c : nat -> 'FD(V), chain c -> (forall i, c i ⊑ dflub c).
@@ -4787,11 +4827,14 @@ Lemma oflub_lub : forall c : nat -> 'FO(V), chain c -> (forall i, c i ⊑ oflub 
   /\ (forall x, (forall i, c i ⊑ x) -> oflub c ⊑ x).
 Proof.
 move=>c Pc. move: (chainof2f Pc) (chainof_ub c)=>P1 P2.
-move: (vnondecreasing_is_cvgn P1 P2)=>P3.
-move: (nondecreasing_cvgn_lev P1 P3)=>P4.
+pose LFV := quantum_lfun__canonical__extnum_VOrderFinNormedModule V.
+move: (@vnondecreasing_is_cvgn _ _ LFV _ _ P1 P2)=>P3.
+move: (@nondecreasing_cvgn_lev _ _ LFV _ P1 P3)=>P4.
 rewrite /oflub; case: eqP=>P5; last by exfalso; apply P5; apply limn_obslf.
 split. by move=>i; rewrite leEsub/= P4.
-by move=>x Px; rewrite leEsub; apply: limn_lev.
+move=>x Px; rewrite leEsub.
+apply: (@limn_lev _ _ LFV (of2f x) (of2f \o c) P3)=>i.
+by move: (Px i); rewrite leEsub.
 Qed.
 
 Lemma oflub_ub : forall c : nat -> 'FO(V), chain c -> (forall i, c i ⊑ oflub c).
@@ -4846,7 +4889,10 @@ Qed.
 HB.instance Definition superop_vorderFinNormedModMixin := 
   FinNormedModule_isVOrderFinNormedModule.Build C 'SO(U,V) closed_geso0.
 Canonical quantum_soperop__canonical__extnum_VOrderFinNormedModule := 
-  VOrderFinNormedModule.Pack (VOrderFinNormedModule.Class superop_vorderFinNormedModMixin).
+  @VOrderFinNormedModule.Pack C ('SO(U,V) : vorderType C)
+    (FinNormedModule.class ('SO(U,V) : finNormedModType C))
+    erefl (fun _ => erefl) (fun _ _ => erefl) (fun _ _ => erefl)
+    closed_geso0.
 
 (* qo is a closed set among all super operators *)
 Lemma closed_isqo : closed [set f : 'SO(U,V) | f \is cptn].
@@ -5196,7 +5242,7 @@ Lemma tn_trlf_psd (F : finType) (A : 'TN(F;U,V)) x :
   x \is psdlf -> \sum_i \Tr (A i \o x \o (A i)^A) <= \Tr x.
 Proof.
 under eq_bigr do rewrite lftraceC comp_lfunA.
-rewrite -linear_sum/= -linear_suml/= -{3}(comp_lfun1l x)=>Px.
+rewrite -linear_sum/= -linear_sumlz/= -{3}(comp_lfun1l x)=>Px.
 by apply/lef_psdtr=>[|//]; apply/is_trnincr.
 Qed.
 
@@ -5204,7 +5250,7 @@ Lemma qm_trlf (F : finType) (A : 'QM(F;U,V)) x :
   \sum_i \Tr (A i \o x \o (A i)^A) = \Tr x.
 Proof. 
 under eq_bigr do rewrite lftraceC comp_lfunA.
-by rewrite -linear_sum/= -linear_suml/= qmeasure_tpE comp_lfun1l.
+by rewrite -linear_sum/= -linear_sumlz/= qmeasure_tpE comp_lfun1l.
 Qed.
 Definition tp_trlf := qm_trlf.
 
@@ -5593,7 +5639,7 @@ Lemma initialso_tn U (v : 'PS(U)) : (@initialso U v) \is tnmap.
 Proof.
 apply/tnmapP=>x; rewrite soE linear_sum/=.
 under eq_bigr do rewrite lftraceC comp_lfunA adj_outp outp_comp linearZl/= linearZ/=.
-by rewrite -mulr_sumr -linear_sum/= -linear_suml/= sumonb_out 
+by rewrite -mulr_sumr -linear_sum/= -linear_sumlz/= sumonb_out 
   comp_lfun1l ler_piMl// ?ps_dot// psdf_trlf.
 Qed.
 HB.instance Definition _ U (v : 'PS(U)) := CPMap_isTNMap.Build U U 
@@ -5602,7 +5648,7 @@ Lemma initialso_qc U (v : 'NS(U)) : (@initialso U v) \is tpmap.
 Proof.
 apply/tpmapP=>x; rewrite soE linear_sum/=. 
 under eq_bigr do rewrite lftraceC comp_lfunA adj_outp outp_comp ns_dot scale1r.
-by rewrite -linear_sum/= -linear_suml/= sumonb_out comp_lfun1l.
+by rewrite -linear_sum/= -linear_sumlz/= sumonb_out comp_lfun1l.
 Qed.
 HB.instance Definition _ U (v : 'NS(U)) := QOperation_isTPMap.Build U U 
   (initialso v) (initialso_qc v).
@@ -5991,8 +6037,10 @@ Proof. by rewrite leEsub/= cp_geso0. Qed.
 
 Lemma cp_psdlf U V (E : 'CP(U,V)) (x : 'F+(U)) : E x \is psdlf.
 Proof. apply/cp_psdP/is_psdlf. Qed.
+HB.instance Definition _ U V (E : 'CP(U,V)) (x : 'F+(U)) :=
+  isHermLf.Build V (E x) (psdlf_herm (cp_psdlf E x)).
 HB.instance Definition _ U V (E : 'CP(U,V)) (x : 'F+(U)) := 
-  isPsdLf.Build V (E x) (cp_psdlf E x).
+  Herm_isPsdLf.Build V (E x) (cp_psdlf E x).
 
 Lemma dqo_obslf U V (E : 'DQO(U,V)) (O : 'FO(U)) : E O \is obslf.
 Proof. by apply/dqo_obsP/is_obslf. Qed.
@@ -6075,18 +6123,20 @@ Lemma chainqo_cvg : forall c : nat -> 'QO(U,V), chain c ->
   cvgn (qosort \o c).
 Proof.
 move=>c Pc. move: (chainqomap Pc) (chainqo_ub c)=>P1 P2.
-by apply (vnondecreasing_is_cvgn P1 P2).
+pose SOV := quantum_soperop__canonical__extnum_VOrderFinNormedModule U V.
+by apply: (@vnondecreasing_is_cvgn _ _ SOV _ _ P1 P2).
 Qed.
 
 Lemma qolub_lub : forall c : nat -> 'QO(U,V), chain c -> (forall i, c i ⊑ qolub c) 
   /\ (forall x, (forall i, c i ⊑ x) -> qolub c ⊑ x).
 Proof.
 move=>c Pc. move: (chainqomap Pc) (chainqo_cvg Pc)=>P1 P3.
-move: (nondecreasing_cvgn_lev P1 P3)=>P4.
+pose SOV := quantum_soperop__canonical__extnum_VOrderFinNormedModule U V.
+move: (@nondecreasing_cvgn_lev _ _ SOV _ P1 P3)=>P4.
 rewrite /qolub; case: eqP=>P5; last by exfalso; apply P5; apply lim_qo.
 split. by move=>i; rewrite leEsub/= P4.
 move=>x Px. rewrite leEsub/=.
-by apply: (@limn_lev _ _ _ (qosort x) _ P3)=>i; move: (Px i).
+by apply: (@limn_lev _ _ SOV (qosort x) (qosort \o c) P3)=>i; move: (Px i).
 Qed.
 
 Lemma qolub_ub : forall c : nat -> 'QO(U,V), chain c -> (forall i, c i ⊑ qolub c).
@@ -6227,7 +6277,9 @@ Proof. by move=>i; apply/qo_ubound. Qed.
 Lemma whileso_is_cvg (M: 'TN(bool;U)) b (D: 'QO(U)) : 
   cvgn (whileso_iter M b D).
 Proof.
-apply: (vnondecreasing_is_cvgn (whileso_iter_homo _ b _) (whileso_iter_ub M b D)).
+pose SOV := quantum_soperop__canonical__extnum_VOrderFinNormedModule U U.
+apply: (@vnondecreasing_is_cvgn _ _ SOV _ _
+  (whileso_iter_homo _ b _) (whileso_iter_ub M b D)).
 Qed.
 
 Lemma whileso_cvgn (M: 'TN(bool;U)) b (D: 'QO(U)) : 
@@ -6249,12 +6301,20 @@ HB.instance Definition _ (M: 'TN(bool;U)) b (D: 'QO(U)) :=
 Lemma whileso_ub (M: 'TN(bool;U)) b (D: 'QO(U)) i : whileso_iter M b D i ⊑ whileso M b D.
 Proof.
 rewrite whileso.unlock.
-apply/(nondecreasing_cvgn_lev (whileso_iter_homo _ b _))/whileso_is_cvg.
+pose SOV := quantum_soperop__canonical__extnum_VOrderFinNormedModule U U.
+move: (@nondecreasing_cvgn_lev _ _ SOV _
+  (whileso_iter_homo _ b _) (@whileso_is_cvg M b D))=>P.
+exact: (P i).
 Qed.
 
 Lemma whileso_least (M: 'TN(bool;U)) b (D: 'QO(U)) x :
   (forall i, whileso_iter M b D i ⊑ x) -> whileso M b D ⊑ x.
-Proof. by move=>/(limn_lev (@whileso_is_cvg M b D)); rewrite whileso.unlock. Qed.
+Proof.
+move=>Px; rewrite whileso.unlock.
+pose SOV := quantum_soperop__canonical__extnum_VOrderFinNormedModule U U.
+apply: (@limn_lev _ _ SOV x (whileso_iter M b D) (@whileso_is_cvg M b D))=>i.
+exact: Px.
+Qed.
 
 Lemma whileso_lim (M: bool -> 'End(U)) b (D: 'SO(U)) : 
   limn (whileso_iter M b D) = whileso M b D.
@@ -6324,18 +6384,8 @@ by apply IH.
 move=>P1 P2. move: (leq_ltn_trans P2 P1). by rewrite ltnn.
 Qed.
 
-Lemma discrete_nat : discrete_space nat.
-Proof.
-apply/funext=>x; apply/funext=>A; rewrite /principal_filter/=.
-rewrite propeqE; split.
-  by move=>[B/=[]]/= _ Px /(_ x)/(_ Px) + x1 ->.
-move=>/(_ x erefl) Ax; exists ([set x])%classic.
-do ! split=>//=; last by move=>?/=->.
-exists ([set x])%classic=>//=; by rewrite bigcup_set1.
-Qed.
-
 Lemma nat_hausdorff : hausdorff_space nat.
-Proof. by apply/discrete_hausdorff/discrete_nat. Qed.
+Proof. exact: discrete_hausdorff. Qed.
 
 Lemma minpred4 (P : nat -> bool) m : 
   (forall n, (m <= n)%N -> P n) -> limn (minpred P) = minpred P m.
@@ -6547,8 +6597,12 @@ Lemma while_lf_ge_near (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   cvgn c -> (\forall n \near \oo, c n ⊑ f ((whileso_iter M b D n) x))
   -> limn c ⊑ f (whileso M b D x).
 Proof.
-by move=>cc Pn; rewrite -while_lf_lim//; 
-apply/lev_limn_near=>[//||//]; apply/while_lf_is_cvg.
+move=>cc Pn; rewrite -while_lf_lim//.
+pose LFV := quantum_lfun__canonical__extnum_VOrderFinNormedModule V.
+apply: (@lev_limn_near _ _ LFV c
+  (fun n=>f ((whileso_iter M b D n) x)) cc
+  (@while_lf_is_cvg U V M b D f x)).
+exact: Pn.
 Qed.
 
 Lemma while_lf_ge (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
@@ -6556,8 +6610,12 @@ Lemma while_lf_ge (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   cvgn c -> (forall n, c n ⊑ f ((whileso_iter M b D n) x))
   -> limn c ⊑ f (whileso M b D x).
 Proof.
-move=>cc Pn; rewrite -while_lf_lim//;
-apply/lev_limn=>[//||//]; by apply/while_lf_is_cvg.
+move=>cc Pn; rewrite -while_lf_lim//.
+pose LFV := quantum_lfun__canonical__extnum_VOrderFinNormedModule V.
+apply: (@lev_limn _ _ LFV c
+  (fun n=>f ((whileso_iter M b D n) x)) cc
+  (@while_lf_is_cvg U V M b D f x)).
+exact: Pn.
 Qed.
 
 Lemma while_lf_ge_cst_near (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
@@ -6586,7 +6644,11 @@ Lemma while_lf_le_near (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   -> f (whileso M b D x) ⊑ limn c.
 Proof.
 move=>cc Pn; rewrite -while_lf_lim//.
-by apply/lev_limn_near=>[|//|//]; apply/while_lf_is_cvg.
+pose LFV := quantum_lfun__canonical__extnum_VOrderFinNormedModule V.
+apply: (@lev_limn_near _ _ LFV
+  (fun n=>f ((whileso_iter M b D n) x)) c
+  (@while_lf_is_cvg U V M b D f x) cc).
+exact: Pn.
 Qed.
 
 Lemma while_lf_le (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
@@ -6594,8 +6656,12 @@ Lemma while_lf_le (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U))
   cvgn c -> (forall n, f ((whileso_iter M b D n) x) ⊑ c n)
   -> f (whileso M b D x) ⊑ limn c.
 Proof.
-move=>cc Pn; rewrite -while_lf_lim//;
-apply/lev_limn=>[|//|//]; by apply/while_lf_is_cvg.
+move=>cc Pn; rewrite -while_lf_lim//.
+pose LFV := quantum_lfun__canonical__extnum_VOrderFinNormedModule V.
+apply: (@lev_limn _ _ LFV
+  (fun n=>f ((whileso_iter M b D n) x)) c
+  (@while_lf_is_cvg U V M b D f x) cc).
+exact: Pn.
 Qed.
 
 Lemma while_lf_le_cst_near (U V: chsType) (M: 'TN(bool;U)) b (D: 'QO(U,U)) 
@@ -6675,7 +6741,10 @@ Lemma whileso_leso (U : chsType) (M : 'TN(bool;U)) (b : bool) (c1 c2 : 'QO(U)) :
   (c1 : 'SO) <= c2 -> whileso M b c1 <= whileso M b c2.
 Proof.
 move=>Pc; rewrite whileso.unlock.
-apply: lev_limn=>[||n]. 1,2: apply: whileso_is_cvg.
+pose SOV := quantum_soperop__canonical__extnum_VOrderFinNormedModule U U.
+apply: (@lev_limn _ _ SOV (whileso_iter M b c1) (whileso_iter M b c2)
+  (whileso_is_cvg (M:=M) (b:=b) (D:=c1))
+  (whileso_is_cvg (M:=M) (b:=b) (D:=c2)))=>n.
 by apply: whileso_iter_leso.
 Qed.
 
@@ -6721,7 +6790,7 @@ Qed.
 
 End QOWhileLim.
 
-From mathcomp Require Import finset.
+From mathcomp.boot Require Import finset.
 
 Section ComplementObs.
 Variable (U : chsType).
@@ -6743,7 +6812,14 @@ Lemma cplmt_obs (P : 'FO(U)) : cplmt P \is obslf.
 Proof. 
 by move: (is_obslf P); rewrite !obslfE subv_ge0 levBlDr levDl=>/andP[->->].
 Qed.
-HB.instance Definition _ (P : 'FO(U)) := isObsLf.Build U (cplmt P) (cplmt_obs P).
+HB.instance Definition _ (P : 'FO(U)) :=
+  isHermLf.Build U (cplmt P) (obslf_herm (cplmt_obs P)).
+HB.instance Definition _ (P : 'FO(U)) :=
+  Herm_isPsdLf.Build U (cplmt P) (obslf_psd (cplmt_obs P)).
+HB.instance Definition _ (P : 'FO(U)) :=
+  isBound1Lf.Build U U (cplmt P) (obslf_bound1 (cplmt_obs P)).
+HB.instance Definition _ (P : 'FO(U)) :=
+  ObsLf.Class (PsdLf.on (cplmt P)) (Bound1Lf.on (cplmt P)).
 
 Lemma cplmt_proj (P : 'FP(U)) : cplmt P \is projlf.
 Proof.
@@ -6825,7 +6901,9 @@ move: (is_obslf A)=>/obslfP[] _ /(_ (u^A v)) P1.
 by apply: (le_trans P1); apply/isofA_dot.
 Qed.
 HB.instance Definition _ (u : 'FI(U,V)) (A : 'FO) :=
-  Psd_isObsLf.Build _ (formlf u A) (@formlf_obs u A).
+  isBound1Lf.Build _ _ (formlf u A) (obslf_bound1 (@formlf_obs u A)).
+HB.instance Definition _ (u : 'FI(U,V)) (A : 'FO) :=
+  ObsLf.Class (PsdLf.on (formlf u A)) (Bound1Lf.on (formlf u A)).
 
 Lemma formlf_den (u : 'FI(U,V)) (A : 'FD) :
   formlf u A \is denlf.
@@ -6887,7 +6965,7 @@ Lemma formlf_sum_diag (U V : chsType) (F : finType)
   formlf (\sum_i N i) A = \sum_i formlf (N i) A.
 Proof.
 move=>P1; rewrite formlfE adjf_sum !linear_sumr/=.
-apply eq_bigr=>i _; rewrite !linear_suml/= (bigD1 i)//= big1=>[j /P1 //|];
+apply eq_bigr=>i _; rewrite !linear_sumlz/= (bigD1 i)//= big1=>[j /P1 //|];
 by rewrite addr0 formlfE.
 Qed.
 
@@ -6908,7 +6986,7 @@ move=>Pij PN.
 rewrite bound1lf_form_le1 -formlf1EV adjf_sum.
 under eq_bigr do rewrite formlf_adj -comp_lfunA -formlf_comp formlfE -comp_lfunA.
 rewrite -linear_sumr/= -formlf_comp; apply/formlf_bound1f_le1.
-rewrite -linear_suml/= -formlf_comp formlf1EV.
+rewrite -linear_sumlz/= -formlf_comp formlf1EV.
 apply: (le_trans (formlf_lef _ (bound1f_form_le1 A))).
 under eq_bigr do rewrite -formlf_comp formlfE.
 rewrite formlf_sum_diag.
@@ -7006,8 +7084,10 @@ Qed.
 Lemma whilegso_is_cvgn f (fQO : forall i, f i \is cptn) : 
   cvgn (whilegso_iter f).
 Proof.
-by apply: (vnondecreasing_is_cvgn
-  (whilegso_iter_homo fQO) (whilegso_iter_ub fQO)). Qed.
+pose SOV := quantum_soperop__canonical__extnum_VOrderFinNormedModule U U.
+by apply: (@vnondecreasing_is_cvgn _ _ SOV _ _
+  (whilegso_iter_homo fQO) (whilegso_iter_ub fQO)).
+Qed.
 
 Lemma whilegso_cptn f (fQO : forall i, f i \is cptn) : 
   limn (whilegso_iter f) \is cptn.
@@ -7021,12 +7101,20 @@ Qed.
 Lemma whilegso_ub f (fQO : forall i, f i \is cptn) n : 
   whilegso_iter f n ⊑ limn (whilegso_iter f).
 Proof.
-by apply/(nondecreasing_cvgn_lev (whilegso_iter_homo fQO))/whilegso_is_cvgn.
+pose SOV := quantum_soperop__canonical__extnum_VOrderFinNormedModule U U.
+move: (@nondecreasing_cvgn_lev _ _ SOV _
+  (whilegso_iter_homo fQO) (whilegso_is_cvgn fQO))=>P.
+exact: (P n).
 Qed.
 
 Lemma whilegso_least f (fQO : forall i, f i \is cptn) x : 
   (forall i, whilegso_iter f i ⊑ x) -> limn (whilegso_iter f) ⊑ x.
-Proof. by move=>/(limn_lev (whilegso_is_cvgn fQO)). Qed.
+Proof.
+move=>Px.
+pose SOV := quantum_soperop__canonical__extnum_VOrderFinNormedModule U U.
+apply: (@limn_lev _ _ SOV x (whilegso_iter f) (whilegso_is_cvgn fQO))=>i.
+exact: Px.
+Qed.
 
 End WhileCvg.
 
@@ -7046,6 +7134,6 @@ rewrite -so_comp_liml. apply: so_comp_is_cvgl=>//.
 rewrite -limDl. apply: so_comp_is_cvgl. apply: so_comp_is_cvgl=>//.
 rewrite -[RHS]limn_shiftS; apply: eq_lim=>i.
 rewrite /= big_ord_recl/= big_ord0 comp_so1r addrC; f_equal.
-rewrite linear_suml/= linear_suml/=; apply eq_bigr=>j _.
+rewrite linear_sumlz/= linear_sumlz/=; apply eq_bigr=>j _.
 by rewrite bump0 big_ord_recl/= comp_soErl !comp_soA.
 Qed.

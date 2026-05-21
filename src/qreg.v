@@ -1,11 +1,14 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra finmap.
+From mathcomp.ssreflect Require Import all_ssreflect.
+From mathcomp.algebra Require Import all_algebra.
+From mathcomp.finmap Require Import finmap.
 From quantum.external Require Import complex.
 From mathcomp.classical Require Import boolp classical_sets.
-From mathcomp.analysis Require Import reals.
+From mathcomp.reals Require Import reals.
 (* From mathcomp.real_closed Require Import complex. *)
 Require Import mcextra mcaextra notation quantum ctopology inhabited autonat summable.
-Require Import Coq.Program.Equality String.
+From Coq.Program Require Import Equality.
+From Coq.Strings Require Import String.
 Require Import Relation_Definitions Setoid.
 
 Import Order.LTheory GRing.Theory Num.Theory GenTree.
@@ -678,7 +681,7 @@ End QuantumRegister.
 (* assume the finite map between qvar and their qtypes *)
 Definition context := {fmap qvar -> qType}.
 
-Context (G : context).
+Parameter G : context.
 
 (* Class memctxt_of (x : qvar) T :=
     MemCtxt : (G.[?x] = Some T)%fmap.
