@@ -3,6 +3,9 @@ name: "coq-mathcomp-quantum"
 maintainer: "coq-mathcomp-quantum@anonymous"
 license: "CeCILL-B"
 authors: ["Coq Quantum Dev. Team"]
+homepage: "https://github.com/Dengnifer/CoqQ"
+bug-reports: "https://github.com/Dengnifer/CoqQ/issues"
+dev-repo: "git+https://github.com/Dengnifer/CoqQ.git"
 build: [ "dune" "build" "-p" name "-j" jobs ]
 depends: [
   "coq-core"                 {>= "9.1.1" & < "9.2~"}
