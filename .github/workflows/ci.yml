@@ -17,13 +17,13 @@ jobs:
       CI_JOBS: "1"
     steps:
       - name: Checkout CoqQ
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up OCaml
-        uses: ocaml/setup-ocaml@v3
+        uses: ocaml/setup-ocaml@v3.6.1
         with:
           ocaml-compiler: 5.2.1
-          dune-cache: true
+          dune-cache: false
 
       - name: Configure opam repositories
         run: |
