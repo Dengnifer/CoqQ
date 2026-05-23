@@ -79,7 +79,8 @@ Unset SsrOldRewriteGoalsOrder.
 Local Open Scope ring_scope.
 Local Open Scope lfun_scope.
 
-Local Notation C := hermitian.C.
+(* Scalar notations are kept local to sections so hstensor stays polymorphic
+   in the real field carried by its component spaces. *)
 
 Reserved Notation "''H_' S"      (at level 8, S at level 2, format "''H_' S").
 Reserved Notation "''H[' H ]_ S" (at level 8, S at level 2). (* only parsing *)
@@ -97,6 +98,8 @@ Reserved Notation "''F[' H ]_ ( S )"     (at level 8). (* only parsing *)
 Reserved Notation "''F[' H ]_ ( S , T )" (at level 8). (* only parsing *)
 
 Section IdxDef.
+Variable R : realType.
+Local Notation chsType := (@chsType R).
 Variable (I : finType) (E : I -> chsType).
 Variable S : {set I}.
 Local Notation Si := {i : I | i \in S }.
@@ -119,12 +122,15 @@ HB.instance Definition _ := [Finite of idx by <:].
 
 End IdxDef.
 
-HB.lock Definition idx_of_fun (I : finType) (E : I -> chsType) (S : {set I})
+HB.lock Definition idx_of_fun {R : realType} (I : finType) (E : I -> @chsType R) (S : {set I})
   (F : forall i : {i : I | i \in S }, 'I_(dim (E (val i))))
   := Idx (\mvector_ ( i : {i : I | i \in S }) F i).
 Canonical idx_unlockable := Unlockable idx_of_fun.unlock.
+Arguments idx_of_fun {R I E S} F.
 
 Section IdxDef1.
+Variable R : realType.
+Local Notation chsType := (@chsType R).
 Variable (I : finType) (E : I -> chsType) (S : {set I}).
 Implicit Type (F : forall i : {i : I | i \in S }, 'I_(dim (E (val i)))).
 
@@ -143,13 +149,13 @@ Proof. by move=> eq_uv; apply/idxP => i; rewrite !idxE eq_uv. Qed.
 
 End IdxDef1.
 
-Notation "''Idx[' H ]_ S" := (@idx _ H S) (only parsing) : type_scope.
+Notation "''Idx[' H ]_ S" := (@idx _ _ H S%SET) (only parsing) : type_scope.
 Notation "''Idx_' S" := 'Idx[_]_S : type_scope.
 Notation "\idx[ H ]_ ( i : S ) E" :=
-  ((idx_of_fun (fun i : {i : _ | i \in S } => E)) : @idx _ H S)
+  ((idx_of_fun (fun i : {i : _ | i \in S } => E)) : @idx _ _ H S)
   (at level 36, E at level 36, i, S at level 50): ring_scope.
 
-Lemma card_idx (I : finType) (E : I -> chsType) (S : {set I}) :
+Lemma card_idx {R : realType} (I : finType) (E : I -> @chsType R) (S : {set I}) :
   #|'Idx[E]_S| = (\prod_(i in S ) dim (E i))%N.
 Proof.
 rewrite card_sub card_mv card_dep_ffun foldrE big_image/=
@@ -157,23 +163,29 @@ rewrite card_sub card_mv card_dep_ffun foldrE big_image/=
 by under eq_bigr do rewrite card_ord.
 Qed.
 
-Definition Hf (I : finType) (E : I -> chsType) (S : {set I}) :=
+Definition Hf {R : realType} (I : finType) (E : I -> @chsType R) (S : {set I}) :=
     (fun i : {i : I | i \in S } => E (val i)).
 HB.lock
-Definition Hs I E S  := tensor_chsType (@Hf I E S).
-Lemma Hs_dim_cast {I E S} :
-  dim (@Hs I E S) = dim (tensor_chsType (@Hf I E S)).
+Definition Hs {R : realType} (I : finType) (E : I -> @chsType R) S :=
+  tensor_chsType (@Hf R I E S).
+Lemma Hs_dim_cast {R : realType} {I : finType} {E : I -> @chsType R} {S} :
+  dim (@Hs R I E S) = dim (tensor_chsType (@Hf R I E S)).
 Proof. by rewrite Hs.unlock. Qed.
 HB.lock
-Definition n2i I E S (i : 'I_(dim (@Hs I E S))) : 'Idx[E]_S :=
+Definition n2i {R : realType} (I : finType) (E : I -> @chsType R) S
+  (i : 'I_(dim (@Hs R I E S))) : 'Idx[E]_S :=
     (Idx (n2i (cast_ord Hs_dim_cast i))).
 HB.lock
-Definition i2n I E S (i : 'Idx[E]_S) : 'I_(dim (@Hs I E S)) :=
+Definition i2n {R : realType} (I : finType) (E : I -> @chsType R) S
+  (i : 'Idx[E]_S) : 'I_(dim (@Hs R I E S)) :=
     cast_ord (esym Hs_dim_cast) (i2n (idx_val i)).
+Arguments Hs {R I} E S.
+Arguments n2i {R I E S} i.
+Arguments i2n {R I E S} i.
 
-Notation "''H[' H ]_ S" := (@Hs _ H S) (only parsing) : type_scope.
+Notation "''H[' H ]_ S" := (@Hs _ _ H S) (only parsing) : type_scope.
 Notation "''H_' S" := 'H[_]_S : type_scope.
-Notation "''F[' H ]_ ( S , T )" := ('Hom( @Hs _ H S, @Hs _ H T)) (only parsing): type_scope.
+Notation "''F[' H ]_ ( S , T )" := ('Hom( @Hs _ _ H S, @Hs _ _ H T)) (only parsing): type_scope.
 Notation "''FV[' H ]_ S" := 'F[H]_(set0, S) (only parsing) : type_scope.
 Notation "''FdV[' H ]_ S" := 'F[H]_(S, set0) (only parsing) : type_scope.
 Notation "''F[' H ]_ S" := 'F[H]_(S, S) (only parsing) : type_scope.
@@ -184,30 +196,32 @@ Notation "''FdV_' S" := 'F_(S, set0) : type_scope.
 Notation "''F_' S" := 'F_(S, S) (at level 0, S at level 2) : type_scope.
 Notation "''F_' ( S )" := 'F_S (only parsing) : type_scope.
 
-HB.lock Definition deltav {I : finType} {E : I -> chsType} {S}
+HB.lock Definition deltav {R : realType} {I : finType} {E : I -> @chsType R} {S}
   (i : 'Idx[E]_S) := eb (i2n i).
-HB.lock Definition cdv {I : finType} {E : I -> chsType} {S}
+HB.lock Definition cdv {R : realType} {I : finType} {E : I -> @chsType R} {S}
   (i : 'Idx[E]_S) (u: 'H_S) := [< deltav i; u >].
+Arguments deltav {R I E S} i.
+Arguments cdv {R I E S} i u.
 
 (* -------------------------------------------------------------------- *)
 Section SetTensorSpace.
-Context {I : finType} (E : I -> chsType).
+Context {R : realType} {I : finType} (E : I -> @chsType R).
 Implicit Type (S T : {set I}).
 
-Local Notation idx := (@idx I E).
-Local Notation Hs := (@Hs I E).
+Local Notation idx := (@idx R I E).
+Local Notation Hs := (@Hs R I E).
 Local Notation "'⊗' x" := (inject x) (at level 2, format "⊗ x").
 
-Lemma n2iK {S} : cancel (@n2i I E S) (@i2n I E S).
+Lemma n2iK {S} : cancel (@n2i R I E S) (@i2n R I E S).
 Proof. by rewrite n2i.unlock i2n.unlock=>i; rewrite n2iK cast_ord_comp cast_ord_id. Qed.
-Lemma i2nK {S} : cancel (@i2n I E S) (@n2i I E S).
+Lemma i2nK {S} : cancel (@i2n R I E S) (@n2i R I E S).
 Proof.
 rewrite n2i.unlock i2n.unlock=>i; apply/val_inj.
 by rewrite /= cast_ord_comp cast_ord_id i2nK.
 Qed.
-Lemma i2n_inj {S} : injective (@i2n I E S).
+Lemma i2n_inj {S} : injective (@i2n R I E S).
 Proof. exact (can_inj i2nK). Qed.
-Lemma n2i_inj {S} : injective (@n2i I E S).
+Lemma n2i_inj {S} : injective (@n2i R I E S).
 Proof. exact (can_inj n2iK). Qed.
 
 (* Lemma eb_mv S i : eb i = ⊗ (\mvector_(j : {i : I | i \in S }) eb ((@n2i I E S i) j)).
@@ -260,7 +274,7 @@ by rewrite dotpZl dotpZr dv_dot eqxx mulr1 addr0.
 Qed.
 
 Lemma cdvP S (u v: Hs S) :
-  ((@cdv _ _ _)^~ u) =1 ((@cdv _ _ _)^~ v) <-> u = v.
+  ((@cdv R I E S)^~ u) =1 ((@cdv R I E S)^~ v) <-> u = v.
 Proof.
 split; last by move=>->. move=> P; rewrite -intro_ebl => t.
 by move: (P (n2i t)); rewrite !cdvE deltav.unlock !n2iK.
@@ -280,7 +294,7 @@ split; [| move=>-> //]; rewrite -intro_cdvl=> P t.
 by apply (can_inj conjCK); rewrite !cdvE !conj_dotp.
 Qed.
 
-Lemma mv_dot S (x y: mvector (@Hf I E S)) :
+Lemma mv_dot S (x y: mvector (@Hf R I E S)) :
   [< ⊗ x ; ⊗ y >] = \prod_i [< x i; y i>].
 Proof. by rewrite -tdotpE. Qed.
 
@@ -472,31 +486,37 @@ Proof. by apply bigcup_sup. Qed.
 Definition incl (I: finType) (A B: {set I}) (AsubB : A :<=: B) (a : {i | i \in A})
   : {i : I | i \in B} := exist _ (val a) (subsetP AsubB (val a) (projT2 a)).
 
-Definition flatidx (I: finType) (E : I -> chsType) (J : finType) (fs: J -> {set I})
+Definition flatidx {R : realType} (I: finType) (E : I -> @chsType R) (J : finType) (fs: J -> {set I})
   (i: 'Idx[E]_(\bigcup_i (fs i))) : {dffun forall i : J, 'Idx[E]_(fs i)}
   := [ffun s : J => \idx[E]_(j : fs s) i (incl (map_cover fs s) j)].
+Arguments flatidx {R I E J fs} i.
 
-HB.lock Definition injectv (I: finType) (E : I -> chsType) (J : finType) (fs: J -> {set I})
+HB.lock Definition injectv {R : realType} (I: finType) (E : I -> @chsType R) (J : finType) (fs: J -> {set I})
   (x: mvector (fun i: J => 'H[E]_(fs i))) : 'H[E]_(\bigcup_i (fs i))
   := \sum_(e : 'Idx[E]_(\bigcup_i (fs i))) (\prod_i cdv (flatidx e i) (x i) *: deltav e).
+Arguments injectv {R I E J fs} x.
 
-Definition applyf (I : finType) (E : I -> chsType) (J: finType) (fs fs': J -> {set I})
+Definition applyf {R : realType} (I : finType) (E : I -> @chsType R) (J: finType) (fs fs': J -> {set I})
   (f : mvector (fun i : J => 'F[E]_((fs i), (fs' i)))) (x : mvector (fun i : J => 'H[E]_(fs i))) :=
   \mvector_(i : J) f i (x i).
+Arguments applyf {R I E J fs fs'} f x.
 
-Definition injectf_r (I : finType) (E : I -> chsType) (J: finType)
+Definition injectf_r {R : realType} (I : finType) (E : I -> @chsType R) (J: finType)
   (fs fs': J -> {set I}) (f : mvector (fun i : J => 'F[E]_((fs i), (fs' i))))
   (x : 'H[E]_(\bigcup_i (fs i))) (b : 'Idx[E]_(\bigcup_i (fs i))) :=
     (cdv b x) *: injectv (applyf f (\mvector_(i : J) deltav (flatidx b i))).
+Arguments injectf_r {R I E J fs fs'} f x b.
 
-HB.lock Definition injectf_fun (I : finType) (E : I -> chsType) (J: finType)
+HB.lock Definition injectf_fun {R : realType} (I : finType) (E : I -> @chsType R) (J: finType)
   (fs fs': J -> {set I}) (f : mvector (fun i : J => 'F[E]_((fs i), (fs' i))))
   (x : 'H[E]_(\bigcup_i (fs i))) : 'H[E]_(\bigcup_i (fs' i)) :=
   \sum_(b : 'Idx[E]_(\bigcup_i (fs i))) injectf_r f x b.
+Arguments injectf_fun {R I E J fs fs'} f x.
 
 (* tensor product of set, for define \tenor_(i : J) E i later *)
 Section SetTensorVect.
-Context {I : finType} (E : I -> chsType).
+Context {R : realType} {I : finType} (E : I -> @chsType R).
+Local Notation C := (@hermitian.C R).
 Variables (J : finType) (fs: J -> {set I}).
 
 (* a finType index J *)
@@ -505,8 +525,8 @@ Variables (J : finType) (fs: J -> {set I}).
 
 (* Definition mapf : {set {set I}} := [set fs i | i : J]. *)
 Notation bdom := (\bigcup_i (fs i)).
-Notation flatidx := (@flatidx I E J fs).
-Notation injectv := (@injectv I E J fs).
+Notation flatidx := (@flatidx R I E J fs).
+Notation injectv := (@injectv R I E J fs).
 
 Definition disf := forall i j, i != j -> [disjoint fs i & fs j].
 
@@ -580,7 +600,7 @@ suff ->: \prod_(i : J) fk i = 0 by rewrite scale0r.
 by rewrite (bigD1 j)//= /fk nj mul0r.
 Qed.
 
-Lemma big_distr_idx (R: nzRingType) (F : forall j, 'Idx[E]_(fs j) -> R) : disf ->
+Lemma big_distr_idx (S0: nzRingType) (F : forall j, 'Idx[E]_(fs j) -> S0) : disf ->
   \prod_(i : J) (\sum_(j : 'Idx[E]_(fs i)) F i j) =
   \sum_(k : 'Idx[E]_bdom) \prod_(i : J) F i (flatidx k i).
 Proof.
@@ -660,7 +680,8 @@ End SetTensorVect.
 
 (* tensor product of linear functions *)
 Section SetTensorLfun.
-Context {I : finType} (E : I -> chsType).
+Context {R : realType} {I : finType} (E : I -> @chsType R).
+Local Notation C := (@hermitian.C R).
 
 (* fs : J -> {set I}, for domain of each component *)
 (* fs' : J -> {set I}, for codomain of each component *)
@@ -741,15 +762,18 @@ End SetTensorLfun.
 (*********************************************************************)
 (********************** lfundef.v ****************************)
 
-HB.lock Definition idx_default {I : finType} {E : I -> chsType}
+HB.lock Definition idx_default {R : realType} {I : finType} {E : I -> @chsType R}
   {A : {set I}} : 'Idx[E]_A := n2i (cast_ord (dim_proper_cast) ord0).
+Arguments idx_default {R I E A}.
 
-Definition idx0 {I : finType} {E : I -> chsType} := @idx_default I E set0.
+Definition idx0 {R : realType} {I : finType} {E : I -> @chsType R} :=
+  @idx_default R I E set0.
+Arguments idx0 {R I E}.
 
 Section SetIndex.
-Context {I : finType} {E : I -> chsType}.
+Context {R : realType} {I : finType} {E : I -> @chsType R}.
 
-Local Notation idx := (@idx _ E).
+Local Notation idx := (@idx R I E).
 Implicit Type (A B C: {set I}).
 
 Lemma dim_set0 : (dim ('H[E]_set0) = 1)%N.
@@ -758,7 +782,7 @@ Proof. by rewrite dim_setten big_set0. Qed.
 Lemma eq_nset0 : forall x y: 'I_(dim ('H[E]_set0)), x = y.
 Proof. by rewrite dim_set0 => x y; rewrite !ord1. Qed.
 
-Lemma idx0E : all_equal_to (@idx0 I E).
+Lemma idx0E : all_equal_to (@idx0 R I E).
 Proof. by move=>x/=; apply/i2n_inj; apply/eq_nset0. Qed.
 
 Lemma subInR A B (i : {i|i \in (A :|: B)}) (NinL : (val i \in A) <> true) : val i \in B.
@@ -909,7 +933,7 @@ Lemma idx_big_recl_cast (n : nat) (dt : n.+1.-tuple {set I}) :
   dt ~_ ord0 :|: \bigcup_i dt ~_ (fintype.lift ord0 i) = \bigcup_i dt ~_ i.
 Proof. by rewrite big_ord_recl. Qed.
 
-Lemma castidx_app (J : finType) (F : J -> chsType) (S1 S2 : {set J})
+Lemma castidx_app (J : finType) (F : J -> @chsType R) (S1 S2 : {set J})
   (eq_S : S1 = S2) (A1 : 'Idx[F]_S1) (x : { i : J | i \in S2 }) :
   castidx eq_S A1 x =
     A1 (@exist J (fun i : J => i \in S1)
@@ -945,29 +969,33 @@ End SetIndex.
 (* tenor of state over disjoint set *)
 (* note: tensor is defined for all cases, but only correct if domain are disjoint *)
 
-HB.lock Definition tenv {I : finType} {E : I -> chsType} [A B: {set I}]
+HB.lock Definition tenv {R : realType} {I : finType} {E : I -> @chsType R} [A B: {set I}]
   (u : 'H[E]_A) (v : 'H_B) : 'H_(A :|: B) :=
   \sum_(e : 'Idx_(A :|: B)) (cdv (idxSl e) u * cdv (idxSr e) v) *: deltav e.
+Arguments tenv {R I E A B} u v.
 
-HB.lock Definition tenvm {I : finType} {E : I -> chsType} [J: finType]
+HB.lock Definition tenvm {R : realType} {I : finType} {E : I -> @chsType R} [J: finType]
   [fs : J -> {set I}] (u : forall i : J, 'H[E]_(fs i)) :=
     injectv (\mvector_(i : J) u i).
+Arguments tenvm {R I E J fs} u.
 
 (* tenor of lfun over disjoint domain *)
-HB.lock Definition tenfm {I : finType} {E : I -> chsType} [J: finType]
+HB.lock Definition tenfm {R : realType} {I : finType} {E : I -> @chsType R} [J: finType]
   [fs fs' : J -> {set I}] (u: forall i : J, 'F[E]_(fs i, fs' i)) :=
     injectf (\mvector_(i : J) u i).
+Arguments tenfm {R I E J fs fs'} u.
 
 Notation "f ⊗v g" := (tenv f g) : lfun_scope.
 
 Section SetTensorProduct.
-Context {I : finType} {E : I -> chsType}.
+Context {R : realType} {I : finType} {E : I -> @chsType R}.
+Local Notation C := (@hermitian.C R).
 
 Implicit Type (A B: {set I}).
-Local Notation idx := (@idx _ E).
-Local Notation Hs := (@Hs _ E).
-Local Notation Hf := (@Hf _ E).
-Local Notation tenv := (@tenv I E).
+Local Notation idx := (@idx R I E).
+Local Notation Hs := (@Hs R I E).
+Local Notation Hf := (@Hf R I E).
+Local Notation tenv := (@tenv R I E).
 
 Lemma tenv_dim A B (dis: [disjoint A & B]) :
   (dim (Hs (A :|: B)) = dim (Hs A) * dim (Hs B))%N.
@@ -977,7 +1005,7 @@ Definition tenv_indexl A B (i : 'I_(dim (Hs A) * dim (Hs B))) : 'I_(dim (Hs (A :
   := i2n (idxU (n2i (mxtens_unindex i).1) (n2i (mxtens_unindex i).2)).
 
 Definition tenv_indexr A B (i : 'I_(dim (Hs (A :|: B)))) : 'I_(dim (Hs A) * dim (Hs B))
-  := mxtens_index (i2n (idxSl (@n2i I E (A :|: B) i)), i2n (idxSr (n2i i))).
+  := mxtens_index (i2n (idxSl (@n2i R I E (A :|: B) i)), i2n (idxSr (n2i i))).
 
 Lemma tenv_indexlK {A B} (dis: [disjoint A & B]) :
   cancel (@tenv_indexl A B) (@tenv_indexr _ _).
@@ -1020,7 +1048,7 @@ apply/matrixP=>i j; rewrite tenv.unlock [in RHS](dec_dv u) [in RHS](dec_dv v)
   !linear_sum/= linear_sumlz/= linear_sumr/= !summxE ord1.
 rewrite (bigD1 (n2i i))//= big1=>[k /negPf nki|].
   by rewrite linearZ/= mxE deltav.unlock h2c_eb mxE eqxx andbT
-    -(can2_eq (@n2iK _ _ _) (@i2nK _ _ _)) eq_sym nki mulr0.
+    -(can2_eq (@n2iK R I E _) (@i2nK R I E _)) eq_sym nki mulr0.
 rewrite addr0 linearZ/= deltav.unlock h2c_eb n2iK !mxE !eqxx mulr1.
 rewrite (bigD1 (n2i (mxtens_unindex (tenv_indexr i)).1))//
   !mxtens_indexK i2nK/= [X in _ + X]big1.
@@ -1029,7 +1057,7 @@ rewrite (bigD1 (n2i (mxtens_unindex (tenv_indexr i)).1))//
   rewrite -P0 tensmxE linearZ/= h2c_eb !mxE.
   case: eqP; last by rewrite mul0r.
   move=>/(can_inj (@mxtens_indexK _ _))=>Pv; inversion Pv.
-  by rewrite (inj_eq (@i2n_inj _ _ _)) eq_sym nki/= mulr0 mul0r mulr0.
+  by rewrite (inj_eq (@i2n_inj R I E _)) eq_sym nki/= mulr0 mul0r mulr0.
 rewrite linear_sumr/= linear_sumr/= summxE.
 rewrite (bigD1 (n2i (mxtens_unindex (tenv_indexr i)).2))// !mxtens_indexK/= i2nK big1.
   move=>k /negPf nki; rewrite mxE big1//==>l _.
@@ -1037,7 +1065,7 @@ rewrite (bigD1 (n2i (mxtens_unindex (tenv_indexr i)).2))// !mxtens_indexK/= i2nK
   rewrite -P0 tensmxE linearZ/= h2c_eb !mxE.
   case: eqP; last by rewrite mul0r.
   move=>/(can_inj (@mxtens_indexK _ _))=>Pv; inversion Pv.
-  by rewrite !eqxx/= linearZ/= h2c_eb !mxE (inj_eq (@i2n_inj _ _ _)) eq_sym nki/= !mulr0.
+  by rewrite !eqxx/= linearZ/= h2c_eb !mxE (inj_eq (@i2n_inj R I E _)) eq_sym nki/= !mulr0.
 rewrite !addr0 !linearZ/= !h2c_eb mxE (bigD1 (tenv_indexr i))//= big1.
   by move=>k /negPf nki; rewrite mxE eq_sym nki mul0r.
 by rewrite addr0 -{3}P0 tensmxE !mxE !eqxx !mulr1 mul1r.
@@ -1297,66 +1325,72 @@ Lemma tenvm_sum (J: finType) (fs : J -> {set I}) (K : J -> finType)
   (x: forall i : J, (K i) -> Hs (fs i)) :
     (tenvm (fun i => \sum_j x i j)) =
       \sum_(b : mvector (fun i : J => (K i))) tenvm (fun i => x i (b i)).
-Proof. by rewrite tenvm.unlock (mlinear_sum x (@injectv_mlinear _ _ _ _)). Qed.
+Proof. by rewrite tenvm.unlock (mlinear_sum x (@injectv_mlinear R I E J fs)). Qed.
 
 End SetTensorProduct.
 
 (* TODO : move *)
 Section DefaultONB.
-Variable (L : finType) (H : L -> chsType).
+Variable R : realType.
+Variable (L : finType) (H : L -> @chsType R).
 
 Lemma idx_card (S : {set L}) :
   #|'Idx[H]_S| = dim 'H[H]_S.
 Proof. by  rewrite card_idx dim_setten. Qed.
 
 HB.instance Definition _ (S : {set L}) := isONB.Build
-  'H[H]_S 'Idx[H]_S deltav (@dv_dot L H S) (idx_card S).
+  R 'H[H]_S 'Idx[H]_S deltav (@dv_dot R L H S) (idx_card S).
 
 HB.instance Definition _ (S : {set L}) (i : 'Idx[H]_S) :=
-  NormalState.copy (deltav i) ((@deltav L H S : 'ONB) i : 'NS).
+  NormalState.copy (deltav i) ((@deltav R L H S : 'ONB) i : 'NS).
 
 End DefaultONB.
 
 (* tenor product of linear function, onbasis free *)
 (* note that tenor is defined for all cases, but only correct if domains/codomains
    are disjoint *)
-HB.lock Definition ten_lfun_fun {I : finType} {E : I -> chsType}
+HB.lock Definition ten_lfun_fun {R : realType} {I : finType} {E : I -> @chsType R}
   [S T S' T'] (f: 'F[E]_(S,T)) (g: 'F_(S',T')) (u : 'H_(S :|: S')) :=
     \sum_(i : 'Idx_(S :|: S')) cdv i u *:
       ((f (deltav (idxSl i))) ⊗v (g (deltav (idxSr i)))).
+Arguments ten_lfun_fun {R I E S T S' T'} f g u.
 
-Lemma ten_lfun_fun_is_linear {I : finType} {E : I -> chsType}
+Lemma ten_lfun_fun_is_linear {R : realType} {I : finType} {E : I -> @chsType R}
   [S T S' T'] (f: 'F[E]_(S,T)) (g: 'F_(S',T')) :
   linear (ten_lfun_fun f g).
 Proof.
 move=>a u v; rewrite ten_lfun_fun.unlock scaler_sumr -big_split /=.
 by apply eq_bigr=>i _; rewrite scalerA -scalerDl linearP.
 Qed.
-HB.instance Definition _ {I : finType} {E : I -> chsType} [S T S' T']
+HB.instance Definition _ {R : realType} {I : finType} {E : I -> @chsType R} [S T S' T']
   (f: 'F[E]_(S,T)) (g: 'F_(S',T')):= GRing.isLinear.Build
-    C 'H_(S :|: S') 'H_(T :|: T') *:%R (ten_lfun_fun f g)
+    (@hermitian.C R) 'H_(S :|: S') 'H_(T :|: T') *:%R (ten_lfun_fun f g)
       (ten_lfun_fun_is_linear f g).
-Definition ten_lfun {I : finType} {E : I -> chsType} [S T S' T']
+Definition ten_lfun {R : realType} {I : finType} {E : I -> @chsType R} [S T S' T']
   (f: 'F[E]_(S,T)) (g: 'F_(S',T')) := linfun (ten_lfun_fun f g).
+Arguments ten_lfun {R I E S T S' T'} f g.
 
 (* with auto-lifting *)
-HB.lock Definition dot_lfun {I : finType} {E : I -> chsType} [S T S' T']
+HB.lock Definition dot_lfun {R : realType} {I : finType} {E : I -> @chsType R} [S T S' T']
   (f: 'F[E]_(S,T)) (g: 'F_(S',T')) :=
     ((ten_lfun f (\1: 'F_(T' :\: S, T' :\: S))) \o castlf (erefl _, (setUDS T' S))
       (ten_lfun g (\1: 'F_(S :\: T', S :\: T'))))%VF.
+Arguments dot_lfun {R I E S T S' T'} f g.
 
 (* for the case that both f and g are square *)
-HB.lock Definition sdot_lfun {I : finType} {E : I -> chsType} [S T] (f : 'F[E]_S) (g : 'F_T) :=
+HB.lock Definition sdot_lfun {R : realType} {I : finType} {E : I -> @chsType R} [S T] (f : 'F[E]_S) (g : 'F_T) :=
     castlf (setUDV _ _, (setUD _ _)) (dot_lfun f g).
+Arguments sdot_lfun {R I E S T} f g.
 
 Notation "f \⊗ g" := (ten_lfun f g) (at level 45, left associativity) : lfun_scope.
 Notation "f \· g" := (dot_lfun f g) (at level 40, left associativity) : lfun_scope.
 Notation "f \O g" := (sdot_lfun f g) (at level 40, left associativity) : lfun_scope.
 
 Section LinfunDef.
-Context {I : finType} {E : I -> chsType}.
+Context {R : realType} {I : finType} {E : I -> @chsType R}.
+Local Notation C := (@hermitian.C R).
 Implicit Type (S T W: {set I}).
-Local Notation v0 := (deltav (@idx0 _ E)).
+Local Notation v0 := (deltav (@idx0 R I E)).
 
 #[local] Lemma dotp_dv0Z (V : lmodType C) (f : V) : [< v0; v0 >] *: f = f.
 Proof. by rewrite dv_dot eqxx scale1r. Qed.
@@ -1519,22 +1553,22 @@ by f_equal; rewrite -[X in X * _ = _]conj_dotp
   -[X in _ * X = _]conj_dotp -[RHS]conj_dotp -!cdvE cdvT rmorphM.
 Qed.
 
-Lemma linear_tenf S T S' T' f : linear (@ten_lfun I E S T S' T' f).
+Lemma linear_tenf S T S' T' f : linear (@ten_lfun R I E S T S' T' f).
 Proof.
 move=>a v w; apply/lfunPD=>u; rewrite !lfunE/= !lfunE/= !lfunE/= ten_lfun_fun.unlock.
 rewrite linear_sum /= -big_split; apply eq_bigr=>i _.
 by rewrite !lfunE/= !lfunE/= !linearPr/= scalerDr !scalerA mulrC.
 Qed.
 HB.instance Definition _ S T S' T' f := GRing.isLinear.Build C 'F[E]_(S',T')
-  'F_(S :|: S', T :|: T') *:%R (@ten_lfun I E S T S' T' f) (@linear_tenf S T S' T' f).
-Lemma linear_tenfr S T S' T' f : linear ((@ten_lfun I E S T S' T')^~ f).
+  'F_(S :|: S', T :|: T') *:%R (@ten_lfun R I E S T S' T' f) (@linear_tenf S T S' T' f).
+Lemma linear_tenfr S T S' T' f : linear ((@ten_lfun R I E S T S' T')^~ f).
 Proof.
 move=>a v w; apply/lfunPD=>u; rewrite !lfunE/= !lfunE/= !lfunE/= ten_lfun_fun.unlock;
 rewrite linear_sum /= -big_split; apply eq_bigr=>i _;
 by rewrite !lfunE/= !lfunE/= !linearPl/= scalerDr !scalerA mulrC.
 Qed.
 HB.instance Definition _ S T S' T' := bilinear_isBilinear.Build C 'F[E]_(S,T) 'F[E]_(S',T')
-  'F_(S :|: S', T :|: T') *:%R *:%R (@ten_lfun I E S T S' T')
+  'F_(S :|: S', T :|: T') *:%R *:%R (@ten_lfun R I E S T S' T')
     (@linear_tenfr S T S' T', @linear_tenf S T S' T').
 
 Lemma h2mx_tenf S T S' T' (f: 'F[E]_(S,T)) (g: 'F[E]_(S',T')) :
@@ -1601,20 +1635,20 @@ move=>dS dT; rewrite /Num.norm/= /i2fnorm h2mx_tenf
 all: by apply/tenv_mxU_adj_unitarymx.
 Qed.
 
-Lemma linear_dotf S T S' T' f : linear (@dot_lfun I E S T S' T' f).
+Lemma linear_dotf S T S' T' f : linear (@dot_lfun R I E S T S' T' f).
 Proof.
 move=>a v w; rewrite dot_lfun.unlock linearPl/=.
 by rewrite linearP/= comp_lfunDr comp_lfunZr.
 Qed.
 HB.instance Definition _ S T S' T' f := GRing.isLinear.Build C 'F[E]_(S',T')
-  'F_(S' :|: S :\: T', T :|: T' :\: S) *:%R (@dot_lfun I E S T S' T' f) (@linear_dotf S T S' T' f).
-Lemma linear_dotfr S T S' T' f : linear ((@dot_lfun I E S T S' T')^~ f).
+  'F_(S' :|: S :\: T', T :|: T' :\: S) *:%R (@dot_lfun R I E S T S' T' f) (@linear_dotf S T S' T' f).
+Lemma linear_dotfr S T S' T' f : linear ((@dot_lfun R I E S T S' T')^~ f).
 Proof.
 move=>a v w; rewrite dot_lfun.unlock linearPl/=.
 by rewrite comp_lfunDl comp_lfunZl.
 Qed.
 HB.instance Definition _ S T S' T' := bilinear_isBilinear.Build C 'F[E]_(S,T) 'F[E]_(S',T')
-  'F_(S' :|: S :\: T', T :|: T' :\: S) *:%R *:%R (@dot_lfun I E S T S' T')
+  'F_(S' :|: S :\: T', T :|: T' :\: S) *:%R *:%R (@dot_lfun R I E S T S' T')
     (@linear_dotfr S T S' T', @linear_dotf S T S' T').
 
 Lemma dotf_conj S T S' T' (f: 'F[E]_(S,T)) (g: 'F_(S',T')) :
@@ -1632,14 +1666,14 @@ Lemma dotf_tr S T S' T' (f: 'F[E]_(S,T)) (g: 'F_(S',T')) :
   (f \· g)^T = g^T \· f^T.
 Proof. by rewrite !trfAC dotf_adj dotf_conj. Qed.
 
-Lemma linear_sdotf S T f : linear (@sdot_lfun I E S T f).
+Lemma linear_sdotf S T f : linear (@sdot_lfun R I E S T f).
 Proof. by move=>a v w; rewrite sdot_lfun.unlock linearP/= linearD/= linearZ/=. Qed.
 HB.instance Definition _ S T f := GRing.isLinear.Build C 'F[E]_T
-  'F_(S :|: T) *:%R (@sdot_lfun I E S T f) (@linear_sdotf S T f).
-Lemma linear_sdotfr S T f : linear ((@sdot_lfun I E S T)^~ f).
+  'F_(S :|: T) *:%R (@sdot_lfun R I E S T f) (@linear_sdotf S T f).
+Lemma linear_sdotfr S T f : linear ((@sdot_lfun R I E S T)^~ f).
 Proof. by move=>a v w; rewrite sdot_lfun.unlock linearPl/= linearD/= linearZ/=. Qed.
 HB.instance Definition _ S T := bilinear_isBilinear.Build C 'F[E]_S 'F[E]_T
-  'F_(S :|: T) *:%R *:%R (@sdot_lfun I E S T) (@linear_sdotfr S T, @linear_sdotf S T).
+  'F_(S :|: T) *:%R *:%R (@sdot_lfun R I E S T) (@linear_sdotfr S T, @linear_sdotf S T).
 
 Lemma sdotf_conj S T (f: 'F[E]_S) (g: 'F_T) :
   (f \O g)^C = f^C \O g^C.
@@ -1803,12 +1837,12 @@ Lemma tenfm_sum (J: finType) (fs fs': J -> {set I}) (K : J -> finType)
   (x: forall i : J, (K i) -> 'F[E]_(fs i, fs' i)) :
     (tenfm (fun i => \sum_j x i j)) =
       \sum_(b : mvector (fun i : J => (K i))) tenfm (fun i => x i (b i)).
-Proof. by rewrite tenfm.unlock (mlinear_sum x (@injectf_mlinear _ _ _ _ _)). Qed.
+Proof. by rewrite tenfm.unlock (mlinear_sum x (@injectf_mlinear R I E J fs fs')). Qed.
 
 End LinfunDef.
 
 Section TenDotTheory.
-Context (I : finType) (E : I -> chsType).
+Context {R : realType} (I : finType) (E : I -> @chsType R).
 Variables (S T S' T' : {set I}).
 Implicit Type (f: 'F[E]_(S,T)) (g: 'F[E]_(S',T')).
 
@@ -1942,7 +1976,7 @@ Proof. exact: linear_sumr. Qed.
 End TenDotTheory.
 
 Section SdotTheory.
-Context (I : finType) (E : I -> chsType).
+Context {R : realType} (I : finType) (E : I -> @chsType R).
 Variables (S T : {set I}).
 Implicit Type (f: 'F[E]_S) (g: 'F[E]_T).
 
@@ -2011,7 +2045,8 @@ Proof. exact: linear_sumr. Qed.
 End SdotTheory.
 
 Section NonDepDef.
-Context (I : finType) (H : I -> chsType).
+Context {R : realType} (I : finType) (H : I -> @chsType R).
+Local Notation C := (@hermitian.C R).
 Implicit Type (A B : {set I}).
 
 Inductive Hnd := HND (A : {set I}) & 'H[H]_A.
@@ -2134,73 +2169,73 @@ Reserved Notation "\tenf_ ( i 'in' A ) F"
            format "'[' \tenf_ ( i  'in'  A ) '/  '  F ']'").
 
 Notation "\tenv_ ( i <- r | P ) F" :=
-  (\big[ @Hnd_ten _ _ / to_Hnd (deltav idx0) ]_(i <- r | P%B) F%FND ) : fnd_scope.
+  (\big[ @Hnd_ten _ _ _ / to_Hnd (deltav idx0) ]_(i <- r | P%B) F%FND ) : fnd_scope.
 Notation "\tenv_ ( i <- r ) F" :=
-  (\big[ @Hnd_ten _ _ / to_Hnd (deltav idx0) ]_(i <- r) F%FND) : fnd_scope.
+  (\big[ @Hnd_ten _ _ _ / to_Hnd (deltav idx0) ]_(i <- r) F%FND) : fnd_scope.
 Notation "\tenv_ ( m <= i < n | P ) F" :=
-  ((\big[ @Hnd_ten _ _ / to_Hnd (deltav idx0) ]_( m%N <= i < n%N | P%B) F%FND)%BIG)
+  ((\big[ @Hnd_ten _ _ _ / to_Hnd (deltav idx0) ]_( m%N <= i < n%N | P%B) F%FND)%BIG)
     : fnd_scope.
 Notation "\tenv_ ( m <= i < n ) F" :=
-  ((\big[ @Hnd_ten _ _ / to_Hnd (deltav idx0) ]_(m%N <= i < n%N) F%FND)%BIG) : fnd_scope.
+  ((\big[ @Hnd_ten _ _ _ / to_Hnd (deltav idx0) ]_(m%N <= i < n%N) F%FND)%BIG) : fnd_scope.
 Notation "\tenv_ ( i | P ) F" :=
-  (\big[ @Hnd_ten _ _ / to_Hnd (deltav idx0) ]_(i | P%B) F%FND) : fnd_scope.
+  (\big[ @Hnd_ten _ _ _ / to_Hnd (deltav idx0) ]_(i | P%B) F%FND) : fnd_scope.
 Notation "\tenv_ i F" :=
-  (\big[ @Hnd_ten _ _ / to_Hnd (deltav idx0) ]_i F%FND) : fnd_scope.
+  (\big[ @Hnd_ten _ _ _ / to_Hnd (deltav idx0) ]_i F%FND) : fnd_scope.
 Notation "\tenv_ ( i : t | P ) F" :=
-  (\big[ @Hnd_ten _ _ / to_Hnd (deltav idx0) ]_(i : t | P%B) F%FND) (only parsing)
+  (\big[ @Hnd_ten _ _ _ / to_Hnd (deltav idx0) ]_(i : t | P%B) F%FND) (only parsing)
     : fnd_scope.
 Notation "\tenv_ ( i : t ) F" :=
-  (\big[ @Hnd_ten _ _ / to_Hnd (deltav idx0) ]_(i : t) F%FND) (only parsing) : fnd_scope.
+  (\big[ @Hnd_ten _ _ _ / to_Hnd (deltav idx0) ]_(i : t) F%FND) (only parsing) : fnd_scope.
 Notation "\tenv_ ( i < n | P ) F" :=
-  ((\big[ @Hnd_ten _ _ / to_Hnd (deltav idx0) ]_(i < n%N | P%B) F%FND)%BIG) : fnd_scope.
+  ((\big[ @Hnd_ten _ _ _ / to_Hnd (deltav idx0) ]_(i < n%N | P%B) F%FND)%BIG) : fnd_scope.
 Notation "\tenv_ ( i < n ) F" :=
-  ((\big[ @Hnd_ten _ _ / to_Hnd (deltav idx0) ]_(i < n%N) F%FND)%BIG) : fnd_scope.
+  ((\big[ @Hnd_ten _ _ _ / to_Hnd (deltav idx0) ]_(i < n%N) F%FND)%BIG) : fnd_scope.
 Notation "\tenv_ ( i 'in' A | P ) F" :=
-  (\big[ @Hnd_ten _ _ / to_Hnd (deltav idx0) ]_(i in A | P%B) F%FND) : fnd_scope.
+  (\big[ @Hnd_ten _ _ _ / to_Hnd (deltav idx0) ]_(i in A | P%B) F%FND) : fnd_scope.
 Notation "\tenv_ ( i 'in' A ) F" :=
-  (\big[ @Hnd_ten _ _ / to_Hnd (deltav idx0) ]_(i in A) F%FND) : fnd_scope.
+  (\big[ @Hnd_ten _ _ _ / to_Hnd (deltav idx0) ]_(i in A) F%FND) : fnd_scope.
 
-Definition Fnd1 (I : finType) (H : I -> chsType) := to_Fnd (\1 : 'F[H]_set0).
-Arguments Fnd1 {I H}.
+Definition Fnd1 {R : realType} (I : finType) (H : I -> @chsType R) := to_Fnd (\1 : 'F[H]_set0).
+Arguments Fnd1 {R I H}.
 
 Notation "\tenf_ ( i <- r | P ) F" :=
-  (\big[ @Fnd_ten _ _ / Fnd1 ]_(i <- r | P%B) F%FND ) : fnd_scope.
+  (\big[ @Fnd_ten _ _ _ / Fnd1 ]_(i <- r | P%B) F%FND ) : fnd_scope.
 Notation "\tenf_ ( i <- r ) F" :=
-  (\big[ @Fnd_ten _ _ / Fnd1 ]_(i <- r) F%FND) : fnd_scope.
+  (\big[ @Fnd_ten _ _ _ / Fnd1 ]_(i <- r) F%FND) : fnd_scope.
 Notation "\tenf_ ( m <= i < n | P ) F" :=
-  ((\big[ @Fnd_ten _ _ / Fnd1 ]_( m%N <= i < n%N | P%B) F%FND)%BIG)
+  ((\big[ @Fnd_ten _ _ _ / Fnd1 ]_( m%N <= i < n%N | P%B) F%FND)%BIG)
     : fnd_scope.
 Notation "\tenf_ ( m <= i < n ) F" :=
-  ((\big[ @Fnd_ten _ _ / Fnd1 ]_(m%N <= i < n%N) F%FND)%BIG) : fnd_scope.
+  ((\big[ @Fnd_ten _ _ _ / Fnd1 ]_(m%N <= i < n%N) F%FND)%BIG) : fnd_scope.
 Notation "\tenf_ ( i | P ) F" :=
-  (\big[ @Fnd_ten _ _ / Fnd1 ]_(i | P%B) F%FND) : fnd_scope.
+  (\big[ @Fnd_ten _ _ _ / Fnd1 ]_(i | P%B) F%FND) : fnd_scope.
 Notation "\tenf_ i F" :=
-  (\big[ @Fnd_ten _ _ / Fnd1 ]_i F%FND) : fnd_scope.
+  (\big[ @Fnd_ten _ _ _ / Fnd1 ]_i F%FND) : fnd_scope.
 Notation "\tenf_ ( i : t | P ) F" :=
-  (\big[ @Fnd_ten _ _ / Fnd1 ]_(i : t | P%B) F%FND) (only parsing)
+  (\big[ @Fnd_ten _ _ _ / Fnd1 ]_(i : t | P%B) F%FND) (only parsing)
     : fnd_scope.
 Notation "\tenf_ ( i : t ) F" :=
-  (\big[ @Fnd_ten _ _ / Fnd1 ]_(i : t) F%FND) (only parsing) : fnd_scope.
+  (\big[ @Fnd_ten _ _ _ / Fnd1 ]_(i : t) F%FND) (only parsing) : fnd_scope.
 Notation "\tenf_ ( i < n | P ) F" :=
-  ((\big[ @Fnd_ten _ _ / Fnd1 ]_(i < n%N | P%B) F%FND)%BIG) : fnd_scope.
+  ((\big[ @Fnd_ten _ _ _ / Fnd1 ]_(i < n%N | P%B) F%FND)%BIG) : fnd_scope.
 Notation "\tenf_ ( i < n ) F" :=
-  ((\big[ @Fnd_ten _ _ / Fnd1 ]_(i < n%N) F%FND)%BIG) : fnd_scope.
+  ((\big[ @Fnd_ten _ _ _ / Fnd1 ]_(i < n%N) F%FND)%BIG) : fnd_scope.
 Notation "\tenf_ ( i 'in' A | P ) F" :=
-  (\big[ @Fnd_ten _ _ / Fnd1 ]_(i in A | P%B) F%FND) : fnd_scope.
+  (\big[ @Fnd_ten _ _ _ / Fnd1 ]_(i in A | P%B) F%FND) : fnd_scope.
 Notation "\tenf_ ( i 'in' A ) F" :=
-  (\big[ @Fnd_ten _ _ / Fnd1 ]_(i in A) F%FND) : fnd_scope.
+  (\big[ @Fnd_ten _ _ _ / Fnd1 ]_(i in A) F%FND) : fnd_scope.
 
 Local Open Scope efnd_scope.
 
 Section NonDepHerm.
-Context {L : finType} {H : L -> chsType}.
+Context {R : realType} {L : finType} {H : L -> @chsType R}.
 Implicit Type (x y : Hnd H) (A B : {set L}).
 
 Lemma to_HndK A (f : 'H[H]_A) : of_Hnd (to_Hnd f) = f.
 Proof. by []. Qed.
 Lemma of_HndK x : to_Hnd (of_Hnd x) = x.
 Proof. by case: x. Qed.
-Lemma to_Hnd_inj A : injective (@to_Hnd _ H A).
+Lemma to_Hnd_inj A : injective (@to_Hnd R L H A).
 Proof. by move=>x y Pxy; inversion Pxy; move: H1=>/inj_existT. Qed.
 
 Lemma eq_Hnd x y (Hd : vdom x = vdom y) :
@@ -2247,15 +2282,15 @@ Proof. by []. Qed.
 Definition of_HndE := (of_Hnd_conjE, of_Hnd_tenE).
 Definition to_HndE := (to_Hnd_conjE, to_Hnd_tenE).
 
-Lemma tenVC : commutative (@Hnd_ten _ H).
+Lemma tenVC : commutative (@Hnd_ten R L H).
 Proof. by move=>[A v1][B v2]; rewrite -!to_HndE -tenv_castC Hnd_cast. Qed.
-Lemma tenVA : associative (@Hnd_ten _ H).
+Lemma tenVA : associative (@Hnd_ten R L H).
 Proof. by move=>[A1 v1][A2 v2][A3 v3]; rewrite -!to_HndE -tenv_castA Hnd_cast. Qed.
-Lemma tenV1 : right_id (to_Hnd (deltav idx0)) (@Hnd_ten _ H).
+Lemma tenV1 : right_id (to_Hnd (deltav idx0)) (@Hnd_ten R L H).
 Proof. by move=>[A v]; rewrite -to_HndE tenv_idx0r Hnd_cast. Qed.
-Lemma ten1V : left_id (to_Hnd (deltav idx0)) (@Hnd_ten _ H).
+Lemma ten1V : left_id (to_Hnd (deltav idx0)) (@Hnd_ten R L H).
 Proof. by move=>v; rewrite tenVC tenV1. Qed.
-HB.instance Definition _ := Monoid.isComLaw.Build _ _ (@Hnd_ten _ H) tenVA tenVC ten1V.
+HB.instance Definition _ := Monoid.isComLaw.Build _ _ (@Hnd_ten R L H) tenVA tenVC ten1V.
 
 Lemma tenvm_bij_cast (F G : finType) (f : G -> F) (bf : bijective f)
   (dt : F -> {set L}) :
@@ -2331,7 +2366,7 @@ elim.
   suff ->: tenvm u = casths P0 (deltav idx0) by rewrite Hnd_cast.
   by apply/cdvP=>i; rewrite cdv_tm big_ord0 cdv_castV idx0E cdv_dv eqxx.
 move=>n IH su; case/tupleP: su=>s su u.
-move: (tenvm_recl u)=>/(f_equal (@to_Hnd _ _ _)).
+move: (tenvm_recl u)=>/(f_equal (@to_Hnd R L H _)).
 rewrite Hnd_cast=>->; rewrite to_HndE big_ord_recl; f_equal=>/=.
 have PC i : su ~_ i = [tuple of s :: su] ~_ (nlift ord0 i).
   by rewrite tnthS.
@@ -2348,13 +2383,14 @@ End NonDepHerm.
 Ltac to_Hnd := try (apply/to_Hnd_inj); rewrite ?(to_HndE, Hnd_cast, to_Hnd_tens).
 
 Section NonDepLfun.
-Context (I : finType) (H : I -> chsType).
-Implicit Type (A B : {set I}) (x y : @Fnd _ H).
+Context {R : realType} (I : finType) (H : I -> @chsType R).
+Local Notation C := (@hermitian.C R).
+Implicit Type (A B : {set I}) (x y : @Fnd R I H).
 
 Local Open Scope fnd_scope.
 Local Open Scope lfun_scope.
-Local Notation Fnd := (@Fnd _ H).
-Local Notation to_Fnd := (@to_Fnd _ H).
+Local Notation Fnd := (@Fnd R I H).
+Local Notation to_Fnd := (@to_Fnd R I H).
 
 Lemma to_FndK A B (f : 'F[H]_(A,B)) : of_Fnd (to_Fnd f) = f.
 Proof. by []. Qed.
@@ -2467,13 +2503,13 @@ Lemma of_FndKE x y : x = y <-> to_Fnd (of_Fnd x) = to_Fnd (of_Fnd y).
 Proof. by rewrite !of_FndK. Qed.
 
 
-Lemma tenFA : associative (@Fnd_ten _ H).
+Lemma tenFA : associative (@Fnd_ten R I H).
 Proof.
 move=> [ ] ? ? x1 [ ] ? ? x2 [ ] ? ? x3.
 by rewrite of_FndKE !of_FndE -tenf_castA Fnd_cast.
 Qed.
 
-Lemma tenFC : commutative (@Fnd_ten _ H).
+Lemma tenFC : commutative (@Fnd_ten R I H).
 Proof.
 move=> [ ] ? ? x1 [ ] ? ? x2.
 by rewrite of_FndKE !of_FndE -tenf_castC Fnd_cast.
@@ -2486,12 +2522,12 @@ by rewrite of_FndKE !of_FndE !to_FndK -[in RHS](tenf_cast1r x) Fnd_cast.
 Qed.
 Lemma ten1FP A x : A = set0 -> ((\1 : 'F[H]_A) \⊗ x)%FND = x.
 Proof. by rewrite tenFC; apply/tenF1P. Qed.
-Lemma tenF1 : right_id (\1 : 'F[H]_set0) (@Fnd_ten _ H).
+Lemma tenF1 : right_id (\1 : 'F[H]_set0) (@Fnd_ten R I H).
 Proof. by move=>x; apply/tenF1P. Qed.
-Lemma ten1F : left_id (\1 : 'F[H]_set0) (@Fnd_ten _ H).
+Lemma ten1F : left_id (\1 : 'F[H]_set0) (@Fnd_ten R I H).
 Proof. by move=>x; apply/ten1FP. Qed.
 
-HB.instance Definition _ := Monoid.isComLaw.Build _ _ (@Fnd_ten _ H) tenFA tenFC ten1F.
+HB.instance Definition _ := Monoid.isComLaw.Build _ _ (@Fnd_ten R I H) tenFA tenFC ten1F.
 
 Lemma tenf_cast1l A B (f: 'F[H]_(A,B))  :
   castlf ((set0U A),(set0U B)) ((\1 : 'F[H]_set0) \⊗ f) = f.
@@ -2560,7 +2596,7 @@ elim.
   apply/lfunPD=>i; rewrite tenfmdv; apply/cdvP=>j.
   by rewrite cdv_tm big_ord0 castlfE lfunE/= deltav_cast cdv_castV !idx0E cdv_dv eqxx.
 move=>n IH su; case/tupleP: su=>s su tu; case/tupleP: tu=>t tu u.
-move: (tenfm_recl u)=>/(f_equal (@to_Fnd _ _ )).
+move: (tenfm_recl u)=>/(f_equal (@to_Fnd _ _)).
 rewrite Fnd_cast=>->; rewrite to_FndE big_ord_recl; f_equal=>/=.
 have PCs i : su ~_ i = [tuple of s :: su] ~_ (nlift ord0 i).
   by rewrite tnthS.
@@ -2843,7 +2879,7 @@ End TensorNotation.
 Export TensorNotation.
 
 Section LownerorderTensorLfun.
-Context {L: finType} (H: L -> chsType).
+Context {R : realType} {L: finType} (H: L -> @chsType R).
 Implicit Type (S T : {set L}).
 
 Lemma trlf_deltavl S T (f : 'F[H]_S) (g : 'F_T) (i j : 'Idx[H]_(S :|: T)) :
@@ -2939,7 +2975,7 @@ by move=>Q; rewrite -tenf_castC lef_cast_symV linear0 ptenf_rge0// disjoint_sym.
 Qed.
 
 HB.instance Definition _ S T dis := isBRegVOrder.Build C 'F[H]_S 'F_T
-  'F_(S :|: T) (@ten_lfun L H S S T T) (linearBl _) (linearBr _)
+  'F_(S :|: T) (@ten_lfun R L H S S T T) (linearBl _) (linearBr _)
     (@tenf_eq0 S T dis) (ptenf_rge0 dis) (ptenf_lge0 dis).
 
 Lemma ptenf_rgt0 S T (dis : [disjoint S & T]) (x : 'F[H]_S) (y : 'F[H]_T) :
@@ -2961,28 +2997,34 @@ Proof. by move=>p1; apply: (lev_wpbreg2l _ p1). Qed.
 
 End LownerorderTensorLfun.
 
-HB.lock Definition tenso_fun {L : finType} {H : L -> chsType} [S T S' T']
+HB.lock Definition tenso_fun {R : realType} {L : finType} {H : L -> @chsType R} [S T S' T']
   (E : 'SO[H]_(S,T)) (F : 'SO_(S',T')) (x : 'F_(S :|: S')) : 'F_(T :|: T') :=
   \sum_(i : 'Idx_(S :|: S')) \sum_(j : 'Idx_(S :|: S')) (
     [< deltav i ; x (deltav j) >] *:
     ( E [> (deltav (idxSl i)) ; (deltav (idxSl j)) <] \⊗
       F [> (deltav (idxSr i)) ; (deltav (idxSr j)) <] )).
 
-Lemma tenso_fun_is_linear {L : finType} {H : L -> chsType} [S T S' T']
+Arguments tenso_fun {R L H S T S' T'} E F x.
+
+Lemma tenso_fun_is_linear {R : realType} {L : finType} {H : L -> @chsType R} [S T S' T']
   (E : 'SO[H]_(S,T)) (F : 'SO[H]_(S',T')) : linear (tenso_fun E F).
 Proof.
 move=>a u v; rewrite tenso_fun.unlock.
 do 2 (rewrite scaler_sumr -big_split /=; apply eq_bigr=>? _).
 by rewrite lfunE/= lfunE/= linearP/= scalerA -scalerDl.
 Qed.
-HB.instance Definition _ L H S T S' T' E F := GRing.isLinear.Build C 'F_(S :|: S')
-  'F_(T :|: T') *:%R (tenso_fun E F) (@tenso_fun_is_linear L H S T S' T' E F).
-Definition tenso {L H} [S T S' T'] E F := Superop (linfun (@tenso_fun L H S T S' T' E F)).
+HB.instance Definition _ {R : realType} {L : finType} {H : L -> @chsType R} S T S' T' E F :=
+  GRing.isLinear.Build (@hermitian.C R) 'F_(S :|: S')
+    'F_(T :|: T') *:%R (tenso_fun E F) (@tenso_fun_is_linear R L H S T S' T' E F).
+Definition tenso {R : realType} {L : finType} {H : L -> @chsType R} [S T S' T'] E F :=
+  Superop (linfun (@tenso_fun R L H S T S' T' E F)).
+Arguments tenso {R L H S T S' T'} E F.
 
 Notation "f :⊗ g" := (tenso f g) : lfun_scope.
 
 Section SOTensor.
-Context {L : finType} (H : L -> chsType).
+Context {R : realType} {L : finType} (H : L -> @chsType R).
+Local Notation C := (@hermitian.C R).
 Implicit Type (S T: {set L}).
 
 Lemma tensodf S T S' T' (E : 'SO[H]_(S,T)) (F : 'SO[H]_(S',T')) i j :
@@ -3021,21 +3063,21 @@ do 2 (rewrite !linear_sum/=; apply eq_bigr=>? _).
 by rewrite !linearZ/= P.
 Qed.
 
-Lemma linear_tenso S T S' T' E : linear (@tenso L H S T S' T' E).
+Lemma linear_tenso S T S' T' E : linear (@tenso R L H S T S' T' E).
 Proof.
 move=>a v w. apply/superopPD=>i j.
 by rewrite !soE -!tensodf !soE linearPr.
 Qed.
 HB.instance Definition _ S T S' T' E := GRing.isLinear.Build C 'SO[H]_(S',T')
-  'SO_(S :|: S', T :|: T') *:%R (@tenso L H S T S' T' E) (linear_tenso E).
-Lemma linear_tensor S T S' T' E : linear ((@tenso L H S T S' T')^~ E).
+  'SO_(S :|: S', T :|: T') *:%R (@tenso R L H S T S' T' E) (linear_tenso E).
+Lemma linear_tensor S T S' T' E : linear ((@tenso R L H S T S' T')^~ E).
 Proof.
 move=>a v w. apply/superopPD=>i j.
 by rewrite !soE -!tensodf !soE linearPl.
 Qed.
 HB.instance Definition _ S T S' T' := bilinear_isBilinear.Build C 'SO[H]_(S,T)
   'SO_(S',T') 'SO_(S :|: S', T :|: T') *:%R *:%R
-    (@tenso L H S T S' T') (@linear_tensor S T S' T', @linear_tenso S T S' T').
+    (@tenso R L H S T S' T') (@linear_tensor S T S' T', @linear_tenso S T S' T').
 
 Lemma tenso_comp S T S' T' W W' (f1: 'SO[H]_(S,T)) (f2: 'SO[H]_(W,S))
   (g1: 'SO[H]_(S',T')) (g2: 'SO[H]_(W',S')) : [disjoint S & S'] ->
@@ -3061,7 +3103,8 @@ Qed.
 End SOTensor.
 
 Section SOTensorBilinear.
-Context {L : finType} (H : L -> chsType).
+Context {R : realType} {L : finType} (H : L -> @chsType R).
+Local Notation C := (@hermitian.C R).
 Variables (S T S' T' : {set L}).
 Implicit Type (f: 'SO[H]_(S,T)) (g: 'SO[H]_(S',T')).
 
@@ -3143,7 +3186,7 @@ Proof. by move=>dis; rewrite -tenso_compr ?comp_sor1l//. Qed.
 End SOTensorBilinear.
 
 Section CastSO.
-Context {L : finType} (H : L -> chsType).
+Context {R : realType} {L : finType} (H : L -> @chsType R).
 Implicit Type (S T : {set L}).
 
 Definition castso S T S' T' (eqST : (S = S') * (T = T')) (f : 'SO[H]_(S,T)) :
@@ -3273,30 +3316,36 @@ Proof. by case: eqST => eq1 eq2; case: S / eq1 E; case: T / eq2=>E; rewrite !cas
 
 End CastSO.
 
-HB.lock Definition ptraceso_fun {L : finType} {H : L -> chsType}
+HB.lock Definition ptraceso_fun {R : realType} {L : finType} {H : L -> @chsType R}
   T [S] (x : 'F[H]_S) : 'F[H]_(S :\: T) :=
     \sum_(k : 'Idx[H]_(S :&: T))
     \sum_(i : 'Idx[H]_(S :\: T)) \sum_(j : 'Idx[H]_(S :\: T))
     ([< deltav (idxU k i); castlf (esym (setID S T), esym (setID S T)) x (deltav (idxU k j)) >]
      *: [>deltav i ; deltav j <]).
-Lemma ptraceso_fun_is_linear L H T S : linear (@ptraceso_fun L H T S).
+Arguments ptraceso_fun {R L H} T {S} x.
+
+Lemma ptraceso_fun_is_linear {R : realType} (L : finType) (H : L -> @chsType R) T S :
+  linear (@ptraceso_fun R L H T S).
 Proof.
 move=>a x y; rewrite ptraceso_fun.unlock.
 do 3 (rewrite scaler_sumr -big_split /=; apply eq_bigr=>? _).
 by rewrite linearP/= lfunE/= lfunE/= linearP/= scalerDl scalerA.
 Qed.
-HB.instance Definition _ L H T S := GRing.isLinear.Build C 'F[H]_S
-  'F_(S :\: T) *:%R (@ptraceso_fun L H T S) (@ptraceso_fun_is_linear L H T S).
-Definition ptraceso {L H} T {S} := Superop (linfun (@ptraceso_fun L H T S)).
+HB.instance Definition _ {R : realType} (L : finType) (H : L -> @chsType R) T S :=
+  GRing.isLinear.Build (@hermitian.C R) 'F[H]_S
+    'F_(S :\: T) *:%R (@ptraceso_fun R L H T S) (@ptraceso_fun_is_linear R L H T S).
+Definition ptraceso {R : realType} {L : finType} {H : L -> @chsType R} T {S} :=
+  Superop (linfun (@ptraceso_fun R L H T S)).
+Arguments ptraceso {R L H} T {S}.
 
 Notation "'\Tr_' ( T ) f " := (ptraceso T f) : lfun_scope.
 
 (* partial trace is a quantum channel *)
 Section PartialTrace.
-Context {L : finType} (H : L -> chsType).
+Context {R : realType} {L : finType} (H : L -> @chsType R).
 Implicit Type (S T W : {set L}).
 
-Lemma ptraceso_krausso T S : @ptraceso L H T S =
+Lemma ptraceso_krausso T S : @ptraceso R L H T S =
   krausso (fun i : 'Idx[H]_(S :&: T) => castlf ((setID _ _), set0U _)
     ([> deltav idx0; deltav i <] \⊗ (\1 : 'F_(S :\: T)))).
 Proof.
@@ -3317,7 +3366,7 @@ rewrite !dv_split -tenf_outp castlf_complfl castlf_id -!tenf_comp//
 by to_Fnd; rewrite ten1F.
 Qed.
 
-Lemma ptraceso_qc T S : @ptraceso L H T S \is cptp.
+Lemma ptraceso_qc T S : @ptraceso R L H T S \is cptp.
 Proof.
 apply/cptpP; split; first by rewrite ptraceso_krausso is_cpmap.
 move: (disjointID S T)=>dis; apply/tpmapP=>x.
@@ -3333,7 +3382,7 @@ all: by rewrite !dv_split tenv_dot// !idxSUl// !idxSUr// !onb_dot ?eqxx ?mul1r//
   [i == m]eq_sym nm mul0r.
 Qed.
 HB.instance Definition _ T S := isQChannel.Build
-  'H[H]_S 'H_(S :\: T) (ptraceso T) (@ptraceso_qc T S).
+  R 'H[H]_S 'H_(S :\: T) (ptraceso T) (@ptraceso_qc T S).
 
 Lemma castso_krausso S T S' T' (eqST : (S = S') * (T = T')) (F : finType)
   (f : F -> 'F[H]_(S,T)) :
@@ -3341,8 +3390,8 @@ Lemma castso_krausso S T S' T' (eqST : (S = S') * (T = T')) (F : finType)
 Proof. by case: eqST=>eqS eqT; case: S' / eqS; case: T' /eqT. Qed.
 
 Lemma ptraceso_comp T W S :
-  @ptraceso L H T _ :o @ptraceso L H W S =
-    castso (erefl _, esym (setDDl _ _ _)) (@ptraceso L H (W :|: T) S).
+  @ptraceso R L H T _ :o @ptraceso R L H W S =
+    castso (erefl _, esym (setDDl _ _ _)) (@ptraceso R L H (W :|: T) S).
 Proof.
 rewrite !ptraceso_krausso comp_krausso castso_krausso.
 suff P1 : ((S :\: W) :&: T) :|: (S :&: W) = S :&: (W :|: T).
@@ -3364,7 +3413,8 @@ Qed.
 End PartialTrace.
 
 Section SOTensorTheory.
-Context {L : finType} (H : L -> chsType).
+Context {R : realType} {L : finType} (H : L -> @chsType R).
+Local Notation C := (@hermitian.C R).
 Implicit Type (S T W : {set L}).
 
 Lemma tenso_krausso S T S' T' (dis : [disjoint S & S']) (F G : finType)
@@ -3420,7 +3470,7 @@ Lemma castso_cp S T S' T' (eqST : (S = S') * (T = T')) (E: 'CP[H]_(S,T)) :
   castso eqST E \is cpmap.
 Proof. by rewrite castso_cpE is_cpmap. Qed.
 HB.instance Definition _ S T S' T' eqST (E: 'CP[H]_(S,T)) := isCPMap.Build
-  'H_S' 'H_T' (castso eqST E) (@castso_cp S T S' T' eqST E).
+  R 'H_S' 'H_T' (castso eqST E) (@castso_cp S T S' T' eqST E).
 
 Lemma castso_tnE S T S' T' (eqST : (S = S') * (T = T')) (E: 'SO[H]_(S,T)) :
   castso eqST E \is tnmap = (E \is tnmap).
@@ -3429,7 +3479,7 @@ Lemma castso_tn S T S' T' (eqST : (S = S') * (T = T')) (E: 'QO[H]_(S,T)) :
   castso eqST E \is tnmap.
 Proof. by rewrite castso_tnE is_tnmap. Qed.
 HB.instance Definition _ S T S' T' eqST (E: 'QO[H]_(S,T)) := CPMap_isTNMap.Build
-  'H_S' 'H_T' (castso eqST E) (@castso_tn S T S' T' eqST E).
+  R 'H_S' 'H_T' (castso eqST E) (@castso_tn S T S' T' eqST E).
 
 Lemma castso_tpE S T S' T' (eqST : (S = S') * (T = T')) (E: 'SO[H]_(S,T)) :
   castso eqST E \is tpmap = (E \is tpmap).
@@ -3438,7 +3488,7 @@ Lemma castso_tp S T S' T' (eqST : (S = S') * (T = T')) (E: 'QC[H]_(S,T)) :
   castso eqST E \is tpmap.
 Proof. by rewrite castso_tpE is_tpmap. Qed.
 HB.instance Definition _ S T S' T' eqST (E: 'QC[H]_(S,T)) := QOperation_isTPMap.Build
-  'H_S' 'H_T' (castso eqST E) (@castso_tp S T S' T' eqST E).
+  R 'H_S' 'H_T' (castso eqST E) (@castso_tp S T S' T' eqST E).
 
 Lemma castso_dualtnE S T S' T' (eqST : (S = S') * (T = T')) (E: 'SO[H]_(S,T)) :
   (castso eqST E)^*o \is tnmap = (E^*o \is tnmap).
@@ -3447,7 +3497,7 @@ Lemma castso_dualtn S T S' T' (eqST : (S = S') * (T = T')) (E: 'DQO[H]_(S,T)) :
   (castso eqST E)^*o \is tnmap.
 Proof. by rewrite castso_dualtnE is_dualtn. Qed.
 HB.instance Definition _ S T S' T' eqST (E: 'DQO[H]_(S,T)) := CPMap_isDTNMap.Build
-  'H_S' 'H_T' (castso eqST E) (@castso_dualtn S T S' T' eqST E).
+  R 'H_S' 'H_T' (castso eqST E) (@castso_dualtn S T S' T' eqST E).
 
 Lemma castso_dualtpE S T S' T' (eqST : (S = S') * (T = T')) (E: 'SO[H]_(S,T)) :
   (castso eqST E)^*o \is tpmap = (E^*o \is tpmap).
@@ -3456,7 +3506,7 @@ Lemma castso_dualtp S T S' T' (eqST : (S = S') * (T = T')) (E: 'QU[H]_(S,T)) :
   (castso eqST E)^*o \is tpmap.
 Proof. by rewrite castso_dualtpE is_dualtp. Qed.
 HB.instance Definition _ S T S' T' eqST (E: 'QU[H]_(S,T)) := DualQO_isUnitalMap.Build
-  'H_S' 'H_T' (castso eqST E) (@castso_dualtp S T S' T' eqST E).
+  R 'H_S' 'H_T' (castso eqST E) (@castso_dualtp S T S' T' eqST E).
 
 Lemma tenso_cp S T S' T' (dis : [disjoint S & S'])
   (E : 'CP[H]_(S,T)) (F : 'CP[H]_(S',T')) : tenso E F \is cpmap.
@@ -3510,28 +3560,28 @@ Proof. by rewrite liftso_krausso. Qed.
 Lemma liftso_cp S T (sub : S :<=: T) (E : 'CP[H]_S) :
   liftso sub E \is cpmap.
 Proof. by rewrite is_cpmap// disjointXD. Qed.
-HB.instance Definition _ S T sub E := isCPMap.Build _ _ _ (@liftso_cp S T sub E).
+HB.instance Definition _ S T sub E := isCPMap.Build R _ _ _ (@liftso_cp S T sub E).
 (* Canonical liftso_cpType S T sub E := CPMap_Build (@liftso_cp S T sub E). *)
 Lemma liftso_tn S T (sub : S :<=: T) (E : 'QO[H]_S) :
   liftso sub E \is tnmap.
 Proof. by rewrite is_tnmap// disjointXD. Qed.
 HB.instance Definition _ S T sub (E : 'QO[H]_S) :=
-  CPMap_isTNMap.Build _ _ (liftso sub E) (@liftso_tn S T sub E).
+  CPMap_isTNMap.Build R _ _ (liftso sub E) (@liftso_tn S T sub E).
 Lemma liftso_tp S T (sub : S :<=: T) (E : 'QC[H]_S) :
   liftso sub E \is tpmap.
 Proof. by rewrite is_tpmap// disjointXD. Qed.
 HB.instance Definition _ S T sub (E : 'QC[H]_S) :=
-  QOperation_isTPMap.Build _ _ (liftso sub E) (@liftso_tp S T sub E).
+  QOperation_isTPMap.Build R _ _ (liftso sub E) (@liftso_tp S T sub E).
 Lemma liftso_dualtn S T (sub : S :<=: T) (E : 'DQO[H]_S) :
   (liftso sub E)^*o \is tnmap.
 Proof. by rewrite is_dualtn// disjointXD. Qed.
 HB.instance Definition _ S T sub (E : 'DQO[H]_S) :=
-  CPMap_isDTNMap.Build _ _ (liftso sub E) (@liftso_dualtn S T sub E).
+  CPMap_isDTNMap.Build R _ _ (liftso sub E) (@liftso_dualtn S T sub E).
 Lemma liftso_dualtp S T (sub : S :<=: T) (E : 'QU[H]_S) :
   (liftso sub E)^*o \is tpmap.
 Proof. by rewrite is_tpmap// disjointXD. Qed.
 HB.instance Definition _ S T sub (E : 'QU[H]_S) :=
-  DualQO_isUnitalMap.Build _ _ (liftso sub E) (@liftso_dualtp S T sub E).
+  DualQO_isUnitalMap.Build R _ _ (liftso sub E) (@liftso_dualtp S T sub E).
 
 Lemma liftso_is_linear S T (sub : S :<=: T) : linear (liftso sub).
 Proof. by move=>a x y; rewrite /liftso linearPl/= linearP. Qed.
@@ -3550,7 +3600,7 @@ move: (is_cptn (liftso sub (krausso f)))=>/=.
 by rewrite liftso_krausso=>/krausso_qoP.
 Qed.
 HB.instance Definition _ S T (sub : S :<=: T) (F : finType) (f : 'TN[H]_(F;S)) :=
-  isTraceNincr.Build 'H[H]_T 'H_T F (lift_fun sub f) (lift_fun_tn sub f).
+  isTraceNincr.Build R 'H[H]_T 'H_T F (lift_fun sub f) (lift_fun_tn sub f).
 Lemma lift_fun_tp S T (sub : S :<=: T) (F : finType) (f : 'QM[H]_(F;S)) :
   trace_presv (lift_fun sub f).
 Proof.
@@ -3558,7 +3608,7 @@ move: (is_cptp (liftso sub (krausso f)))=>/=.
 by rewrite liftso_krausso=>/krausso_qcP.
 Qed.
 HB.instance Definition _ S T (sub : S :<=: T) (F : finType) (f : 'QM[H]_(F;S)) :=
-  TraceNincr_isQMeasure.Build 'H[H]_T 'H_T F (lift_fun sub f) (lift_fun_tp sub f).
+  TraceNincr_isQMeasure.Build R 'H[H]_T 'H_T F (lift_fun sub f) (lift_fun_tp sub f).
 
 (* Lemma lift_lfE S T (sub : S :<=: T) (f: 'F[H]_S) :
   lift_lf sub f = castlf (setUD_sub sub, setUD_sub sub) (f \⊗ (\1 : 'F[H]_(T :\: S))).
@@ -3661,21 +3711,21 @@ Lemma lift_lf_proj (P : 'FP_S) : lift_lf sub P \is projlf.
 Proof. by rewrite -lift_lf_projE is_projlf. Qed.
 
 HB.instance Definition _ (P : 'FN_S) :=
-  isNormalLf.Build _ (lift_lf sub P) (lift_lf_normal P).
+  isNormalLf.Build R _ (lift_lf sub P) (lift_lf_normal P).
 HB.instance Definition _ (P : 'FH_S) :=
-  Normal_isHermLf.Build _ (lift_lf sub P) (lift_lf_herm P).
+  Normal_isHermLf.Build R _ (lift_lf sub P) (lift_lf_herm P).
 HB.instance Definition _ (P : 'F+_S) :=
-  Herm_isPsdLf.Build _ (lift_lf sub P) (lift_lf_psd P).
+  Herm_isPsdLf.Build R _ (lift_lf sub P) (lift_lf_psd P).
 HB.instance Definition _ (P : 'FB1_S) :=
-  isBound1Lf.Build _ _ (lift_lf sub P) (lift_lf_bound1 P).
+  isBound1Lf.Build R _ _ (lift_lf sub P) (lift_lf_bound1 P).
 HB.instance Definition _ (P : 'FO_S) :=
-  ObsLf.Class (PsdLf.on (lift_lf sub P)) (Bound1Lf.on (lift_lf sub P)).
+  isObsLf.Build _ (lift_lf sub P) (lift_lf_obs P).
 HB.instance Definition _ (P : 'FU_S) :=
-  Bound1_isIsoLf.Build _ _ (lift_lf sub P) (unitarylf_iso (lift_lf_unitary P)).
+  Bound1_isIsoLf.Build R _ _ (lift_lf sub P) (unitarylf_iso (lift_lf_unitary P)).
 HB.instance Definition _ (P : 'FU_S) :=
-  Iso_isGisoLf.Build _ _ (lift_lf sub P) (unitarylf_giso (lift_lf_unitary P)).
+  Iso_isGisoLf.Build R _ _ (lift_lf sub P) (unitarylf_giso (lift_lf_unitary P)).
 HB.instance Definition _ (P : 'FP_S) :=
-  Obs_isProjLf.Build _ (lift_lf sub P) (lift_lf_proj P).
+  Obs_isProjLf.Build R _ (lift_lf sub P) (lift_lf_proj P).
 
 Lemma lift_lf_norm (P: 'F_S) : `|lift_lf sub P| = `|P| * (dim 'H[H]_(T :\: S))%:R.
 Proof. by rewrite /lift_lf castlf_norm tenf_norm ?disjointXD// trfnorm1. Qed.
@@ -3851,7 +3901,7 @@ pose K i := castlf (set0U T, set0U T) ((v2df (deltav i.2) \⊗ \1)
 pose c := sqrtC (\Tr (x [> v ; v <])).
 have P6: 0%:VF ⊏ x [> v; v <].
   rewrite lt_def Pv/=; move: xge0=>/(geso0_cpP) P5.
-  by move: (@cp_ge0 _ _ (CPMap_Build P5) _ (outp_ge0 v)).
+  by move: (@cp_ge0 _ _ _ (CPMap_Build P5) _ (outp_ge0 v)).
 have cgt0 : c > 0 by rewrite /c sqrtC_gt0; move: P6=>/gtf0_trlfP[].
 move: (lt0r_neq0 cgt0)=> cneq0.
 suff ->: y = krausso (fun i=>c^-1 *: (K i)) by apply/geso0_cpP/is_cpmap.
@@ -3893,7 +3943,7 @@ Proof.
 by move=>Q; rewrite -tenso_castC leso_cast_symV linear0 ptenso_rge0// disjoint_sym.
 Qed.
 
-HB.instance Definition _ S T dis := isBRegVOrder.Build C _ _ _ (@tenso L H S S T T)
+HB.instance Definition _ S T dis := isBRegVOrder.Build C _ _ _ (@tenso R L H S S T T)
   (linearBl _) (linearBr _) (@tenso_eq0 S T dis) (ptenso_rge0 dis) (ptenso_lge0 dis).
 
 Lemma ptenso_rgt0 S T (dis : [disjoint S & T]) (x : 'SO[H]_S) (y : 'SO[H]_T) :
@@ -4065,7 +4115,7 @@ Qed.
 End SOTensorTheory.
 
 Section LiftFullSpace.
-Context {L : finType} (H : L -> chsType).
+Context {R : realType} {L : finType} (H : L -> @chsType R).
 Implicit Type (S T W: {set L}).
 
 Local Notation sub S := (@subsetT L S).
@@ -4183,9 +4233,9 @@ Lemma liftf_lf_sdot S T (P: 'F_S) (Q: 'F_T) :
   liftf_lf (P \O Q) = liftf_lf P \o liftf_lf Q.
 Proof. by rewrite -lift_lf_sdot subsetTE. Qed.
 
-Lemma liftf_lf2_tensl S T W (sub : S :<=: T) (P : 'F_S) (R : 'F_W):
+Lemma liftf_lf2_tensl S T W (sub : S :<=: T) (P : 'F_S) (Q : 'F_W):
   [disjoint T & W] ->
-  liftf_lf (lift_lf sub P \⊗ R) = liftf_lf (P \⊗ R).
+  liftf_lf (lift_lf sub P \⊗ Q) = liftf_lf (P \⊗ Q).
 Proof.
 move=>dis; rewrite /liftf_lf /lift_lf; to_Fnd; rewrite -!tenFA; f_equal.
 rewrite tenFC -tenFA tenF11; f_equal; apply/Fnd_eq1/setP=>x.
@@ -4193,9 +4243,9 @@ move: sub dis=>/setIidPr/setP/(_ x)+/setDidPl/setP/(_ x).
 by rewrite !inE; case: (x \in S); case: (x \in T); case: (x \in W).
 Qed.
 
-Lemma liftf_lf2_tensr S T W (sub : S :<=: T) (P : 'F_S) (R : 'F_W):
+Lemma liftf_lf2_tensr S T W (sub : S :<=: T) (P : 'F_S) (Q : 'F_W):
   [disjoint T & W] ->
-  liftf_lf (R \⊗ lift_lf sub P) = liftf_lf (R \⊗ P).
+  liftf_lf (Q \⊗ lift_lf sub P) = liftf_lf (Q \⊗ P).
 Proof.
 move=>dis; rewrite /liftf_lf /lift_lf; to_Fnd; rewrite -!tenFA tenF11.
 do ! f_equal; apply/Fnd_eq1/setP=>x.

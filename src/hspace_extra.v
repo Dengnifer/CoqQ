@@ -43,7 +43,6 @@ From Stdlib.Strings Require Import String.
 
 Import Order.TTheory GRing.Theory Num.Theory Num.Def.
 Import HermitianTopology.
-Local Notation C := hermitian.C.
 Local Open Scope ring_scope.
 Local Open Scope lfun_scope.
 
@@ -80,9 +79,17 @@ Notation "x '`=>`' y" := (sasaki_hook x y) (at level 70) : hspace_scope.
 Notation "x '`&&`' y" := (sasaki_projection x y) (at level 70) : hspace_scope.
 
 HB.lock
-Definition formh U V (u : 'FI(U,V)) (h : {hspace U}) := HSType (formlf u h).
+Definition formh {R : realType} (U V : @chsType R) (u : 'FI(U,V))
+    (h : {hspace U}) := HSType (formlf u h).
+Arguments formh {R U V}.
 
-Lemma formh_comp U V W (f1 : 'FI(U,V)) (f2 : 'FI(W,U)) A :
+Section HspaceExtraReal.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
+Implicit Types (U V W : chsType).
+
+Lemma formh_comp (U V W : chsType) (f1 : 'FI(U,V)) (f2 : 'FI(W,U)) A :
   formh f1 (formh f2 A) = formh (f1 \o f2) A.
 Proof.
 rewrite formh.unlock; apply/eq_hs/lfunP.
@@ -133,8 +140,8 @@ Qed.
 Lemma memh_formV (u : 'FI(U,V)) (h : {hspace U}) (v : U) :
   (v \in h) = (u v \in formh u h).
 Proof.
-by rewrite !memhE formhE/= formlf.unlock 
-  -comp_lfunE isofK lfunE/= (inj_eq isof_inj).
+by rewrite !memhE formhE/= formlf.unlock
+  -comp_lfunE isofK lfunE/= (inj_eq (@isof_inj R U V u)).
 Qed.
 Lemma formh0 (u : 'FI(U,V)) : formh u `0` = `0`.
 Proof.
@@ -179,7 +186,7 @@ Local Open Scope hspace_scope.
 Variable (U : chsType).
 
 Lemma eigenvec_mem (Q : 'FH(U)) i : 
-  @hspace.eigenvec _ Q i \in supph Q.
+  @hspace.eigenvec R U Q i \in supph Q.
 Proof.
 apply/memhP; rewrite supph_eigenE sumoutpE sum_lfunE (bigD1 i)//= big1.
 by move=>j /negPf nji; rewrite scale1r outpE ponb_dot nji scale0r.
@@ -187,7 +194,7 @@ by rewrite scale1r outpE ponb_dot eqxx scale1r addr0.
 Qed.
 
 Lemma heigen_mem (Q : {hspace U}) i : 
-  @heigen _ Q i \in Q.
+  @heigen R U Q i \in Q.
 Proof. rewrite -{2}[Q]supph_id; exact: eigenvec_mem. Qed.
 
 Lemma supph_le_trlf0P (A : 'End(U)) (Q : {hspace U}) : 
@@ -201,7 +208,7 @@ by rewrite out0p linear0.
 Qed.
 
 Lemma supph_eigenU (A : 'FH(U)) : 
-  supph A = \cup_i <[(@hspace.eigenvec _ A i)]>.
+  supph A = \cup_i <[(@hspace.eigenvec R U A i)]>.
 Proof.
 apply/le_anti/andP; split; apply/lehP=>x.
   rewrite memhE supph_eigenE sumoutpE=>/eqP P; apply/memh_cupP=>/=.
@@ -214,7 +221,7 @@ by apply/lehP; rewrite -memhE_line eigenvec_mem.
 Qed.
 
 Lemma supph_leP (A : 'FH(U)) (Q : {hspace U}) :
-  (forall i, @hspace.eigenvec _ A i \in Q) -> supph A `<=` Q.
+  (forall i, @hspace.eigenvec R U A i \in Q) -> supph A `<=` Q.
 Proof.
 move=>P; rewrite supph_eigenU; apply/cuphsP=>/=i _.
 by rewrite -memhE_line.
@@ -396,28 +403,40 @@ Proof. by rewrite -{1}[Q]ocomplK -shookO shookhE !ocomplK. Qed.
 
 End hspace_extra.
 
+End HspaceExtraReal.
+
 (* now we can define the infinite join and meet of hspace *)
 HB.lock
-Definition bigcaph (U : chsType) I (P : set I) (F : I -> {hspace U}) :=
+Definition bigcaph {R : realType} (U : @chsType R) I
+    (P : set I) (F : I -> {hspace U}) :=
   extract_hspace [set x : U | forall i, P i -> x \in F i].
 HB.lock
-Definition bigcuph (U : chsType) I (P : set I) (F : I -> {hspace U}) :=
-  (~` @bigcaph U I P (fun i => ~` F i))%HS.
+Definition bigcuph {R : realType} (U : @chsType R) I
+    (P : set I) (F : I -> {hspace U}) :=
+  (~` bigcaph U I P (fun i => ~` F i))%HS.
+Arguments bigcaph {R} U I P F.
+Arguments bigcuph {R} U I P F.
 
 Notation "\cups_ ( i 'in' P ) F" :=
-  (@bigcuph _ _ P%classic (fun i => F%HS)) : hspace_scope.
+  (@bigcuph _ _ _ P%classic (fun i => F%HS)) : hspace_scope.
 Notation "\cups_ ( i : T ) F" :=
   (\cups_(i in @setT T) F)%HS : hspace_scope.
 Notation "\cups_ ( i < n ) F" :=
   (\cups_(i in `I_n) F)%HS : hspace_scope.
 Notation "\cups_ i F" := (\cups_(i : _) F)%HS : hspace_scope.
 Notation "\caps_ ( i 'in' P ) F" :=
-  (@bigcaph _ _ P%classic (fun i => F)) : hspace_scope.
+  (@bigcaph _ _ _ P%classic (fun i => F)) : hspace_scope.
 Notation "\caps_ ( i : T ) F" :=
   (\caps_(i in @setT T) F)%HS : hspace_scope.
 Notation "\caps_ ( i < n ) F" :=
   (\caps_(i in `I_n) F)%HS : hspace_scope.
 Notation "\caps_ i F" := (\caps_(i : _) F)%HS : hspace_scope.
+
+Section HspaceExtraReal.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
+Implicit Types (U V W : chsType).
 
 Section CapsCups.
 Variable (U : chsType).
@@ -1240,7 +1259,7 @@ End CapsCups.
 Local Open Scope hspace_scope.
 
 Lemma heigenUE (U : chsType) (A : {hspace U}) : 
-  A = \cup_i <[(@heigen _ A i)]>.
+  A = \cup_i <[(@heigen R U A i)]>.
 Proof. rewrite -[LHS]supph_id; exact: supph_eigenU. Qed.
 
 Lemma sprojh_memJE (U : chsType) (A B : {hspace U}) (v : U) :
@@ -1316,3 +1335,5 @@ move: (nc _ _ Pn); rewrite (PsdLf_BuildE (Pi _)) ((PsdLf_BuildE (Pi i))).
 move=>/kerh_lef/dimh_leqif_eq/=/leqifP; case: eqP=>[->//|_].
 by move: (Pd _ (leqnn n)) (Pd _ Pn); rewrite /fd=>->->; rewrite ltnn.
 Qed.
+
+End HspaceExtraReal.

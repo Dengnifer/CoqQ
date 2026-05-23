@@ -17,7 +17,6 @@ From quantum.dirac Require Import setdec hstensor dirac.
 Import Order.TTheory GRing.Theory Num.Theory Num.Def.
 Import DefaultQMem.Exports.
 
-Local Notation C := hermitian.C.
 Local Open Scope set_scope.
 Local Open Scope ring_scope.
 Local Open Scope lfun_scope.
@@ -27,6 +26,25 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 Unset SsrOldRewriteGoalsOrder.
+
+Section QWhileReal.
+
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation "''Ht' T" := (@ihb_chsType R (eval_qtype T%QT))
+  (at level 8, T at level 2, format "''Ht'  T").
+Local Notation dqm := (@default_qmemory R).
+Local Notation mlab := (@mem_lab R dqm).
+Local Notation msys := (@mem_sys R dqm).
+Local Notation mset := (@mem_set R dqm).
+Local Notation tv2v := (@QMemory.vec_proj R dqm).
+Local Notation tf2f := (@QMemory.tf2f R dqm).
+Local Notation tm2m := (@QMemory.tm2m R dqm).
+Local Notation th2h := (@qmem.th2h R dqm _).
+Local Notation liftfh := (@qmem.liftfh R dqm _).
+Local Notation tket := (@QMemory.tket R dqm _).
+Local Notation tbra := (@QMemory.tbra R dqm _).
+Local Notation tlin := (@QMemory.tlin R dqm _ _).
 
 (******************************************************************************)
 (* This file provide the definition of qwhile language                        *)
@@ -162,7 +180,11 @@ Fixpoint fsem_aux (c : cmd_) : 'SO[msys]_setT :=
   | while_ T x M b c    => whileso (liftf_fun (tm2m x x M)) b (fsem_aux c)
   | seqc_ c1 c2     => (fsem_aux c2) :o (fsem_aux c1)
   end.
-HB.lock Definition fsem := fsem_aux.
+Definition fsem_r := fsem_aux.
+Arguments fsem_r : simpl never.
+Fact fsem_key : unit. Proof. by []. Qed.
+Definition fsem := locked_with fsem_key fsem_r.
+Canonical fsem_unlockable := [unlockable of fsem].
 
 (* syntactically calculate if quantum register x is disjoint from the program c *)
 Fixpoint cmd_var_disj T (x : qreg T) (c : cmd_) :=
@@ -331,7 +353,7 @@ elim: c=>[||T x v|T x U|c1 IH c2 IH1|T F x M br IH|T x M b D IH]/=; rewrite fsem
 5,7: rewrite (QOperation_BuildE IH) 1?(QOperation_BuildE IH1).
 all: apply/is_cptn.
 Qed.
-HB.instance Definition _ (c : cmd_) := isQOperation.Build _ _ _ (fsem_qo c).
+HB.instance Definition _ (c : cmd_) := isQOperation.Build R _ _ (fsem c) (fsem_qo c).
 
 (* check program contains while; if not, quantum channel *)
 Fixpoint no_while (c : cmd_) :=
@@ -371,7 +393,7 @@ Qed.
 Lemma fsem_local c : exists E : 'QO[msys]_(fvars c), fsem c = liftfso E.
 Proof.
 elim: c=>[||T x v|T x U|c1 [E1 P1] c2 [E2 P2]|T F x M br IH|T x M b c [E P]] =>/=.
-- by exists (QOperation.clone _ _ 0 _); rewrite/= fsemE linear0.
+- by exists (0 : 'SO[msys]_(fvars abort_)); rewrite/= fsemE linear0.
 - by exists \:1; rewrite/= fsemE liftfso1.
 - by exists (initialso (tv2v x v)); rewrite fsemE.
 - by exists (formso (tf2f x x U)); rewrite fsemE.
@@ -506,22 +528,21 @@ Lemma cmd_disj_forC (T : eqType) (r : seq T) (P : pred T) (fp : T -> cmd_) c :
       cmd_disj c [for i <- r | P i do (fp i)].
 Proof. by move=>H; rewrite cmd_disjC cmd_disj_for// =>?/H; rewrite cmd_disjC. Qed.
 
-HB.lock
 Definition eqcmd (c1 c2 : cmd_) := fsem c1 = fsem c2.
 Infix "=s" := eqcmd (at level 70) : lfun_scope.
 
 Lemma eqcmd_trans : 
   forall (a b c: cmd_), a =s b -> b =s c -> a =s c.
-Proof. by rewrite eqcmd.unlock; move=>a b c -> ->. Qed.
+Proof. move=>a b c; rewrite /eqcmd; by move=>-> ->. Qed.
 
 Lemma eqcmd_refl : forall (a: cmd_), a =s a.
-Proof. by rewrite eqcmd.unlock. Qed.
+Proof. move=>a; by rewrite /eqcmd. Qed.
 
 Lemma eqcmd_sym : forall (a b : cmd_), a =s b -> b =s a.
-Proof. by rewrite eqcmd.unlock; move=>a b ->. Qed.
+Proof. move=>a b; rewrite /eqcmd; by move=>->. Qed.
 
-Global Hint Resolve eqcmd_refl : core.
-Global Hint Resolve index_enum_uniq : core.
+Local Hint Resolve eqcmd_refl : core.
+Local Hint Resolve index_enum_uniq : core.
 
 Add Parametric Relation : cmd_ eqcmd
   reflexivity proved by eqcmd_refl
@@ -543,7 +564,7 @@ Notation "[ 'while' M [ x ] '=' b 'do' c ]" := (while_ x M b c)
 Lemma eq_init T (x1 x2 : qreg T) (v1 v2 : 'NS) :
   x1 =r x2 -> v1 = v2 :> 'Ht _ -> [it x1 := v1] =s [it x2 := v2].
 Proof.
-move=>Px Pu; rewrite eqcmd.unlock !fsemE Pu -(tv2v_eqr _ Px)/=.
+move=>Px Pu; rewrite /eqcmd !fsemE Pu -(tv2v_eqr _ Px)/=.
 move: (mset_eqr default_qmemory Px) => P.
 by case: _ / P; rewrite casths_id.
 Qed.
@@ -559,7 +580,7 @@ Proof. by move=>P; apply/eq_init. Qed.
 Lemma eq_unit T (x1 x2 : qreg T) (U1 U2 : 'FU) :
   x1 =r x2 -> U1 = U2 :> 'End(_) -> [ut x1 := U1] =s [ut x2 := U2].
 Proof.
-move=>Px Pu; rewrite eqcmd.unlock !fsemE /unitaryso/= -(tf2f_eqr _ Px Px)/=.
+move=>Px Pu; rewrite /eqcmd !fsemE /unitaryso/= -(tf2f_eqr _ Px Px)/=.
 by rewrite !liftfso_formso/= liftf_lf_cast Pu.
 Qed.
 
@@ -575,7 +596,7 @@ Lemma eq_cond T (F: finType) (x1 x2 : qreg T) (M1 M2 : 'QM(F;'Ht T)) (f1 f2 : F 
   x1 =r x2 -> M1 =1 M2 -> (forall i, f1 i =s f2 i) ->
   [if M1[x1] = t then f1 t] =s [if M2[x2] = t then f2 t].
 Proof.
-rewrite eqcmd.unlock=>Px PM Pf; rewrite !fsemE; under eq_fun do rewrite Pf.
+rewrite /eqcmd=>Px PM Pf; rewrite !fsemE; under eq_fun do rewrite Pf.
 do 3 f_equal.
 by apply/funext=>i; rewrite !liftf_funE !tm2mE PM -(tf2f_eqr _ Px Px) liftf_lf_cast.
 Qed.
@@ -599,7 +620,7 @@ Lemma eq_while T (x1 x2 : qreg T) (M1 M2 : 'QM(bool;'Ht T)) b (c1 c2 : cmd_) :
   x1 =r x2 -> M1 =1 M2 -> c1 =s c2 ->
   [while M1[x1] = b do c1] =s [while M2[x2] = b do c2].
 Proof.
-rewrite eqcmd.unlock=>Px PM Pf; rewrite !fsemE Pf; do 3 f_equal.
+rewrite /eqcmd=>Px PM Pf; rewrite !fsemE Pf; do 3 f_equal.
 by apply/funext=>i; rewrite !liftf_funE !tm2mE PM -(tf2f_eqr _ Px Px) liftf_lf_cast.
 Qed.
 
@@ -636,7 +657,7 @@ Proof. by move=>????????; apply/eq_while. Qed.
 
 Add Parametric Morphism : (seqc_)
   with signature (eqcmd) ==> (eqcmd) ==> (eqcmd) as eq_seqc.
-Proof. by rewrite eqcmd.unlock=>?? H1 ?? H2; rewrite !fsemE H1 H2. Qed.
+Proof. by rewrite /eqcmd=>?? H1 ?? H2; rewrite !fsemE H1 H2. Qed.
 
 Lemma eq_for I (r : seq I) (P1 P2 : pred I) (f1 f2 : I -> cmd_) :
   P1 =1 P2 -> (forall i, P1 i -> f1 i =s f2 i) ->
@@ -659,25 +680,24 @@ Proof. by apply: eq_for. Qed.
 
 Lemma eq_for_ord_recr n (F : 'I_n.+1 -> cmd_) :
   [for i do F i] =s ([for i do F (widen_ord (leqnSn n) i)] ;; F ord_max).
-Proof. by rewrite eqcmd.unlock fsemE !fsem_big big_ord_recr/= comp_soElr. Qed.
+Proof. by rewrite /eqcmd fsemE !fsem_big big_ord_recr/= comp_soElr. Qed.
 
 Lemma fsem_seqA (c1 c2 c3 : cmd_) : (c1 ;; (c2 ;; c3)) =s (c1 ;; c2 ;; c3).
-Proof. by rewrite eqcmd.unlock fsem_seqcA. Qed.
+Proof. by rewrite /eqcmd fsem_seqcA. Qed.
 
 Lemma fsem_seqC (c1 c2 : cmd_) {H : `{{ cmd_disj c1 c2 }}} : 
   (c1 ;; c2) =s (c2 ;; c1).
-Proof. by rewrite eqcmd.unlock fsem_seqcC//; apply/cmd_disjP. Qed.  
+Proof. by rewrite /eqcmd fsem_seqcC//; apply/cmd_disjP. Qed.  
 
 Lemma fsem_seqC_mset (c1 c2 : cmd_) {H : [disjoint fvars c1 & fvars c2]} : 
   (c1 ;; c2) =s (c2 ;; c1).
-Proof. by rewrite eqcmd.unlock fsem_seqcC. Qed.
+Proof. by rewrite /eqcmd fsem_seqcC. Qed.
 
 (* predicates are observables over full space : 'FO_setT *)
 (* there are two boolean variables, pt : false - partial , true - toal *)
 (* st : false - may not saturated , true saturated (the weakest (literal) precondition)*)
 (* pt and st are introduced to avoid messy amount of rules *)
-HB.lock
-Definition global_hoare (pt st : bool) (P: 'FO_setT) (Q: 'FO_setT) (c: cmd_) :=
+Definition global_hoare_r (pt st : bool) (P: 'FO_setT) (Q: 'FO_setT) (c: cmd_) :=
   (forall (x : 'FD_setT),
   if pt then
     if st then \Tr (P \o x) = \Tr (Q \o ((fsem c) x))
@@ -685,9 +705,12 @@ Definition global_hoare (pt st : bool) (P: 'FO_setT) (Q: 'FO_setT) (c: cmd_) :=
   else
     if st then \Tr (Q^⟂ \o ((fsem c) x)) = \Tr (P^⟂ \o x)
           else \Tr (Q^⟂ \o ((fsem c) x)) <= \Tr (P^⟂ \o x)  ).
+Arguments global_hoare_r : simpl never.
+Fact global_hoare_key : unit. Proof. by []. Qed.
+Definition global_hoare := locked_with global_hoare_key global_hoare_r.
+Canonical global_hoare_unlockable := [unlockable of global_hoare].
 
-HB.lock
-Definition local_hoare (pt st : bool) S T (P: 'F_S) (Q: 'F_T) (c: cmd_) :=
+Definition local_hoare_r (pt st : bool) S T (P: 'F_S) (Q: 'F_T) (c: cmd_) :=
   (forall (x : 'FD_setT),
   if pt then
     if st then \Tr (liftf_lf P \o x) = \Tr (liftf_lf Q \o ((fsem c) x))
@@ -695,14 +718,24 @@ Definition local_hoare (pt st : bool) S T (P: 'F_S) (Q: 'F_T) (c: cmd_) :=
   else
     if st then \Tr (liftf_lf Q^⟂ \o ((fsem c) x)) = \Tr (liftf_lf P^⟂ \o x)
           else \Tr (liftf_lf Q^⟂ \o ((fsem c) x)) <= \Tr (liftf_lf P^⟂ \o x)  ).
+Arguments local_hoare_r : simpl never.
+Fact local_hoare_key : unit. Proof. by []. Qed.
+Definition local_hoare := locked_with local_hoare_key local_hoare_r.
+Canonical local_hoare_unlockable := [unlockable of local_hoare].
 
-HB.lock
-Definition dirac_hoare (pt st : bool) (P Q : 'D) (c: cmd_) :=
+Definition dirac_hoare_r (pt st : bool) (P Q : 'D) (c: cmd_) :=
   exists S T, (sqrdirac_axiom S P /\ sqrdirac_axiom T Q /\ local_hoare pt st (P S S) (Q T T) c).
+Arguments dirac_hoare_r : simpl never.
+Fact dirac_hoare_key : unit. Proof. by []. Qed.
+Definition dirac_hoare := locked_with dirac_hoare_key dirac_hoare_r.
+Canonical dirac_hoare_unlockable := [unlockable of dirac_hoare].
 
-HB.lock
-Definition state_hoare (pt st : bool) (P Q : 'D) (c: cmd_) :=
+Definition state_hoare_r (pt st : bool) (P Q : 'D) (c: cmd_) :=
   dirac_hoare pt st (P \o P^A) (Q \o Q^A) c.
+Arguments state_hoare_r : simpl never.
+Fact state_hoare_key : unit. Proof. by []. Qed.
+Definition state_hoare := locked_with state_hoare_key state_hoare_r.
+Canonical state_hoare_unlockable := [unlockable of state_hoare].
 
 Notation "'⊨pg' { P } c { Q }" := (global_hoare false false P Q c)
   (at level 10, P,c,Q at next level, format "'⊨pg' {  P  }  c  {  Q  }" ).
@@ -784,7 +817,7 @@ Add Parametric Morphism pt st P Q :
   (@global_hoare pt st P Q)
   with signature (eqcmd) ==> iff as eqcmd_hoare_mor.
 Proof.
-move=>x y; rewrite eqcmd.unlock global_hoare.unlock=>H1; split=>P1 z.
+move=>x y; rewrite /eqcmd [global_hoare]unlock=>H1; split=>P1 z.
 rewrite -H1; apply P1. rewrite H1; apply P1.
 Qed.
 
@@ -792,7 +825,7 @@ Add Parametric Morphism pt st S T P Q :
   (@local_hoare pt st S T P Q)
   with signature (eqcmd) ==> iff as eqcmd_local_hoare_mor.
 Proof.
-move=>x y; rewrite eqcmd.unlock local_hoare.unlock=>H1; split=>P1 z.
+move=>x y; rewrite /eqcmd [local_hoare]unlock=>H1; split=>P1 z.
 rewrite -H1; apply P1. rewrite H1; apply P1.
 Qed.
 
@@ -800,43 +833,52 @@ Add Parametric Morphism pt st (P Q : 'D) :
   (@dirac_hoare pt st P Q)
   with signature (eqcmd) ==> iff as eqcmd_dirac_hoare_mor.
 Proof.
-by move=>x y Pxy; rewrite dirac_hoare.unlock; split; move=>[S[T[Ps[Pt Px]]]]; 
+by move=>x y Pxy; rewrite [dirac_hoare]unlock; split; move=>[S[T[Ps[Pt Px]]]]; 
 exists S; exists T; do 2 split=>//; move: Px; rewrite Pxy.
 Qed.
-
-Add Parametric Morphism pt st (P Q : 'D) : 
-  (@state_hoare pt st P Q)
-  with signature (eqcmd) ==> iff as eqcmd_dirac_hoare_form_mor.
-Proof. by move=>x y Pxy; rewrite state_hoare.unlock Pxy. Qed.
 
 Lemma eq_state_hoare pt st P1 P2 Q1 Q2 c1 c2 :
   P1 = P2 -> c1 =s c2 -> Q1 = Q2 ->
   ⊨s [pt,st] {P1} c1 {Q1} -> ⊨s [pt,st] {P2} c2 {Q2}.
-Proof. by move=>->->->. Qed.
+Proof.
+move=>-> Hc ->.
+rewrite /eqcmd in Hc.
+rewrite [state_hoare]unlock /state_hoare_r [dirac_hoare]unlock /dirac_hoare_r.
+move=>[S [T [PS [PT H]]]]; exists S; exists T; do 2 split=>//.
+rewrite [local_hoare]unlock /local_hoare_r in H * =>x.
+by move: (H x); rewrite Hc.
+Qed.
 
 Lemma eq_dirac_hoare pt st P1 P2 Q1 Q2 c1 c2 :
   P1 = P2 -> c1 =s c2 -> Q1 = Q2 ->
   ⊨ [pt,st] {P1} c1 {Q1} -> ⊨ [pt,st] {P2} c2 {Q2}.
-Proof. by move=>->->->. Qed.
+Proof.
+move=>-> Hc ->.
+rewrite /eqcmd in Hc.
+rewrite [dirac_hoare]unlock /dirac_hoare_r.
+move=>[S [T [PS [PT H]]]]; exists S; exists T; do 2 split=>//.
+rewrite [local_hoare]unlock /local_hoare_r in H * =>x.
+by move: (H x); rewrite Hc.
+Qed.
 
 Section TrivalHoare.
 Local Open Scope dirac_scope.
 
 Lemma saturated_strong_G pt st P Q c :
   ⊫g [ pt ] { P } c { Q } -> ⊨g [ pt , st ] { P } c { Q }.
-Proof. by case: st=>//; case: pt; rewrite global_hoare.unlock=>P1 x; rewrite P1. Qed.
+Proof. by case: st=>//; case: pt; rewrite [global_hoare]unlock=>P1 x; rewrite P1. Qed.
 Lemma saturated_strong_L pt st S T (P: 'F_S) (Q: 'F_T) c :
   ⊫l [ pt ] { P } c { Q } -> ⊨l [ pt , st ] { P } c { Q }.
-Proof. by case: st=>//; case: pt; rewrite local_hoare.unlock=>P1 x; rewrite P1. Qed.
+Proof. by case: st=>//; case: pt; rewrite [local_hoare]unlock=>P1 x; rewrite P1. Qed.
 Lemma saturated_strong pt st (P: 'D) (Q: 'D) c :
   ⊫ [ pt ] { P } c { Q } -> ⊨ [ pt , st ] { P } c { Q }.
 Proof.
-rewrite dirac_hoare.unlock=>[[S[T[Ps[Pt Pl]]]]]; exists S; exists T; 
+rewrite [dirac_hoare]unlock=>[[S[T[Ps[Pt Pl]]]]]; exists S; exists T; 
 by do 2 split=>//; apply/saturated_strong_L.
 Qed.
 Lemma saturated_strongS pt st (P: 'D) (Q: 'D) c :
   ⊫s [ pt ] { P } c { Q } -> ⊨s [ pt , st ] { P } c { Q }.
-Proof. rewrite state_hoare.unlock; exact: saturated_strong. Qed.
+Proof. rewrite [state_hoare]unlock; exact: saturated_strong. Qed.
 
 Lemma saturated_weak_G pt st P Q c :
   ⊨g [ pt , st ] { P } c { Q } -> ⊨g [ pt ] { P } c { Q }.
@@ -857,7 +899,7 @@ Lemma partial_alter_G (st : bool) (P: 'FO_setT) (Q: 'FO_setT) c :
   if st then \Tr (P \o x) = \Tr (Q \o ((fsem c) x)) + \Tr x - \Tr ((fsem c) x)
         else \Tr (P \o x) <= \Tr (Q \o ((fsem c) x)) + \Tr x - \Tr ((fsem c) x) ).
 Proof.
-rewrite global_hoare.unlock; case: st; split=>H1 x; 
+rewrite [global_hoare]unlock; case: st; split=>H1 x; 
 move: (H1 x); rewrite -[in \Tr (fsem c x)](comp_lfun1l (fsem c x))
   addrAC -linearB/= -linearBl/= -opprB cplmtE linearNl/= linearN/=.
 move=>->. 2: move=>/eqP; rewrite -subr_eq -eqr_oppLR=>/eqP<-.
@@ -872,7 +914,7 @@ Lemma partial_alter_L (st : bool) S T (P: 'F_S) (Q: 'F_T) c :
   if st then \Tr (liftf_lf P \o x) = \Tr (liftf_lf Q \o ((fsem c) x)) + \Tr x - \Tr ((fsem c) x)
         else \Tr (liftf_lf P \o x) <= \Tr (liftf_lf Q \o ((fsem c) x)) + \Tr x - \Tr ((fsem c) x) ).
 Proof.
-rewrite local_hoare.unlock; case: st; split=>H1 x; 
+rewrite [local_hoare]unlock; case: st; split=>H1 x; 
 move: (H1 x); rewrite -[in \Tr (fsem c x)](comp_lfun1l (fsem c x))
   addrAC -linearB/= -linearBl/= -opprB cplmtE linearNl/= linearN/= !liftf_lf_cplmt.
 move=>->. 2: move=>/eqP; rewrite -subr_eq -eqr_oppLR=>/eqP<-.
@@ -884,7 +926,7 @@ Qed.
 Lemma relation_GPT st c P Q : 
   fsem c \is cptp -> ⊨g [false,st] { P } c { Q } <-> ⊨g [true,st] { P } c { Q }.
 Proof.
-move=>IH; rewrite partial_alter_G global_hoare.unlock; 
+move=>IH; rewrite partial_alter_G [global_hoare]unlock; 
 by split=>H1 x; move: (H1 x); rewrite (QChannel_BuildE IH) qc_trlfE addrK.
 Qed.
 Global Arguments relation_GPT [st c P Q].
@@ -897,7 +939,7 @@ Global Arguments no_while_GPT [st c P Q].
 Lemma relation_LPT st c S T (P: 'F_S) (Q: 'F_T) : 
   fsem c \is cptp -> ⊨l [false,st] { P } c { Q } <-> ⊨l [true,st] { P } c { Q }.
 Proof.
-move=>IH; rewrite partial_alter_L local_hoare.unlock; 
+move=>IH; rewrite partial_alter_L [local_hoare]unlock; 
 by split=>H1 x; move: (H1 x); rewrite (QChannel_BuildE IH) qc_trlfE addrK.
 Qed.
 Global Arguments relation_LPT [st c S T P Q].
@@ -910,7 +952,7 @@ Global Arguments no_while_LPT [st c S T P Q].
 Lemma relation_PT st c (P Q : 'D) : 
   fsem c \is cptp -> ⊨ [false,st] { P } c { Q } <-> ⊨ [true,st] { P } c { Q }.
 Proof.
-split; rewrite dirac_hoare.unlock=>[[S] [T] [PS] [PT] IH]; 
+split; rewrite [dirac_hoare]unlock=>[[S] [T] [PS] [PT] IH]; 
 exists S; exists T; do 2 split=>//.
 by rewrite -relation_LPT. by rewrite relation_LPT.
 Qed.
@@ -923,12 +965,12 @@ Global Arguments no_while_PT [st c P Q].
 
 Lemma relation_SPT st c (P Q : 'D) : 
   fsem c \is cptp -> ⊨s [false,st] { P } c { Q } <-> ⊨s [true,st] { P } c { Q }.
-Proof. rewrite state_hoare.unlock; exact: relation_PT. Qed.
+Proof. rewrite [state_hoare]unlock; exact: relation_PT. Qed.
 Global Arguments relation_SPT [st c P Q].
 
 Lemma no_while_SPT st c (P Q : 'D) : no_while c -> cmd_valid c ->
   ⊨s [false,st] { P } c { Q } <-> ⊨s [true,st] { P } c { Q }.
-Proof. rewrite state_hoare.unlock; exact: no_while_PT. Qed.
+Proof. rewrite [state_hoare]unlock; exact: no_while_PT. Qed.
 Global Arguments no_while_SPT [st c P Q].
 
 End TrivalHoare.
@@ -938,17 +980,29 @@ End TrivalHoare.
 (*                                 Automation                                *)
 (*****************************************************************************)
 (* solving cmd_expose *)
-Module Export QWhileAuto.
+Section QWhileAuto.
 
-HB.lock Definition cmd_var_disj_lock := cmd_var_disj.
+Definition cmd_var_disj_lock_r := cmd_var_disj.
+Arguments cmd_var_disj_lock_r : simpl never.
+Fact cmd_var_disj_lock_key : unit. Proof. by []. Qed.
+Definition cmd_var_disj_lock := locked_with cmd_var_disj_lock_key cmd_var_disj_lock_r.
+Canonical cmd_var_disj_lock_unlockable := [unlockable of cmd_var_disj_lock].
 Lemma cmd_var_disj_lockE : cmd_var_disj = cmd_var_disj_lock.
-Proof. by rewrite cmd_var_disj_lock.unlock. Qed.
-HB.lock Definition cmd_disj_lock := cmd_disj.
+Proof. by rewrite [cmd_var_disj_lock]unlock. Qed.
+Definition cmd_disj_lock_r := cmd_disj.
+Arguments cmd_disj_lock_r : simpl never.
+Fact cmd_disj_lock_key : unit. Proof. by []. Qed.
+Definition cmd_disj_lock := locked_with cmd_disj_lock_key cmd_disj_lock_r.
+Canonical cmd_disj_lock_unlockable := [unlockable of cmd_disj_lock].
 Lemma cmd_disj_lockE : cmd_disj = cmd_disj_lock.
-Proof. by rewrite cmd_disj_lock.unlock. Qed.
-HB.lock Definition cmd_valid_lock := cmd_valid.
+Proof. by rewrite [cmd_disj_lock]unlock. Qed.
+Definition cmd_valid_lock_r := cmd_valid.
+Arguments cmd_valid_lock_r : simpl never.
+Fact cmd_valid_lock_key : unit. Proof. by []. Qed.
+Definition cmd_valid_lock := locked_with cmd_valid_lock_key cmd_valid_lock_r.
+Canonical cmd_valid_lock_unlockable := [unlockable of cmd_valid_lock].
 Lemma cmd_valid_lockE : cmd_valid = cmd_valid_lock.
-Proof. by rewrite cmd_valid_lock.unlock. Qed.
+Proof. by rewrite [cmd_valid_lock]unlock. Qed.
 
 Lemma cmd_var_disj_lock_skip T (x : qreg T) : cmd_var_disj_lock x skip_.
 Proof. by rewrite -cmd_var_disj_lockE. Qed.
@@ -994,7 +1048,7 @@ Lemma cmd_var_disj_lock_for (T : eqType) (r : seq T) (P : pred T) (fp : T -> cmd
   I (x : qreg I) :
     (forall i, P i -> cmd_var_disj_lock x (fp i)) ->
       cmd_var_disj_lock x [for i <- r | P i do (fp i)].
-Proof. rewrite cmd_var_disj_lock.unlock; exact: cmd_var_disj_for. Qed.
+Proof. rewrite [cmd_var_disj_lock]unlock; exact: cmd_var_disj_for. Qed.
 
 Ltac tac_cmd_var_disj := repeat match goal with
   | [ |- forall _ , _ ] => intros; 
@@ -1069,12 +1123,12 @@ Proof. by rewrite -cmd_disj_lockE cmd_disjC. Qed.
 Lemma cmd_disj_lock_for (T : eqType) (r : seq T) (P : pred T) (fp : T -> cmd_) c :
     (forall i, P i -> cmd_disj_lock (fp i) c) ->
       cmd_disj_lock [for i <- r | P i do (fp i)] c.
-Proof. rewrite cmd_disj_lock.unlock; exact: cmd_disj_for. Qed.
+Proof. rewrite [cmd_disj_lock]unlock; exact: cmd_disj_for. Qed.
 
 Lemma cmd_disj_lock_forC (T : eqType) (r : seq T) (P : pred T) (fp : T -> cmd_) c :
     (forall i, P i -> cmd_disj_lock c (fp i)) ->
       cmd_disj_lock c [for i <- r | P i do (fp i)].
-Proof. rewrite cmd_disj_lock.unlock; exact: cmd_disj_forC. Qed.
+Proof. rewrite [cmd_disj_lock]unlock; exact: cmd_disj_forC. Qed.
 
 Ltac tac_cmd_disj := repeat match goal with
   | [ |- forall _ , _ ] => intros; 
@@ -1127,7 +1181,11 @@ Proof. by rewrite -cmd_valid_lockE. Qed.
 Lemma cmd_valid_lock_cond T (F : finType) (x : qreg T) M (f : F -> cmd_) :
   valid_qreg x -> (forall i, cmd_valid_lock (f i)) ->
     cmd_valid_lock (cond_ x M f).
-Proof. by rewrite cmd_valid_lock.unlock/==>->/=/forallP. Qed.
+Proof.
+move=>Hx Hf.
+rewrite [cmd_valid_lock]unlock /cmd_valid_lock_r /= Hx /=.
+by apply/forallP=>i; move: (Hf i); rewrite [cmd_valid_lock]unlock /cmd_valid_lock_r.
+Qed.
 
 Lemma cmd_valid_lock_sequ c1 c2 :
   cmd_valid_lock c1 -> cmd_valid_lock c2 ->
@@ -1147,7 +1205,7 @@ Proof. by case: b. Qed.
 Lemma cmd_valid_lock_for (T : eqType) (r : seq T) (P : pred T) (fp : T -> cmd_) :
     (forall i, P i -> cmd_valid_lock (fp i)) ->
       cmd_valid_lock [for i <- r | P i do (fp i)].
-Proof. rewrite cmd_valid_lock.unlock; exact: cmd_valid_for. Qed.
+Proof. rewrite [cmd_valid_lock]unlock; exact: cmd_valid_for. Qed.
 
 Ltac tac_cmd_valid := repeat match goal with
   | [ |- forall _ , _ ] => intros; 
@@ -1212,8 +1270,8 @@ Ltac tac_qwhile_auto := rewrite /cmd_expose;
   | [ |- is_true (cmd_valid_lock _)] => tac_cmd_valid
   end.
 
-Module Exports.
-Global Hint Extern 0 (cmd_expose _) => (tac_qwhile_auto) : typeclass_instances.
+Section Exports.
+Local Hint Extern 0 (cmd_expose _) => (tac_qwhile_auto) : typeclass_instances.
 
 (* Variable (T : qType) (x : 'QReg[T]) (v : 'NS('Ht T)) (U : 'FU('Ht T)).
 Check [it x := v] ;; [ut x := U] : Cmd_. *)
@@ -1221,3 +1279,4 @@ Check [it x := v] ;; [ut x := U] : Cmd_. *)
 End Exports.
 End QWhileAuto.
 
+End QWhileReal.

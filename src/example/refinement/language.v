@@ -24,7 +24,6 @@ From Stdlib.Strings Require Import String.
 
 Import Order.TTheory GRing.Theory Num.Theory Num.Def.
 Import DefaultQMem.Exports.
-Local Notation C := hermitian.C.
 Local Open Scope ring_scope.
 Local Open Scope lfun_scope.
 Local Open Scope reg_scope.
@@ -33,6 +32,26 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 Unset SsrOldRewriteGoalsOrder.
+
+Section LanguageReal.
+
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
+Local Notation "''Ht' T" := (@ihb_chsType R (eval_qtype T%QT))
+  (at level 8, T at level 2, format "''Ht'  T").
+Local Notation dqm := (@default_qmemory R).
+Local Notation mlab := (@mem_lab R dqm).
+Local Notation msys := (@mem_sys R dqm).
+Local Notation mset := (@mem_set R dqm).
+Local Notation tv2v := (@QMemory.vec_proj R dqm).
+Local Notation tf2f := (@QMemory.tf2f R dqm).
+Local Notation tm2m := (@QMemory.tm2m R dqm).
+Local Notation th2h := (@qmem.th2h R dqm _).
+Local Notation liftfh := (@qmem.liftfh R dqm _).
+Local Notation tket := (@QMemory.tket R dqm _).
+Local Notation tbra := (@QMemory.tbra R dqm _).
+Local Notation tlin := (@QMemory.tlin R dqm _ _).
 
 Section Syntax.
 Local Open Scope set_scope.
@@ -103,7 +122,7 @@ by rewrite /trace_presv bool_index unlock/= /reducebig/=
   /measure_proj !hermf_adjE !projf_idem addr0 addrC hs2lfE subrK.
 Qed.
 HB.instance Definition _ (P : {hspace U}) := 
-  isQMeasure.Build _ _ bool (@measure_proj P) (@measure_proj_tp P).
+  isQMeasure.Build R U U bool (@measure_proj P) (@measure_proj_tp P).
 
 Lemma elemso_projTE (P : {hspace U}) : 
   elemso (measure_proj P) true = formso P.
@@ -143,7 +162,7 @@ by apply/tpmapP=>x; rewrite initialso_mixE linearZ/= -hs2lf1E
   -dimh_trlf dimh1 mulfVK// pnatr_eq0 lt0n_neq0// dim_proper.
 Qed.
 HB.instance Definition _ (V : chsType) := 
-  isQChannel.Build U V (@initialso_mix V) (@initialso_mix_cptp V).
+  isQChannel.Build R U V (@initialso_mix V) (@initialso_mix_cptp V).
 
 Lemma initialso_mix_supp (V : chsType) (f : 'F+(U)) :
   f%:VF != 0 -> supph (@initialso_mix V f) = `1`.
@@ -270,8 +289,8 @@ Qed.
 
 Lemma fsem_conditionE1 T x P c1 c2 :
   fsem (@condition_ T x P c1 c2) = 
-  [ set (i.1 :o liftfso (elemso (measure_proj (th2h x P)) true)) + 
-      (i.2 :o liftfso (elemso (measure_proj (th2h x P)) false)) |
+  [ set (i.1 :o liftfso (elemso (measure_proj (@qmem.th2h R dqm T x P)) true)) + 
+      (i.2 :o liftfso (elemso (measure_proj (@qmem.th2h R dqm T x P)) false)) |
     i in (fsem c1 `*` fsem c2)]%classic.
 Proof.
 rewrite fsem_conditionE image2E; f_equal.
@@ -327,7 +346,7 @@ elim: c f=>[f|f|T x f|T x U f|T x P f|P Q f||||].
   rewrite (QOperation_BuildE P2) (QOperation_BuildE P1).
   apply/cptnP; split; first by apply/is_cpmap.
   apply/tnmapP=>r; rewrite !soE linearD/= 
-    -[\Tr r](qc_trlfE (liftfso (krausso (measure_proj (th2h x P))))) /=
+    -[\Tr r](qc_trlfE (liftfso (krausso (measure_proj (@qmem.th2h R dqm T x P))))) /=
     -elemso_sum linear_sum/= big_bool/= soE linearD/= lerD//.
   rewrite (QOperation_BuildE P1); apply/qo_trlfE/is_psdlf.
   rewrite (QOperation_BuildE P2); apply/qo_trlfE/is_psdlf.
@@ -352,8 +371,8 @@ by move=>p c1 [x1 P1] c2 [x2 P2]; rewrite fsem_prob_choiceE1/=;
 - move=>c1 [x1 P1] c2 [x2 P2]; rewrite fsem_sequenceE1/=;
   by exists (x2 :o x1)=>/=; exists (x1,x2).
 - move=>T x P c1 [x1 P1] c2 [x2 P2]; rewrite fsem_conditionE1.
-  by exists (x1 :o liftfso (elemso (measure_proj (th2h x P)) true) + 
-    (x2 :o liftfso (elemso (measure_proj (th2h x P)) false))) => /=;
+  by exists (x1 :o liftfso (elemso (measure_proj (@qmem.th2h R dqm T x P)) true) + 
+    (x2 :o liftfso (elemso (measure_proj (@qmem.th2h R dqm T x P)) false))) => /=;
     exists (x1, x2).
 - move=>T x P c [x1 P1]. rewrite fsemE.
   exists (limn (fun n : nat =>
@@ -527,24 +546,24 @@ apply/eqP; rewrite -le1h; apply/wlp_greatest=>E Pe.
 by rewrite hsO1 hs2lfE linear0/= kerh0.
 Qed.
 
-Lemma wlp_str_abort R : wlp abort_ R = `1`.
+Lemma wlp_str_abort Q : wlp abort_ Q = `1`.
 Proof. by rewrite /wlp fsemE caps_set1 dualso0 soE kerh0. Qed.
 
-Lemma wlp_str_skip R : wlp skip_ R = R.
+Lemma wlp_str_skip Q : wlp skip_ Q = Q.
 Proof. by rewrite /wlp fsemE caps_set1 dualso1 soE kerhO ocomplK. Qed.
 
-Lemma wlp_str_initial T x R : wlp (@initial_ T x) R = kerh_init_dual x R.
+Lemma wlp_str_initial T x Q : wlp (@initial_ T x) Q = kerh_init_dual x Q.
 Proof. by rewrite /wlp fsemE caps_set1. Qed.
 
-Lemma wlp_str_unitary T x U R : 
-  wlp (@unitary_ T x U) R = formh (liftf_lf (tf2f x x U^A)) R.
+Lemma wlp_str_unitary T x U Q : 
+  wlp (@unitary_ T x U) Q = formh (liftf_lf (tf2f x x U^A)) Q.
 Proof.
 by rewrite /wlp fsemE caps_set1 liftfso_formso dualso_formso
    -liftf_lf_adj tf2f_adj -formlf_soE kerhE/= -formhE supph_id formhO ocomplK.
 Qed.
 
-Lemma wlp_str_assert T x P R :
-  wlp (@assert_ T x P) R = (liftfh x P `=>` R).
+Lemma wlp_str_assert T x P Q :
+  wlp (@assert_ T x P) Q = (liftfh x P `=>` Q).
 Proof.
 by rewrite /wlp fsemE caps_set1 liftfso_formso 
   dualso_formE hermf_adjE/= -th2hE -liftfhE shookhE.
@@ -554,13 +573,13 @@ Qed.
   (E A) x = 0 -> \Tr (E A \o [> x ; x <]) = 0.
 Proof. by rewrite outp_compr=>->; rewrite out0p linear0. Qed. *)
 
-Lemma wlp_str_prescription P Q R :
-  wlp (@prescription_ P Q) R = if R == `1` then `1` else 
-                                   (if (Q `<=` R) then P 
+Lemma wlp_str_prescription P Q X :
+  wlp (@prescription_ P Q) X = if X == `1` then `1` else 
+                                   (if (Q `<=` X) then P 
                                    else `0`).
 Proof.
 case: eqP=>[->|/eqP rneq1]; first by rewrite wlp_str_1.
-case P1: (Q `<=` R).
+case P1: (Q `<=` X).
 - apply/le_anti/andP; split; last first.
     apply/wlp_greatest=>E; rewrite fsemE/==>[[Pe]].
     rewrite (QOperation_BuildE Pe) CP_kerh_ge=>P2.
@@ -578,7 +597,7 @@ case P1: (Q `<=` R).
   by rewrite elemso_projFE dualso_formE hermf_adjE hsE
     comp_lfun1r projf_idem kerhE supph_id ocomplK lexx.
 - apply/le_anti/andP; split; last by apply/le0h.
-move: P1; rewrite -{1}[R]hsOK -eq_sproj0=>/eqP/eqP/hs_neq0_exists=>[[v Pv]].
+move: P1; rewrite -{1}[X]hsOK -eq_sproj0=>/eqP/eqP/hs_neq0_exists=>[[v Pv]].
 apply: (le_trans (wlp_ubounded _ (E := initialso v) _)).
   rewrite fsemE/=; split. apply/is_cptn.
   rewrite CP_supph_le/= initialsoE; apply: (le_trans (supphZ_le _ _)).
@@ -595,7 +614,7 @@ Lemma scaleso_cp (U : chsType) (c : C) (E : 'CP(U)) :
 Proof.
 move=>Pc; apply/cpmapP; rewrite linearZ/=.
 apply: psdmxZ=>//.
-by move: (@is_cpmap _ _ E)=>/cpmapP.
+by move: (@is_cpmap R U U E)=>/cpmapP.
 Qed.
 Definition scaleso_cpType (U : chsType) (c : C) (E : 'CP(U)) H :=
   CPMap_Build (@scaleso_cp U c E H).
@@ -604,11 +623,11 @@ Local Canonical scaleso_cpType.
 (* HB.instance Definition _ (U : chsType) (c : C) (E : 'CP(U)) H :=
   isCPMap.Build _ _ (c *: (E : 'SO)) (@leh_kerhP U c E H). *)
 
-Lemma wlp_str_prob_choice p c1 c2 R : 
-  wlp (@prob_choice_ p c1 c2) R = wlp c1 R `&` wlp c2 R.
+Lemma wlp_str_prob_choice p c1 c2 Q : 
+  wlp (@prob_choice_ p c1 c2) Q = wlp c1 Q `&` wlp c2 Q.
 Proof.
 rewrite /wlp fsem_prob_choiceE1 caps_image. 
-rewrite (caps_setM (fun i j => kerh ((_ *: i + _ *: j) ^*o (~` R)))).
+rewrite (caps_setM (fun i j => kerh ((_ *: i + _ *: j) ^*o (~` Q)))).
 rewrite -(capsIl _ _ (fsem_nonempty c1)); apply eq_capsr=>x1 P1.
 rewrite -(capsIr _ _ (fsem_nonempty c2)); apply eq_capsr=>x2 P2.
 move: (projT2 p) (projT2 p)=>/andP[]/ltW/=?/ltW;
@@ -618,11 +637,11 @@ rewrite linearD/= linearZ/= linearZ/= soE (QOperation_BuildE (fsem_qo P1))
 by rewrite soE kerhZ 1?soE 1?kerhZ ?lt0r_neq0 1?subr_gt0.
 Qed.
 
-Lemma wlp_str_sequence c1 c2 R :
-  wlp (@sequence_ c1 c2) R = wlp c1 (wlp c2 R).
+Lemma wlp_str_sequence c1 c2 Q :
+  wlp (@sequence_ c1 c2) Q = wlp c1 (wlp c2 Q).
 Proof.
 rewrite /wlp fsem_sequenceE1 caps_image. 
-rewrite (caps_setM (fun i j => kerh ((j :o i) ^*o (~` R)))).
+rewrite (caps_setM (fun i j => kerh ((j :o i) ^*o (~` Q)))).
 apply eq_capsr=>x1 P1.
 rewrite capsO (QOperation_BuildE (fsem_qo P1)) kerh_cups.
 by apply eq_capsr=>x2 P2;
@@ -630,12 +649,12 @@ rewrite -supphE (QOperation_BuildE (fsem_qo P2)) kerh_cp_supp/=
   dualso_comp soE.
 Qed.
 
-Lemma wlp_str_condition T x P c1 c2 R : 
-  wlp (@condition_ T x P c1 c2) R = 
-    (liftfh x P `=>` wlp c1 R) `&` (liftfh x (~` P) `=>` wlp c2 R).
+Lemma wlp_str_condition T x P c1 c2 Q : 
+  wlp (@condition_ T x P c1 c2) Q = 
+    (liftfh x P `=>` wlp c1 Q) `&` (liftfh x (~` P) `=>` wlp c2 Q).
 Proof.
 rewrite /wlp fsem_conditionE1 caps_image !shook_caps. 
-rewrite (caps_setM (fun i j => kerh ((i :o _ + (j :o _)) ^*o (~` R)))).
+rewrite (caps_setM (fun i j => kerh ((i :o _ + (j :o _)) ^*o (~` Q)))).
 rewrite -(capsIl _ _ (fsem_nonempty c1)); apply eq_capsr=>x1 P1.
 rewrite -(capsIr _ _ (fsem_nonempty c2)); apply eq_capsr=>x2 P2.
 rewrite linearD/= soE (QOperation_BuildE (fsem_qo P1))
@@ -650,11 +669,11 @@ by rewrite -th2hO dualso_formE hermf_adjE/= -liftfhE shookhE supphE.
 Qed.
 
 Fixpoint wlp_while_iter (T : qType) (x : 'QReg[T]) (P : {hspace 'Ht T}) 
-  (c : cmd_) (R : {hspace _}) n : {hspace _} :=
+  (c : cmd_) (Q : {hspace _}) n : {hspace _} :=
   match n with
   | 0 => `1`
-  | S n => (liftfh x P `=>` wlp c (wlp_while_iter x P c R n)) `&` 
-          (liftfh x (~` P) `=>` R)
+  | S n => (liftfh x P `=>` wlp c (wlp_while_iter x P c Q n)) `&` 
+          (liftfh x (~` P) `=>` Q)
   end.
 
 Lemma bump0 i : bump 0%N i = i.+1.
@@ -668,16 +687,16 @@ Proof.
 rewrite eqEsubset; split.
 move=>l /= Pl; exists (l 0%N, (fun i => l i.+1))=>//=.
 by apply/funext=>i; case: i.
-by move=>? /= [[x l /= [] Px Pl] <-] n; case: n.
+  by move=>? /= [[x l /= [] Px Pl] <-] n; case: n.
 Qed.
 
-Lemma wlp_str_while T x P c R :
-  wlp (@while_ T x P c) R = \caps_(n : nat) (wlp_while_iter x P c R n).
+Lemma wlp_str_while T x P c Q :
+  wlp (@while_ T x P c) Q = \caps_(n : nat) (wlp_while_iter x P c Q n).
 Proof.
 rewrite /wlp fsem_whileE1 caps_image.
 transitivity (\caps_(l in [set l | (forall n : nat, fsem c (l n))])
 \caps_i kerh (\sum_(i0 < i) (formso (liftf_lf (tf2f x x (~` P))) :o 
-  \compr_(j < i0) (l j :o formso (liftf_lf (tf2f x x P)))) ^*o (~` R))).
+  \compr_(j < i0) (l j :o formso (liftf_lf (tf2f x x P)))) ^*o (~` Q))).
 - apply eq_capsr => l /= Pl.
   have Pc: cvgn (fun n => \sum_(i < n) (formso (liftf_lf (tf2f x x (~` P))) :o 
     \compr_(j < i) (l j :o formso (liftf_lf (tf2f x x P))))).
@@ -701,13 +720,13 @@ transitivity (\caps_(l in [set l | (forall n : nat, fsem c (l n))])
       under eq_bigr do rewrite (QOperation_BuildE (fsem_qo (Pl _))).
       by rewrite (CPMap_BuildE (comprso_cp _ _ _)) is_psdlf.
 rewrite caps_exchange; apply eq_capsr => n _.
-elim: n R.
-- move=>R /=; under eq_capsr do rewrite big_ord0 kerh0.
+elim: n Q.
+- move=>Q /=; under eq_capsr do rewrite big_ord0 kerh0.
   rewrite caps_const//. move: (fsem_nonempty c)=>[y Py].
   by exists (fun i => y)=>/=.
-move=>n IH R; rewrite set_natfun_splitl caps_image.
+move=>n IH Q; rewrite set_natfun_splitl caps_image.
 rewrite (caps_setM (fun x0 l => kerh (\sum_(i0 < n.+1) (_ :o \compr_(j < i0)
-  (match nat_of_ord j with | 0%N => x0 | n0.+1 => l n0 end :o _)) ^*o (~` R) ))).
+  (match nat_of_ord j with | 0%N => x0 | n0.+1 => l n0 end :o _)) ^*o (~` Q) ))).
 rewrite /= /wlp shook_caps -(capsIl _ _ (fsem_nonempty c)).
 apply eq_capsr=>E Pe.
 rewrite -IH capsO (QOperation_BuildE (fsem_qo Pe))
@@ -744,23 +763,23 @@ apply/eqP; rewrite -leh0; apply/sp_least=>E Pe.
 by rewrite hsE linear0 supph0.
 Qed.
 
-Lemma sp_str_abort R : sp abort_ R = `0`.
+Lemma sp_str_abort Q : sp abort_ Q = `0`.
 Proof. by rewrite /sp fsemE cups_set1 soE supph0. Qed.
 
-Lemma sp_str_skip R : sp skip_ R = R.
+Lemma sp_str_skip Q : sp skip_ Q = Q.
 Proof. by rewrite /sp fsemE cups_set1 soE supph_id. Qed.
 
-Lemma sp_str_initial T x R : sp (@initial_ T x) R = supph_init x R.
+Lemma sp_str_initial T x Q : sp (@initial_ T x) Q = supph_init x Q.
 Proof. by rewrite /sp fsemE cups_set1. Qed.
 
-Lemma sp_str_unitary T x U R : 
-  sp (@unitary_ T x U) R = formh (liftf_lf (tf2f x x U)) R.
+Lemma sp_str_unitary T x U Q : 
+  sp (@unitary_ T x U) Q = formh (liftf_lf (tf2f x x U)) Q.
 Proof.
 by rewrite /sp fsemE cups_set1 liftfso_formso -formlf_soE -formhE supph_id.
 Qed.
 
-Lemma sp_str_assert T x P R :
-  sp (@assert_ T x P) R = (liftfh x P `&&` R).
+Lemma sp_str_assert T x P Q :
+  sp (@assert_ T x P) Q = (liftfh x P `&&` Q).
 Proof.
 by rewrite /sp fsemE cups_set1 liftfso_formso -th2hE -liftfhE
   formsoE hermf_adjE/= sprojhE.
@@ -770,20 +789,20 @@ Qed.
   (E A) x = 0 -> \Tr (E A \o [> x ; x <]) = 0.
 Proof. by rewrite outp_compr=>->; rewrite out0p linear0. Qed. *)
 
-Lemma sp_str_prescription P Q R :
-  sp (@prescription_ P Q) R = if R == `0` then `0` else 
-                                   (if (R `<=` P) then Q
+Lemma sp_str_prescription P Q X :
+  sp (@prescription_ P Q) X = if X == `0` then `0` else 
+                                   (if (X `<=` P) then Q
                                    else `1`).
 Proof.
 case: eqP=>[->|/eqP rneq0]; first by rewrite sp_str_0.
-case P1: (R `<=` P).
+case P1: (X `<=` P).
 - apply/le_anti/andP; split.
     apply/sp_least=>E; rewrite fsemE/==>[[Pe]].
     rewrite (QOperation_BuildE Pe) CP_supph_le=>P2.
     apply/(le_trans _ P2)/supph_lef=>/=.
     rewrite (QOperation_BuildE Pe) cp_preserve_order=>[|//].
     by rewrite -leh_lef P1.
-  rewrite {1}[Q]heigenUE; apply/cuphs_le=>/=i _.
+  rewrite {1}(heigenUE Q); apply/cuphs_le=>/=i _.
   apply: (le_trans _ (sp_lbounded _ (E := initialso (heigen i)) _)).
     by rewrite initialsoE supphZ -?hlineE ?lexx//;
     rewrite -dimh_trlf pnatr_eq0 dimh_eq0.
@@ -806,11 +825,11 @@ move: Pv; rewrite /sasaki_projection memhI memhOE ocomplK=>/andP[]/eqP-> _.
 by rewrite outp0 comp_lfun0l supph0 le0h.
 Qed.
 
-Lemma sp_str_prob_choice p c1 c2 R : 
-  sp (@prob_choice_ p c1 c2) R = sp c1 R `|` sp c2 R.
+Lemma sp_str_prob_choice p c1 c2 Q : 
+  sp (@prob_choice_ p c1 c2) Q = sp c1 Q `|` sp c2 Q.
 Proof.
 rewrite /sp fsem_prob_choiceE1 cups_image. 
-rewrite (cups_setM (fun i j => supph ((_ *: i + _ *: j : 'SO) R))).
+rewrite (cups_setM (fun i j => supph ((_ *: i + _ *: j : 'SO) Q))).
 rewrite -(cupsUl _ _ (fsem_nonempty c1)); apply eq_cupsr=>x1 P1.
 rewrite -(cupsUr _ _ (fsem_nonempty c2)); apply eq_cupsr=>x2 P2.
 move: (projT2 p) (projT2 p)=>/andP[]/ltW/=?/ltW;
@@ -819,23 +838,23 @@ by rewrite soE (QOperation_BuildE (fsem_qo P1)) (QOperation_BuildE (fsem_qo P2))
   supphD /= !soE !supphZ// lt0r_neq0// subr_gt0.
 Qed.
 
-Lemma sp_str_sequence c1 c2 R :
-  sp (@sequence_ c1 c2) R = sp c2 (sp c1 R).
+Lemma sp_str_sequence c1 c2 Q :
+  sp (@sequence_ c1 c2) Q = sp c2 (sp c1 Q).
 Proof.
 rewrite /sp fsem_sequenceE1 cups_image. 
-rewrite (cups_setM (fun i j => supph ((j :o i : 'SO) R))) cups_exchange.
+rewrite (cups_setM (fun i j => supph ((j :o i : 'SO) Q))) cups_exchange.
 apply eq_cupsr=>x2 P2.
 rewrite (QOperation_BuildE (fsem_qo P2)) supph_cups.
 apply eq_cupsr=>x1 P1.
 by rewrite (QOperation_BuildE (fsem_qo P1)) supph_cp_supp soE.
 Qed.
 
-Lemma sp_str_condition T x P c1 c2 R : 
-  sp (@condition_ T x P c1 c2) R = 
-    (sp c1 (liftfh x P `&&` R)) `|` (sp c2 (liftfh x (~` P) `&&` R)).
+Lemma sp_str_condition T x P c1 c2 Q : 
+  sp (@condition_ T x P c1 c2) Q = 
+    (sp c1 (liftfh x P `&&` Q)) `|` (sp c2 (liftfh x (~` P) `&&` Q)).
 Proof.
 rewrite /sp fsem_conditionE1 cups_image. 
-rewrite (cups_setM (fun i j => supph ((i :o _ + (j :o _) : 'SO) R))).
+rewrite (cups_setM (fun i j => supph ((i :o _ + (j :o _) : 'SO) Q))).
 rewrite -(cupsUl _ _ (fsem_nonempty c1)); apply eq_cupsr=>x1 P1.
 rewrite -(cupsUr _ _ (fsem_nonempty c2)); apply eq_cupsr=>x2 P2.
 rewrite soE (QOperation_BuildE (fsem_qo P1)) (QOperation_BuildE (fsem_qo P2))
@@ -849,10 +868,10 @@ by rewrite elemso_projFE liftfso_formso -th2hO -liftfhE soE
 Qed.
 
 Fixpoint sp_while_iter (T : qType) (x : 'QReg[T]) (P : {hspace 'Ht T}) 
-  (c : cmd_) (R : {hspace _}) n : {hspace _} :=
+  (c : cmd_) (Q : {hspace _}) n : {hspace _} :=
   match n with
   | 0 => `0`
-  | S n => R `|` sp c (liftfh x P `&&` (sp_while_iter x P c R n))
+  | S n => Q `|` sp c (liftfh x P `&&` (sp_while_iter x P c Q n))
   end.
 
 Lemma sp_sprojUr (c : cmd_) (P R1 R2 : {hspace _}) :
@@ -864,48 +883,74 @@ by rewrite sprojUr -[in LHS]cuphE /cuph
 Qed.
 
 Lemma sp_while_iterE (T : qType) (x : 'QReg[T]) (P : {hspace 'Ht T}) 
-  (c : cmd_) (R : {hspace _}) n : 
-  sp_while_iter x P c R n.+1 = 
-    R `|` sp_while_iter x P c (sp c (liftfh x P `&&` R)) n.
+  (c : cmd_) (Q : {hspace _}) n : 
+  sp_while_iter x P c Q n.+1 = 
+    Q `|` sp_while_iter x P c (sp c (liftfh x P `&&` Q)) n.
 Proof.
-have IH: forall n R, sp_while_iter x P c R n.+1 = 
-  R `|` sp c (liftfh x P `&&` (sp_while_iter x P c R n)) by [].
-elim: n R=>[R/=|n IH1 R]; first by rewrite sprojx0 sp_str_0.
+have IH: forall n Q, sp_while_iter x P c Q n.+1 = 
+  Q `|` sp c (liftfh x P `&&` (sp_while_iter x P c Q n)) by [].
+elim: n Q=>[Q/=|n IH1 Q]; first by rewrite sprojx0 sp_str_0.
 by rewrite IH IH1 IH [in LHS]sp_sprojUr.
 Qed.
 
-Lemma sp_str_while T x P c R :
-  sp (@while_ T x P c) R = \cups_(n : nat)
-    (liftfh x (~` P) `&&` sp_while_iter x P c R n).
+Lemma liftf_tf2f_hsproj T (x : 'QReg[T]) (P : {hspace 'Ht T}) :
+  (liftf_lf (tf2f x x P))^A \o liftf_lf (tf2f x x P) = liftf_lf (tf2f x x P).
+Proof.
+by rewrite -liftf_lf_adj -liftf_lf_comp tf2f_adj tf2f_comp hermf_adjE projf_idem.
+Qed.
+
+Lemma sp_str_while T x P c Q :
+  sp (@while_ T x P c) Q = \cups_(n : nat)
+    (liftfh x (~` P) `&&` sp_while_iter x P c Q n).
 Proof.
 rewrite /sp fsem_whileE1 cups_image.
 transitivity (\cups_(x0 in [set l | (forall n : nat, fsem c (l n))])
   \cups_i supph ((\sum_(i0 < i) (formso (liftf_lf (tf2f x x (~` P))) :o 
-    \compr_(j < i0) (x0 j :o formso (liftf_lf (tf2f x x P))))) R)).
+    \compr_(j < i0) (x0 j :o formso (liftf_lf (tf2f x x P))))) Q)).
 - apply eq_cupsr => l /= Pl.
-  have Pc: cvgn (fun n => \sum_(i < n) (formso (liftf_lf (tf2f x x (~` P))) :o 
-    \compr_(j < i) (l j :o formso (liftf_lf (tf2f x x P))))).
-    apply: whilegso_is_cvgn=>[|i]; last by apply/(fsem_qo (Pl i)).
-    by rewrite !hermf_adjE/= !projf_idem/= -linearD/= -linearD/=
-      hsE subrK tf2f1 liftf_lf1.
-  rewrite -so_liml. apply: Pc.
+  have Mtn0 : ((liftf_lf (tf2f x x (~` P)))^A \o (liftf_lf (tf2f x x (~` P)))) +
+      ((liftf_lf (tf2f x x P))^A \o (liftf_lf (tf2f x x P))) <= \1.
+    pose M0p := liftf_lf (tf2f x x (~` P)).
+    pose M1p := liftf_lf (tf2f x x P).
+    have HM0 : M0p^A \o M0p = M0p.
+      by rewrite /M0p -liftf_lf_adj -liftf_lf_comp
+        tf2f_adj tf2f_comp hermf_adjE projf_idem.
+    have HM1 : M1p^A \o M1p = M1p.
+      by rewrite /M1p -liftf_lf_adj -liftf_lf_comp
+        tf2f_adj tf2f_comp hermf_adjE projf_idem.
+    change ((M0p^A \o M0p) + (M1p^A \o M1p) <= \1).
+    by rewrite HM0 HM1 /M0p /M1p -linearD/= -linearD/= hsE subrK tf2f1 liftf_lf1.
+  pose M0 := liftf_lf (tf2f x x (~` P)).
+  pose M1 := liftf_lf (tf2f x x P).
+  have Mtn : (M0^A \o M0) + (M1^A \o M1) <= \1 by exact: Mtn0.
+  have lq : forall i, l i \is cptn by move=>i; apply/(fsem_qo (Pl i)).
+  have Pc0: cvgn (fun n => \sum_(i < n) (formso M0 :o 
+    \compr_(j < i) (l j :o formso M1))).
+    exact: (@whilegso_is_cvgn R ('H[msys]_[set: mlab]) M0 M1 Mtn l lq).
+  pose F n := \sum_(i < n) (formso (liftf_lf (tf2f x x (~` P))) :o 
+    \compr_(j < i) (l j :o formso (liftf_lf (tf2f x x P)))).
+  have Pc: cvgn F by exact: Pc0.
+  clear Pc0 Mtn M0 M1.
+  have PcQ : limn (fun n => F n Q) = (limn F) Q.
+    apply: so_liml. exact: Pc.
+  rewrite -PcQ; change (supph (limn (fun n => F n Q)) = \cups_i supph (F i Q)).
   rewrite supphE kerh_limn ?capsO.
     - apply: so_is_cvgl. apply: Pc.
-    - apply/chain_homo=>i; rewrite big_ord_recr/= soE add_soE sum_soE levDl -psdlfE.
+    - apply/chain_homo=>i; rewrite /F big_ord_recr/= soE add_soE sum_soE levDl -psdlfE.
       under eq_bigr do rewrite (QOperation_BuildE (fsem_qo (Pl _))).
       by rewrite (CPMap_BuildE (comprso_cp _ _ _)) is_psdlf.
-    - move=>n; rewrite soE; apply/psdlf_sum=>/=i _.
+    - move=>n; rewrite /F soE; apply/psdlf_sum=>/=i _.
       under eq_bigr do rewrite (QOperation_BuildE (fsem_qo (Pl _))).
       by rewrite (CPMap_BuildE (comprso_cp _ _ _)) is_psdlf.
-    - by under eq_cupsr do rewrite -supphE.
+    - by under eq_cupsr do rewrite /F -supphE.
 rewrite cups_exchange; apply eq_cupsr => n _.
-elim: n R.
-- move=>R /=; under eq_cupsr do rewrite big_ord0 soE supph0.
+elim: n Q.
+- move=>Q /=; under eq_cupsr do rewrite big_ord0 soE supph0.
   rewrite sprojx0 cups_const//. move: (fsem_nonempty c)=>[y Py].
   by exists (fun i => y)=>/=.
-move=>n IH R; rewrite set_natfun_splitl cups_image.
+move=>n IH Q; rewrite set_natfun_splitl cups_image.
 rewrite (cups_setM (fun x0 l => supph ((\sum_(i0 < n.+1) (_ :o \compr_(j < i0) 
-  (match nat_of_ord j with | 0%N => x0 | n0.+1 => l n0 end :o _))) R))).
+  (match nat_of_ord j with | 0%N => x0 | n0.+1 => l n0 end :o _))) Q))).
 rewrite sp_while_iterE sprojUr -IH cups_exchange -cupsUr .
   by move: (fsem_nonempty c)=>[y Py]; exists (fun => y).
 apply eq_cupsr=>l /= Pl.
@@ -927,3 +972,5 @@ by do ! f_equal; rewrite -th2hE -liftfhE formsoE hermf_adjE sprojhE.
 Qed.
 
 End HoareTriple.
+
+End LanguageReal.

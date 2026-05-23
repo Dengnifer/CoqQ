@@ -82,8 +82,9 @@ Import VectorInternalTheory.
 Declare Scope dirac_scope.
 
 Section DiracDef.
+Variable R : realType.
 Variable L : finType.
-Variable H : L -> chsType.
+Variable H : L -> @chsType R.
 
 Variant dirac : predArgType :=
   Dirac of {dffun forall d : {set L} * {set L}, 'F[H]_(d.1,d.2)}.
@@ -101,18 +102,20 @@ End DiracDef.
 
 Fact dirac_key : unit. Proof. by []. Qed.
 HB.lock
-Definition dirac_of_fun (L : finType) (H : L -> chsType) (k : unit)
+Definition dirac_of_fun (R : realType) (L : finType) (H : L -> @chsType R) (k : unit)
   (F : forall (i j : {set L}), 'F[H]_(i,j)) :=
-    @Dirac L H [ffun i => F i.1 i.2].
+    @Dirac R L H [ffun i => F i.1 i.2].
 Canonical dirac_unlockable := Unlockable dirac_of_fun.unlock.
+Arguments dirac_of_fun {R L H} k F.
 
 Section DiracDef2.
+Variable R : realType.
 Variable L : finType.
-Variable H : L -> chsType.
+Variable H : L -> @chsType R.
 Implicit Type F : forall (i j : {set L}), 'F[H]_(i,j).
 
 Lemma diracE k F i j : dirac_of_fun k F i j = F i j.
-Proof. by rewrite [dirac_of_fun]unlock /fun_of_dirac /= ffunE. Qed.
+Proof. by rewrite dirac_of_fun.unlock /fun_of_dirac /= ffunE. Qed.
 
 Lemma diracP (u v : dirac H) : (forall i j, u i j = v i j) <-> u = v.
 Proof.
@@ -129,14 +132,15 @@ End DiracDef2.
 Delimit Scope dirac_scope with D.
 Bind Scope dirac_scope with dirac.
 Local Open Scope dirac_scope.
-Notation "''D[' H ]" := (@dirac _ H) (only parsing) : type_scope.
-Notation "''D'" := (@dirac _ _) : type_scope.
+Notation "''D[' H ]" := (@dirac _ _ H) (only parsing) : type_scope.
+Notation "''D'" := (@dirac _ _ _) : type_scope.
 Notation "\dirac_ ( i , j ) E" := (dirac_of_fun dirac_key (fun i j => E%VF)) : dirac_scope.
 
 (* Dirac : nzRingType with + and tensor (!!not com)*)
 (* Dirac : vectType, so we can talk about its completeness, but not used now *)
 Section DiracAlgebra.
-Context {L : finType} {H : L -> chsType}.
+Context {R : realType} {L : finType} {H : L -> @chsType R}.
+Local Notation C := (@hermitian.C R).
 Implicit Types u v w : 'D[H].
 
 Definition dirac_zero     := \dirac_(i , j) (0 : 'F[H]_(i,j)).
@@ -223,65 +227,65 @@ End DiracAlgebra.
 (* lind ketd brad numd conjd trd adjd muld dotd tend *)
 (* we prevent any possible unfolding of them *)
 HB.lock
-Definition lind {L : finType} {H : L -> chsType} [S T] (f: 'F[H]_(S,T)) : 'D[H] :=
+Definition lind {R : realType} {L : finType} {H : L -> @chsType R} [S T] (f: 'F[H]_(S,T)) : 'D[H] :=
   \dirac_(i,j)
     match S =P i , T =P j return 'F[H]_(i,j) with
     | ReflectT eqi, ReflectT eqj => castlf (eqi, eqj) f
     | _, _ => 0
     end.
 HB.lock
-Definition ketd {L : finType} {H : L -> chsType} [S] (v : 'H[H]_S) : 'D[H] := lind (v2f v).
+Definition ketd {R : realType} {L : finType} {H : L -> @chsType R} [S] (v : 'H[H]_S) : 'D[H] := lind (v2f v).
 HB.lock
-Definition brad {L : finType} {H : L -> chsType} [S] (v : 'H[H]_S) : 'D[H] := lind (v2df v).
+Definition brad {R : realType} {L : finType} {H : L -> @chsType R} [S] (v : 'H[H]_S) : 'D[H] := lind (v2df v).
 HB.lock
-Definition numd {L : finType} {H : L -> chsType} (c : C) : 'D[H] := lind (s2sf c).
+Definition numd {R : realType} {L : finType} {H : L -> @chsType R} (c : C) : 'D[H] := lind (s2sf c).
 HB.lock
-Definition conjd {L : finType} {H : L -> chsType} (e : 'D[H]) : 'D[H] := \dirac_(i,j) (e i j)^C.
+Definition conjd {R : realType} {L : finType} {H : L -> @chsType R} (e : 'D[H]) : 'D[H] := \dirac_(i,j) (e i j)^C.
 HB.lock
-Definition trd   {L : finType} {H : L -> chsType} (e : 'D[H]) : 'D[H] := \dirac_(i,j) (e j i)^T.
+Definition trd   {R : realType} {L : finType} {H : L -> @chsType R} (e : 'D[H]) : 'D[H] := \dirac_(i,j) (e j i)^T.
 HB.lock
-Definition adjd  {L : finType} {H : L -> chsType} (e : 'D[H]) : 'D[H] := \dirac_(i,j) (e j i)^A.
+Definition adjd  {R : realType} {L : finType} {H : L -> @chsType R} (e : 'D[H]) : 'D[H] := \dirac_(i,j) (e j i)^A.
 HB.lock
-Definition muld  {L : finType} {H : L -> chsType} (e1 e2 : 'D[H]) : 'D[H] :=
+Definition muld  {R : realType} {L : finType} {H : L -> @chsType R} (e1 e2 : 'D[H]) : 'D[H] :=
   \dirac_(i , j) \sum_(k : {set L}) (e1 k j \o e2 i k : 'F[H]_(i,j)).
 HB.lock
-Definition dotd  {L : finType} {H : L -> chsType} (e1 e2 : 'D[H]) : 'D[H] :=
+Definition dotd  {R : realType} {L : finType} {H : L -> @chsType R} (e1 e2 : 'D[H]) : 'D[H] :=
   \sum_d11 \sum_d12 \sum_d21 \sum_d22 lind (e1 d11 d12 \· e2 d21 d22).
 HB.lock
-Definition tend  {L : finType} {H : L -> chsType} (e1 e2 : 'D[H]) : 'D[H] :=
+Definition tend  {R : realType} {L : finType} {H : L -> @chsType R} (e1 e2 : 'D[H]) : 'D[H] :=
   \sum_d11 \sum_d12 \sum_d21 \sum_d22 lind (e1 d11 d12 \⊗ e2 d21 d22).
 
 Fact tends_key : unit. Proof. by []. Qed.
 Fact dotds_key : unit. Proof. by []. Qed.
-Definition bigtend {L : finType} {H : L -> chsType} := locked_with tends_key (@idfun 'D[H]).
-Definition bigdotd {L : finType} {H : L -> chsType} := locked_with dotds_key (@idfun 'D[H]).
-Lemma bigtend_unfold {L : finType} {H : L -> chsType} : @bigtend L H = id.
+Definition bigtend {R : realType} {L : finType} {H : L -> @chsType R} := locked_with tends_key (@idfun 'D[H]).
+Definition bigdotd {R : realType} {L : finType} {H : L -> @chsType R} := locked_with dotds_key (@idfun 'D[H]).
+Lemma bigtend_unfold {R : realType} {L : finType} {H : L -> @chsType R} : @bigtend R L H = id.
 Proof. by rewrite /bigtend unlock. Qed.
-Lemma bigdotd_unfold {L : finType} {H : L -> chsType} : @bigdotd L H = id.
+Lemma bigdotd_unfold {R : realType} {L : finType} {H : L -> @chsType R} : @bigdotd R L H = id.
 Proof. by rewrite /bigdotd unlock. Qed.
 Definition bigd := (@bigtend_unfold, @bigdotd_unfold).
 
 HB.lock
-Definition d2v {L : finType} {H : L -> chsType} S (e : 'D[H]) : 'H[H]_S := f2v (e set0 S).
+Definition d2v {R : realType} {L : finType} {H : L -> @chsType R} S (e : 'D[H]) : 'H[H]_S := f2v (e set0 S).
 HB.lock
-Definition d2dv {L : finType} {H : L -> chsType} S (e : 'D[H]) : 'H[H]_S := df2v (e S set0).
+Definition d2dv {R : realType} {L : finType} {H : L -> @chsType R} S (e : 'D[H]) : 'H[H]_S := df2v (e S set0).
 HB.lock
-Definition d2f {L : finType} {H : L -> chsType} S T (e : 'D[H]) : 'F[H]_(S,T) := e S T.
+Definition d2f {R : realType} {L : finType} {H : L -> @chsType R} S T (e : 'D[H]) : 'F[H]_(S,T) := e S T.
 HB.lock
-Definition d2c {L : finType} {H : L -> chsType} (e : 'D[H]) := sf2s (e set0 set0).
+Definition d2c {R : realType} {L : finType} {H : L -> @chsType R} (e : 'D[H]) := sf2s (e set0 set0).
 
-Notation "':1'"  := (@numd _ _ 1) : dirac_scope.
-Notation "c %:D" := (@numd _ _ c) : dirac_scope.
-Notation "'| v >" := (@ketd _ _ _ v%VF) : dirac_scope.
-Notation "'< v |"  := (@brad _ _ _ v%VF) : dirac_scope.
-Notation "'[ M ]"   := (@lind _ _ _ _ M%VF) : dirac_scope.
-Notation "'\1_' S" := (@lind _ _ S%SET S%SET \1) : dirac_scope.
+Notation "':1'"  := (@numd _ _ _ 1) : dirac_scope.
+Notation "c %:D" := (@numd _ _ _ c) : dirac_scope.
+Notation "'| v >" := (@ketd _ _ _ _ v%VF) : dirac_scope.
+Notation "'< v |"  := (@brad _ _ _ _ v%VF) : dirac_scope.
+Notation "'[ M ]"   := (@lind _ _ _ _ _ M%VF) : dirac_scope.
+Notation "'\1_' S" := (@lind _ _ _ S%SET S%SET \1) : dirac_scope.
 Notation "e '^C'" := (conjd e) : dirac_scope.
 Notation "e '^T'" := (trd e) : dirac_scope.
 Notation "e '^A'" := (adjd e) : dirac_scope.
-Notation " 'o%D' "  := (@muld _ _) : function_scope.
-Notation " '·%D' "  := (@dotd _ _) : function_scope.
-Notation " '⊗%D' " := (@tend _ _) : function_scope.
+Notation " 'o%D' "  := (@muld _ _ _) : function_scope.
+Notation " '·%D' "  := (@dotd _ _ _) : function_scope.
+Notation " '⊗%D' " := (@tend _ _ _) : function_scope.
 Notation " f '\o' g "  := (muld f g) : dirac_scope.
 Notation " f '\⊗' g " := (tend f g) : dirac_scope.
 Notation " f '\·' g "  := (dotd f g) : dirac_scope.
@@ -341,12 +345,13 @@ Notation "\dot_ ( i 'in' A ) F" :=
   (bigdotd (\big[ ·%D / :1 ]_(i in A) F%D)) : dirac_scope.
 
 Section DiracBigLock.
-Context {L : finType} (H : L -> chsType).
+Context {R : realType} {L : finType} (H : L -> @chsType R).
+Local Notation C := (@hermitian.C R).
 
 Lemma bigtendlr (I J : Type) (ri : seq I) (Pi : pred I) (Fi : I -> 'D[H])
   (rj : seq J) (Pj : pred J) (Fj : J -> 'D):
     bigtend ((\big[⊗%D/:1]_(i <- ri | Pi i) Fi i) \⊗
-    (\big[@tend _ _ /:1]_(j <- rj | Pj j) Fj j)) =
+    (\big[@tend _ _ H /:1]_(j <- rj | Pj j) Fj j)) =
     (\ten_(i <- ri | Pi i) Fi i) \⊗ (\ten_(j <- rj | Pj j) Fj j) .
 Proof. by rewrite bigd. Qed.
 
@@ -389,16 +394,17 @@ End DiracBigLock.
 (* after using bigop theory, first run this to lock back *)
 (* Ltac bigdE := rewrite ?bigd; rewrite ?bigd_locklr. *)
 (* move *)
-Lemma exchange_bigR (R : Type) (idx : R) (op : Monoid.com_law idx)
+Lemma exchange_bigR (A : Type) (idx : A) (op : Monoid.com_law idx)
   (I J K : Type) (rI : seq I) (rJ : seq J) (rK : seq K) (P : pred I)
-    (Q : pred J) (S : pred K) (F : I -> J -> K -> R) :
+    (Q : pred J) (S : pred K) (F : I -> J -> K -> A) :
     \big[op/idx]_(i <- rI | P i) \big[op/idx]_(j <- rJ | Q j)
         \big[op/idx]_(k <- rK | S k) F i j k = \big[op/idx]_(j <- rJ | Q j)
             \big[op/idx]_(k <- rK | S k) \big[op/idx]_(i <- rI | P i) F i j k.
 Proof. by rewrite exchange_big; apply eq_bigr=>i Pi; apply exchange_big. Qed.
 
 Section DiracOpCorrect.
-Context {L : finType} {H : L -> chsType}.
+Context {R : realType} {L : finType} {H : L -> @chsType R}.
+Local Notation C := (@hermitian.C R).
 
 Lemma lind_cast S T S' T' (eqST: (S = S') * (T = T')) (f: 'F[H]_(S,T)) :
   lind (castlf eqST f) = lind f.
@@ -425,66 +431,66 @@ rewrite xpair_eqE negb_and=>/orP[P|P].
 by rewrite lind_eq0l. by rewrite lind_eq0r.
 Qed.
 
-Lemma lindK S T : cancel (@lind _ H S T) (@d2f _ H S T).
+Lemma lindK S T : cancel (@lind _ _ H S T) (@d2f _ _ H S T).
 Proof. by move=>f; rewrite d2f.unlock lind_id. Qed.
-Lemma lind_inj S T : injective (@lind L H S T).
+Lemma lind_inj S T : injective (@lind _ L H S T).
 Proof. exact: (can_inj (@lindK S T)). Qed.
-Lemma ketdK S : cancel (@ketd _ H S) (@d2v _ H S).
+Lemma ketdK S : cancel (@ketd _ _ H S) (@d2v _ _ H S).
 Proof. by move=>f; rewrite ketd.unlock d2v.unlock lind_id v2fK. Qed.
-Lemma ketd_inj S : injective (@ketd _ H S).
+Lemma ketd_inj S : injective (@ketd _ _ H S).
 Proof. exact: (can_inj (@ketdK S)). Qed.
-Lemma bradK S : cancel (@brad _ H S) (@d2dv _ H S).
+Lemma bradK S : cancel (@brad _ _ H S) (@d2dv _ _ H S).
 Proof. by move=>f; rewrite brad.unlock d2dv.unlock lind_id v2dfK. Qed.
-Lemma brad_inj S : injective (@brad _ H S).
+Lemma brad_inj S : injective (@brad _ _ H S).
 Proof. exact: (can_inj (@bradK S)). Qed.
-Lemma numdK : cancel (@numd _ H) (@d2c _ H).
+Lemma numdK : cancel (@numd _ _ H) (@d2c _ _ H).
 Proof. by move=>f; rewrite numd.unlock d2c.unlock lind_id s2sfK. Qed.
-Lemma numd_inj : injective (@numd _ H).
+Lemma numd_inj : injective (@numd _ _ H).
 Proof. exact: (can_inj (@numdK)). Qed.
 
-Lemma lind_is_linear S T : linear (@lind _ H S T).
+Lemma lind_is_linear S T : linear (@lind _ _ H S T).
 Proof.
 move=>a x y; apply/diracP=>i j; rewrite lind.unlock !diracE.
 case: eqP=>p1; first case: eqP=>p2;
 by rewrite ?linearP// scaler0 addr0.
 Qed.
 HB.instance Definition _ S T := GRing.isLinear.Build C
-  'F[H]_(S,T) 'D[H] *:%R (@lind _ H S T) (@lind_is_linear S T).
+  'F[H]_(S,T) 'D[H] *:%R (@lind _ _ H S T) (@lind_is_linear S T).
 
-Lemma ketd_is_linear S : linear (@ketd _ H S).
+Lemma ketd_is_linear S : linear (@ketd _ _ H S).
 Proof. by move=>a x y; rewrite ketd.unlock !linearP. Qed.
 HB.instance Definition _ S := GRing.isLinear.Build C
-  'H[H]_S 'D[H] *:%R (@ketd _ H S) (@ketd_is_linear S).
+  'H[H]_S 'D[H] *:%R (@ketd _ _ H S) (@ketd_is_linear S).
 
-Lemma brad_is_antilinear S : linear_for (conjC \; *:%R) (@brad _ H S).
+Lemma brad_is_antilinear S : linear_for (conjC \; *:%R) (@brad _ _ H S).
 Proof. by move=>a x y; rewrite brad.unlock !linearP. Qed.
 HB.instance Definition _ S := GRing.isLinear.Build C
-  'H[H]_S 'D[H] (conjC \; *:%R) (@brad _ H S) (@brad_is_antilinear S).
+  'H[H]_S 'D[H] (conjC \; *:%R) (@brad _ _ H S) (@brad_is_antilinear S).
 
-Lemma numd_is_additive : zmod_morphism (@numd _ H).
+Lemma numd_is_additive : zmod_morphism (@numd _ _ H).
 Proof. by move=>x y; rewrite numd.unlock raddfB linearB. Qed.
 HB.instance Definition _ := GRing.isZmodMorphism.Build C
-  'D[H] (@numd _ H) numd_is_additive.
+  'D[H] (@numd _ _ H) numd_is_additive.
 
-Lemma d2f_is_linear S T : linear (@d2f _ H S T).
+Lemma d2f_is_linear S T : linear (@d2f _ _ H S T).
 Proof. by move=>a x y; rewrite d2f.unlock !diracE. Qed.
 HB.instance Definition _ S T := GRing.isLinear.Build C
-  'D[H] 'F[H]_(S,T) *:%R (@d2f _ H S T) (@d2f_is_linear S T).
+  'D[H] 'F[H]_(S,T) *:%R (@d2f _ _ H S T) (@d2f_is_linear S T).
 
-Lemma d2v_is_linear S : linear (@d2v _ H S).
+Lemma d2v_is_linear S : linear (@d2v _ _ H S).
 Proof. by move=>a x y; rewrite d2v.unlock !diracE linearP. Qed.
 HB.instance Definition _ S := GRing.isLinear.Build C
-  'D[H] 'H[H]_S *:%R (@d2v _ H S) (@d2v_is_linear S).
+  'D[H] 'H[H]_S *:%R (@d2v _ _ H S) (@d2v_is_linear S).
 
-Lemma d2dv_is_antilinear S : linear_for (conjC \; *:%R) (@d2dv _ H S).
+Lemma d2dv_is_antilinear S : linear_for (conjC \; *:%R) (@d2dv _ _ H S).
 Proof. by move=>a x y; rewrite d2dv.unlock !diracE linearP. Qed.
 HB.instance Definition _ S := GRing.isLinear.Build C
-  'D[H] 'H[H]_S (conjC \; *:%R) (@d2dv _ H S) (@d2dv_is_antilinear S).
+  'D[H] 'H[H]_S (conjC \; *:%R) (@d2dv _ _ H S) (@d2dv_is_antilinear S).
 
-Lemma d2c_is_scalar : scalar (@d2c _ H).
+Lemma d2c_is_scalar : scalar (@d2c _ _ H).
 Proof. by move=>a x y; rewrite d2c.unlock !diracE linearP. Qed.
 HB.instance Definition _ S := GRing.isLinear.Build C
-  'D[H] C *%R (@d2c _ H) d2c_is_scalar.
+  'D[H] C *%R (@d2c _ _ H) d2c_is_scalar.
 
 Lemma lind_dec (f : 'D[H]) : \sum_i lind (f i.1 i.2) = f.
 Proof.
@@ -604,17 +610,18 @@ Ltac to_Fnd := try (match goal with
 
 (* we locally use nzRingType (+ , \⊗) to ease the proof of theorems *)
 Section DiracTheory.
-Context {L : finType} (H : L -> chsType).
+Context {R : realType} {L : finType} (H : L -> @chsType R).
+Local Notation C := (@hermitian.C R).
 Implicit Type (e x y z: 'D[H]) (a b c : C) (S T : {set L}).
 
-Local Notation "c %:D" := (@numd _ H c).
-Local Notation "⊗%D" := (@tend _ H) : function_scope.
-Local Notation "o%D"  := (@muld _ H) : function_scope.
-Local Notation "·%D" := (@dotd _ H) : function_scope.
-Local Notation ":1" := (@numd _ H 1).
-Local Notation conjd := (@conjd _ H).
-Local Notation trd := (@trd _ H).
-Local Notation adjd := (@adjd _ H).
+Local Notation "c %:D" := (@numd _ _ H c).
+Local Notation "⊗%D" := (@tend _ _ H) : function_scope.
+Local Notation "o%D"  := (@muld _ _ H) : function_scope.
+Local Notation "·%D" := (@dotd _ _ H) : function_scope.
+Local Notation ":1" := (@numd _ _ H 1).
+Local Notation conjd := (@conjd _ _ H).
+Local Notation trd := (@trd _ _ H).
+Local Notation adjd := (@adjd _ _ H).
 
 Lemma ketd_lin S (v : 'H[H]_S) : '| v > = '[v2f v].
 Proof. by rewrite ketd.unlock. Qed.
@@ -687,11 +694,11 @@ rewrite linear_sum -big_split; apply eq_bigr=>j _/=.
 by rewrite !diracE !linearP/=.
 Qed.
 HB.instance Definition _ f := GRing.isLinear.Build
-  C 'D[H] 'D[H] *:%R (@tend _ H f) (@linear_tend f).
-Lemma linear_tendr f : linear ((@tend _ H)^~ f).
+  C 'D[H] 'D[H] *:%R (@tend _ _ H f) (@linear_tend f).
+Lemma linear_tendr f : linear ((@tend _ _ H)^~ f).
 Proof. by move=>a v w; rewrite tendC linearP/= ![f \⊗ _]tendC. Qed.
 HB.instance Definition _ := bilinear_isBilinear.Build C 'D[H] 'D[H] 'D[H]
-  *:%R *:%R (@tend _ H) (linear_tendr, linear_tend).
+  *:%R *:%R (@tend _ _ H) (linear_tendr, linear_tend).
 
 Lemma tendAC x y z : x \⊗ y \⊗ z = x \⊗ z \⊗ y.
 Proof. by rewrite -tendA [y \⊗ z]tendC tendA. Qed.
@@ -762,15 +769,15 @@ rewrite !diracE !linear_sum/= -big_split; apply eq_bigr=>k _/=.
 by rewrite !diracE linearPr/=.
 Qed.
 HB.instance Definition _ f := GRing.isLinear.Build
-  C 'D[H] 'D[H] *:%R (@muld _ H f) (@linear_muld f).
-Lemma linear_muldr f : linear ((@muld _ H)^~ f).
+  C 'D[H] 'D[H] *:%R (@muld _ _ H f) (@linear_muld f).
+Lemma linear_muldr f : linear ((@muld _ _ H)^~ f).
 Proof.
 move=>a v w; apply/diracP=>i j; rewrite muld.unlock.
 rewrite !diracE !linear_sum/= -big_split; apply eq_bigr=>k _/=.
 by rewrite !diracE linearPl/=.
 Qed.
 HB.instance Definition _ := bilinear_isBilinear.Build C 'D[H] 'D[H] 'D[H]
-  *:%R *:%R (@muld _ H) (linear_muldr, linear_muld).
+  *:%R *:%R (@muld _ _ H) (linear_muldr, linear_muld).
 
 Lemma mul0d : left_zero 0 o%D. Proof. exact: linear0l. Qed.
 Lemma muld0 : right_zero 0 o%D. Proof. exact: linear0r. Qed.
@@ -828,15 +835,15 @@ rewrite linear_sum -big_split; apply eq_bigr=>j _/=.
 by rewrite !diracE !linearP/=.
 Qed.
 HB.instance Definition _ f := GRing.isLinear.Build
-  C 'D[H] 'D[H] *:%R (@dotd _ H f) (@linear_dotd f).
-Lemma linear_dotdr f : linear ((@dotd _ H)^~ f).
+  C 'D[H] 'D[H] *:%R (@dotd _ _ H f) (@linear_dotd f).
+Lemma linear_dotdr f : linear ((@dotd _ _ H)^~ f).
 Proof.
 move=>a v w; rewrite !dotd_pairE linear_sum -big_split; apply eq_bigr=>i _/=.
 rewrite linear_sum -big_split; apply eq_bigr=>j _/=.
 by rewrite !diracE !(linearP,linearPl)/=.
 Qed.
 HB.instance Definition _ := bilinear_isBilinear.Build C 'D[H] 'D[H] 'D[H]
-  *:%R *:%R (@dotd _ H) (linear_dotdr, linear_dotd).
+  *:%R *:%R (@dotd _ _ H) (linear_dotdr, linear_dotd).
 
 Lemma dot0d : left_zero 0 ·%D. Proof. exact: linear0l. Qed.
 Lemma dotd0 : right_zero 0 ·%D. Proof. exact: linear0r. Qed.
@@ -1087,26 +1094,27 @@ Definition numd_simp := (ketd_num, brad_num, lind_num, adjd_num, conjd_num, trd_
 End DiracTheory.
 
 Section DiracBig.
-Context {L : finType} (H : L -> chsType).
+Context {R : realType} {L : finType} (H : L -> @chsType R).
+Local Notation C := (@hermitian.C R).
 (* since generally we need to import GRing.Theory, *)
 (* canonical of addoid here will be ignored, so we reclaim distribution lemmas *)
-(* Canonical  muld_monoid := Monoid.Law (@muldA _ H) (@mulIId _ H) (@muldII _ H). *)
+(* Canonical  muld_monoid := Monoid.Law (@muldA _ _ H) (@mulIId _ _ H) (@muldII _ _ H). *)
 HB.instance Definition _ := Monoid.isMulLaw.Build
-  'D[H] 0 (@muld _ H) (@mul0d _ H) (@muld0 _ H).
-Definition muld_addoid : @Monoid.add_law 'D[H] 0 (@muld _ H) := HB.pack +%R
-  (Monoid.isAddLaw.Build 'D[H] (@muld _ H) +%R (@muldDl _ H) (@muldDr _ H)).
+  'D[H] 0 (@muld _ _ H) (@mul0d _ _ H) (@muld0 _ _ H).
+Definition muld_addoid : @Monoid.add_law 'D[H] 0 (@muld _ _ H) := HB.pack +%R
+  (Monoid.isAddLaw.Build 'D[H] (@muld _ _ H) +%R (@muldDl _ _ H) (@muldDr _ _ H)).
 
 HB.instance Definition _ := Monoid.isMulLaw.Build
-  'D[H] 0 (@tend _ H) (@ten0d _ H) (@tend0 _ H).
+  'D[H] 0 (@tend _ _ H) (@ten0d _ _ H) (@tend0 _ _ H).
 HB.instance Definition _ := Monoid.isComLaw.Build
-  'D[H] :1 (@tend _ H) (@tendA _ H) (@tendC _ H) (@ten1d _ H).
-Definition tend_addoid : @Monoid.add_law 'D[H] 0 (@tend _ H) := HB.pack +%R
-  (Monoid.isAddLaw.Build 'D[H] (@tend _ H) +%R (@tendDl _ H) (@tendDr _ H)).
+  'D[H] :1 (@tend _ _ H) (@tendA _ _ H) (@tendC _ _ H) (@ten1d _ _ H).
+Definition tend_addoid : @Monoid.add_law 'D[H] 0 (@tend _ _ H) := HB.pack +%R
+  (Monoid.isAddLaw.Build 'D[H] (@tend _ _ H) +%R (@tendDl _ _ H) (@tendDr _ _ H)).
 
 HB.instance Definition _ := Monoid.isMulLaw.Build
-  'D[H] 0 (@dotd _ H) (@dot0d _ H) (@dotd0 _ H).
-Definition dotd_addoid : @Monoid.add_law 'D[H] 0 (@dotd _ H) := HB.pack +%R
-  (Monoid.isAddLaw.Build 'D[H] (@dotd _ H) +%R (@dotdDl _ H) (@dotdDr _ H)).
+  'D[H] 0 (@dotd _ _ H) (@dot0d _ _ H) (@dotd0 _ _ H).
+Definition dotd_addoid : @Monoid.add_law 'D[H] 0 (@dotd _ _ H) := HB.pack +%R
+  (Monoid.isAddLaw.Build 'D[H] (@dotd _ _ H) +%R (@dotdDl _ _ H) (@dotdDr _ _ H)).
 
 Lemma tendsumE : (+%R : 'D[H] -> 'D -> 'D) = tend_addoid. by []. Qed.
 Lemma muldsumE : (+%R : 'D[H] -> 'D -> 'D) = muld_addoid. by []. Qed.
@@ -1235,121 +1243,122 @@ End DiracBig.
 (* and in the theory, we may set up a lemma (e : wfdirac) : P e *)
 (* the for ketd v, we can directly apply the lemma without proving wfd *)
 
-HB.mixin Record isWFDirac {L : finType} {H : L -> chsType} (S T : {set L})
+HB.mixin Record isWFDirac {R : realType} {L : finType} {H : L -> @chsType R} (S T : {set L})
   (f : 'D[H]) := { is_wfdirac : '[f S T] = f}.
 
 #[short(type="wfDirac")]
-HB.structure Definition WFDirac {L : finType} {H : L -> chsType} (S T : {set L}) :=
-  { f of @isWFDirac L H S T f}.
+HB.structure Definition WFDirac {R : realType} {L : finType} {H : L -> @chsType R} (S T : {set L}) :=
+  { f of @isWFDirac R L H S T f}.
 
-HB.mixin Record WFDirac_isSqr {L : finType} {H : L -> chsType} (S : {set L})
-  f of @WFDirac L H S S f := { is_sqrdirac : '[f S S] = f}.
+HB.mixin Record WFDirac_isSqr {R : realType} {L : finType} {H : L -> @chsType R} (S : {set L})
+  f of @WFDirac R L H S S f := { is_sqrdirac : '[f S S] = f}.
 
 #[short(type="sqrDirac")]
-HB.structure Definition SqrDirac {L : finType} {H : L -> chsType} (S : {set L}) :=
-  { f of @WFDirac L H S S f & WFDirac_isSqr L H S f}.
+HB.structure Definition SqrDirac {R : realType} {L : finType} {H : L -> @chsType R} (S : {set L}) :=
+  { f of @WFDirac R L H S S f & WFDirac_isSqr R L H S f}.
 
-HB.mixin Record WFDirac_isKet {L : finType} {H : L -> chsType} (S : {set L})
-  f of @WFDirac L H set0 S f := { is_ketdirac : '[f set0 S] = f}.
+HB.mixin Record WFDirac_isKet {R : realType} {L : finType} {H : L -> @chsType R} (S : {set L})
+  f of @WFDirac R L H set0 S f := { is_ketdirac : '[f set0 S] = f}.
 
 #[short(type="ketDirac")]
-HB.structure Definition KetDirac {L : finType} {H : L -> chsType} (S : {set L}) :=
-  { f of @WFDirac L H set0 S f & WFDirac_isKet L H S f}.
+HB.structure Definition KetDirac {R : realType} {L : finType} {H : L -> @chsType R} (S : {set L}) :=
+  { f of @WFDirac R L H set0 S f & WFDirac_isKet R L H S f}.
 
-HB.mixin Record WFDirac_isBra {L : finType} {H : L -> chsType} (S : {set L})
-  f of @WFDirac L H S set0 f := { is_bradirac : '[f S set0] = f}.
+HB.mixin Record WFDirac_isBra {R : realType} {L : finType} {H : L -> @chsType R} (S : {set L})
+  f of @WFDirac R L H S set0 f := { is_bradirac : '[f S set0] = f}.
 
 #[short(type="braDirac")]
-HB.structure Definition BraDirac {L : finType} {H : L -> chsType} (S : {set L}) :=
-  { f of @WFDirac L H set0 S f & WFDirac_isBra L H S f}.
+HB.structure Definition BraDirac {R : realType} {L : finType} {H : L -> @chsType R} (S : {set L}) :=
+  { f of @WFDirac R L H set0 S f & WFDirac_isBra R L H S f}.
 
-HB.factory Record isSqrDirac {L : finType} {H : L -> chsType} (S : {set L}) (f : 'D[H]) :=
+HB.factory Record isSqrDirac {R : realType} {L : finType} {H : L -> @chsType R} (S : {set L}) (f : 'D[H]) :=
   { is_sqrdirac : '[f S S] = f; }.
-HB.builders Context L H S f of isSqrDirac L H S f.
-  HB.instance Definition _ := isWFDirac.Build L H S S f is_sqrdirac.
-  HB.instance Definition _ := WFDirac_isSqr.Build L H S f is_sqrdirac.
+HB.builders Context R L H S f of isSqrDirac R L H S f.
+  HB.instance Definition _ := isWFDirac.Build R L H S S f is_sqrdirac.
+  HB.instance Definition _ := WFDirac_isSqr.Build R L H S f is_sqrdirac.
 HB.end.
 
-HB.factory Record isKetDirac {L : finType} {H : L -> chsType} (S : {set L}) (f : 'D[H]) :=
+HB.factory Record isKetDirac {R : realType} {L : finType} {H : L -> @chsType R} (S : {set L}) (f : 'D[H]) :=
   { is_ketdirac : '[f set0 S] = f; }.
-HB.builders Context L H S f of isKetDirac L H S f.
-  HB.instance Definition _ := isWFDirac.Build L H set0 S f is_ketdirac.
-  HB.instance Definition _ := WFDirac_isKet.Build L H S f is_ketdirac.
+HB.builders Context R L H S f of isKetDirac R L H S f.
+  HB.instance Definition _ := isWFDirac.Build R L H set0 S f is_ketdirac.
+  HB.instance Definition _ := WFDirac_isKet.Build R L H S f is_ketdirac.
 HB.end.
 
-HB.factory Record isBraDirac {L : finType} {H : L -> chsType} (S : {set L}) (f : 'D[H]) :=
+HB.factory Record isBraDirac {R : realType} {L : finType} {H : L -> @chsType R} (S : {set L}) (f : 'D[H]) :=
   { is_bradirac : '[f S set0] = f; }.
-HB.builders Context L H S f of isBraDirac L H S f.
-  HB.instance Definition _ := isWFDirac.Build L H S set0 f is_bradirac.
-  HB.instance Definition _ := WFDirac_isBra.Build L H S f is_bradirac.
+HB.builders Context R L H S f of isBraDirac R L H S f.
+  HB.instance Definition _ := isWFDirac.Build R L H S set0 f is_bradirac.
+  HB.instance Definition _ := WFDirac_isBra.Build R L H S f is_bradirac.
 HB.end.
 
-Definition WFDirac_Build {L : finType} {H : L -> chsType} (S T : {set L})
+Definition WFDirac_Build {R : realType} {L : finType} {H : L -> @chsType R} (S T : {set L})
   (f : 'D[H]) (Hf : '[f S T] = f) :=
-  WFDirac.Pack (WFDirac.Class (isWFDirac.Axioms_ H S T f Hf)).
-Definition SqrDirac_Build {L : finType} {H : L -> chsType} (S : {set L})
+  WFDirac.Pack (WFDirac.Class (@isWFDirac.Axioms_ R L H S T f Hf)).
+Definition SqrDirac_Build {R : realType} {L : finType} {H : L -> @chsType R} (S : {set L})
   (f : 'D[H]) (Hf : '[f S S] = f) :=
-  SqrDirac.Pack (SqrDirac.Class (WFDirac_isSqr.Axioms_ S f
-  (isWFDirac.Axioms_ H S S f Hf) Hf)).
-Definition KetDirac_Build {L : finType} {H : L -> chsType} (S : {set L})
+  SqrDirac.Pack (SqrDirac.Class (@WFDirac_isSqr.Axioms_ R L H S f
+  (@isWFDirac.Axioms_ R L H S S f Hf) Hf)).
+Definition KetDirac_Build {R : realType} {L : finType} {H : L -> @chsType R} (S : {set L})
   (f : 'D[H]) (Hf : '[f set0 S] = f) :=
-  KetDirac.Pack (KetDirac.Class (WFDirac_isKet.Axioms_ S f
-  (isWFDirac.Axioms_ H set0 S f Hf) Hf)).
-Definition BraDirac_Build {L : finType} {H : L -> chsType} (S : {set L})
+  KetDirac.Pack (KetDirac.Class (@WFDirac_isKet.Axioms_ R L H S f
+  (@isWFDirac.Axioms_ R L H set0 S f Hf) Hf)).
+Definition BraDirac_Build {R : realType} {L : finType} {H : L -> @chsType R} (S : {set L})
   (f : 'D[H]) (Hf : '[f S set0] = f) :=
-  BraDirac.Pack (BraDirac.Class (WFDirac_isBra.Axioms_ S f
-  (isWFDirac.Axioms_ H S set0 f Hf) Hf)).
-Arguments WFDirac_Build {L H} [S T] f.
-Arguments SqrDirac_Build {L H} [S] f.
-Arguments KetDirac_Build {L H} [S] f.
-Arguments BraDirac_Build {L H} [S] f.
+  BraDirac.Pack (BraDirac.Class (@WFDirac_isBra.Axioms_ R L H S f
+  (@isWFDirac.Axioms_ R L H S set0 f Hf) Hf)).
+Arguments WFDirac_Build {R L H} [S T] f.
+Arguments SqrDirac_Build {R L H} [S] f.
+Arguments KetDirac_Build {R L H} [S] f.
+Arguments BraDirac_Build {R L H} [S] f.
 
 Notation wfdirac_axiom S T f := ('[f%D S T] = f).
 Notation sqrdirac_axiom S f := (wfdirac_axiom S S f).
 Notation ketdirac_axiom S f := (wfdirac_axiom set0 S f).
 Notation bradirac_axiom S f := (wfdirac_axiom S set0 f).
 
-Notation "''D[' H ]_ ( S , T )" := (@wfDirac _ H S T) (only parsing) : dirac_scope.
-Notation "''D_' ( S , T )" := (@wfDirac _ _ S T) : dirac_scope.
-Notation "''D[' H ]_ ( S )" := (@sqrDirac _ H S) (only parsing) : dirac_scope.
-Notation "''D[' H ]_ S" := (@sqrDirac _ H S) (only parsing) : dirac_scope.
-Notation "''D_' ( S )" := (@sqrDirac _ _ S) (only parsing) : dirac_scope.
-Notation "''D_' S" := (@sqrDirac _ _ S) : dirac_scope.
-Notation "''Ket[' H ]_ ( S )" := (@ketDirac _ H S) (only parsing) : dirac_scope.
-Notation "''Ket[' H ]_ S" := (@ketDirac _ H S) (only parsing) : dirac_scope.
-Notation "''Ket_' ( S )" := (@ketDirac _ _ S) (only parsing) : dirac_scope.
-Notation "''Ket_' S" := (@ketDirac _ _ S) : dirac_scope.
-Notation "''Bra[' H ]_ ( S )" := (@braDirac _ H S) (only parsing) : dirac_scope.
-Notation "''Bra[' H ]_ S" := (@braDirac _ H S) (only parsing) : dirac_scope.
-Notation "''Bra_' ( S )" := (@braDirac _ _ S) (only parsing) : dirac_scope.
-Notation "''Bra_' S" := (@braDirac _ _ S) : dirac_scope.
+Notation "''D[' H ]_ ( S , T )" := (@wfDirac _ _ H S T) (only parsing) : dirac_scope.
+Notation "''D_' ( S , T )" := (@wfDirac _ _ _ S T) : dirac_scope.
+Notation "''D[' H ]_ ( S )" := (@sqrDirac _ _ H S) (only parsing) : dirac_scope.
+Notation "''D[' H ]_ S" := (@sqrDirac _ _ H S) (only parsing) : dirac_scope.
+Notation "''D_' ( S )" := (@sqrDirac _ _ _ S) (only parsing) : dirac_scope.
+Notation "''D_' S" := (@sqrDirac _ _ _ S) : dirac_scope.
+Notation "''Ket[' H ]_ ( S )" := (@ketDirac _ _ H S) (only parsing) : dirac_scope.
+Notation "''Ket[' H ]_ S" := (@ketDirac _ _ H S) (only parsing) : dirac_scope.
+Notation "''Ket_' ( S )" := (@ketDirac _ _ _ S) (only parsing) : dirac_scope.
+Notation "''Ket_' S" := (@ketDirac _ _ _ S) : dirac_scope.
+Notation "''Bra[' H ]_ ( S )" := (@braDirac _ _ H S) (only parsing) : dirac_scope.
+Notation "''Bra[' H ]_ S" := (@braDirac _ _ H S) (only parsing) : dirac_scope.
+Notation "''Bra_' ( S )" := (@braDirac _ _ _ S) (only parsing) : dirac_scope.
+Notation "''Bra_' S" := (@braDirac _ _ _ S) : dirac_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use WFDirac.clone instead.")]
-Notation "[ 'wfDirac' 'of' e | S , T ]" := (WFDirac.clone _ _ S T e _)
+Notation "[ 'wfDirac' 'of' e | S , T ]" := (WFDirac.clone _ _ _ S T e _)
   (at level 0, format "[ 'wfDirac'  'of'  e  |  S  ,  T ]") : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use WFDirac.clone instead.")]
-Notation "[ 'wfDirac' 'of' e ]" := (WFDirac.clone _ _ _ _ e _)
+Notation "[ 'wfDirac' 'of' e ]" := (WFDirac.clone _ _ _ _ _ e _)
   (at level 0, format "[ 'wfDirac'  'of'  e ]") : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use SqrDirac.clone instead.")]
-Notation "[ 'sqrDirac' 'of' e | S ]" := (SqrDirac.clone _ _ S e _)
+Notation "[ 'sqrDirac' 'of' e | S ]" := (SqrDirac.clone _ _ _ S e _)
   (at level 0, format "[ 'sqrDirac'  'of'  e  |  S ]") : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use SqrDirac.clone instead.")]
-Notation "[ 'sqrDirac' 'of' e ]" := (SqrDirac.clone _ _ _ e _)
+Notation "[ 'sqrDirac' 'of' e ]" := (SqrDirac.clone _ _ _ _ e _)
   (at level 0, format "[ 'sqrDirac'  'of'  e ]") : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use KetDirac.clone instead.")]
-Notation "[ 'ketDirac' 'of' e | S ]" := (KetDirac.clone _ _ S e _)
+Notation "[ 'ketDirac' 'of' e | S ]" := (KetDirac.clone _ _ _ S e _)
   (at level 0, format "[ 'ketDirac'  'of'  e  |  S ]") : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use KetDirac.clone instead.")]
-Notation "[ 'ketDirac' 'of' e ]" := (KetDirac.clone _ _ _ e _)
+Notation "[ 'ketDirac' 'of' e ]" := (KetDirac.clone _ _ _ _ e _)
   (at level 0, format "[ 'ketDirac'  'of'  e ]") : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use BraDirac.clone instead.")]
-Notation "[ 'braDirac' 'of' e | S ]" := (BraDirac.clone _ _ S e _)
+Notation "[ 'braDirac' 'of' e | S ]" := (BraDirac.clone _ _ _ S e _)
   (at level 0, format "[ 'braDirac'  'of'  e  | S ]") : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use BraDirac.clone instead.")]
-Notation "[ 'braDirac' 'of' e ]" := (BraDirac.clone _ _ S e _)
+Notation "[ 'braDirac' 'of' e ]" := (BraDirac.clone _ _ _ S e _)
   (at level 0, format "[ 'braDirac'  'of'  e ]") : form_scope.
 
 Section WFDiracTheory.
-Context (L : finType) (H : L -> chsType).
+Context {R : realType} (L : finType) (H : L -> @chsType R).
+Local Notation C := (@hermitian.C R).
 
 Lemma wfdiracE S T (e : 'D[H]_(S,T)) : e = '[ e S T] :> 'D.
 Proof. by rewrite is_wfdirac. Qed.
@@ -1693,7 +1702,8 @@ Proof. by rewrite dformE adjdK. Qed.
 End WFDiracTheory.
 
 Section ExtraDiracTheory.
-Context {L : finType} (H : L -> chsType).
+Context {R : realType} {L : finType} (H : L -> @chsType R).
+Local Notation C := (@hermitian.C R).
 Implicit Type (S T W : {set L}).
 
 Lemma tendfC S T S' T' (f: 'F[H]_(S,T)) (g: 'F_(S',T')) :
@@ -1855,24 +1865,24 @@ Proof. by rewrite dotd_mul/= outerM. Qed.
 Definition innerE := (innerM, innerG).
 Definition outerE := (outerM, outerG).
 
-Definition ketd_conj := (@conjd_ket _ H).
-Definition ketd_adj  := (@adjd_ket _ H).
-Definition ketd_tr   := (@trd_ket _ H).
+Definition ketd_conj := (@conjd_ket _ _ H).
+Definition ketd_adj  := (@adjd_ket _ _ H).
+Definition ketd_tr   := (@trd_ket _ _ H).
 Lemma ketdT S T (u: 'H[H]_S) (v: 'H_T) : '|u> \⊗ '|v> = '|u ⊗v v>.
 Proof.
 rewrite 2!ketd_lin tend_correct /v2f tenf_outp tenv_idx0r -outerM -[RHS]muldI/=.
 by f_equal; rewrite brad_cast !numd_simp /sf2s /sv2s lfunE/= dv_dot eqxx conjC1.
 Qed.
 
-Definition brad_conj := (@conjd_bra _ H).
-Definition brad_adj  := (@adjd_bra _ H).
-Definition brad_tr   := (@trd_bra _ H).
+Definition brad_conj := (@conjd_bra _ _ H).
+Definition brad_adj  := (@adjd_bra _ _ H).
+Definition brad_tr   := (@trd_bra _ _ H).
 Lemma bradT S T (u: 'H[H]_S) (v: 'H_T) : '<u| \⊗ '<v| = '<u ⊗v v|.
 Proof. by rewrite -!ketd_adj -adjdT ketdT. Qed.
 
-Definition lind_conj := (@conjd_lin _ H).
-Definition lind_adj  := (@adjd_lin _ H).
-Definition lind_tr   := (@trd_lin _ H).
+Definition lind_conj := (@conjd_lin _ _ H).
+Definition lind_adj  := (@adjd_lin _ _ H).
+Definition lind_tr   := (@trd_lin _ _ H).
 Lemma lindM S T W (f : 'F[H]_(S,T)) (g : 'F_(W,S)) : '[f] \o '[g] = '[f \o g].
 Proof. by rewrite muld_correct. Qed.
 
@@ -2134,7 +2144,8 @@ End ExtraDiracTheory.
 (* here we give the relation between tenvm tenfm and \ten_s *)
 (* they are indeed the same, without any conditions *)
 Section BigTenLfun.
-Context (L : finType) (H : L -> chsType).
+Context {R : realType} (L : finType) (H : L -> @chsType R).
+Local Notation C := (@hermitian.C R).
 
 Lemma ketd_Hnd_eq (x y : Hnd H) : x = y -> '| of_Hnd x > = '| of_Hnd y >.
 Proof. by move=>P; move: (eq_HndP P)=><-; rewrite ketd_cast. Qed.
@@ -2181,7 +2192,7 @@ Reserved Notation "''NSD' ( S )"    (at level 8, format "''NSD' ( S )").
 Reserved Notation "[ 'NSD' 'of' f 'as' g ]" (at level 0, format "[ 'NSD'  'of'  f  'as'  g ]").
 Reserved Notation "[ 'NSD' 'of' f ]"  (at level 0, format "[ 'NSD'  'of'  f ]").
 
-HB.mixin Record isONBDirac (L : finType) (H : L -> chsType) (F : finType)
+HB.mixin Record isONBDirac (R : realType) (L : finType) (H : L -> @chsType R) (F : finType)
   (S : {set L}) (f : F -> 'D[H]) := {
   is_ketdirac_base : forall i, ketdirac_axiom S (f i);
   onbd_dot : forall i j, (f i)^A \o (f j) = (i == j)%:R%:D;
@@ -2189,43 +2200,44 @@ HB.mixin Record isONBDirac (L : finType) (H : L -> chsType) (F : finType)
 }.
 
 #[short(type="onbdType")]
-HB.structure Definition ONBDirac (L : finType) (H : L -> chsType) (F : finType) (S : {set L}) :=
-  { f of @isONBDirac L H F S f}.
+HB.structure Definition ONBDirac (R : realType) (L : finType) (H : L -> @chsType R) (F : finType) (S : {set L}) :=
+  { f of @isONBDirac R L H F S f}.
 
-Notation "''ONBD[' H ]_ ( F ; S )" := (@onbdType _ H F S) : type_scope.
+Notation "''ONBD[' H ]_ ( F ; S )" := (@onbdType _ _ H F S) : type_scope.
 Notation "''ONBD_' ( F ; S )" := ('ONBD[_]_(F;S)) : type_scope.
 Notation "''ONBD'" := ('ONBD_(_;_)) (only parsing) : type_scope.
 Module ONBDiracExports.
 #[deprecated(since="mathcomp 2.0.0", note="Use ONBDirac.clone instead.")]
-Notation "[ 'ONBD' 'of' f 'as' g ]" := (@ONBDirac.clone _ _ _ _ f g) : form_scope.
+Notation "[ 'ONBD' 'of' f 'as' g ]" := (@ONBDirac.clone _ _ _ _ _ f g) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use ONBDirac.clone instead.")]
-Notation "[ 'ONBD' 'of' f ]" := (@ONBDirac.clone _ _ _ _ f _) : form_scope.
+Notation "[ 'ONBD' 'of' f ]" := (@ONBDirac.clone _ _ _ _ _ f _) : form_scope.
 End ONBDiracExports.
 HB.export ONBDiracExports.
 
-HB.mixin Record isNSDirac (L : finType) (H : L -> chsType) (S : {set L}) (v : 'D[H]) := {
+HB.mixin Record isNSDirac (R : realType) (L : finType) (H : L -> @chsType R) (S : {set L}) (v : 'D[H]) := {
   is_ketdirac_ns : ketdirac_axiom S v;
   nsd_dot : v^A \o v = 1%:D;
 }.
 
 #[short(type="nsdType")]
-HB.structure Definition NSDirac (L : finType) (H : L -> chsType) (S : {set L}) :=
-  { v of @isNSDirac L H S v }.
+HB.structure Definition NSDirac (R : realType) (L : finType) (H : L -> @chsType R) (S : {set L}) :=
+  { v of @isNSDirac R L H S v }.
 
-Notation "''NSD[' H ]_ S" := (@nsdType _ H S) (only parsing) : type_scope.
+Notation "''NSD[' H ]_ S" := (@nsdType _ _ H S) (only parsing) : type_scope.
 Notation "''NSD[' H ]_ ( S )" := ('NSD[H]_S)    (only parsing) : type_scope.
 Notation "''NSD_' S"  := ('NSD[_]_S) : type_scope.
 Notation "''NSD_' ( S )" := ('NSD_S) (only parsing) : type_scope.
 Module NSDiracExports.
 #[deprecated(since="mathcomp 2.0.0", note="Use NSDirac.clone instead.")]
-Notation "[ 'NSD' 'of' f 'as' g ]" := (@NSDirac.clone _ _ _ f g) : form_scope.
+Notation "[ 'NSD' 'of' f 'as' g ]" := (@NSDirac.clone _ _ _ _ f g) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use NSDirac.clone instead.")]
-Notation "[ 'NSD' 'of' f ]" := (@NSDirac.clone _ _ _ f _) : form_scope.
+Notation "[ 'NSD' 'of' f ]" := (@NSDirac.clone _ _ _ _ f _) : form_scope.
 End NSDiracExports.
 HB.export NSDiracExports.
 
 Section QEONBTheory.
-Context {L : finType} (H : L -> chsType).
+Context {R : realType} {L : finType} (H : L -> @chsType R).
+Local Notation C := (@hermitian.C R).
 Variable (F : finType) (S : {set L}) (f : 'ONBD[H]_(F;S)).
 
 Lemma onbdirac_wf i : ketdirac_axiom S (f i).
@@ -2245,15 +2257,15 @@ Proof. by rewrite /onb2d ketd_adj innerM onb_dot. Qed.
 Lemma onb2d_ket G onb i : ketdirac_axiom S (@onb2d G onb i).
 Proof. apply: is_ketdirac. Qed.
 HB.instance Definition _ (G : finType) (onb : 'ONB[H]_(G;S)) :=
-  isONBDirac.Build L H G S (@onb2d G onb) (@onb2d_ket G onb)
-    (@onb2d_dot G onb) (@onb_card _ _ onb).
+  isONBDirac.Build R L H G S (@onb2d G onb) (@onb2d_ket G onb)
+    (@onb2d_dot G onb) (@onb_card R 'H[H]_S G onb).
 (* Canonical onb2d_qonbasis G onb := ONBDket (@onb2d G onb) (@onb2d_dot G onb) (onb_card onb). *)
 
 Definition d2onb i := d2v S (f i).
 Lemma d2onb_dot i j : [< d2onb i ; d2onb j >] = (i == j)%:R.
-Proof. by apply/(@numd_inj _ H); rewrite /d2onb -innerM -ketd_adj !d2vK onb_innerM. Qed.
+Proof. by apply/(@numd_inj _ _ H); rewrite /d2onb -innerM -ketd_adj !d2vK onb_innerM. Qed.
 HB.instance Definition _ :=
-  isONB.Build _ _ d2onb d2onb_dot (@onbd_card _ _ _ _ f).
+  isONB.Build R 'H[H]_S F d2onb d2onb_dot (@onbd_card R L H F S f).
 
 Lemma sumonb_outerM : \sum_i ((f i) \o (f i)^A) = \1_S.
 Proof.
@@ -2302,17 +2314,18 @@ Proof. by rewrite dotd_mul/= nsd_innerM. Qed.
 Lemma onbd_ns i : (f i)^A \o (f i) = 1%:D.
 Proof. by rewrite onb_innerM eqxx. Qed.
 #[non_forgetful_inheritance]
-HB.instance Definition _ i := isNSDirac.Build L H S (f i) is_ketdirac (@onbd_ns i).
+HB.instance Definition _ i := isNSDirac.Build R L H S (f i) is_ketdirac (@onbd_ns i).
 
 Lemma ketns_innerM (v : 'NS[H]_S) : '|v>^A \o '|v> = 1%:D.
 Proof. by rewrite ketd_adj innerM ns_dot. Qed.
-HB.instance Definition _ (v : 'NS[H]_S) := isNSDirac.Build L H S
+HB.instance Definition _ (v : 'NS[H]_S) := isNSDirac.Build R L H S
   '|v> is_ketdirac (ketns_innerM v).
 
 End QEONBTheory.
 
 Section DiracVOrder.
-Context {L : finType} (H : L -> chsType).
+Context {R : realType} {L : finType} (H : L -> @chsType R).
+Local Notation C := (@hermitian.C R).
 Implicit Type (f g h: 'D[H]) (S T W : {set L}).
 (* all non-diag are 0, all diag psd *)
 
@@ -2411,13 +2424,14 @@ HB.instance Definition _ := VOrder_isCan.Build C 'D[H] pscaled_lge0.
 End DiracVOrder.
 
 Section DiracVOrderTheory.
-Context {L : finType} (H : L -> chsType).
+Context {R : realType} {L : finType} (H : L -> @chsType R).
+Local Notation C := (@hermitian.C R).
 Implicit Type (S T : {set L}).
 Local Notation "'0" := (0 : 'D[H]).
 Local Notation "a '%:E'" := (a : 'D) (at level 2, right associativity, format "a %:E").
 
 Lemma lin_eq0 S T (f : 'F[H]_(S,T)) : ('[ f ] == 0) = (f == 0).
-Proof. by rewrite -(inj_eq (@lind_inj _ _ _ _)) linear0. Qed.
+Proof. by rewrite -(inj_eq (@lind_inj R L H S T)) linear0. Qed.
 
 Lemma wf_ge0_eq0 S T (e : 'D[H]_(S,T)) :
   S != T -> '0 ⊑ e -> e%:E = 0.
@@ -2467,7 +2481,7 @@ Lemma tend_sqr_id S T (f : 'D[H]_S) (g : 'D_T) :
 Proof. by rewrite tend_id. Qed.
 
 Lemma sqr_eqf S (e1 e2 : 'D[H]_S) : (e1%:E == e2) = (e1 S S == e2 S S).
-Proof. by rewrite {1}sqrdiracE {1}(sqrdiracE e2) (inj_eq (@lind_inj _ _ _ _)). Qed.
+Proof. by rewrite {1}sqrdiracE {1}(sqrdiracE e2) (inj_eq (@lind_inj R L H S S)). Qed.
 
 Lemma sqr_eqf0 S (e : 'D[H]_S) : (e%:E == 0) = (e S S == 0).
 Proof. by rewrite sqr_eqf/= diracE. Qed.
@@ -2716,45 +2730,45 @@ move=>dis/andP[]P1 P2/andP[]P3 P4; apply/andP; split.
 by apply: tend_ge0. by rewrite -tendII; apply: le_ptend2=>/=.
 Qed.
 
-Lemma tends_ge0_seq (I : eqType) (r : seq I) (R : pred I) (S : I -> {set L})
+Lemma tends_ge0_seq (I : eqType) (r : seq I) (P0 : pred I) (S : I -> {set L})
   (P : forall i, 'D_(S i)) :
-  (forall i j, R i -> R j -> i != j -> [disjoint (S i) & (S j)]) -> uniq r ->
-  (forall i, R i -> (0 : 'D[H]) ⊑ P i) ->
-  '0 ⊑ \ten_(i <- r | R i) P i.
+  (forall i j, P0 i -> P0 j -> i != j -> [disjoint (S i) & (S j)]) -> uniq r ->
+  (forall i, P0 i -> (0 : 'D[H]) ⊑ P i) ->
+  '0 ⊑ \ten_(i <- r | P0 i) P i.
 Proof.
 move=>IH1+IH2; elim: r=>[|a r IH]; first by rewrite big_nil bigd led01.
-rewrite cons_uniq=>/andP[na ur]. rewrite big_cons; case E: (R a).
+rewrite cons_uniq=>/andP[na ur]. rewrite big_cons; case E: (P0 a).
 rewrite bigdE sqrdiracE [X in _\⊗X]sqrdiracE/= tend_correct lin_gef0.
 apply: bregv_ge0. apply/bigcup_disjoint_seqP=>i/andP[Pi Ri].
 apply: IH1=>//. by apply: (notin_in_neq na).
 1,2: by rewrite -lin_gef0 -sqrdiracE ?IH2//= IH. by apply IH.
 Qed.
 
-Lemma tends_ge0 (I : finType) (R : pred I) (S : I -> {set L})
+Lemma tends_ge0 (I : finType) (P0 : pred I) (S : I -> {set L})
   (P : forall i, 'D_(S i)) :
-  (forall i j, R i -> R j -> i != j -> [disjoint (S i) & (S j)]) ->
-  (forall i, R i -> (0 : 'D[H]) ⊑ P i) ->
-  '0 ⊑ \ten_(i | R i) P i.
+  (forall i j, P0 i -> P0 j -> i != j -> [disjoint (S i) & (S j)]) ->
+  (forall i, P0 i -> (0 : 'D[H]) ⊑ P i) ->
+  '0 ⊑ \ten_(i | P0 i) P i.
 Proof. by move=>IH; apply: tends_ge0_seq=>//; apply: index_enum_uniq. Qed.
 
-Lemma tends_ge0_le1_seq (I : eqType) (r : seq I) (R : pred I) (S : I -> {set L})
+Lemma tends_ge0_le1_seq (I : eqType) (r : seq I) (P0 : pred I) (S : I -> {set L})
   (P : forall i, 'D_(S i)) :
-  (forall i j, R i -> R j -> i != j -> [disjoint (S i) & (S j)]) -> uniq r ->
-  (forall i, R i -> (0 : 'D[H]) ⊑ (P i : 'D) ⊑ \1_(S i)) ->
-  '0 ⊑ \ten_(i <- r | R i) P i ⊑ \1_(\bigcup_(i <- r | R i) S i).
+  (forall i j, P0 i -> P0 j -> i != j -> [disjoint (S i) & (S j)]) -> uniq r ->
+  (forall i, P0 i -> (0 : 'D[H]) ⊑ (P i : 'D) ⊑ \1_(S i)) ->
+  '0 ⊑ \ten_(i <- r | P0 i) P i ⊑ \1_(\bigcup_(i <- r | P0 i) S i).
 Proof.
 move=>IH1+IH2; elim: r=>[|a r IH]; first by rewrite !big_nil bigd led01 numd1I/=.
-rewrite cons_uniq=>/andP[na ur]. rewrite !big_cons; case E: (R a).
+rewrite cons_uniq=>/andP[na ur]. rewrite !big_cons; case E: (P0 a).
 rewrite bigdE. apply: tend_ge0_le1.
 apply/bigcup_disjoint_seqP=>i/andP[Pi Ri]. apply: IH1=>//. by apply: (notin_in_neq na).
 by apply IH2. all: by apply : IH.
 Qed.
 
-Lemma tends_ge0_le1 (I : finType) (r : seq I) (R : pred I) (S : I -> {set L})
+Lemma tends_ge0_le1 (I : finType) (r : seq I) (P0 : pred I) (S : I -> {set L})
   (P : forall i, 'D_(S i)) :
-  (forall i j, R i -> R j -> i != j -> [disjoint (S i) & (S j)]) ->
-  (forall i, R i -> (0 : 'D[H]) ⊑ (P i : 'D) ⊑ \1_(S i)) ->
-  '0 ⊑ \ten_(i | R i) P i ⊑ \1_(\bigcup_(i | R i) S i).
+  (forall i j, P0 i -> P0 j -> i != j -> [disjoint (S i) & (S j)]) ->
+  (forall i, P0 i -> (0 : 'D[H]) ⊑ (P i : 'D) ⊑ \1_(S i)) ->
+  '0 ⊑ \ten_(i | P0 i) P i ⊑ \1_(\bigcup_(i | P0 i) S i).
 Proof. move=>IH; apply: tends_ge0_le1_seq=>//; apply: index_enum_uniq. Qed.
 
 

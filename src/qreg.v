@@ -12,7 +12,6 @@ From Stdlib.Strings Require Import String.
 Require Import Relation_Definitions Setoid.
 
 Import Order.LTheory GRing.Theory Num.Theory GenTree.
-Local Notation C := hermitian.C.
 
 (****************************************************************************)
 (*                    Formalization of Quantum Registers                    *)
@@ -396,13 +395,16 @@ Fixpoint eval_qtype (t : qType) : ihbFinType :=
   | QDFFun n T => {dffun forall i, eval_qtype (T i)}
   end.
 
+Section QRegReal.
+Variable R : realType.
+
 Fixpoint eval_ctype (t : cType) : ihbType :=
   match t with
   | QType t => (eval_qtype t)
   | CNat => nat
   | CInt => int
-  | CReal => hermitian.R
-  | CCplx => hermitian.C
+  | CReal => R
+  | CCplx => @hermitian.C R
   | COption T => option (eval_ctype T)
   | CPair T1 T2 => ((eval_ctype T1) * (eval_ctype T2))%type
   | CSum T1 T2 => ((eval_ctype T1) + (eval_ctype T2))%type
@@ -598,6 +600,44 @@ Notation "e1 '-n' e2"  := (app2_ (cst_ subn) e1 e2)
   (at level 50, e2 at next level, left associativity) : xsyn_scope.
 Notation "e1 '*n' e2"  := (app2_ (cst_ muln) e1 e2)
   (at level 40, e2 at next level, left associativity) : xsyn_scope.
+
+End QRegReal.
+
+Arguments eval_ctype {R} t.
+Arguments cast_ctype {R t1 t2} E v.
+Arguments expr_ {R} T.
+Arguments var_ {R Tc} _.
+Arguments cst_ {R Te} _.
+Arguments app_ {R Te Ue} _ _.
+Arguments lam_ {R Te Ue} _.
+Arguments cmem {R}.
+Arguments CMem {R} _.
+Arguments cmget {R} _ _ _.
+Arguments cmset {R} _ {T} _ _.
+Arguments esem {R T} _ _.
+
+Notation "''Ht' T" := (@ihb_chsType _ (eval_qtype T%QT))
+  (at level 8, T at level 2, format "''Ht'  T").
+Notation "''Hom{' T1 , T2 }" := ('Hom('Ht T1%QT, 'Ht T2%QT))
+  (at level 8, format "''Hom{' T1 ,  T2 }").
+Notation "''End{' T }" := ('End('Ht T%QT))
+  (at level 8, format "''End{' T }").
+Notation evalQT := eval_qtype.
+Notation evalCT := (@eval_ctype _).
+Notation bexpr   := (expr_ bool).
+Notation dexpr T := (expr_ (Distr T)).
+Notation uexpr T := (expr_ 'FU('Hs T)).
+Notation sexpr T := (expr_ 'NS('Hs T)).
+Notation mexpr F T := (expr_ 'QM(F;'Hs T)).
+Notation "x %:US" := (cst_ (x : 'FU)) (at level 2, format "x %:US").
+Notation "x %:DS" := (cst_ (x : 'FD)) (at level 2, format "x %:DS").
+Notation "x %:MS" := (cst_ (x : 'QM)) (at level 2, format "x %:MS").
+Notation app2_ f x1 x2 := (app_ (app_ f x1%X) x2%X).
+Notation "c %:CS"    := (@cst_ _ c) (at level 2, format "c %:CS").
+Notation "c '%:F1' e"    := (app_ (@cst_ _ c) (e)%X)
+  (at level 2, format "c %:F1  e").
+Notation "c '%:F2' e1 e2"    := (app2_ (@cst_ _ c) e1 e2)
+  (at level 2, format "c %:F2  e1  e2").
 
 Bind Scope qtype_scope with qType.
 Bind Scope ctype_scope with cType.
@@ -1132,7 +1172,7 @@ inversion Px. inversion Py. move=>Pxy.
 by rewrite Pxy (H3 ix iy Pix Piy jx jy Pjx Pjy Pxy).
 Qed.
 
-Lemma allpairs_uniq_dep2 [S T R: eqType] [f : T -> R] [s : seq S] 
+Lemma allpairs_uniq_dep2 [S T E : eqType] [f : T -> E] [s : seq S] 
   [t : S -> seq T] :
     uniq s ->
     {in s, forall x : S, uniq (t x)} ->
@@ -1711,13 +1751,16 @@ move=>i _; apply: Pi.
 by move=>i j _ _; move: (Pij i)=>/forallP/(_ j)/implyP.
 Qed.
 
+Section QRegExprReal.
+Variable R : realType.
+
 Inductive qreg_expr : qType -> Type :=
   | qreg_cst {T} (x : qreg T) : qreg_expr T
   | qreg_fst_expr {T1 T2} (x : qreg_expr (T1 * T2)) :
       qreg_expr T1
   | qreg_snd_expr {T1 T2} (x : qreg_expr (T1 * T2)) :
       qreg_expr T2
-  | qreg_tuplei_expr {n T} (i : expr_ 'I_n) 
+  | qreg_tuplei_expr {n T} (i : @expr_ R 'I_n) 
       (x : qreg_expr T.[n]) : qreg_expr T
 (* to automatically determine the type, *)
 (* we only allow constant (meta variable) as indexes *)
@@ -1773,7 +1816,24 @@ Definition clone_wf_qreg_expr {T} e :=
   fun (opL : wf_qreg_expr T) & (@phant_id (qreg_expr T) (qreg_expr T) opL e)
     => fun ewf (opL' := @WF_QReg_Expr T e ewf) & phant_id opL' opL => opL'.
 
+End QRegExprReal.
+
 End qreg.
+
+Arguments qreg_expr {R} T.
+Arguments qreg_cst {R T} _.
+Arguments qreg_fst_expr {R T1 T2} _.
+Arguments qreg_snd_expr {R T1 T2} _.
+Arguments qreg_tuplei_expr {R n T} _ _.
+Arguments qreg_ffuni_expr {R n T} _ _.
+Arguments qreg_pair_expr {R T1 T2} _ _.
+Arguments qreg_tuple_expr {R n T} _.
+Arguments qreg_ffun_expr {R n T} _.
+Arguments qsem_of {R T} _ _.
+Arguments wf_qreg_expr {R} T.
+Arguments qreg_expr_base {R T} _.
+Arguments WF_QReg_Expr {R T} _ _.
+Arguments clone_wf_qreg_expr {R T} _ _ _ _ _.
 
 Add Parametric Relation T : (qreg T) (@eq_qreg T)
   reflexivity proved by (@eq_qreg_refl T)
@@ -1992,6 +2052,7 @@ Notation "( 'tuple:' x )" := (qreg_tuple_expr x)
   (in custom reg_expr at level 0, x constr, only parsing).
 Notation "x : T" := (x : qreg_expr (T)%QT)
   (in custom reg_expr at level 99, T constr, only parsing).
+
 Local Open Scope reg_scope.
 
 Lemma qtype_of_basic_index (i : basic_index) : 

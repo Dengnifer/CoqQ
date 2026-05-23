@@ -19,8 +19,17 @@
            elpi
            elpi_elpi)
  (flags -w -ambiguous-paths
+        -w -notation-incompatible-prefix
         -w -notation-overridden
+        -w -postfix-notation-not-level-1
+        -w -closed-notation-not-level-0
+        -w -HB.no-new-instance
+        -w -HB.non-forgetful-inheritance
+        -w -uniform-inheritance
+        -w -inconsistent-scopes
         -w -redundant-canonical-projection
         -w -projection-no-head-constant))
+
+(dirs :standard \ example)
 
 (include_subdirs qualified)

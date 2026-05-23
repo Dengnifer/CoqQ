@@ -53,8 +53,23 @@ Import numFieldNormedType.Exports.
 (*               SWAP : swap gate of  T * T                             *)
 (************************************************************************)
 
-Local Notation C := hermitian.C.
-Local Notation R := hermitian.R.
+Section QTypeReal.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
+Local Notation "''Hs' T" := (@ihb_chsType R T%type)
+  (at level 8, T at level 2, format "''Hs'  T").
+Local Notation "''Hom[' T1 , T2 ]" := ('Hom('Hs T1%type, 'Hs T2%type))
+  (at level 8, format "''Hom[' T1 ,  T2 ]").
+Local Notation "''End[' T ]" := ('End('Hs T%type))
+  (at level 8, format "''End[' T ]").
+Local Notation mx2tf := (@mx2tf R).
+Local Notation mv2tv := (@mv2tv R).
+Arguments t2tv {R T}.
+Local Notation "u '⊗t' v" := (@tentv R _ _ u v)
+  (at level 45, left associativity) : lfun_scope.
+Local Notation "f '⊗f' g" := (@tentf R _ _ _ _ f g)
+  (at level 45, left associativity) : lfun_scope.
 Local Open Scope ring_scope.
 Local Open Scope fset_scope.
 Local Open Scope lfun_scope.
@@ -64,8 +79,8 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 Unset SsrOldRewriteGoalsOrder.
 
-Global Hint Resolve leq_ord : core.
-Global Hint Extern 0 (is_true (uniq (index_enum _))) => solve [apply: index_enum_uniq] : core.
+Hint Resolve leq_ord : core.
+Hint Extern 0 (is_true (uniq (index_enum _))) => solve [apply: index_enum_uniq] : core.
 
 Local Open Scope ring_scope.
 
@@ -113,6 +128,10 @@ Notation "[ 'bmx' b11 , b12 ; b21 , b22 ]" :=
 Notation "[ 'bmv' b1 ; b2 ]" := (mv2tv (fun x=> 
   match x with | false => b1 | true => b2 end)).
 
+Ltac unfold_funfv := rewrite /funf_add /funf_opp /funf_scale /funf_comp
+  /funf_adj /funf_tr /funf_conj /funf_apply /funv_add /funv_opp /funv_scale
+  /funv_conj /funv_dot /funv_out /funf_scale1.
+
 Ltac rude_bmx := rewrite /t2tv ?tf2mxE; do ? [apply/ffunfb_eq | apply/ffunvb_eq | f_equal];
     unfold_funfv; (do 4? split); rewrite ?(big_bool)/=;
     do ? rewrite (simpb, simp01)/=.
@@ -149,19 +168,20 @@ HB.instance Definition _ := isUnitaryLf.Build ('Hs bool) PauliZ PauliZ_unitary.
 
 Definition pmbasis (b : bool) : 'Hs bool :=
   [bmv 1/sqrtC(2%:R) ; (-1)^b * 1/sqrtC(2%:R)].
-Notation "''0'" := (t2tv false) (at level 0).
-Notation "''1'" := (t2tv true) (at level 0).
+Notation "''0'" := (@t2tv R bool false) (at level 0).
+Notation "''1'" := (@t2tv R bool true) (at level 0).
+Notation "'''' t" := (@t2tv R _ t) (at level 2, format "'''' t").
 Notation "''+'" := (pmbasis false) (at level 0).
 Notation "''-'" := (pmbasis true) (at level 0).
 Notation "''±' b" := (pmbasis b) (at level 2, format "''±' b").
 
 Lemma pmbasis_onb b1 b2 : [<'± b1 ; '± b2>] = (b1 == b2)%:R.
 Proof. by rude_bmx; case: b1; case: b2; rewrite !simpb !divc_simp ?sign_simp// split2. Qed.
-HB.instance Definition _ := isONB.Build ('Hs bool) bool pmbasis pmbasis_onb (ihb_dim _).
+HB.instance Definition _ := isONB.Build R ('Hs bool) bool pmbasis pmbasis_onb (@ihb_dim R _).
 
 Lemma pmbasis_ns b : [<'± b ; '± b>] == 1%:R.
 Proof. by rewrite onb_dot eqxx. Qed.
-HB.instance Definition _ b := isNormalState.Build ('Hs bool) (pmbasis b) (eqP (@pmbasis_ns b)).
+HB.instance Definition _ b := isNormalState.Build R ('Hs bool) (pmbasis b) (eqP (@pmbasis_ns b)).
 
 Lemma dotp_cbpm (b1 b2 : bool) : [<''b1 ; '±b2 >] = (-1)^(b1 && b2) / sqrtC 2%:R.
 Proof.
@@ -269,7 +289,7 @@ by rude_bmx; rewrite !divc_simp -expipNC -expipD addNr expip0 mul1r
   -mulr2n -[X in X == _]mulr_natr mulVf ?pnatr_eq0.
 Qed.
 HB.instance Definition _ (r : R) :=
-  isNormalState.Build ('Hs bool) (phstate r) (eqP (@phstate_ns r)).
+  isNormalState.Build R ('Hs bool) (phstate r) (eqP (@phstate_ns r)).
 
 Lemma phstateE r : 'ph r = (sqrtC 2%:R)^-1 *: '0 + 
   ((sqrtC 2%:R)^-1 * expip (2%:R * r)) *: '1.
@@ -485,9 +505,9 @@ Notation "'''S'" := SGate.
 Notation "''Rx' r" := (RxGate r) (at level 2, format "''Rx' r").
 Notation "''Ry' r" := (RyGate r) (at level 2, format "''Ry' r").
 Notation "''Rz' r" := (RzGate r) (at level 2, format "''Rz' r").
-Notation "''0'" := (t2tv false) (at level 0).
-Notation "''1'" := (t2tv true) (at level 0).
-Notation "'''' t" := (t2tv t) (at level 2, format "'''' t").
+Notation "''0'" := (@t2tv R bool false) (at level 0).
+Notation "''1'" := (@t2tv R bool true) (at level 0).
+Notation "'''' t" := (@t2tv R _ t) (at level 2, format "'''' t").
 Notation "''+'" := (pmbasis false) (at level 0).
 Notation "''-'" := (pmbasis true) (at level 0).
 Notation "''±' b" := (pmbasis b) (at level 2, format "''±' b").
@@ -527,7 +547,7 @@ Definition ponb1_fun (u : H) := (fun i : 'I_1 => u).
 Lemma ponb1_ponb (u : 'NS(H)) i j : [< ponb1_fun u i ; ponb1_fun u j >] = (i == j)%:R.
 Proof. by rewrite /ponb1_fun ns_dot !ord1 eqxx. Qed.
 HB.instance Definition _ (u : 'NS(H)) :=
-  isPONB.Build H 'I_1 (ponb1_fun u) (@ponb1_ponb u).
+  isPONB.Build R H 'I_1 (ponb1_fun u) (@ponb1_ponb u).
 Definition VUnitary (u v : 'NS(H)) := PUnitary (ponb1_fun u) (ponb1_fun v).
 Lemma VUnitaryE (u v : 'NS(H)) : @VUnitary u v (u : H) = v :> H.
 Proof. by move: (PUnitaryE (ponb1_fun u) (ponb1_fun v))=>/(_ ord0). Qed.
@@ -535,50 +555,96 @@ Lemma VUnitaryEV (u v : 'NS(H)) : (@VUnitary u v)^A (v : H) = u :> H.
 Proof. by rewrite -(VUnitaryE u) -comp_lfunE unitaryf_form lfunE. Qed.
 End VUnitary.
 
-HB.lock
-Definition uniformtv (T : ihbFinType) : 'Hs T := 
-    ((sqrtC #|T|%:R)^-1) *: \sum_i ''i.
-Canonical uniformtv_unlockable := Unlockable uniformtv.unlock.
+End QTypeReal.
+
+Local Open Scope ring_scope.
+Local Open Scope lfun_scope.
 
 HB.lock
-Definition Multiplexer (T1 T2 : ihbFinType) :=
-  fun f : T1 -> 'End('Hs T2) => 
-  (\sum_i ([> ''i ; ''i <] ⊗f (f i))) : 'End('Hs (T1 * T2)%type).
+Definition uniformtv {R : realType} (T : ihbFinType) : @ihb_chsType R T :=
+    ((sqrtC #|T|%:R)^-1) *: \sum_i @t2tv R T i.
+Canonical uniformtv_unlockable := Unlockable uniformtv.unlock.
+Arguments uniformtv {R} T.
+
+HB.lock
+Definition Multiplexer {R : realType} (T1 T2 : ihbFinType) :=
+  fun f : T1 -> 'End(@ihb_chsType R T2) =>
+  (\sum_i @tentf R T1 T2 T1 T2
+    (@outp R _ _ (@t2tv R T1 i) (@t2tv R T1 i)) (f i))
+    : 'End(@ihb_chsType R (T1 * T2)%type).
 Canonical Multiplexer_unlockable := Unlockable Multiplexer.unlock.
+Arguments Multiplexer {R T1 T2}.
+
+Section QTypeReal.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
+Local Notation "''Hs' T" := (@ihb_chsType R T%type)
+  (at level 8, T at level 2, format "''Hs'  T").
+Local Notation "''Hom[' T1 , T2 ]" := ('Hom('Hs T1%type, 'Hs T2%type))
+  (at level 8, format "''Hom[' T1 ,  T2 ]").
+Local Notation "''End[' T ]" := ('End('Hs T%type))
+  (at level 8, format "''End[' T ]").
+Local Notation "u '⊗t' v" := (@tentv R _ _ u v)
+  (at level 45, left associativity) : lfun_scope.
+Local Notation "f '⊗f' g" := (@tentf R _ _ _ _ f g)
+  (at level 45, left associativity) : lfun_scope.
+Arguments t2tv {R T}.
+Local Notation "'''H'" := (@Hadamard R).
+Local Notation "'''X'" := (@PauliX R).
+Local Notation "'''Y'" := (@PauliY R).
+Local Notation "'''Z'" := (@PauliZ R).
+Local Notation "'''S'" := (@SGate R).
+Local Notation "''Rx' r" := (@RxGate R r) (at level 2, format "''Rx' r").
+Local Notation "''Ry' r" := (@RyGate R r) (at level 2, format "''Ry' r").
+Local Notation "''Rz' r" := (@RzGate R r) (at level 2, format "''Rz' r").
+Local Notation "''0'" := (@t2tv R bool false) (at level 0).
+Local Notation "''1'" := (@t2tv R bool true) (at level 0).
+Local Notation "'''' t" := (@t2tv R _ t) (at level 2, format "'''' t").
+Local Notation "''+'" := (@pmbasis R false) (at level 0).
+Local Notation "''-'" := (@pmbasis R true) (at level 0).
+Local Notation "''±' b" := (@pmbasis R b) (at level 2, format "''±' b").
+Local Notation "''ph' r" := (@phstate R r) (at level 2, format "''ph'  r").
+Local Notation "U '⊕' V" := (@BMultiplexer R U V)
+  (at level 50, format "U  '⊕'  V").
+Local Notation "''CU' U" := (@BControl R U) (at level 2, format "''CU' U").
+Local Notation "'''CZ'" := (@CZGate R).
+Local Notation "'SWAP'" := (@swaptf R _ _).
 
 Section GeneralGates.
 Implicit Type (T : ihbFinType).
 
 Lemma uniformtvE T :
-  uniformtv T = (((sqrtC #|T|%:R)^-1) *: \sum_i ''i).
-Proof. by rewrite [uniformtv]unlock. Qed.
-Lemma uniformtv_ns T : [< uniformtv T ; uniformtv T >] == 1%:R.
+  @uniformtv R T = (((sqrtC #|T|%:R)^-1) *: \sum_i ''i).
+Proof. by rewrite uniformtv.unlock. Qed.
+Lemma uniformtv_ns T : [< @uniformtv R T ; @uniformtv R T >] == 1%:R.
 Proof.
 apply/eqP; rewrite uniformtvE linearZl_LR linearZr/= linear_sumlz/=.
 rewrite (eq_bigr (fun _=>1%:R))=>[i _|].
 by rewrite linear_sum/= (bigD1 i)//= big1=>[j/negPf nj|];
    rewrite onb_dot ?eqxx ?addr0// eq_sym nj.
 rewrite sumr_const cardE -cardT -mulr_natr mul1r mulrA ?divc_simp mulfV//.
-by rewrite lt0r_neq0// ltr0n ihb_dim ihb_dim_proper.
+by rewrite lt0r_neq0// ltr0n (@ihb_dim R) ihb_dim_proper.
 Qed.
 HB.instance Definition _ (T : ihbFinType) :=
-  isNormalState.Build ('Hs T) (uniformtv T) (eqP (uniformtv_ns T)).
-Global Arguments uniformtv {T}.
+  isNormalState.Build R ('Hs T) (@uniformtv R T) (eqP (uniformtv_ns T)).
+Arguments uniformtv {R T}.
 
-Lemma dotp_uniformtvcb T (i : T) : [< uniformtv ; ''i >] = (sqrtC #|T|%:R)^-1.
+Lemma dotp_uniformtvcb T (i : T) :
+  [< @uniformtv R T ; ''i >] = (((sqrtC #|T|%:R)^-1)%R : C).
 Proof.
 rewrite uniformtvE linearZl_LR linear_sumlz/= (bigD1 i)//= big1=>[j/negPf nj|];
 by rewrite onb_dot ?nj// eqxx addr0 mulr1 !divc_simp.
 Qed.
-Lemma uniformtv_bool : uniformtv = '+.
+Lemma uniformtv_bool : @uniformtv R bool = '+.
 Proof.
 rewrite uniformtvE card_bool [RHS](onb_vec (t2tv)).
 by rewrite /= !big_bool !dotp_cbpm sign_simp scalerDr.
 Qed.
 
 Lemma MultiplexerE T1 T2 f : 
-  @Multiplexer T1 T2 f = \sum_i ([> ''i ; ''i<] ⊗f (f i)).
-Proof. by rewrite [Multiplexer]unlock. Qed. 
+  @Multiplexer R T1 T2 f = \sum_i ([> ''i ; ''i<] ⊗f (f i)).
+Proof. by rewrite Multiplexer.unlock. Qed. 
 Lemma Multiplexer_unitary T1 T2 (f : T1 -> 'FU('Hs T2)) :
   Multiplexer f \is unitarylf.
 Proof.
@@ -613,34 +679,82 @@ Definition runity N n := expip (2%:R * n%:R / N%:R :> R).
 Lemma runityE N n : runity N n = expip (2%:R * n%:R / N%:R). Proof. by []. Qed.
 End GeneralGates.
 
+End QTypeReal.
+
 HB.lock
-Definition QFTv n (t : 'I_n.+1) : 'Hs ('I_n.+1) := 
-  ((sqrtC n.+1%:R)^-1) *: \sum_(i < n.+1) runity n.+1 (t * i)%N *: ''i.
+Definition QFTv {R : realType} n (t : 'I_n.+1) : @ihb_chsType R ('I_n.+1) :=
+  ((sqrtC n.+1%:R)^-1) *:
+    \sum_(i < n.+1) @runity R n.+1 (t * i)%N *: @t2tv R ('I_n.+1) i.
 Canonical QFTv_unlockable := Unlockable QFTv.unlock.
-Global Arguments QFTv {n}.
+Arguments QFTv {R n}.
 
 HB.lock
-Definition QFT n := \sum_i [>@QFTv n i ; ''i<].
+Definition QFT {R : realType} n : 'End(@ihb_chsType R ('I_n.+1)) :=
+  \sum_i @outp R _ _ (@QFTv R n i) (@t2tv R ('I_n.+1) i).
 Canonical QFT_unlockable := Unlockable QFT.unlock.
-Global Arguments QFT {n}.
+Arguments QFT {R n}.
 
 HB.lock
-Definition PhOracle (T : ihbFinType) (f : T -> bool) : 'End('Hs T) :=
-  \sum_(i : T) (-1) ^ (f i) *: [> ''i ; ''i <].
+Definition PhOracle {R : realType} (T : ihbFinType) (f : T -> bool) :
+    'End(@ihb_chsType R T) :=
+  \sum_(i : T) (-1) ^ (f i) *:
+    @outp R _ _ (@t2tv R T i) (@t2tv R T i).
 Canonical PhOracle_unlockable := Unlockable PhOracle.unlock.
+Arguments PhOracle {R T}.
 
 HB.lock
-Definition Oracle (T : ihbFinType) (W : finZmodType) (f : T -> W) : 'End('Hs (T * W)%type) :=
-  \sum_(i : T)\sum_(j : W) [>t2tv i ⊗t t2tv (j + f i); t2tv i ⊗t t2tv j<].
+Definition Oracle {R : realType} (T : ihbFinType) (W : finZmodType) (f : T -> W) :
+    'End(@ihb_chsType R (T * W)%type) :=
+  \sum_(i : T)\sum_(j : W)
+    @outp R _ _
+      (@tentv R T W (@t2tv R T i) (@t2tv R W (j + f i)))
+      (@tentv R T W (@t2tv R T i) (@t2tv R W j)).
 Canonical Oracle_unlockable := Unlockable Oracle.unlock.
+Arguments Oracle {R T W}.
+
+Section QTypeReal.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
+Local Notation "''Hs' T" := (@ihb_chsType R T%type)
+  (at level 8, T at level 2, format "''Hs'  T").
+Local Notation "''Hom[' T1 , T2 ]" := ('Hom('Hs T1%type, 'Hs T2%type))
+  (at level 8, format "''Hom[' T1 ,  T2 ]").
+Local Notation "''End[' T ]" := ('End('Hs T%type))
+  (at level 8, format "''End[' T ]").
+Local Notation "u '⊗t' v" := (@tentv R _ _ u v)
+  (at level 45, left associativity) : lfun_scope.
+Local Notation "f '⊗f' g" := (@tentf R _ _ _ _ f g)
+  (at level 45, left associativity) : lfun_scope.
+Arguments t2tv {R T}.
+Local Notation "'''H'" := (@Hadamard R).
+Local Notation "'''X'" := (@PauliX R).
+Local Notation "'''Y'" := (@PauliY R).
+Local Notation "'''Z'" := (@PauliZ R).
+Local Notation "'''S'" := (@SGate R).
+Local Notation "''Rx' r" := (@RxGate R r) (at level 2, format "''Rx' r").
+Local Notation "''Ry' r" := (@RyGate R r) (at level 2, format "''Ry' r").
+Local Notation "''Rz' r" := (@RzGate R r) (at level 2, format "''Rz' r").
+Local Notation "''0'" := (@t2tv R bool false) (at level 0).
+Local Notation "''1'" := (@t2tv R bool true) (at level 0).
+Local Notation "'''' t" := (@t2tv R _ t) (at level 2, format "'''' t").
+Local Notation "''+'" := (@pmbasis R false) (at level 0).
+Local Notation "''-'" := (@pmbasis R true) (at level 0).
+Local Notation "''±' b" := (@pmbasis R b) (at level 2, format "''±' b").
+Local Notation "''ph' r" := (@phstate R r) (at level 2, format "''ph'  r").
+Local Notation "U '⊕' V" := (@BMultiplexer R U V)
+  (at level 50, format "U  '⊕'  V").
+Local Notation "''CU' U" := (@BControl R U) (at level 2, format "''CU' U").
+Local Notation "'''CZ'" := (@CZGate R).
+Local Notation "'SWAP'" := (@swaptf R _ _).
 
 Section GeneralGates.
 Implicit Type (T : ihbFinType).
 
-Lemma QFTvE n t : @QFTv n t =
-  ((sqrtC n.+1%:R)^-1) *: \sum_(i < n.+1) runity n.+1 (t * i)%N *: ''i.
-Proof. by rewrite [@QFTv]unlock. Qed.
-Lemma QFTv_onb n i j : [<@QFTv n i ; @QFTv n j >] = (i == j)%:R.
+Lemma QFTvE n t : @QFTv R n t =
+  ((sqrtC n.+1%:R)^-1) *: \sum_(i < n.+1) @runity R n.+1 (t * i)%N *: ''i.
+Proof. by rewrite QFTv.unlock. Qed.
+Lemma QFTv_onb n i j : [<@QFTv R n i ; @QFTv R n j >] = (i == j)%:R.
 Proof.
 rewrite !QFTvE linearZl_LR/= linearZr/= linear_sumlz/=.
 rewrite (eq_bigr (fun i0 : 'I_n.+1=>expip (2%:R * (j%:R - i%:R) * i0%:R / n.+1%:R)))=>[k _|].
@@ -651,65 +765,66 @@ rewrite expip_sum_ord// eq_sym; case: eqP=>_;
 by rewrite ?mul0r ?mulr0// mul1r !divc_simp mulfV// pnatr_eq0.
 Qed.
 HB.instance Definition _ n :=
-  isONB.Build 'Hs('I_n.+1) 'I_n.+1 (@QFTv n) (@QFTv_onb n) (ihb_dim _).
+  isONB.Build R 'Hs('I_n.+1) 'I_n.+1 (@QFTv R n) (@QFTv_onb n) (@ihb_dim R _).
 HB.instance Definition _ n i := 
-  NormalState.copy (@QFTv n i) ((@QFTv n : 'PONB) i : 'NS).
+  NormalState.copy (@QFTv R n i) ((@QFTv R n : 'PONB) i : 'NS).
 
 Lemma dotp_cbQFT m i j : 
-  [< ''i ; @QFTv m j >] = (sqrtC m.+1%:R)^-1 * runity m.+1 (j * i).
+  [< ''i ; @QFTv R m j >] =
+    (sqrtC m.+1%:R)^-1 * @runity R m.+1 (j * i).
 Proof.
 rewrite QFTvE dotpZr dotp_sumr (bigD1 i)//= big1=>[k/negPf nk|];
 by rewrite dotpZr ?ns_dot ?onb_dot 1?eq_sym ?nk ?mulr0// addr0 mulr1.
 Qed.
 
-Lemma QFTE n : @QFT n = \sum_i [> QFTv i ; ''i<].
-Proof. by rewrite [@QFT]unlock. Qed.
-Lemma QFT_unitary n : @QFT n \is unitarylf.
+Lemma QFTE n : @QFT R n = \sum_i [> QFTv i ; ''i<].
+Proof. by rewrite QFT.unlock. Qed.
+Lemma QFT_unitary n : @QFT R n \is unitarylf.
 Proof.
 apply/unitarylfP; rewrite QFTE -(sumonb_out t2tv) !linear_sum/= linear_sumlz/=.
 apply eq_bigr=>i _; rewrite adj_outp linear_sumr/= (bigD1 i)//= big1=>[j/negPf nj|];
 by rewrite outp_comp onb_dot 1?eq_sym ?nj ?scale0r// eqxx scale1r addr0.
 Qed.
 HB.instance Definition _ n :=
-  isUnitaryLf.Build 'Hs('I_n.+1) (@QFT n) (@QFT_unitary n).
+  isUnitaryLf.Build 'Hs('I_n.+1) (@QFT R n) (@QFT_unitary n).
 Lemma QFTEt n (i : 'I_n.+1) : QFT ''i = QFTv i.
 Proof.
 rewrite QFTE sum_lfunE (bigD1 i)//= big1=>[j/negPf nj|];
 by rewrite outpE onb_dot ?nj ?scale0r// eqxx scale1r addr0.
 Qed.
 
-Definition IQFT n := (@QFT n)^A.
-Global Arguments IQFT {n}.
+Definition IQFT n := (@QFT R n)^A.
+Arguments IQFT {n}.
 Lemma IQFTE n : @IQFT n = QFT^A. Proof. by []. Qed.
 Lemma IQFTEt n (i : 'I_n.+1) : IQFT (QFTv i) = ''i.
 Proof. by rewrite IQFTE -QFTEt -comp_lfunE unitaryf_form lfunE. Qed.
 
-Lemma PhOracleE T (f : T -> bool) : PhOracle f = 
+Lemma PhOracleE T (f : T -> bool) : @PhOracle R T f =
   \sum_(i : T) (-1) ^ (f i) *: [> ''i ; ''i <].
-Proof. by rewrite [PhOracle]unlock. Qed.
+Proof. by rewrite PhOracle.unlock. Qed.
 Lemma PhOracleEt T (f : T -> bool) t :
-  PhOracle f ''t = (-1) ^ (f t) *: ''t.
+  @PhOracle R T f ''t = (-1) ^ (f t) *: ''t.
 Proof.
 by rewrite PhOracleE sum_lfunE (bigD1 t)//= big1/==>[i/negPf ni|];
 rewrite lfunE/= outpE onb_dot ?ni ?scale0r ?scaler0// eqxx scale1r addr0.
 Qed.
-Lemma PhOracle_adj T (f : T -> bool) : (PhOracle f)^A = PhOracle f.
+Lemma PhOracle_adj T (f : T -> bool) : (@PhOracle R T f)^A = @PhOracle R T f.
 Proof.
 rewrite PhOracleE raddf_sum/=; apply eq_bigr=>i _.
 by rewrite adjfZ adj_outp; f_equal; case: (f i); rewrite ?expr0z ?expr1z ?conjC1// conjCN1.
 Qed.
 Lemma PhOracleEVt T (f : T -> bool) t :
-  (PhOracle f)^A ''t = (-1) ^ (f t) *: ''t.
+  (@PhOracle R T f)^A ''t = (-1) ^ (f t) *: ''t.
 Proof. by rewrite PhOracle_adj PhOracleEt. Qed.
 Lemma PhOracle_unitary T (f : T -> bool) :
-  PhOracle f \is unitarylf.
+  @PhOracle R T f \is unitarylf.
 Proof.
 apply/unitarylfP; apply/(intro_onb t2tv)=>i.
 by rewrite/= !lfunE/= PhOracleEt linearZ/= PhOracleEVt linearZ/= scalerA -!exprnP 
   -expr2 exprAC expr2 mulrN1 opprK expr1n scale1r.
 Qed.
 HB.instance Definition _ T (f : T -> bool) :=
-  isUnitaryLf.Build ('Hs T) (PhOracle f) (@PhOracle_unitary T f).
+  isUnitaryLf.Build ('Hs T) (@PhOracle R T f) (@PhOracle_unitary T f).
 
 (* Definition SWAP T : 'End('Hs (T * T)) := @swaptf T T.
 Arguments SWAP {T}.
@@ -726,11 +841,11 @@ Lemma SWAPb : SWAP = BSWAP. Proof. by []. Qed. *)
 Section Oracle.
 Implicit Type (W : finZmodType).
 
-Lemma OracleE T W (f : T -> W) : Oracle f = 
+Lemma OracleE T W (f : T -> W) : @Oracle R T W f =
   \sum_(i : T)\sum_(j : W) [>t2tv i ⊗t t2tv (j + f i); t2tv i ⊗t t2tv j<].
-Proof. by rewrite [Oracle]unlock. Qed.
+Proof. by rewrite Oracle.unlock. Qed.
 Lemma OracleEt T W (f : T -> W) t1 t2 :
-  Oracle f (''t1 ⊗t ''t2) = ''t1 ⊗t ''(t2 + f t1).
+  @Oracle R T W f (''t1 ⊗t ''t2) = ''t1 ⊗t ''(t2 + f t1).
 Proof.
 rewrite OracleE sum_lfunE (bigD1 t1)//= sum_lfunE (bigD1 t2)//= !big1/= 
   =>[i/negPf ni|i/negPf ni|]. 2: rewrite sum_lfunE big1//==>[j _].
@@ -738,26 +853,26 @@ all: rewrite outpE tentv_dot !onb_dot ?ni ?mulr0 ?mul0r ?scale0r//.
 by rewrite !eqxx mul1r scale1r !addr0.
 Qed.
 Lemma OracleEVt T W (f : T -> W) t1 t2 :
-  (Oracle f)^A (''t1 ⊗t ''t2) = ''t1 ⊗t ''(t2 - f t1).
+  (@Oracle R T W f)^A (''t1 ⊗t ''t2) = ''t1 ⊗t ''(t2 - f t1).
 Proof.
-apply/(intro_onbl t2tv2_onbasis)=>[[i j]].
+apply/(intro_onbl (@t2tv2_onbasis R T W))=>[[i j]].
 rewrite /=/tentv_fun/= adj_dotEr OracleEt !tentv_dot !onb_dot.
 by case: eqP=>[->|_]; rewrite ?mul0r// !mul1r eq_sym -subr_eq eq_sym.
 Qed.
 
 Lemma Oracle_unitary T W (f : T -> W) :
-  Oracle f \is unitarylf.
+  @Oracle R T W f \is unitarylf.
 Proof.
-apply/unitarylfP; apply/(intro_onb t2tv2_onbasis)=>[[i j]].
+apply/unitarylfP; apply/(intro_onb (@t2tv2_onbasis R T W))=>[[i j]].
 by rewrite /=/tentv_fun/= !lfunE/= OracleEt OracleEVt addrK.
 Qed.
 HB.instance Definition _ T W (f : T -> W) :=
-  isUnitaryLf.Build 'Hs(T * W)%type (Oracle f) (@Oracle_unitary T W f).
+  isUnitaryLf.Build 'Hs(T * W)%type (@Oracle R T W f) (@Oracle_unitary T W f).
 End Oracle.
 
 End GeneralGates.
 
-Arguments QFT {n}.
+Arguments QFT {R n}.
 Arguments IQFT {n}.
 
 
@@ -767,7 +882,7 @@ Arguments IQFT {n}.
 Section UniformState.
 
 Lemma uniformtv2 (T1 T2 : ihbFinType) :
-  @uniformtv T1 ⊗t @uniformtv T2 = uniformtv.
+  @uniformtv R T1 ⊗t @uniformtv R T2 = @uniformtv R (T1 * T2)%type.
 Proof.
 rewrite !uniformtvE tentvZl tentvZr scalerA; f_equal.
 by rewrite -invfM -sqrtCM// -natrM card_prod.
@@ -776,7 +891,7 @@ rewrite tentv_sumr; apply eq_bigr=>j _; exact: tentv_t2tv.
 Qed.
 
 Lemma uniformtv_tuple (T : ihbFinType) n :
-  tentv_tuple (fun i : 'I_n => (@uniformtv T)) = uniformtv.
+  tentv_tuple (fun i : 'I_n => (@uniformtv R T)) = @uniformtv R (n.-tuple T).
 Proof.
 apply/(intro_onbl t2tv)=>i/=.
 rewrite {1}t2tv_tuple tentv_tuple_dot -[in RHS]conj_dotp dotp_uniformtvcb.
@@ -786,7 +901,8 @@ by rewrite natrX sqrtCX_nat exprVn card_ord.
 Qed.
 
 Lemma uniformtv_dffun (F : finType) (TF : F -> ihbFinType)  :
-  tentv_dffun (fun i : F => @uniformtv (TF i)) = uniformtv.
+  tentv_dffun (fun i : F => @uniformtv R (TF i)) =
+    @uniformtv R {dffun forall i : F, TF i}.
 Proof.
 apply/(intro_onbl t2tv)=>i/=.
 rewrite {1}t2tv_dffun tentv_dffun_dot -[in RHS]conj_dotp dotp_uniformtvcb.
@@ -797,7 +913,7 @@ by rewrite conjCc.
 Qed.
 
 Lemma uniformtv_ffun (F : finType) (T : ihbFinType)  :
-  tentv_ffun (fun i : F=>@uniformtv T) = uniformtv.
+  tentv_ffun (fun i : F=>@uniformtv R T) = @uniformtv R {ffun F -> T}.
 Proof. exact: uniformtv_dffun. Qed.
 
 End UniformState.
@@ -805,10 +921,10 @@ End UniformState.
 Section UniformTransformation.
 Variable (T : ihbFinType).
 
-Definition uniformtf := VUnitary ''(witness T) uniformtv.
-Lemma uniformtfE : uniformtf ''(witness T) = uniformtv.
+Definition uniformtf := VUnitary ''(witness T) (@uniformtv R T).
+Lemma uniformtfE : uniformtf ''(witness T) = @uniformtv R T.
 Proof. by rewrite VUnitaryE. Qed.
-Lemma uniformtfEV : uniformtf^A uniformtv = ''(witness T).
+Lemma uniformtfEV : uniformtf^A (@uniformtv R T) = ''(witness T).
 Proof. by rewrite VUnitaryEV. Qed.
 
 End UniformTransformation.
@@ -816,14 +932,53 @@ End UniformTransformation.
 Arguments uniformtf {T}.
 Notation "''Hn'" := (@uniformtf _).
 
-Fixpoint bitstr2rat_fun (s : seq bool) : R :=
+End QTypeReal.
+
+Fixpoint bitstr2rat_fun {R : realType} (s : seq bool) : R :=
     match s with
     | [::] => 0
     | x :: t => x%:R / 2%:R + (bitstr2rat_fun t) / 2%:R
     end.
 HB.lock
-Definition bitstr2rat := bitstr2rat_fun.
+Definition bitstr2rat {R : realType} := @bitstr2rat_fun R.
 Canonical bitstr2rat_unlockable := Unlockable bitstr2rat.unlock.
+Arguments bitstr2rat {R}.
+
+Section QTypeReal.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
+Local Notation "''Hs' T" := (@ihb_chsType R T%type)
+  (at level 8, T at level 2, format "''Hs'  T").
+Local Notation "''Hom[' T1 , T2 ]" := ('Hom('Hs T1%type, 'Hs T2%type))
+  (at level 8, format "''Hom[' T1 ,  T2 ]").
+Local Notation "''End[' T ]" := ('End('Hs T%type))
+  (at level 8, format "''End[' T ]").
+Local Notation "u '⊗t' v" := (@tentv R _ _ u v)
+  (at level 45, left associativity) : lfun_scope.
+Local Notation "f '⊗f' g" := (@tentf R _ _ _ _ f g)
+  (at level 45, left associativity) : lfun_scope.
+Arguments t2tv {R T}.
+Local Notation "'''H'" := (@Hadamard R).
+Local Notation "'''X'" := (@PauliX R).
+Local Notation "'''Y'" := (@PauliY R).
+Local Notation "'''Z'" := (@PauliZ R).
+Local Notation "'''S'" := (@SGate R).
+Local Notation "''Rx' r" := (@RxGate R r) (at level 2, format "''Rx' r").
+Local Notation "''Ry' r" := (@RyGate R r) (at level 2, format "''Ry' r").
+Local Notation "''Rz' r" := (@RzGate R r) (at level 2, format "''Rz' r").
+Local Notation "''0'" := (@t2tv R bool false) (at level 0).
+Local Notation "''1'" := (@t2tv R bool true) (at level 0).
+Local Notation "'''' t" := (@t2tv R _ t) (at level 2, format "'''' t").
+Local Notation "''+'" := (@pmbasis R false) (at level 0).
+Local Notation "''-'" := (@pmbasis R true) (at level 0).
+Local Notation "''±' b" := (@pmbasis R b) (at level 2, format "''±' b").
+Local Notation "''ph' r" := (@phstate R r) (at level 2, format "''ph'  r").
+Local Notation "U '⊕' V" := (@BMultiplexer R U V)
+  (at level 50, format "U  '⊕'  V").
+Local Notation "''CU' U" := (@BControl R U) (at level 2, format "''CU' U").
+Local Notation "'''CZ'" := (@CZGate R).
+Local Notation "'SWAP'" := (@swaptf R _ _).
 
 Section QFTTupleBasis.
 
@@ -835,10 +990,11 @@ by move=>us; rewrite (tnth_nth (s~_i))
 Qed.
 
 Lemma bitstr_cons x (s : seq bool) : 
-  bitstr2rat (x :: s) = x%:R / 2%:R + (bitstr2rat s) / 2%:R .
+  @bitstr2rat R (x :: s) = x%:R / 2%:R + (@bitstr2rat R s) / 2%:R .
 Proof. by rewrite unlock. Qed.
 Lemma bitstr_rcons x (s : seq bool) :
-  bitstr2rat (rcons s x) = bitstr2rat s + x%:R / 2%:R ^+ (size s).+1.
+  @bitstr2rat R (rcons s x) =
+    @bitstr2rat R s + x%:R / 2%:R ^+ (size s).+1.
 Proof.
 rewrite unlock; elim: s=>[|y r IH]/=; first by rewrite mul0r addr0 add0r expr1.
 by rewrite IH mulrDl addrA -mulrA -invfM !exprSr.
@@ -867,7 +1023,7 @@ by rewrite /= !bseq2nat_cons IH size_rcons expnS mulnDr mulnA addnA.
 Qed.
 
 Lemma bitstr2rat_nat (bs : seq bool) :
-  bitstr2rat bs = (bseq2nat bs)%:R / 2%:R ^+ (size bs).
+  @bitstr2rat R bs = (bseq2nat bs)%:R / 2%:R ^+ (size bs).
 Proof.
 elim: bs=>[|x bs IH]; first by rewrite unlock /bseq2nat/= mul0r.
 rewrite bitstr_cons bseq2nat_cons IH/= natrD mulrDl exprSr invfM 2!mulrA.
@@ -962,20 +1118,61 @@ Proof. apply/leq_ltn_trans/leq_subr. Qed.
 
 End QFTTupleBasis.
 
+End QTypeReal.
+
 HB.lock
-Definition QFTbv n (bs : n.-tuple bool) : 'Hs (n.-tuple bool) :=
-  (sqrtC 2%:R ^- n) *: \sum_(i : n.-tuple bool) 
-    (expip (2%:R * (bseq2ord bs * bseq2ord i)%:R / 2%:R ^+ n) *: ''i).
+Definition QFTbv {R : realType} n (bs : n.-tuple bool) :
+    @ihb_chsType R (n.-tuple bool) :=
+  (sqrtC 2%:R ^- n) *: \sum_(i : n.-tuple bool)
+    (@expip R (2%:R * (bseq2ord bs * bseq2ord i)%:R / 2%:R ^+ n) *:
+      @t2tv R (n.-tuple bool) i).
 Canonical QFTbv_unlockable := Unlockable QFTbv.unlock.
+Arguments QFTbv {R n}.
+
+Section QTypeReal.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
+Local Notation "''Hs' T" := (@ihb_chsType R T%type)
+  (at level 8, T at level 2, format "''Hs'  T").
+Local Notation "''Hom[' T1 , T2 ]" := ('Hom('Hs T1%type, 'Hs T2%type))
+  (at level 8, format "''Hom[' T1 ,  T2 ]").
+Local Notation "''End[' T ]" := ('End('Hs T%type))
+  (at level 8, format "''End[' T ]").
+Local Notation "u '⊗t' v" := (@tentv R _ _ u v)
+  (at level 45, left associativity) : lfun_scope.
+Local Notation "f '⊗f' g" := (@tentf R _ _ _ _ f g)
+  (at level 45, left associativity) : lfun_scope.
+Arguments t2tv {R T}.
+Local Notation "'''H'" := (@Hadamard R).
+Local Notation "'''X'" := (@PauliX R).
+Local Notation "'''Y'" := (@PauliY R).
+Local Notation "'''Z'" := (@PauliZ R).
+Local Notation "'''S'" := (@SGate R).
+Local Notation "''Rx' r" := (@RxGate R r) (at level 2, format "''Rx' r").
+Local Notation "''Ry' r" := (@RyGate R r) (at level 2, format "''Ry' r").
+Local Notation "''Rz' r" := (@RzGate R r) (at level 2, format "''Rz' r").
+Local Notation "''0'" := (@t2tv R bool false) (at level 0).
+Local Notation "''1'" := (@t2tv R bool true) (at level 0).
+Local Notation "'''' t" := (@t2tv R _ t) (at level 2, format "'''' t").
+Local Notation "''+'" := (@pmbasis R false) (at level 0).
+Local Notation "''-'" := (@pmbasis R true) (at level 0).
+Local Notation "''±' b" := (@pmbasis R b) (at level 2, format "''±' b").
+Local Notation "''ph' r" := (@phstate R r) (at level 2, format "''ph'  r").
+Local Notation "U '⊕' V" := (@BMultiplexer R U V)
+  (at level 50, format "U  '⊕'  V").
+Local Notation "''CU' U" := (@BControl R U) (at level 2, format "''CU' U").
+Local Notation "'''CZ'" := (@CZGate R).
+Local Notation "'SWAP'" := (@swaptf R _ _).
 
 Section QFTTupleBasis.
 
-Lemma QFTbvE n bs : @QFTbv n bs =  ((sqrtC 2%:R ^- n) *: \sum_(i : n.-tuple bool) 
+Lemma QFTbvE n bs : @QFTbv R n bs =  ((sqrtC 2%:R ^- n) *: \sum_(i : n.-tuple bool)
   (expip (2%:R * (bseq2ord bs * bseq2ord i)%:R / 2%:R ^+ n) *: ''i)).
-Proof. by rewrite [QFTbv]unlock. Qed.
+Proof. by rewrite QFTbv.unlock. Qed.
 
 Lemma QFTbv_onb n (bs1 bs2 : n.-tuple bool) : 
-  [< QFTbv bs1 ; QFTbv bs2 >] = (bs1 == bs2)%:R.
+  [< @QFTbv R n bs1 ; @QFTbv R n bs2 >] = (bs1 == bs2)%:R.
 Proof.
 rewrite !QFTbvE dotpZl dotpZr mulrA geC0_conj -?invfM ?invr_ge0 ?exprn_ge0// 
   ?sqrtC_ge0// -exprMn -expr2 sqrtCK dotp_suml; under eq_bigr do rewrite dotp_sumr.
@@ -989,9 +1186,9 @@ by rewrite expip_sum_ord// natrX mulrCA (inj_eq (@bseq2ord_inj _))
    mulVf ?mulr1// expf_neq0.
 Qed.
 HB.instance Definition _ n :=
-  isONB.Build 'Hs(n.-tuple bool) (n.-tuple bool) (@QFTbv n) (@QFTbv_onb n) (@ihb_dim _).
+  isONB.Build R 'Hs(n.-tuple bool) (n.-tuple bool) (@QFTbv R n) (@QFTbv_onb n) (@ihb_dim R _).
 
-Lemma QFTbv_uniform n : QFTbv (nseq_tuple n false) = uniformtv.
+Lemma QFTbv_uniform n : @QFTbv R n (nseq_tuple n false) = @uniformtv R (n.-tuple bool).
 Proof.
 rewrite QFTbvE uniformtvE; f_equal; last apply eq_bigr=>i _.
 by rewrite card_tuple card_bool natrX sqrtCX_nat.
@@ -1012,7 +1209,7 @@ Qed.
 
 (* QFT state can be written as a tensor product states *)
 Lemma QFTbvTE n (bs : n.-tuple bool) :
-  QFTbv bs = tentv_tuple (fun i=> phstate (bitstr2rat (drop (n.-1 - i) bs))).
+  @QFTbv R n bs = tentv_tuple (fun i=> phstate (@bitstr2rat R (drop (n.-1 - i) bs))).
 Proof.
 apply/(intro_onbl (t2tv))=>i.
 rewrite/= QFTbvE dotpZr dotp_sumr (bigD1 i)//= big1=>[j/negPf nj|];
@@ -1037,14 +1234,29 @@ Qed.
 
 End QFTTupleBasis.
 
+End QTypeReal.
+
 HB.lock
-Definition expmxip (U : chsType) (F : finType) (onb : 'ONB(F;U)) (d : F -> R) : R -> 'End(U) := 
-  fun t => \sum_i expip (d i * t) *: [> onb i ; onb i <].
+Definition expmxip {R : realType} (U : @chsType R) (F : finType)
+    (onb : 'ONB(F;U)) (d : F -> R) : R -> 'End(U) :=
+  fun t => \sum_i @expip R (d i * t) *: [> onb i ; onb i <].
 Canonical expmxip_unlockable := Unlockable expmxip.unlock.
+Arguments expmxip {R} U F onb d.
+
+Section QTypeReal.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
+Local Notation "''Hs' T" := (@ihb_chsType R T%type)
+  (at level 8, T at level 2, format "''Hs'  T").
+Local Notation "''Hom[' T1 , T2 ]" := ('Hom('Hs T1%type, 'Hs T2%type))
+  (at level 8, format "''Hom[' T1 ,  T2 ]").
+Local Notation "''End[' T ]" := ('End('Hs T%type))
+  (at level 8, format "''End[' T ]").
 
 Section expmxip.
 Variable (U : chsType) (F : finType) (onb : 'ONB(F;U)) (d : F -> R).
-Local Notation expmxip := (@expmxip U F onb d).
+Local Notation expmxip := (@expmxip R U F onb d).
 (* e ^ i * pi * A * t *)
 Lemma expmxipE t : expmxip t = \sum_i expip (d i * t) *: [> onb i ; onb i <].
 Proof. by rewrite unlock. Qed.
@@ -1086,3 +1298,5 @@ elim: n=>[|n IH]; first by rewrite !expr0 adjf1.
 by rewrite exprS adjf_comp IH exprSr.
 Qed.
 End ExpUnitary.
+
+End QTypeReal.

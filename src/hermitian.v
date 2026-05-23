@@ -39,11 +39,13 @@ Unset SsrOldRewriteGoalsOrder.
 (* Local Open Scope complex_scope. *)
 Local Open Scope ring_scope.
 
-#[local] Parameter R : realType.
-#[local] Definition C := R[i].
+Definition R (R0 : realType) : realType := R0.
+Arguments R {R0} /.
+Definition C (R0 : realType) := R0[i].
+Arguments C {R0} /.
 
-HB.mixin Record Vector_isHermitianSpace T of Vector C T := {
-  dotp : T -> T -> C;
+HB.mixin Record Vector_isHermitianSpace (R0 : realType) T of Vector (@C R0) T := {
+  dotp : T -> T -> @C R0;
   ge0_dotp    : forall v, 0 <= dotp v v;
   dotp_eq0    : forall v, (dotp v v == 0) = (v == 0);
   conj_dotp   : forall u v, (dotp u v)^* = dotp v u;
@@ -51,15 +53,17 @@ HB.mixin Record Vector_isHermitianSpace T of Vector C T := {
 }.
 
 #[short(type="hermitianType")]
-HB.structure Definition HermitianSpace :=
-  { T of Vector C T & Vector_isHermitianSpace T }.
+HB.structure Definition HermitianSpace (R0 : realType) :=
+  { T of Vector (@C R0) T & Vector_isHermitianSpace R0 T }.
+
+Arguments hermitianType {R0}.
 
 Module HermitianSpaceExports.
 #[deprecated(since="mathcomp 2.0.0", note="Use HermitianSpace.clone instead.")]
-Notation "[ 'hermitianType' 'of' T 'for' cT ]" := (HermitianSpace.clone T%type cT)
+Notation "[ 'hermitianType' 'of' T 'for' cT ]" := (HermitianSpace.clone _ T%type cT)
   (at level 0, format "[ 'hermitianType'  'of'  T  'for'  cT ]") : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use HermitianSpace.clone instead.")]
-Notation "[ 'hermitianType' 'of' T ]" := (HermitianSpace.clone T%type _)
+Notation "[ 'hermitianType' 'of' T ]" := (HermitianSpace.clone _ T%type _)
   (at level 0, format "[ 'hermitianType'  'of'  T ]") : form_scope.
 End HermitianSpaceExports.
 HB.export HermitianSpaceExports.
@@ -71,7 +75,8 @@ Notation antilinear f := (linear_for (conjC \; *:%R) f).
 
 (* ------------------------------------------------------------------------- *)
 Section HermitianSpaceTheory.
-Context {E : hermitianType}.
+Context {R0 : realType} {E : @hermitianType R0}.
+Local Notation C := (@C R0).
 
 Implicit Types (u v w : E) (a b : C).
 
@@ -134,7 +139,8 @@ End HermitianSpaceTheory.
 
 (* ========================================================================= *)
 Section CauchySchwartz.
-Context {E : hermitianType}.
+Context {R0 : realType} {E : @hermitianType R0}.
+Local Notation C := (@C R0).
 
 Local Notation "`<| u |>" := (sqrtC [< u; u >]) (at level 2).
 
@@ -186,7 +192,8 @@ End CauchySchwartz.
 
 (* ========================================================================= *)
 Section HermitianNormedSpace.
-Context {E : hermitianType}.
+Context {R0 : realType} {E : @hermitianType R0}.
+Local Notation C := (@C R0).
 
 Definition hnorm (u : E) := sqrtC [< u; u >].
 
@@ -263,7 +270,8 @@ End HermitianNormedSpace.
 
 (* ========================================================================= *)
 Section Orthonormal.
-Context {E : hermitianType}.
+Context {R0 : realType} {E : @hermitianType R0}.
+Local Notation C := (@C R0).
 
 Definition orthonormal (vs : seq E) :=
   [forall i : 'I_(size vs),
@@ -344,7 +352,8 @@ End Orthonormal.
 
 (* ========================================================================= *)
 Section GramSchmidt.
-Context {E : hermitianType}.
+Context {R0 : realType} {E : @hermitianType R0}.
+Local Notation C := (@C R0).
 
 Definition normd (u : E) := `|u|^-1 *: u.
 
@@ -493,7 +502,8 @@ End GramSchmidt.
 
 (* ------------------------------------------------------------------------- *)
 Section DotP_ONB.
-Context {E : hermitianType}.
+Context {R0 : realType} {E : @hermitianType R0}.
+Local Notation C := (@C R0).
 
 Lemma dotp_onb {n} (A : {vspace E}) (u v : E) (vs : n.-tuple E) :
   u \in A -> v \in A -> onbasis_of A vs ->
@@ -543,22 +553,24 @@ End DotP_ONB.
 (* this orthonormal basis is regarded as computational basis *)
 (* the vector/matrix form: c2h (delta_mx i 0) = eb_op i *)
 
-HB.mixin Record HermitianSpace_isCanonical E of HermitianSpace E := {
+HB.mixin Record HermitianSpace_isCanonical (R0 : realType) E of HermitianSpace R0 E := {
   eb : 'I_(dim E) -> E;
   eb_dot : forall i j, [< eb i; eb j >] = (i == j)%:R;
   dim_proper : (dim E > 0)%N;
 }.
 
 #[short(type="chsType")]
-HB.structure Definition CanonicalHermitianSpace :=
-  { T of HermitianSpace T & HermitianSpace_isCanonical T }.
+HB.structure Definition CanonicalHermitianSpace (R0 : realType) :=
+  { T of HermitianSpace R0 T & HermitianSpace_isCanonical R0 T }.
+
+Arguments chsType {R0}.
 
 Module CanonicalHermitianSpaceExports.
 #[deprecated(since="mathcomp 2.0.0", note="Use CanonicalHermitianSpace.clone instead.")]
-Notation "[ 'chsType' 'of' T 'for' cT ]" := (CanonicalHermitianSpace.clone T%type cT)
+Notation "[ 'chsType' 'of' T 'for' cT ]" := (CanonicalHermitianSpace.clone _ T%type cT)
   (at level 0, format "[ 'chsType'  'of'  T  'for'  cT ]") : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use CanonicalHermitianSpace.clone instead.")]
-Notation "[ 'chsType' 'of' T ]" := (CanonicalHermitianSpace.clone T%type _)
+Notation "[ 'chsType' 'of' T ]" := (CanonicalHermitianSpace.clone _ T%type _)
   (at level 0, format "[ 'chsType'  'of'  T ]") : form_scope.
 End CanonicalHermitianSpaceExports.
 HB.export CanonicalHermitianSpaceExports.
@@ -581,26 +593,27 @@ Definition lfun_comp_algType : algType R :=
 End LfunAlgebraComp.
 
 Section ChsTypeBasic.
-Context {E : chsType}.
+Context {R0 : realType} {E : @chsType R0}.
+Local Notation C := (@C R0).
 
 #[non_forgetful_inheritance]
 HB.instance Definition _ := Num.NormedZmodule.copy E
-  ((E : hermitianType) : normedZmodType C).
+  ((E : @hermitianType R0) : normedZmodType C).
 
 Lemma dim_proper_cast : (dim E - 1).+1 = dim E.
 Proof. by rewrite -addn1 subnK// dim_proper. Qed.
 
-Canonical chsf_comp_ringType := lfun_comp_nzRingType (@dim_proper E).
+Canonical chsf_comp_ringType := lfun_comp_nzRingType (@dim_proper R0 E).
 HB.instance Definition _ := GRing.NzSemiRing.copy 'End(E) ('End(E):nzRingType).
-Canonical chsf_comp_lalgType := lfun_comp_lalgType (@dim_proper E).
-Canonical chsf_comp_algType := lfun_comp_algType (@dim_proper E).
+Canonical chsf_comp_lalgType := lfun_comp_lalgType (@dim_proper R0 E).
+Canonical chsf_comp_algType := lfun_comp_algType (@dim_proper R0 E).
 
 End ChsTypeBasic.
 
 (* any proper Hermitian Type can construct a chsType *)
 (* we do not use this; just show that we can construct chsType *)
 Section ConstructiveChsType.
-Context {E : hermitianType}.
+Context {R0 : realType} {E : @hermitianType R0}.
 Hypothesis (dp : (dim E > 0)%N).
 
 Let ce := HermitianSpace.Pack (HermitianSpace.class E).
@@ -624,25 +637,32 @@ move: (vonbasisP {:E})=>/andP[] _/orthonormal_tupleP IH.
 by rewrite /hermitian_eb !tcastE IH (inj_eq (@cast_ord_inj _ _ _)).
 Qed.
 
-Definition hermitian_chsMixin := HermitianSpace_isCanonical.Build ce hermitian_eb_onb dp.
-Definition hermitian_chsType : chsType := HB.pack E hermitian_chsMixin.
+Definition hermitian_chsMixin := HermitianSpace_isCanonical.Build R0 ce hermitian_eb_onb dp.
+Definition hermitian_chsType : @chsType R0 := HB.pack E hermitian_chsMixin.
 
 End ConstructiveChsType.
 
 (* different from v2r using row vector, h2c usese column vector *)
 
-Definition tuple_eb {E : chsType} := [tuple i => eb i : E].
-HB.lock Definition v2hU {E : chsType} := (b2mx (@tuple_eb E))^T.
-HB.lock Definition h2vU {E : chsType} := invmx (@v2hU E).
-HB.lock Definition h2c {E : chsType} (u : E) := h2vU *m (v2r u)^T.
-HB.lock Definition c2h {E : chsType} u : E := r2v (v2hU *m u)^T.
-HB.lock Definition conjv {E : chsType} (u : E) := c2h (h2c u)^*m.
-HB.lock Definition h2mx {E F : chsType} (f : 'Hom(E,F)) := h2vU *m (f2mx f)^T *m v2hU.
-HB.lock Definition mx2h {E F : chsType} f : 'Hom(E,F) := Hom (v2hU *m f *m h2vU)^T.
-HB.lock Definition outp {E F : chsType} (v : F) (u : E) : 'Hom(E,F) := mx2h (h2c v *m (h2c u)^*t).
-HB.lock Definition adj_lfun {E F : chsType} (f : 'Hom(E,F)) := mx2h (h2mx f)^*t.
-HB.lock Definition tr_lfun {E F : chsType} (f : 'Hom(E,F)) := mx2h (h2mx f)^T.
-HB.lock Definition conj_lfun {E F : chsType} (f : 'Hom(E,F)) := mx2h (h2mx f)^*m.
+Definition tuple_eb {R0 : realType} {E : @chsType R0} := [tuple i => eb i : E].
+HB.lock Definition v2hU {R0 : realType} {E : @chsType R0} :=
+  (b2mx (@tuple_eb R0 E))^T.
+HB.lock Definition h2vU {R0 : realType} {E : @chsType R0} := invmx (@v2hU R0 E).
+HB.lock Definition h2c {R0 : realType} {E : @chsType R0} (u : E) := h2vU *m (v2r u)^T.
+HB.lock Definition c2h {R0 : realType} {E : @chsType R0} u : E := r2v (v2hU *m u)^T.
+HB.lock Definition conjv {R0 : realType} {E : @chsType R0} (u : E) := c2h (h2c u)^*m.
+HB.lock Definition h2mx {R0 : realType} {E F : @chsType R0} (f : 'Hom(E,F)) :=
+  h2vU *m (f2mx f)^T *m v2hU.
+HB.lock Definition mx2h {R0 : realType} {E F : @chsType R0} f : 'Hom(E,F) :=
+  Hom (v2hU *m f *m h2vU)^T.
+HB.lock Definition outp {R0 : realType} {E F : @chsType R0} (v : F) (u : E) : 'Hom(E,F) :=
+  mx2h (h2c v *m (h2c u)^*t).
+HB.lock Definition adj_lfun {R0 : realType} {E F : @chsType R0} (f : 'Hom(E,F)) :=
+  mx2h (h2mx f)^*t.
+HB.lock Definition tr_lfun {R0 : realType} {E F : @chsType R0} (f : 'Hom(E,F)) :=
+  mx2h (h2mx f)^T.
+HB.lock Definition conj_lfun {R0 : realType} {E F : @chsType R0} (f : 'Hom(E,F)) :=
+  mx2h (h2mx f)^*m.
 
 Notation "v ^*v" := (conjv v) : lfun_scope.
 Notation "[> u ; v <]" := (outp u v).
@@ -651,16 +671,17 @@ Notation "f ^C" := (conj_lfun f) : lfun_scope.
 Notation "f ^T" := (tr_lfun f) : lfun_scope.
 
 Section HermitianIso.
-Context {E : chsType}.
+Context {R0 : realType} {E : @chsType R0}.
+Local Notation C := (@C R0).
 Implicit Type (i j : 'I_(dim E)).
 
-Local Notation v2hU := (@v2hU E).
-Local Notation h2vU := (@h2vU E).
-Local Notation h2c := (@h2c E).
-Local Notation c2h := (@c2h E).
-Local Notation conjv := (@conjv E).
+Local Notation v2hU := (@v2hU R0 E).
+Local Notation h2vU := (@h2vU R0 E).
+Local Notation h2c := (@h2c R0 E).
+Local Notation c2h := (@c2h R0 E).
+Local Notation conjv := (@conjv R0 E).
 
-Lemma onb_tuple_eb : orthonormal (@tuple_eb E).
+Lemma onb_tuple_eb : orthonormal (@tuple_eb R0 E).
 Proof. by apply/orthonormal_tupleP=>i j; rewrite/= !tnthE eb_dot. Qed.
 
 (* vectType basis to hermitianType basis *)
@@ -772,10 +793,11 @@ Qed.
 End HermitianIso.
 
 Section HermitianLfun.
-Context {E F: chsType}.
+Context {R0 : realType} {E F: @chsType R0}.
+Local Notation C := (@C R0).
 
-Local Notation h2mx := (@h2mx E F).
-Local Notation mx2h := (@mx2h E F).
+Local Notation h2mx := (@h2mx R0 E F).
+Local Notation mx2h := (@mx2h R0 E F).
 
 Lemma h2mxE f : h2mx f = h2vU *m (f2mx f)^T *m v2hU.
 Proof. by rewrite h2mx.unlock. Qed.
@@ -835,7 +857,9 @@ Qed.
 End HermitianLfun.
 
 Section HermitianLfunExtra.
-Implicit Type (H G K: chsType).
+Context {R0 : realType}.
+Local Notation C := (@C R0).
+Implicit Type (H G K: @chsType R0).
 
 Lemma h2mx_comp {H G K} (f: 'Hom(H,G)) (g: 'Hom(K,H)) :
   h2mx (f \o g)%VF = h2mx f *m h2mx g.
@@ -853,9 +877,10 @@ Proof. by rewrite -h2mx1 h2mxK. Qed.
 End HermitianLfunExtra.
 
 Section OuterProduct.
-Context {E F: chsType}.
+Context {R0 : realType} {E F: @chsType R0}.
+Local Notation C := (@C R0).
 
-Local Notation outp := (@outp E F).
+Local Notation outp := (@outp R0 E F).
 Local Notation "[> u ; v <]" := (outp u v).
 
 Lemma h2mx_eb i j : h2mx [> eb i ; eb j <] = delta_mx i j.
@@ -931,9 +956,10 @@ End OuterProduct.
 
 Local Open Scope lfun_scope.
 Section ConjvTheory.
-Context {H: chsType}.
+Context {R0 : realType} {H: @chsType R0}.
+Local Notation C := (@C R0).
 
-Local Notation conjv := (@conjv H).
+Local Notation conjv := (@conjv R0 H).
 
 Lemma conjv_eb i : (eb i)^*v = (eb i :H).
 Proof. by rewrite conjv.unlock h2c_eb conjmx_delta c2h_eb. Qed.
@@ -978,14 +1004,15 @@ Proof. by rewrite -{2}(conjvK u) conjv_dot. Qed.
 End ConjvTheory.
 
 Section AdjTrConjLfunTheory.
-Context {H G: chsType}.
+Context {R0 : realType} {H G: @chsType R0}.
+Local Notation C := (@C R0).
 Implicit Type (f: 'Hom(H, G)) (g : 'Hom(G,H)).
 
-Local Notation adjf := (@adj_lfun H G).
-Local Notation conjf := (@conj_lfun H G).
-Local Notation trf := (@tr_lfun H G).
+Local Notation adjf := (@adj_lfun R0 H G).
+Local Notation conjf := (@conj_lfun R0 H G).
+Local Notation trf := (@tr_lfun R0 H G).
 
-Lemma adjfK : cancel adjf (@adj_lfun G H).
+Lemma adjfK : cancel adjf (@adj_lfun R0 G H).
 Proof. by move=>f; rewrite adj_lfun.unlock mx2hK adjmxK h2mxK. Qed.
 
 Lemma adjf_inj : injective adjf.
@@ -1011,7 +1038,7 @@ Lemma adjf_sum (I : Type) (r : seq I) P (F : I -> 'Hom(H,G)) :
   (\sum_(i <- r | P i) F i)^A = \sum_(i <- r | P i) (F i)^A.
 Proof. exact: linear_sum. Qed.
 
-Lemma adjf_comp {K: chsType} (f: 'Hom(G, K)) (g: 'Hom(H, G)) :
+Lemma adjf_comp {K: @chsType R0} (f: 'Hom(G, K)) (g: 'Hom(H, G)) :
   ((f \o g)^A = g^A \o f^A)%VF.
 Proof. by apply/h2mx_inj; rewrite adj_lfun.unlock !h2mx_comp !mx2hK adjmxM. Qed.
 
@@ -1053,7 +1080,7 @@ Lemma conjf_sum (I : Type) (r : seq I) P (F : I -> 'Hom(H,G)) :
   (\sum_(i <- r | P i) F i)^C = \sum_(i <- r | P i) (F i)^C.
 Proof. exact: linear_sum. Qed.
 
-Lemma conjf_comp {K: chsType} (f: 'Hom(G, K)) (g: 'Hom(H, G)) :
+Lemma conjf_comp {K: @chsType R0} (f: 'Hom(G, K)) (g: 'Hom(H, G)) :
   ((f \o g)^C = f^C \o g^C)%VF.
 Proof. by apply/h2mx_inj; rewrite conj_lfun.unlock !h2mx_comp !mx2hK conjmxM. Qed.
 
@@ -1066,7 +1093,7 @@ Proof. by rewrite tr_lfun.unlock adj_lfun.unlock conj_lfun.unlock mx2hK adjmxCT 
 Lemma trfAC f : f^T = f^A^C.
 Proof. by rewrite tr_lfun.unlock adj_lfun.unlock conj_lfun.unlock mx2hK adjmxTC conjmxK. Qed.
 
-Lemma trfK : cancel trf (@tr_lfun G H).
+Lemma trfK : cancel trf (@tr_lfun R0 G H).
 Proof. by move=>f; rewrite tr_lfun.unlock mx2hK trmxK h2mxK. Qed.
 
 Lemma trf_inj : injective trf.
@@ -1092,7 +1119,7 @@ Lemma trf_sum (I : Type) (r : seq I) P (F : I -> 'Hom(H,G)) :
   (\sum_(i <- r | P i) F i)^T = \sum_(i <- r | P i) (F i)^T%VF.
 Proof. exact: linear_sum. Qed.
 
-Lemma trf_comp {K: chsType} (f: 'Hom(G, K)) (g: 'Hom(H, G)) :
+Lemma trf_comp {K: @chsType R0} (f: 'Hom(G, K)) (g: 'Hom(H, G)) :
   ((f \o g)^T = g^T \o f^T)%VF.
 Proof. by apply/h2mx_inj; rewrite tr_lfun.unlock !h2mx_comp !mx2hK trmx_mul. Qed.
 
@@ -1132,7 +1159,8 @@ Proof. by rewrite conj_lfun.unlock mx2hK. Qed.
 End AdjTrConjLfunTheory.
 
 Section AdjTrConjLfunTrans.
-Implicit Type (H G: chsType).
+Context {R0 : realType}.
+Implicit Type (H G: @chsType R0).
 
 Lemma adjfCT H G (f : 'Hom(H,G)) : f^A = f^C^T.
 Proof. by rewrite trfCA conjfK. Qed.
@@ -1167,7 +1195,8 @@ Proof. by rewrite -adjfCT -adjfTC. Qed.
 End AdjTrConjLfunTrans.
 
 Section OuterProductTheory.
-Implicit Type (H G W: chsType).
+Context {R0 : realType}.
+Implicit Type (H G W: @chsType R0).
 
 Lemma adj_outp H G (u : H) (v : G) : [> u; v <]^A = [> v; u <].
 Proof.
@@ -1203,6 +1232,8 @@ Qed.
 End OuterProductTheory.
 
 Section ScalarHermitian.
+Context {R0 : realType}.
+Local Notation C := (@C R0).
 
 Definition ncfdotp (a b : C^o) :=  a^* * b.
 
@@ -1221,7 +1252,7 @@ Qed.
 Lemma linear_ncfdotp : forall u, linear_for *%R (ncfdotp u).
 Proof. by move=>w a u v; rewrite /ncfdotp mulrDr /GRing.scale/= mulrCA. Qed.
 
-Definition ncf_regular_hermitianMixin := @Vector_isHermitianSpace.Build C^o
+Definition ncf_regular_hermitianMixin := @Vector_isHermitianSpace.Build R0 C^o
   ncfdotp ncfdotp_ge0 ncfdotp0_eq0 conj_ncfdotp linear_ncfdotp.
 HB.instance Definition _ := ncf_regular_hermitianMixin.
 #[local] HB.instance Definition _ := HermitianSpace.copy C C^o.
@@ -1231,7 +1262,7 @@ Proof. by []. Qed.
 Definition ncf_eb (i : 'I_(dim C^o)) : C^o := 1.
 Lemma ncf_eb_dot i j : [<ncf_eb i ; ncf_eb j >] = (i == j)%:R.
 Proof. by rewrite/ncf_eb/= !ord1 /dotp/=/ncfdotp conjC1 mulr1. Qed.
-Definition ncf_regular_chsMixin := @HermitianSpace_isCanonical.Build C^o
+Definition ncf_regular_chsMixin := @HermitianSpace_isCanonical.Build R0 C^o
   ncf_eb ncf_eb_dot ncf_dim_proper.
 HB.instance Definition _ := ncf_regular_chsMixin.
 #[local] HB.instance Definition _ := CanonicalHermitianSpace.copy C C^o.
@@ -1248,7 +1279,8 @@ Qed.
 (* linear function forms a Hermitian space *)
 (* the norm is l2norm. we do not use it since we later use trace norm *)
 Section LfunHermitian.
-Context {U V : chsType}.
+Context {R0 : realType} {U V : @chsType R0}.
+Local Notation C := (@C R0).
 
 Let F := 'Hom(U,V).
 
@@ -1269,12 +1301,12 @@ Proof.
 by move=>a v w; rewrite/lfundotp comp_lfunDr !linearD/= -comp_lfunZr !linearZ/=.
 Qed.
 
-Definition lfun_hermitianMixin := @Vector_isHermitianSpace.Build 'Hom(U,V)
+Definition lfun_hermitianMixin := @Vector_isHermitianSpace.Build R0 'Hom(U,V)
   lfundotp lfundotp_ge0 lfundotp0_eq0 conj_lfundotp linear_lfundotp.
-Definition lfun_hermitianType : hermitianType := (HB.pack 'Hom(U,V) lfun_hermitianMixin).
+Definition lfun_hermitianType : @hermitianType R0 := (HB.pack 'Hom(U,V) lfun_hermitianMixin).
 #[local] HB.instance Definition _ := lfun_hermitianMixin.
 #[local] HB.instance Definition _ := Num.NormedZmodule.copy 'Hom(U,V)
-  (('Hom(U,V) : hermitianType) : normedZmodType C).
+  (('Hom(U,V) : @hermitianType R0) : normedZmodType C).
 
 Lemma lfun_dim_proper : (dim 'Hom(U,V) > 0)%N.
 Proof. by rewrite/dim/= muln_gt0 !dim_proper. Qed.
@@ -1288,9 +1320,9 @@ rewrite -(can_eq (@mxtens_unindexK _ _)) -pair_eqE/=.
 by case: eqP=>_; case: eqP.
 Qed.
 
-Definition lfun_chsMixin := @HermitianSpace_isCanonical.Build 'Hom(U,V)
+Definition lfun_chsMixin := @HermitianSpace_isCanonical.Build R0 'Hom(U,V)
   lfun_eb lfun_eb_dot lfun_dim_proper.
-Definition lfun_chsType : chsType := HB.pack 'Hom(U,V) lfun_chsMixin.
+Definition lfun_chsType : @chsType R0 := HB.pack 'Hom(U,V) lfun_chsMixin.
 
 Lemma lfun_hnormE (u : 'Hom(U,V)) : `|u| = l2normC (h2mx u).
 Proof. by rewrite hnormE /dotp/= /lfundotp h2mx_comp l2normC_dotV adj_lfun.unlock mx2hK. Qed.

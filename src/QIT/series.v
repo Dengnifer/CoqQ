@@ -132,13 +132,14 @@ HB.instance Definition _ := C_bilinearMixin.
 End C_biMulNormed1.
 
 Section chsf_biMulNormed1.
-Local Notation R := hermitian.R.
-Local Notation C := hermitian.C.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable V: chsType.
 Local Notation F := 'End(V).
 Import HermitianTopology.
 HB.instance Definition _ := @isMulNormed.Build R C F
-  (@comp_lfun C V V V) (@trfnormM V V V).
+  (@comp_lfun C V V V) (@trfnormM R V V V).
 HB.instance Definition _ := Monoid.isLaw.Build F (1%:VF)
   (@comp_lfun C V V V) mulrA mul1r mulr1.
 
@@ -509,10 +510,11 @@ Qed.
 End BiMulNormedTheory.
 
 Section series.
+Variable R : realType.
 Local Open Scope classical_set_scope.
 
-Local Notation R := hermitian.R.
-Local Notation C := hermitian.C.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 
 Local Notation r2cC := (GRing.RMorphism.clone _ _ (real_complex R) _).
 Local Notation c2rC := (@complex.Re R).

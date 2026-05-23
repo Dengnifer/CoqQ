@@ -37,15 +37,19 @@ Local Open Scope lfun_scope.
 
 Section Uncertainty.
 
-Lemma sqr_ge0_le (x y : hermitian.C) (Hx : 0 <= x) (Hy : 0 <= y) :
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
+
+Lemma sqr_ge0_le (x y : C) (Hx : 0 <= x) (Hy : 0 <= y) :
   x^+2 <= y^+2 -> x <= y.
 Proof. by move => Hs; rewrite -ler_sqr. Qed.
 
-Lemma sqr_le (x y : hermitian.C) :
+Lemma sqr_le (x y : C) :
   `|x|^+2 <= `|y|^+2 -> `|x| <= `|y|.
 Proof. by apply sqr_ge0_le. Qed.
 
-Lemma ge_addr (R : numDomainType) (x y z : R) :
+Lemma ge_addr (S : numDomainType) (x y z : S) :
   (- z + x <= y) = (x <= y + z). 
 Proof.
 by rewrite addrC lerBlDr.
@@ -69,7 +73,7 @@ Proof.
   by rewrite addrC -!addrA addrN addr0 addNr addr0.
 Qed.
 
-Lemma constCl : forall (c : hermitian.C) A,
+Lemma constCl : forall (c : C) A,
   (c *:\1) \o A = c *: A.
 Proof. by move => c A; rewrite -comp_lfunZl comp_lfun1l. Qed.
 
@@ -333,20 +337,20 @@ Proof.
     rewrite (Maccone_Pati_uncertainty_2p, Maccone_Pati_uncertainty_2m).
   have Hci :
     Num.Num_conj__canonical__GRing_RMorphism
-      (complex_complex__canonical__Num_ClosedField hermitian.R) 'i = - 'i.
-    change (@Num.conj hermitian.C 'i = - 'i). exact: conjCi.
+      (complex_complex__canonical__Num_ClosedField R) 'i = - 'i.
+    change (@Num.conj C 'i = - 'i). exact: conjCi.
   have Hcomm :
     Num.Num_conj__canonical__GRing_RMorphism
-      (complex_complex__canonical__Num_ClosedField hermitian.R)
+      (complex_complex__canonical__Num_ClosedField R)
       (ave u (commer A B)) = - ave u (commer A B).
-    change (@Num.conj hermitian.C (ave u (commer A B)) =
+    change (@Num.conj C (ave u (commer A B)) =
       - ave u (commer A B)).
     exact: ave_commer_im.
   have Hnorm (w : H) :
     Num.Num_conj__canonical__GRing_RMorphism
-      (complex_complex__canonical__Num_ClosedField hermitian.R)
+      (complex_complex__canonical__Num_ClosedField R)
       `|[< u; w >]| = `|[< u; w >]|.
-    change (@Num.conj hermitian.C `|[< u; w >]| = `|[< u; w >]|).
+    change (@Num.conj C `|[< u; w >]| = `|[< u; w >]|).
     by rewrite conj_Creal ?normr_real.
   rewrite real_comparable // CrealE rmorphD rmorphM rmorphXn
     ?conj_normC ?ave_commer_im // ?rmorphN ?conjCi ?mulrNN.
@@ -358,6 +362,13 @@ End Uncertainty.
 Section CHSH.
 
 Variable R : realType.
+Local Notation "'''X'" := (@PauliX R).
+Local Notation "'''Z'" := (@PauliZ R).
+Local Notation "''0'" := (@t2tv R bool false) (at level 0).
+Local Notation "''1'" := (@t2tv R bool true) (at level 0).
+Local Notation "f '⊗f' g" := (@tentf R _ _ _ _ f g) : lfun_scope.
+Local Notation "u '⊗t' v" := (@tentv R _ _ u v)
+  (at level 45, left associativity) : lfun_scope.
 
 Definition bool2pm (b:bool) : R := if b then 1%:R else -1%:R.
 
@@ -428,10 +439,10 @@ Lemma PauliX'1 : ''X '1 = '0.
 Proof. exact: PauliX_cb. Qed.
 
 Lemma PauliZ'0 : ''Z '0 = '0.
-Proof. by rude_bmx. Qed.
+Proof. by rewrite PauliZ_cb /= scale1r. Qed.
 
 Lemma PauliZ'1 : ''Z '1 = -'1.
-Proof. by rude_bmx. Qed.
+Proof. by rewrite PauliZ_cb /= scaleN1r. Qed.
 
 Definition Pauli' := (PauliX'0, PauliX'1, PauliZ'0, PauliZ'1).
 

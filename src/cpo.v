@@ -24,7 +24,7 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 Unset SsrOldRewriteGoalsOrder.
 
-Obligation Tactic := move=> /=.
+#[global,export] Obligation Tactic := move=> /=.
 
 (* -------------------------------------------------------------------- *)
 Definition chain {d : Order.disp_t} [T : porderType d] (c : nat -> T) :=

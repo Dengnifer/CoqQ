@@ -30,8 +30,6 @@ Local Open Scope ring_scope.
 (* -------------------------------------------------------------------- *)
 Import VectorInternalTheory.
 
-Local Notation C := hermitian.C.
-
 (* --------------------------------------------------------------------- *)
 Declare Scope ffun_scope.
 Delimit Scope ffun_scope with F.
@@ -904,6 +902,12 @@ Qed.
 End Linear.
 
 (* -------------------------------------------------------------------- *)
+Section TensorReal.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation hermitianType := (@hermitianType R).
+Local Notation chsType := (@chsType R).
+
 Section HermitianTensorProducts.
 Context {I : finType} (E : I -> hermitianType).
 
@@ -1056,7 +1060,7 @@ by rewrite /= rmorphM /= conjCK mulrC.
 Qed.
 
 (* ? HB.instance fails here *)
-Definition tensor_hermitianMixin := @Vector_isHermitianSpace.Build T tdotp
+Definition tensor_hermitianMixin := @Vector_isHermitianSpace.Build R T tdotp
   ge0_tdotp tdotp_eq0 conj_tdotp linear_tdotp.
 Canonical tensor_hermitianType := 
   HermitianSpace.Pack (HermitianSpace.Class tensor_hermitianMixin).
@@ -1081,7 +1085,7 @@ Lemma tensor_chs_dim_proper : (1 <= (dim T))%N.
 Proof.
 rewrite {1}/dim /= /dim /=.
 rewrite muln1 card_mv card_dep_ffun foldrE big_map big_enum /=.
-apply prodn_gt0=> i. move: (@dim_proper (E i)).
+apply prodn_gt0=> i. move: (@dim_proper R (E i)).
 by rewrite /dim /= card_ord.
 Qed.
 
@@ -1097,9 +1101,11 @@ by rewrite (bigD1 m)//= !mvE eb_dot Pm mul0r.
 Qed.
 
 (* ? HB.instance fails here *)
-Definition tensor_chsMixin := @HermitianSpace_isCanonical.Build T tensor_chs_eb
+Definition tensor_chsMixin := @HermitianSpace_isCanonical.Build R T tensor_chs_eb
   tensor_chs_eb_dot tensor_chs_dim_proper.
 Canonical tensor_chsType := 
   CanonicalHermitianSpace.Pack (CanonicalHermitianSpace.Class tensor_chsMixin).
 
 End chsTensorProducts.
+
+End TensorReal.

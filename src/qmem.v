@@ -67,7 +67,7 @@ Require Import Relation_Definitions Setoid.
 
 Import Order.LTheory GRing.Theory Num.Theory.
 
-Local Notation C := hermitian.C.
+Local Notation C := (@hermitian.C _).
 Local Notation G := qreg.G.
 
 Set Implicit Arguments.
@@ -91,6 +91,10 @@ Module QMemory.
 
 Local Open Scope fnd_scope.
 Section ClassDef.
+
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 
 Record mixin_of (L : finType) (H : L -> chsType) 
   (S : forall {T}, qreg T -> {set L}) 
@@ -131,8 +135,9 @@ Record mixin_of (L : finType) (H : L -> chsType)
 
   _ : forall n (T : 'I_n -> qType) (x : forall i, qreg (T i)) 
         (t : {dffun forall i, eval_qtype (T i)}) ,
-            \tenv_i (V (x i) ''(t i))%:Hnd =
-              (V <{ ffun: x }> ''t)%:Hnd;
+            \big[ @Hnd_ten _ L H / @to_Hnd _ L H set0 (deltav idx0) ]_i
+              (V (x i) ''(t i))%:Hnd =
+              @to_Hnd _ L H (S <{ ffun: x }>) (V <{ ffun: x }> ''t);
 }.
 
 Record qmemory := QMemory  
@@ -150,79 +155,103 @@ Record qmemory := QMemory
 
 End ClassDef.
 
-Lemma tv2v_is_linear m T (x : qreg T) : linear (@vec_proj m T x).
+Arguments qmemory {R}.
+Arguments mem_label {R} _.
+Arguments mem_system {R} _ _.
+Arguments qreg_set {R} _ {T} _.
+Arguments vec_proj {R} _ {T} _ _.
+
+Lemma tv2v_is_linear {R : realType} (m : @qmemory R) T (x : qreg T) :
+  linear (@vec_proj R m T x).
 Proof. by case: m T x=>????[]. Qed. 
 #[export]
-HB.instance Definition _ m T (x : qreg T) := GRing.isLinear.Build C ('Ht T)
-  'H[@mem_system m]_(qreg_set m x) *:%R (@vec_proj m T x) 
-  (@tv2v_is_linear m T x).
+HB.instance Definition _ {R : realType} (m : @qmemory R) T (x : qreg T) :=
+  GRing.isLinear.Build (@hermitian.C R) ('Ht T)
+  'H[@mem_system R m]_(qreg_set m x) *:%R (@vec_proj R m T x) 
+  (@tv2v_is_linear R m T x).
 
 HB.lock
-Definition tf2f (m : qmemory) T1 T2 (x1 : qreg T1) (x2 : qreg T2) 
-  (f : 'Hom{T1, T2}) : 'F[@mem_system m]_(qreg_set m x1, qreg_set m x2) 
+Definition tf2f {R : realType} (m : @qmemory R) T1 T2 (x1 : qreg T1) (x2 : qreg T2) 
+  (f : 'Hom{T1, T2}) : 'F[@mem_system R m]_(qreg_set m x1, qreg_set m x2) 
   := \sum_(i : evalQT T1) \sum_(j : evalQT T2)
     [< ''j ; f ''i >] *: [> vec_proj m x2 ''j ; vec_proj m x1 ''i <].
-Lemma tf2f_is_linear m T1 T2 (x1 : qreg T1) (x2 : qreg T2) :
-  linear (@tf2f m T1 T2 x1 x2).
+Arguments tf2f {R} m {T1 T2} x1 x2 f.
+Lemma tf2f_is_linear {R : realType} (m : @qmemory R) T1 T2
+    (x1 : qreg T1) (x2 : qreg T2) :
+  linear (@tf2f R m T1 T2 x1 x2).
 Proof.
 move=>a f g; rewrite tf2f.unlock scaler_sumr -big_split; apply eq_bigr=>i _.
 rewrite/= scaler_sumr -big_split; apply eq_bigr=>j _.
 by rewrite/= scalerA -scalerDl lfunE/= lfunE/= linearPr/=.
 Qed.
 #[export]
-HB.instance Definition _ m T1 T2 x1 x2 := GRing.isLinear.Build C 'Hom{T1, T2}
-  'F[@mem_system m]_(qreg_set m x1, qreg_set m x2) *:%R (@tf2f m T1 T2 x1 x2)
-  (@tf2f_is_linear m T1 T2 x1 x2).
+HB.instance Definition _ {R : realType} (m : @qmemory R) T1 T2 x1 x2 :=
+  GRing.isLinear.Build (@hermitian.C R) 'Hom{T1, T2}
+  'F[@mem_system R m]_(qreg_set m x1, qreg_set m x2) *:%R (@tf2f R m T1 T2 x1 x2)
+  (@tf2f_is_linear R m T1 T2 x1 x2).
 
-Definition tm2m m (F : finType) T1 T2 (x1 : qreg T1) 
+Definition tm2m {R : realType} (m : @qmemory R) (F : finType) T1 T2 (x1 : qreg T1) 
   (x2 : qreg T2) (f : F -> 'Hom{T1, T2}) := (fun i : F => tf2f m x1 x2 (f i)).
+Arguments tm2m {R} m {F T1 T2} x1 x2 f.
 
 HB.lock
-Definition v2tv m T (x : qreg T) (u : 'H[@mem_system m]_(qreg_set m x)) :=
+Definition v2tv {R : realType} (m : @qmemory R) T (x : qreg T)
+    (u : 'H[@mem_system R m]_(qreg_set m x)) :=
   \sum_i [< vec_proj m x ''i ; u >] *: ''i.
-Lemma v2tv_is_linear m T x : linear (@v2tv m T x).
+Arguments v2tv {R} m {T} x u.
+Lemma v2tv_is_linear {R : realType} (m : @qmemory R) T x :
+  linear (@v2tv R m T x).
 Proof.
 move=>a u v; rewrite v2tv.unlock scaler_sumr -big_split/=.
 by apply eq_bigr=>i _; rewrite linearP/= scalerA scalerDl.
 Qed.
 
 #[export]
-HB.instance Definition _ m T x := GRing.isLinear.Build
-  C 'H[@mem_system m]_(qreg_set m x) 'Ht T
-  *:%R (@v2tv m T x) (@v2tv_is_linear m T x).
+HB.instance Definition _ {R : realType} (m : @qmemory R) T x := GRing.isLinear.Build
+  (@hermitian.C R) 'H[@mem_system R m]_(qreg_set m x) 'Ht T
+  *:%R (@v2tv R m T x) (@v2tv_is_linear R m T x).
 
 HB.lock
-Definition f2tf (m : qmemory) T1 T2 (x1 : qreg T1) (x2 : qreg T2) 
-  (f : 'F[@mem_system m]_(qreg_set m x1, qreg_set m x2)) : 'Hom{T1, T2}
+Definition f2tf {R : realType} (m : @qmemory R) T1 T2 (x1 : qreg T1) (x2 : qreg T2) 
+  (f : 'F[@mem_system R m]_(qreg_set m x1, qreg_set m x2)) : 'Hom{T1, T2}
   := \sum_(i : evalQT T1) \sum_(j : evalQT T2)
     [< vec_proj m x2 ''j ; f (vec_proj m x1 ''i) >] *: [> ''j ; ''i <]. 
-Lemma f2tf_is_linear m T1 T2 (x1 : qreg T1) (x2 : qreg T2) :
-  linear (@f2tf m T1 T2 x1 x2).
+Arguments f2tf {R} m {T1 T2} x1 x2 f.
+Lemma f2tf_is_linear {R : realType} (m : @qmemory R) T1 T2
+    (x1 : qreg T1) (x2 : qreg T2) :
+  linear (@f2tf R m T1 T2 x1 x2).
 Proof.
 move=>a f g; rewrite f2tf.unlock scaler_sumr -big_split; apply eq_bigr=>i _.
 rewrite/= scaler_sumr -big_split; apply eq_bigr=>j _.
 by rewrite/= scalerA -scalerDl lfunE/= lfunE/= linearPr/=.
 Qed.
 #[export]
-HB.instance Definition _ m T1 T2 x1 x2 := GRing.isLinear.Build C 
-  'F[@mem_system m]_(qreg_set m x1, qreg_set m x2) 'Hom{T1, T2} 
-  *:%R (@f2tf m T1 T2 x1 x2) (@f2tf_is_linear m T1 T2 x1 x2).
+HB.instance Definition _ {R : realType} (m : @qmemory R) T1 T2 x1 x2 :=
+  GRing.isLinear.Build (@hermitian.C R) 
+  'F[@mem_system R m]_(qreg_set m x1, qreg_set m x2) 'Hom{T1, T2} 
+  *:%R (@f2tf R m T1 T2 x1 x2) (@f2tf_is_linear R m T1 T2 x1 x2).
 
 HB.lock
-Definition v2tU (m : qmemory) T (x : qreg T) :=
+Definition v2tU {R : realType} (m : @qmemory R) T (x : qreg T) :=
   \sum_i [> ''i ; vec_proj m x ''i <].
+Arguments v2tU {R} m {T} x.
 
 HB.lock
-Definition tket (m : qmemory) T (x : qreg T) (v : 'Ht T) : 'D[@mem_system m] := 
+Definition tket {R : realType} (m : @qmemory R) T (x : qreg T) (v : 'Ht T) :
+  'D[@mem_system R m] := 
     ketd (vec_proj m x v).
+Arguments tket {R} m {T} x v.
 
 HB.lock
-Definition tbra (m : qmemory) T (x : qreg T) (v : 'Ht T) : 'D[@mem_system m] := 
+Definition tbra {R : realType} (m : @qmemory R) T (x : qreg T) (v : 'Ht T) :
+  'D[@mem_system R m] := 
     brad (vec_proj m x v).
+Arguments tbra {R} m {T} x v.
 
 HB.lock
-Definition tlin (m : qmemory) T1 T2 (x1 : qreg T1) (x2 : qreg T2) 
-  (f : 'Hom{T1,T2}) : 'D[@mem_system m] := lind (tf2f m x1 x2 f).
+Definition tlin {R : realType} (m : @qmemory R) T1 T2 (x1 : qreg T1) (x2 : qreg T2) 
+  (f : 'Hom{T1,T2}) : 'D[@mem_system R m] := lind (tf2f m x1 x2 f).
+Arguments tlin {R} m {T1 T2} x1 x2 f.
 
 Module Exports.
 
@@ -254,16 +283,24 @@ Export QMemory.Exports.
 From quantum.external Require Import spectral.
 
 Section QMemoryTheory.
-Variable (QMem : qmemType).
+Variable R : realType.
+Variable (QMem : @qmemType R).
+Local Notation C := (@hermitian.C R).
+Local Notation "''Ht' T" := (@ihb_chsType R (eval_qtype T%QT))
+  (at level 8, T at level 2, format "''Ht'  T").
+Local Notation "''Hom{' T1 , T2 }" := ('Hom('Ht T1%QT, 'Ht T2%QT))
+  (at level 8, format "''Hom{' T1 ,  T2 }").
+Local Notation "''End{' T }" := ('End('Ht T%QT))
+  (at level 8, format "''End{' T }").
 Local Notation L := (mem_lab QMem).
-Local Notation H := (@mem_sys QMem).
+Local Notation H := (mem_sys QMem).
 Local Notation mset := (mem_set QMem).
 Local Notation tv2v := (tv2v QMem).
 Local Notation tf2f := (tf2f QMem).
-Local Notation v2tv := (@v2tv QMem _).
-Local Notation f2tf := (@f2tf QMem _ _).
+Local Notation v2tv := (@v2tv R QMem _).
+Local Notation f2tf := (@f2tf R QMem _ _).
 Local Notation tm2m := (tm2m QMem).
-Local Notation v2tU := (@v2tU QMem).
+Local Notation v2tU := (@v2tU R QMem).
 
 Lemma disj_setE T1 T2 (x1 : qreg T1) (x2 : qreg T2) :
   (disjoint_qreg x1 x2) = [disjoint mset x1 & mset x2].
@@ -276,7 +313,7 @@ Proof. by case: QMem=>???? []. Qed.
 Lemma tv2v_dot T (x : 'QReg[T]) (u v : 'Ht T) :
   [< tv2v x u ; tv2v x v>] = [< u ; v >].
 Proof.
-rewrite [v](onb_vec (@t2tv _))/= !linear_sum; apply eq_bigr => i _.
+rewrite [v](onb_vec (@t2tv R _))/= !linear_sum; apply eq_bigr => i _.
 rewrite/= !linearZ; f_equal.
 rewrite [u](onb_vec t2tv)/= linear_sum !linear_sumlz.
 apply eq_bigr => j _/=; rewrite/= linearZ !linearZl_LR; f_equal.
@@ -289,16 +326,16 @@ Proof. by case: QMem=>???? []. Qed.
 
 Definition tv2v_fun T (x : qreg T) (F : finType) (f : F -> 'Ht T) :=
   (fun i : F => tv2v x (f i)).
-Lemma tv2v_onb T (x : 'QReg[T]) (F : finType) (ponb : 'PONB(F; 'Ht T)) :
+Lemma tv2v_onb T (x : 'QReg[T]) (F : finType) (ponb : @ponbType R ('Ht T) F) :
   forall i j, [< tv2v x (ponb i) ; tv2v x (ponb j) >] = (i == j)%:R.
 Proof. by move=>i j; rewrite tv2v_dot ponb_dot. Qed.
-HB.instance Definition _ T (x : 'QReg[T]) (F : finType) (ponb : 'PONB(F; 'Ht T)) := 
-  isPONB.Build _ F (tv2v_fun x ponb) (@tv2v_onb T x F ponb).
-Lemma tv2v_card T (x : 'QReg[T]) (F : finType) (onb : 'ONB(F; 'Ht T)) :
+HB.instance Definition _ T (x : 'QReg[T]) (F : finType) (ponb : @ponbType R ('Ht T) F) := 
+  isPONB.Build R _ F (tv2v_fun x ponb) (@tv2v_onb T x F ponb).
+Lemma tv2v_card T (x : 'QReg[T]) (F : finType) (onb : @onbType R ('Ht T) F) :
   #|F| = dim 'H[H]_(mset x).
-Proof. by rewrite -qreg_dim (@onb_card _ _ onb) ihb_dim_cast. Qed.
-HB.instance Definition _ T (x : 'QReg[T]) (F : finType) (onb : 'ONB(F; 'Ht T)) := 
-  isFullDim.Build _ F (tv2v_fun x onb) (@tv2v_card T x F onb).
+Proof. by rewrite -qreg_dim (@onb_card R _ _ onb) (@ihb_dim_cast R _). Qed.
+HB.instance Definition _ T (x : 'QReg[T]) (F : finType) (onb : @onbType R ('Ht T) F) := 
+  isFullDim.Build R _ F (tv2v_fun x onb) (@tv2v_card T x F onb).
 
 Lemma t2v_dec T (x : qreg T) (u : 'H_(mset x)) :
   u = \sum_i [< tv2v x ''i ; u >] *: tv2v x ''i.
@@ -333,7 +370,7 @@ Qed.
 Lemma v2tU_gisolf T (x : 'QReg[T]) : (v2tU x) \is gisolf.
 Proof. by rewrite gisolfE v2tUMV isofE !eqxx. Qed.
 HB.instance Definition _ T (x : 'QReg[T]) :=
-  Iso_isGisoLf.Build _ _ (v2tU x) (@v2tU_gisolf T x).
+  Iso_isGisoLf.Build R _ _ (v2tU x) (@v2tU_gisolf T x).
 
 Lemma tv2v_UE T (x : qreg T) u : tv2v x u = (v2tU x)^A u.
 Proof.
@@ -343,7 +380,7 @@ by move=>j /negPf nji; rewrite adj_outp outpE onb_dot nji scale0r.
 by rewrite adj_outp outpE ns_dot scale1r addr0.
 Qed.
 
-Lemma v2tv_UE T (x : qreg T) u : @v2tv x u = v2tU x u.
+Lemma v2tv_UE T (x : qreg T) u : v2tv x u = v2tU x u.
 Proof.
 rewrite [u]t2v_dec; rewrite !linear_sum/=; apply eq_bigr=>i _.
 rewrite !linearZ/=; f_equal; rewrite QMemory.v2tv.unlock QMemory.v2tU.unlock sum_lfunE.
@@ -378,7 +415,7 @@ by rewrite -tv2v_out outp_compr outp_compl -!tv2v_UE.
 Qed.
 
 Lemma f2tf_UE T1 T2 (x1 : qreg T1) (x2 : qreg T2) f :
-  @f2tf x1 x2 f = (v2tU x2) \o f \o (v2tU x1)^A.
+  f2tf x1 x2 f = (v2tU x2) \o f \o (v2tU x1)^A.
 Proof.
 rewrite QMemory.f2tf.unlock.
 under eq_bigr do under eq_bigr do rewrite !tv2v_UE -!comp_lfunE -adj_dotEl -outp_comp
@@ -408,38 +445,38 @@ by move: E=>/eqP<-; rewrite Pi ns_dot.
 by rewrite onb_dot E; move: E=>/eqP/eqP/t2v_dot_neq->.
 Qed. *)
 
-Lemma tv2vK {T} {x : 'QReg[T]} : cancel (@tv2v T x) (@v2tv x).
+Lemma tv2vK {T} {x : 'QReg[T]} : cancel (tv2v x) (v2tv x).
 Proof. by move=>u; rewrite tv2v_UE v2tv_UE -comp_lfunE v2tUMV lfunE. Qed.
 
-Lemma v2tvK {T} {x : qreg T} : cancel (@v2tv x) (@tv2v T x).
+Lemma v2tvK {T} {x : qreg T} : cancel (v2tv x) (tv2v x).
 Proof. by move=>u; rewrite tv2v_UE v2tv_UE -comp_lfunE v2tUM lfunE. Qed.
 
-Lemma v2tv_inj {T} {x : qreg T} : injective (@v2tv x).
+Lemma v2tv_inj {T} {x : qreg T} : injective (v2tv x).
 Proof. exact: (can_inj v2tvK). Qed.
 
-Lemma tv2v_inj {T} {x : 'QReg[T]} : injective (@tv2v T x).
+Lemma tv2v_inj {T} {x : 'QReg[T]} : injective (tv2v x).
 Proof. exact: (can_inj tv2vK). Qed.
 
 Lemma tf2fK {T1 T2} {x1 : 'QReg[T1]} {x2 : 'QReg[T2]} : 
-  cancel (@tf2f T1 T2 x1 x2) (@f2tf x1 x2).
+  cancel (tf2f x1 x2) (f2tf x1 x2).
 Proof.
 by move=>f; rewrite f2tf_UE tf2f_UE !comp_lfunA
   v2tUMV comp_lfun1l -comp_lfunA v2tUMV comp_lfun1r.
 Qed.
 
 Lemma f2tfK {T1 T2} {x1 : qreg T1} {x2 : qreg T2} : 
-  cancel (@f2tf x1 x2) (@tf2f T1 T2 x1 x2).
+  cancel (f2tf x1 x2) (tf2f x1 x2).
 Proof.
 by move=>f; rewrite f2tf_UE tf2f_UE !comp_lfunA 
   v2tUM comp_lfun1l -comp_lfunA v2tUM comp_lfun1r.
 Qed.
 
 Lemma tf2f_inj {T1 T2} {x1 : 'QReg[T1]} {x2 : 'QReg[T2]} :
-  injective (@tf2f T1 T2 x1 x2).
+  injective (tf2f x1 x2).
 Proof. exact: (can_inj tf2fK). Qed.
 
 Lemma f2tf_inj {T1 T2} {x1 : qreg T1} {x2 : qreg T2} : 
-  injective (@f2tf x1 x2).
+  injective (f2tf x1 x2).
 Proof. exact: (can_inj f2tfK). Qed.
 
 Lemma tv2v_conj T (x : qreg T) (v : 'Ht T) :
@@ -455,23 +492,23 @@ Variable (x : qreg T) (x1 : qreg T1) (x2 : qreg T2) (x3 : qreg T3).
 Variable (y : 'QReg[T]) (y1 : 'QReg[T1]) (y2 : 'QReg[T2]) (y3 : 'QReg[T3]).
 
 Lemma tv2v_dotr (u : 'H_(mset x)) (v : 'Ht T) :
-  [< u ; tv2v x v >] = [< v2tv u ; v >].
+  [< u ; tv2v x v >] = [< v2tv x u ; v >].
 Proof. by rewrite tv2v_UE adj_dotEr v2tv_UE. Qed.
 
 Lemma tv2v_dotl (u : 'Ht T) (v : 'H_(mset x)):
-  [< tv2v x u ; v >] = [< u; v2tv v >].
+  [< tv2v x u ; v >] = [< u; v2tv x v >].
 Proof. by rewrite -conj_dotp tv2v_dotr conj_dotp. Qed.
 
-Lemma v2tv_dot u v : [<@v2tv x u ; v2tv v >] = [<u ; v>].
+Lemma v2tv_dot u v : [<v2tv x u ; v2tv x v >] = [<u ; v>].
 Proof. by rewrite -tv2v_dotl v2tvK. Qed.
 
 Lemma tv2v_norm (u : 'Ht T) : `| tv2v y u | = `| u |.
 Proof. by rewrite !hnormE tv2v_dot. Qed.
 
-Lemma v2tv_norm u : `| @v2tv x u | = `| u |.
+Lemma v2tv_norm u : `| v2tv x u | = `| u |.
 Proof. by rewrite !hnormE v2tv_dot. Qed.
 
-Lemma v2tv_conj v : (@v2tv x v)^*v = v2tv (v^*v).
+Lemma v2tv_conj v : (v2tv x v)^*v = v2tv x (v^*v).
 Proof. by rewrite !v2tv_UE -{1}[v2tU x]conjfK conjfE conjvK v2tU_conj. Qed.
 
 Lemma tf2f_comp f g :
@@ -481,7 +518,7 @@ by rewrite !tf2f_UE !comp_lfunA -[_ \o v2tU y1 \o _]comp_lfunA v2tUMV comp_lfun1
 Qed.
 
 Lemma f2tf_comp f g :
-    @f2tf x1 x2 f \o @f2tf x3 x1 g = @f2tf x3 x2 (f \o g).
+    f2tf x1 x2 f \o f2tf x3 x1 g = f2tf x3 x2 (f \o g).
 Proof.
 by rewrite !f2tf_UE !comp_lfunA -[_ \o _ \o v2tU x1]comp_lfunA v2tUM comp_lfun1r.
 Qed.
@@ -504,33 +541,33 @@ Qed.
 Lemma tf2f_trlf f : \Tr (tf2f y y f) = \Tr f.
 Proof. by rewrite tf2f_UE lftraceC comp_lfunA v2tUMV comp_lfun1l. Qed. 
 
-Lemma f2tf_adj f : (@f2tf x1 x2 f)^A = f2tf (f^A).
+Lemma f2tf_adj f : (f2tf x1 x2 f)^A = f2tf x2 x1 (f^A).
 Proof. by rewrite !f2tf_UE !adjf_comp adjfK comp_lfunA. Qed.
 
-Lemma f2tf_conj f : (@f2tf x1 x2 f)^C = f2tf (f^C).
+Lemma f2tf_conj f : (f2tf x1 x2 f)^C = f2tf x1 x2 (f^C).
 Proof. by rewrite !f2tf_UE !conjf_comp lfACC !v2tU_conj. Qed.
 
-Lemma f2tf_tr f : (@f2tf x1 x2 f)^T = f2tf (f^T).
+Lemma f2tf_tr f : (f2tf x1 x2 f)^T = f2tf x2 x1 (f^T).
 Proof. by rewrite !trfCA f2tf_conj f2tf_adj. Qed.
 
-Lemma f2tf1 : @f2tf y y \1 = \1.
+Lemma f2tf1 : f2tf y y \1 = \1.
 Proof. by rewrite f2tf_UE comp_lfun1r v2tUMV. Qed.
 
-Lemma f2tf_trlf f : \Tr (@f2tf x x f) = \Tr f.
+Lemma f2tf_trlf f : \Tr (f2tf x x f) = \Tr f.
 Proof. by rewrite f2tf_UE lftraceC comp_lfunA v2tUM comp_lfun1l. Qed. 
 
 Lemma tf2f_apply f v : (tf2f y1 x2 f) (tv2v y1 v) = tv2v x2 (f v).
 Proof. by rewrite tf2f_UE !tv2v_UE -!comp_lfunE -!comp_lfunA v2tUMV comp_lfun1r. Qed.
 
-Lemma f2tf_apply f v : (@f2tf x1 x2 f) (v2tv v) = v2tv (f v).
+Lemma f2tf_apply f v : (f2tf x1 x2 f) (v2tv x1 v) = v2tv x2 (f v).
 Proof. by rewrite f2tf_UE !v2tv_UE -!comp_lfunE -!comp_lfunA v2tUM comp_lfun1r. Qed.
 
 Lemma tf2f_apply_v2tv f v :
-    (tf2f x1 x2 f) v = tv2v x2 (f (v2tv v)).
+    (tf2f x1 x2 f) v = tv2v x2 (f (v2tv x1 v)).
 Proof. by rewrite tf2f_UE tv2v_UE v2tv_UE -!comp_lfunE. Qed.
 
 Lemma f2tf_apply_tv2v f v :
-  (@f2tf x1 x2 f) v = v2tv (f (tv2v x1 v)).
+  (f2tf x1 x2 f) v = v2tv x2 (f (tv2v x1 v)).
 Proof. by rewrite f2tf_UE tv2v_UE v2tv_UE -!comp_lfunE. Qed.
 
 End BasicProperty.
@@ -886,15 +923,15 @@ Proof. by rewrite tv2v_UE isofA_dot. Qed.
 
 Lemma tv2v_ps T (x : qreg T) (v : 'PS('Ht T)) :
   [< tv2v x v ; tv2v x v >] <= 1.
-Proof. by move: (ps_dot v); apply le_trans; apply/tv2v_dot_ler. Qed.
+Proof. by move: (@ps_dot R _ v); apply le_trans; apply/tv2v_dot_ler. Qed.
 HB.instance Definition _ T (x : qreg T) (v : 'PS('Ht T)) := 
-  isPartialState.Build 'H[H]_(mset x) (tv2v x v) (@tv2v_ps T x v).
+  isPartialState.Build R 'H[H]_(mset x) (tv2v x v) (@tv2v_ps T x v).
 
 Lemma tv2v_ns T (x : 'QReg[T]) (v : 'NS('Ht T)) :
   [< tv2v x v ; tv2v x v >] = 1.
 Proof. by rewrite tv2v_dot ns_dot. Qed.
 HB.instance Definition _ T (x : 'QReg[T]) (v : 'NS('Ht T)) := 
-  Partial_isNormalState.Build _ (tv2v x v) (@tv2v_ns T x v).
+  Partial_isNormalState.Build R _ (tv2v x v) (@tv2v_ns T x v).
 
 Section EndProp.
 
@@ -1036,19 +1073,19 @@ Lemma tf2f_bound1 T' x (z : qreg T') (g : 'FB1('Ht T, 'Ht T')) :
   tf2f x z g \is bound1lf.
 Proof. by apply/tf2f_bound1P/is_bound1lf. Qed.
 HB.instance Definition _ T' x z (g : 'FB1('Ht T, 'Ht T')) := 
-  isBound1Lf.Build _ _ (tf2f x z g) (@tf2f_bound1 T' x z g).
+  isBound1Lf.Build R _ _ (tf2f x z g) (@tf2f_bound1 T' x z g).
 
 Lemma tf2f_iso T' x (z : 'QReg[T']) (g : 'FI('Ht T, 'Ht T')) : 
   tf2f x z g \is isolf.
 Proof. by apply/tf2f_isoP/is_isolf. Qed.
 HB.instance Definition _ T' x (z : 'QReg[T']) (g : 'FI('Ht T, 'Ht T')) :=
-  Bound1_isIsoLf.Build _ _ (tf2f x z g) (@tf2f_iso T' x z g).
+  Bound1_isIsoLf.Build R _ _ (tf2f x z g) (@tf2f_iso T' x z g).
 
 Lemma tf2f_giso T' y (z : 'QReg[T']) (g : 'FGI('Ht T, 'Ht T')) : 
   tf2f y z g \is gisolf.
 Proof. by rewrite tf2f_gisoE is_gisolf. Qed.
 HB.instance Definition _ T' y (z : 'QReg[T']) (g : 'FGI('Ht T, 'Ht T')) :=
-  Iso_isGisoLf.Build _ _ (tf2f y z g) (@tf2f_giso T' y z g).
+  Iso_isGisoLf.Build R _ _ (tf2f y z g) (@tf2f_giso T' y z g).
 
 (* Lemma tf2f_unitary y (g : 'FU(_)) : tf2f y y g \is unitarylf.
 Proof. by rewrite tf2f_unitaryE is_unitarylf. Qed.
@@ -1062,7 +1099,7 @@ HB.instance Definition _ x (g : 'FH(_)) :=
 Lemma tf2f_psd x (g : 'F+(_)) : tf2f x x g \is psdlf.
 Proof. by rewrite tf2f_psdP// is_psdlf. Qed.
 HB.instance Definition _ x (g : 'F+(_)) := 
-  Herm_isPsdLf.Build _ (tf2f x x g) (@tf2f_psd x g).
+  Herm_isPsdLf.Build R _ (tf2f x x g) (@tf2f_psd x g).
 Lemma tf2f_obs x (g : 'FO(_)) : tf2f x x g \is obslf.
 Proof. by rewrite tf2f_obsP// is_obslf. Qed.
 HB.instance Definition _ x (g : 'FO(_)) := 
@@ -1070,18 +1107,20 @@ HB.instance Definition _ x (g : 'FO(_)) :=
 Lemma tf2f_den x (g : 'FD(_)) : tf2f x x g \is denlf.
 Proof. by rewrite tf2f_denP// is_denlf. Qed.
 HB.instance Definition _ x (g : 'FD(_)) := 
-  Obs_isDenLf.Build _ (tf2f x x g) (@tf2f_den x g).
+  Obs_isDenLf.Build R _ (tf2f x x g) (@tf2f_den x g).
 Lemma tf2f_den1 y (g : 'FD1(_)) : tf2f y y g \is den1lf.
 Proof. by rewrite tf2f_den1E is_den1lf. Qed.
 HB.instance Definition _ y (g : 'FD1(_)) := 
-  Den_isDen1Lf.Build _ (tf2f y y g) (@tf2f_den1 y g).
+  Den_isDen1Lf.Build R _ (tf2f y y g) (@tf2f_den1 y g).
 Lemma tf2f_proj y (g : 'FP(_)) : tf2f y y g \is projlf.
 Proof. by rewrite tf2f_projE is_projlf. Qed.
 HB.instance Definition _ y (g : 'FP(_)) := 
-  Obs_isProjLf.Build _ (tf2f y y g) (@tf2f_proj y g).
+  Obs_isProjLf.Build R _ (tf2f y y g) (@tf2f_proj y g).
 (* missing join *)
-HB.instance Definition _ y (g : 'FP1(_)) := Proj1Lf.Class
-  (ProjLf.on (tf2f y y g)) (Den1Lf.on (tf2f y y g)).
+Lemma tf2f_proj1 y (g : 'FP1(_)) : tf2f y y g \is proj1lf.
+Proof. by rewrite tf2f_proj1E is_proj1lf. Qed.
+HB.instance Definition _ y (g : 'FP1(_)) :=
+  isProj1Lf.Build _ (tf2f y y g) (@tf2f_proj1 y g).
 
 End EndCanonical.
 
@@ -1105,13 +1144,14 @@ Lemma tm2m_tn xa xb (F : finType) (g : 'TN(F;'Ht T1, 'Ht T2)) :
   trace_nincr (tm2m xa xb g).
 Proof.
 rewrite /trace_nincr /tm2m.
-move: (@is_trnincr _ _ _ g); rewrite /trace_nincr=>/(tf2f_lefP xa).
+move: (@is_trnincr R ('Ht T1) ('Ht T2) F g);
+rewrite /trace_nincr=>/(tf2f_lefP xa).
 rewrite tf2f1; apply le_trans.
 rewrite linear_sum. apply lev_sum=>i _.
 rewrite tf2f_adj. apply tf2f_lef_formV.
 Qed.
 HB.instance Definition _ xa xb (F : finType) (g : 'TN(F;'Ht T1, 'Ht T2)) :=
-  isTraceNincr.Build _ _ F (tm2m xa xb g) (@tm2m_tn xa xb F g).
+  isTraceNincr.Build R _ _ F (tm2m xa xb g) (@tm2m_tn xa xb F g).
 Lemma tm2m_tp ya yb (F : finType) (g : 'QM(F;'Ht T1, 'Ht T2)) : 
   trace_presv (tm2m ya yb g).
 Proof.
@@ -1120,7 +1160,7 @@ under eq_bigr do rewrite tf2f_adj tf2f_comp.
 by rewrite -linear_sum/= qmeasure_tpE tf2f1.
 Qed.
 HB.instance Definition _ ya yb (F : finType) (g : 'QM(F;'Ht T1, 'Ht T2)) :=
-  TraceNincr_isQMeasure.Build _ _ F (tm2m ya yb g) (@tm2m_tp ya yb F g).
+  TraceNincr_isQMeasure.Build R _ _ F (tm2m ya yb g) (@tm2m_tp ya yb F g).
 
 Lemma tm2mE xa xb (F : finType) (g : F -> 'Hom{T1,T2}) i : 
   tm2m xa xb g i = tf2f xa xb (g i).
@@ -1131,29 +1171,39 @@ End tm2mProp.
 End QMemoryTheory.
 
 HB.lock
-Definition th2h (m : qmemType) T (x : 'QReg[T]) (P : {hspace 'Ht T}) :=
+Definition th2h {R : realType} (m : @qmemType R) T (x : 'QReg[T]) (P : {hspace 'Ht T}) :=
   HSType (tf2f m x x P).
+Arguments th2h {R} m {T} x P.
 
 HB.lock
-Definition liftfh (m : qmemType) T (x : 'QReg[T]) (P : {hspace 'Ht T}) := 
+Definition liftfh {R : realType} (m : @qmemType R) T (x : 'QReg[T]) (P : {hspace 'Ht T}) := 
   HSType (liftf_lf (th2h m x P)).
+Arguments liftfh {R} m {T} x P.
 
 Section th2h_theory.
 Local Open Scope order_scope.
 Local Open Scope hspace_scope.
 Import ComplLatticeSyntax.
-Variable (QMem : qmemType).
+Variable R : realType.
+Variable (QMem : @qmemType R).
+Local Notation C := (@hermitian.C R).
+Local Notation "''Ht' T" := (@ihb_chsType R (eval_qtype T%QT))
+  (at level 8, T at level 2, format "''Ht'  T").
+Local Notation "''Hom{' T1 , T2 }" := ('Hom('Ht T1%QT, 'Ht T2%QT))
+  (at level 8, format "''Hom{' T1 ,  T2 }").
+Local Notation "''End{' T }" := ('End('Ht T%QT))
+  (at level 8, format "''End{' T }").
 Local Notation L := (mem_lab QMem).
-Local Notation H := (@mem_sys QMem).
+Local Notation H := (mem_sys QMem).
 Local Notation mset := (mem_set QMem).
 Local Notation tv2v := (tv2v QMem).
 Local Notation tf2f := (tf2f QMem).
-Local Notation v2tv := (@v2tv QMem _).
-Local Notation f2tf := (@f2tf QMem _ _).
+Local Notation v2tv := (@v2tv R QMem _).
+Local Notation f2tf := (@f2tf R QMem _ _).
 Local Notation tm2m := (tm2m QMem).
-Local Notation v2tU := (@v2tU QMem).
-Local Notation th2h := (@th2h QMem _).
-Local Notation liftfh := (@liftfh QMem _).
+Local Notation v2tU := (@v2tU R QMem).
+Local Notation th2h := (@th2h R QMem _).
+Local Notation liftfh := (@liftfh R QMem _).
 
 Variable (T : qType) (x : 'QReg[T]).
 Implicit Type (P : {hspace 'Ht T}).
@@ -1244,6 +1294,15 @@ End th2h_theory.
 Module DefaultQMem.
 
 Section Theory.
+
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation "''Ht' T" := (@ihb_chsType R (eval_qtype T%QT))
+  (at level 8, T at level 2, format "''Ht'  T").
+Local Notation "''Hom{' T1 , T2 }" := ('Hom('Ht T1%QT, 'Ht T2%QT))
+  (at level 8, format "''Hom{' T1 ,  T2 }").
+Local Notation "''End{' T }" := ('End('Ht T%QT))
+  (at level 8, format "''End{' T }").
 
 Definition mlab : finType := basic_index.
 
@@ -1615,7 +1674,7 @@ Qed.
 Definition tv2v_fun_def (T : qType) (x : qreg T) 
   (v : 'Ht T) : 'H[msys]_(mset x) :=
   \sum_(i : evalQT T)  [< ''i ; v >] *: 
-    oapp (@deltav _ _ _) 0 (idx_proj (cast_qtype (esym (ty_qregK x)) i)).
+    oapp deltav 0 (idx_proj (cast_qtype (esym (ty_qregK x)) i)).
 Definition tv2v_fun := tv2v_fun_def.
 Arguments tv2v_fun : simpl never.
 Fact tv2v_key : unit. Proof. by []. Qed.
@@ -1644,7 +1703,7 @@ Qed.
 
 
 Lemma tv2v_dv (T : qType) (x : qreg T) (t : evalQT T) : 
-  tv2v x ''t = oapp (@deltav _ _ _) 0 (idx_proj (cast_qtype (esym (ty_qregK x)) t)).
+  tv2v x ''t = oapp deltav 0 (idx_proj (cast_qtype (esym (ty_qregK x)) t)).
 Proof.
 rewrite tv2v_unfold/=/tv2v_fun_def (bigD1 t) //= big1=>[i /negPf nit|];
 by rewrite t2tv_dot ?nit ?scale0r// eqxx scale1r addr0.
@@ -1686,7 +1745,7 @@ elim: i j k=>/=.
   case E5: (_ && _)=>// ; move: E5=>/andP[]/eqP F1 /eqP F2;
   case E3: (idx_proj _)=>[a3|]//; case E4: (idx_proj _)=>[a4|]//;
   case E6: (_ && _)=>// + _; move: E6=>/andP[]/eqP F3 /eqP F4 Pe; inversion Pe. 
-  move: (f_equal (@idxSl _ _ _ _) H0) (f_equal (@idxSr _ _ _ _) H0).
+  move: (f_equal (fun e => idxSl e) H0) (f_equal (fun e => idxSr e) H0).
   rewrite ?(F1,F2,F3,F4)=>G1 G2.
   by f_equal; [apply H1 | apply H2]; rewrite ?(E1,E2,E3,E4)?(G1,G2).
 1: move=>n T c IH j k; rewrite /idx_tuple.
@@ -1698,7 +1757,7 @@ all: case E1 : [forall _, _] =>//; case E2 : [forall _, _] =>//;
 2: have P1 a : T a = ty_cnf (c a)
     by move: E1=>/forallP/(_ a); rewrite /orapp; case: eqP.
 1: apply/eq_from_tnth=>i. 2: apply/ffunP=>i.
-all: move: (f_equal (@flatidx _ _ _ _ ^~ i) H0);
+all: move: (f_equal (fun e => flatidx e i) H0);
   move: E2 E4 E1 E3=>/forallP/(_ i)/eqP->/forallP/(_ i)/eqP->/forallP/(_ i)+/forallP/(_ i);
   rewrite !ffunE !(orappE _ (P1 _));
   case E5: (idx_proj _)=>[ij|]// _; case E6: (idx_proj _)=>[ik|]// _ /= Pij;
@@ -1881,27 +1940,29 @@ Module Exports.
 
 Import QMemory.Exports.
 
-Definition default_qmemMixin := QMemMixin tv2v_is_linear disj_setE tv2V_eqr 
-  tv2v_conj t2v_dec t2v_dot_neq qreg_dim tv2v_onb_t2tv t2V_pair t2V_tuple t2V_ffun.
-Definition default_qmemType := QMemType default_qmemMixin.
+Definition default_qmemMixin {R : realType} :=
+  QMemMixin (@tv2v_is_linear R) disj_setE (@tv2V_eqr R)
+  (@tv2v_conj R) (@t2v_dec R) (@t2v_dot_neq R) (@qreg_dim R)
+  (@tv2v_onb_t2tv R) (@t2V_pair R) (@t2V_tuple R) (@t2V_ffun R).
+Definition default_qmemType {R : realType} := QMemType (@default_qmemMixin R).
 
 HB.lock
-Definition default_qmemory := default_qmemType.
+Definition default_qmemory {R : realType} := @default_qmemType R.
 
 Notation mlab := (mem_lab default_qmemory).
-Notation msys := (@mem_sys default_qmemory).
+Notation msys := (mem_sys default_qmemory).
 Notation mset := (mem_set default_qmemory).
 Notation tv2v := (tv2v default_qmemory).
 Notation tf2f := (tf2f default_qmemory).
-Notation v2tv := (@v2tv default_qmemory _).
-Notation f2tf := (@f2tf default_qmemory _ _).
-Notation tm2m := (@tm2m default_qmemory).
-Notation v2tU := (@v2tU default_qmemory).
-Notation th2h := (@th2h default_qmemory _).
-Notation liftfh := (@liftfh default_qmemory _).
-Notation tket := (@tket default_qmemory _).
-Notation tbra := (@tbra default_qmemory _).
-Notation tlin := (@tlin default_qmemory _ _).
+Notation v2tv := (@v2tv _ default_qmemory _).
+Notation f2tf := (@f2tf _ default_qmemory _ _).
+Notation tm2m := (@tm2m _ default_qmemory).
+Notation v2tU := (@v2tU _ default_qmemory).
+Notation th2h := (@th2h _ default_qmemory _).
+Notation liftfh := (@liftfh _ default_qmemory _).
+Notation tket := (@tket _ default_qmemory _).
+Notation tbra := (@tbra _ default_qmemory _).
+Notation tlin := (@tlin _ default_qmemory _ _).
 Notation "''|' v ; x >" := (tket x v%VF).
 Notation "''<' v ; x |" := (tbra x v%VF).
 Notation "''|' u ; x >< v ; y |" := (muld (tket x u%VF) (tbra y v%VF)).
@@ -1914,32 +1975,41 @@ End Exports.
 
 End DefaultQMem.
 
+Section QMemoryMorphisms.
 
-Add Parametric Morphism {m T} : (@tket m T)
+Variable R : realType.
+Local Notation "''Ht' T" := (@ihb_chsType R (eval_qtype T%QT))
+  (at level 8, T at level 2, format "''Ht'  T").
+Local Notation "''Hom{' T1 , T2 }" := ('Hom('Ht T1%QT, 'Ht T2%QT))
+  (at level 8, format "''Hom{' T1 ,  T2 }").
+
+Add Parametric Morphism {m : @qmemType R} {T} : (@tket R m T)
   with signature (@eq_qreg T) ==> (@eq ('Ht T)) ==> (@eq _) as eq_qreg_tket.
 Proof.
 move=>x y Pxy v.
-rewrite QMemory.tket.unlock. to_Fnd. by apply tv2V_eqr.
+rewrite QMemory.tket.unlock. to_Fnd. by apply: (@tv2V_eqr R m).
 Qed.
 
-Add Parametric Morphism {m T} : (@tbra m T)
+Add Parametric Morphism {m : @qmemType R} {T} : (@tbra R m T)
   with signature (@eq_qreg T) ==> (@eq ('Ht T)) ==> (@eq _) as eq_qreg_tbra.
 Proof.
 move=>x y Pxy v.
-rewrite QMemory.tbra.unlock. to_Fnd. by apply tv2V_eqr.
+rewrite QMemory.tbra.unlock. to_Fnd. by apply: (@tv2V_eqr R m).
 Qed.
 
-Add Parametric Morphism {m T1 T2} : (@tlin m T1 T2)
+Add Parametric Morphism {m : @qmemType R} {T1 T2} : (@tlin R m T1 T2)
   with signature (@eq_qreg T1) ==> (@eq_qreg T2) ==> 
     (@eq ('Hom{T1, T2})) ==> (@eq _) as eq_qreg_tlin.
 Proof.
 move=>x1 y1 P1 x2 y2 P2 f.
-by rewrite QMemory.tlin.unlock; to_Fnd; apply tf2F_eqr.
+by rewrite QMemory.tlin.unlock; to_Fnd; apply: (@tf2F_eqr R m).
 Qed.
 
-Add Parametric Morphism {m T} : (@mem_set m T) 
+Add Parametric Morphism {m : @qmemType R} {T} : (@mem_set R m T) 
   with signature (@eq_qreg T) ==> (@eq _) as eq_qreg_mset.
-Proof. by move=>x y; apply mset_eqr. Qed.
+Proof. by move=>x y; apply: (@mset_eqr R m). Qed.
+
+End QMemoryMorphisms.
 
 (* move *)
 Add Parametric Morphism n (T : qType) : (@qreg_tuple n T) 
@@ -1951,16 +2021,24 @@ Add Parametric Morphism n (T : 'I_n -> qType) : (@qreg_ffun n T)
 Proof. apply eq_qreg_from_ffun. Qed.
 
 Section DiracDef.
-Variable (QMem : qmemType).
+Variable R : realType.
+Variable (QMem : @qmemType R).
+Local Notation C := (@hermitian.C R).
+Local Notation "''Ht' T" := (@ihb_chsType R (eval_qtype T%QT))
+  (at level 8, T at level 2, format "''Ht'  T").
+Local Notation "''Hom{' T1 , T2 }" := ('Hom('Ht T1%QT, 'Ht T2%QT))
+  (at level 8, format "''Hom{' T1 ,  T2 }").
+Local Notation "''End{' T }" := ('End('Ht T%QT))
+  (at level 8, format "''End{' T }").
 Local Notation L := (mem_lab QMem).
-Local Notation H := (@mem_sys QMem).
+Local Notation H := (mem_sys QMem).
 Local Notation mset := (mem_set QMem).
 Local Notation tv2v := (tv2v QMem).
 Local Notation tf2f := (tf2f QMem).
 Local Notation tm2m := (tm2m QMem).
-Local Notation tket := (@tket QMem _).
-Local Notation tbra := (@tbra QMem _).
-Local Notation tlin := (@tlin QMem _ _).
+Local Notation tket := (@tket R QMem _).
+Local Notation tbra := (@tbra R QMem _).
+Local Notation tlin := (@tlin R QMem _ _).
 
 (* Redefine ket, bra, lin of dirac notation *)
 (* bind tv2v in order to avoid type cast    *)
@@ -2346,18 +2424,27 @@ Definition tlinT := (tlinT_pair, tlinT_tuple, tlinT_ffun).
 Lemma tlinT_pairV T1 T2 T3 T4 (x1 : qreg (T1 * T2)) (x2 : qreg (T3 * T4))
   (f1 : 'Hom{T1,T3}) (f2 : 'Hom{T2,T4}) : 
   '[ f1 ⊗f f2; x1,x2 ] = '[ f1; x1.1,x2.1 ] \⊗ '[ f2; x1.2,x2.2].
-Proof. by rewrite tlinT_pair !eq_qreg_pair. Qed.  
+Proof.
+rewrite tlinT_pair; symmetry; rewrite !QMemory.tlin.unlock; to_Fnd.
+by apply: (@tf2F_eqr R QMem); apply: eq_qreg_pair.
+Qed.
 
 Lemma tlinT_tupleV n T1 T2 (x1 : qreg T1.[n]) (x2 : qreg T2.[n]) 
   (f : 'I_n -> 'Hom{T1,T2}) :
   '[tentf_tuple f; x1,x2 ] = \ten_i '[f i; x1.[i], x2.[i]].
-Proof. by rewrite tlinT_tuple !eq_qreg_tuple. Qed.
+Proof.
+rewrite tlinT_tuple; symmetry; rewrite !QMemory.tlin.unlock; to_Fnd.
+by apply: (@tf2F_eqr R QMem); apply: eq_qreg_tuple.
+Qed.
 
 Lemma tlinT_ffunV n (T1 : 'I_n -> qType) (T2 : 'I_n -> qType) 
   (x1 : qreg {qffun T1}) (x2 : qreg {qffun T2})
    (f : forall i, 'Hom{T1 i, T2 i}) :
    '[tentf_dffun f; x1, x2] = \ten_i '[f i; x1.-[i], x2.-[i]].
-Proof. by rewrite tlinT_ffun !eq_qreg_ffun. Qed.
+Proof.
+rewrite tlinT_ffun; symmetry; rewrite !QMemory.tlin.unlock; to_Fnd.
+by apply: (@tf2F_eqr R QMem); apply: eq_qreg_ffun.
+Qed.
 Definition tlinTV := (tlinT_pairV, tlinT_tupleV, tlinT_ffunV).
 
 Lemma tketT_pair T1 T2 (x1 : qreg T1) (x2 : qreg T2)
@@ -2377,16 +2464,25 @@ Definition tketT := (tketT_pair, tketT_tuple, tketT_ffun).
 
 Lemma tketT_pairV T1 T2 (x : qreg (T1 * T2)) (u1 : 'Ht T1) (u2 : 'Ht T2) : 
   '| u1 ⊗t u2; x > = '| u1; x.1 > \⊗ '| u2; x.2 >.
-Proof. by rewrite tketT_pair !eq_qreg_pair. Qed.  
+Proof.
+rewrite tketT_pair; symmetry; rewrite !QMemory.tket.unlock; to_Fnd.
+by apply: (@tv2V_eqr R QMem); apply: eq_qreg_pair.
+Qed.
 
 Lemma tketT_tupleV n T (x : qreg T.[n]) (u : 'I_n -> 'Ht T) :
   '|tentv_tuple u; x > = \ten_i '|u i; x.[i] >.
-Proof. by rewrite tketT_tuple !eq_qreg_tuple. Qed.
+Proof.
+rewrite tketT_tuple; symmetry; rewrite !QMemory.tket.unlock; to_Fnd.
+by apply: (@tv2V_eqr R QMem); apply: eq_qreg_tuple.
+Qed.
 
 Lemma tketT_ffunV n (T : 'I_n -> qType) (x : qreg {qffun T})
    (u : forall i, 'Ht (T i)) :
    '|tentv_dffun u; x > = \ten_i '|u i; x.-[i] >.
-Proof. by rewrite tketT_ffun !eq_qreg_ffun. Qed.
+Proof.
+rewrite tketT_ffun; symmetry; rewrite !QMemory.tket.unlock; to_Fnd.
+by apply: (@tv2V_eqr R QMem); apply: eq_qreg_ffun.
+Qed.
 Definition tketTV := (tketT_pairV, tketT_tupleV, tketT_ffunV).
 
 Lemma tbraT_pair T1 T2 (x1 : qreg T1) (x2 : qreg T2)
@@ -2406,16 +2502,25 @@ Definition tbraT := (tbraT_pair, tbraT_tuple, tbraT_ffun).
 
 Lemma tbraT_pairV T1 T2 (x : qreg (T1 * T2)) (u1 : 'Ht T1) (u2 : 'Ht T2) : 
   '< u1 ⊗t u2; x | = '< u1; x.1 | \⊗ '< u2; x.2 |.
-Proof. by rewrite tbraT_pair !eq_qreg_pair. Qed.  
+Proof.
+rewrite tbraT_pair; symmetry; rewrite !QMemory.tbra.unlock; to_Fnd.
+by apply: (@tv2V_eqr R QMem); apply: eq_qreg_pair.
+Qed.
 
 Lemma tbraT_tupleV n T (x : qreg T.[n]) (u : 'I_n -> 'Ht T) :
   '<tentv_tuple u; x | = \ten_i '<u i; x.[i] |.
-Proof. by rewrite tbraT_tuple !eq_qreg_tuple. Qed.
+Proof.
+rewrite tbraT_tuple; symmetry; rewrite !QMemory.tbra.unlock; to_Fnd.
+by apply: (@tv2V_eqr R QMem); apply: eq_qreg_tuple.
+Qed.
 
 Lemma tbraT_ffunV n (T : 'I_n -> qType) (x : qreg {qffun T})
    (u : forall i, 'Ht (T i)) :
    '<tentv_dffun u; x | = \ten_i '<u i; x.-[i] |.
-Proof. by rewrite tbraT_ffun !eq_qreg_ffun. Qed.
+Proof.
+rewrite tbraT_ffun; symmetry; rewrite !QMemory.tbra.unlock; to_Fnd.
+by apply: (@tv2V_eqr R QMem); apply: eq_qreg_ffun.
+Qed.
 Definition tbraTV := (tbraT_pairV, tbraT_tupleV, tbraT_ffunV).
 
 Lemma tlinTC T1 T2 T3 T4 (x1 : qreg (T1 * T2)) (x2 : qreg (T3 * T4)) 
@@ -2453,129 +2558,226 @@ Definition eq_qrE := (eq_qreg_fst, eq_qreg_snd, eq_qreg_tuplei,
   eq_qreg_ffuni, eq_qreg_pair, eq_qreg_tuple, eq_qreg_ffun).
 
 Lemma tketT_swap T1 T2 (x : qreg (T2 * T1)) (u : 'Ht (T1 * T2)) :
-  '| swaptf u; x > = '|u ; (x.2,x.1) >.
+  '| (@swaptf R _ _ u); x > = '|u ; (x.2,x.1) >.
 Proof.
 rewrite (onb_vec t2tv u)/= !linear_sum/=; apply eq_bigr=>i _.
 rewrite !linearZ/=; f_equal.
 rewrite [i ]surjective_pairing -tentv_t2tv swaptfEtv tketTC.
-by rewrite !eq_qrE.
+rewrite !QMemory.tket.unlock; to_Fnd.
+by apply: (@tv2V_eqr R QMem); rewrite !eq_qrE.
 Qed.
 Lemma tketT_swapV T1 T2 (x : qreg (T1 * T2)) (u : 'Ht (T1 * T2)) :
-  '| u; x > = '|swaptf u ; (x.2,x.1) >.
-Proof. by rewrite tketT_swap !eq_qrE. Qed.
+  '| u; x > = '|(@swaptf R _ _ u) ; (x.2,x.1) >.
+Proof.
+rewrite tketT_swap; rewrite !QMemory.tket.unlock; to_Fnd.
+by apply: (@tv2V_eqr R QMem); rewrite !eq_qrE.
+Qed.
 
 Lemma tbraT_swap T1 T2 (x : qreg (T2 * T1)) (u : 'Ht (T1 * T2)) :
-  '< swaptf u; x | = '< u ; (x.2,x.1) |.
+  '< (@swaptf R _ _ u); x | = '< u ; (x.2,x.1) |.
 Proof. by rewrite -tket_adj tketT_swap tket_adj. Qed.
 Lemma tbraT_swapV T1 T2 (x : qreg (T1 * T2)) (u : 'Ht (T1 * T2)) :
-  '< u; x | = '< swaptf u ; (x.2,x.1) |.
-Proof. by rewrite tbraT_swap !eq_qrE. Qed.
+  '< u; x | = '< (@swaptf R _ _ u) ; (x.2,x.1) |.
+Proof.
+rewrite tbraT_swap; rewrite !QMemory.tbra.unlock; to_Fnd.
+by apply: (@tv2V_eqr R QMem); rewrite !eq_qrE.
+Qed.
 
 Lemma tlinT_swap T1 T2 T3 T4 (x1 : qreg (T2 * T1)) (x2 : qreg (T4 * T3)) 
   (f : 'Hom{T1 * T2, T3 * T4}) :
-  '[ swaptf \o f \o swaptf ; x1, x2 ] = '[ f ; (x1.2,x1.1) , (x2.2,x2.1) ].
+  '[ (@swaptf R _ _) \o f \o (@swaptf R _ _) ; x1, x2 ] =
+    '[ f ; (x1.2,x1.1) , (x2.2,x2.1) ].
 Proof.
 rewrite (onb_lfun2 t2tv t2tv f) pair_big/= linear_sumr linear_sumlz !linear_sum/=.
 apply eq_bigr=>[][][]i1 i2[]j1 j2 _; rewrite linearZr linearZl/= !linearZ/=; f_equal.
- by rewrite outp_compr outp_compl swaptf_adj -!tentv_t2tv !swaptfEtv -!tentv_out tlinTC !eq_qrE.
+rewrite outp_compr outp_compl swaptf_adj -!tentv_t2tv !swaptfEtv -!tentv_out tlinTC.
+rewrite !QMemory.tlin.unlock; to_Fnd.
+by apply: (@tf2F_eqr R QMem); rewrite !eq_qrE.
 Qed.
 Lemma tlinT_swapV T1 T2 T3 T4 (x1 : qreg (T1 * T2)) (x2 : qreg (T3 * T4)) 
   (f : 'Hom{T1 * T2, T3 * T4}) :
-  '[ f ; x1, x2 ] = '[ swaptf \o f \o swaptf ; (x1.2,x1.1) , (x2.2,x2.1) ].
-Proof. by rewrite tlinT_swap !eq_qrE. Qed.
+  '[ f ; x1, x2 ] =
+    '[ (@swaptf R _ _) \o f \o (@swaptf R _ _) ; (x1.2,x1.1) , (x2.2,x2.1) ].
+Proof.
+rewrite tlinT_swap; rewrite !QMemory.tlin.unlock; to_Fnd.
+by apply: (@tf2F_eqr R QMem); rewrite !eq_qrE.
+Qed.
 
 Lemma touterT_swapl T1 T2 T3 T4 (x1 : qreg (T1 * T2)) (x2 : qreg (T4 * T3)) 
   (u : 'Ht (T1 * T2)) (v : 'Ht (T3 * T4)) :
-  '[ [> swaptf v ; u <] ; x1,x2 ] = '[ [> v ; u <] ; x1,(x2.2,x2.1) ].
+  '[ [> (@swaptf R _ _ v) ; u <] ; x1,x2 ] =
+    '[ [> v ; u <] ; x1,(x2.2,x2.1) ].
 Proof. by rewrite -[LHS]touterM tketT_swap touterM. Qed.
 Lemma touterT_swapVl T1 T2 T3 T4 (x1 : qreg (T1 * T2)) (x2 : qreg (T3 * T4)) 
   (u : 'Ht (T1 * T2)) (v : 'Ht (T3 * T4)) :
-  '[ [> v ; u <] ; x1,x2 ] = '[ [> swaptf v ; u <] ; x1,(x2.2,x2.1) ].
-Proof. by rewrite touterT_swapl !eq_qrE. Qed.
+  '[ [> v ; u <] ; x1,x2 ] =
+    '[ [> (@swaptf R _ _ v) ; u <] ; x1,(x2.2,x2.1) ].
+Proof.
+rewrite touterT_swapl; rewrite !QMemory.tlin.unlock; to_Fnd.
+apply: (@tf2F_eqr R QMem); first by [].
+by rewrite !eq_qrE.
+Qed.
 
 Lemma touterT_swapr T1 T2 T3 T4 (x1 : qreg (T2 * T1)) (x2 : qreg (T3 * T4)) 
   (u : 'Ht (T1 * T2)) (v : 'Ht (T3 * T4)) :
-  '[ [> v ; swaptf u <] ; x1,x2 ] = '[ [> v ; u <] ; (x1.2,x1.1),x2 ].
+  '[ [> v ; (@swaptf R _ _ u) <] ; x1,x2 ] =
+    '[ [> v ; u <] ; (x1.2,x1.1),x2 ].
 Proof. by rewrite -[LHS]touterM tbraT_swap touterM. Qed.
 Lemma touterT_swapVr T1 T2 T3 T4 (x1 : qreg (T1 * T2)) (x2 : qreg (T3 * T4)) 
   (u : 'Ht (T1 * T2)) (v : 'Ht (T3 * T4)) :
-  '[ [> v ; u <] ; x1,x2 ] = '[ [> v ; swaptf u <] ; (x1.2,x1.1),x2 ].
-Proof. by rewrite touterT_swapr !eq_qrE. Qed.
+  '[ [> v ; u <] ; x1,x2 ] =
+    '[ [> v ; (@swaptf R _ _ u) <] ; (x1.2,x1.1),x2 ].
+Proof.
+rewrite touterT_swapr; rewrite !QMemory.tlin.unlock; to_Fnd.
+apply: (@tf2F_eqr R QMem); last by [].
+by rewrite !eq_qrE.
+Qed.
 
 Lemma touterT_swap T1 T2 T3 T4 (x1 : qreg (T2 * T1)) (x2 : qreg (T4 * T3)) 
   (u : 'Ht (T1 * T2)) (v : 'Ht (T3 * T4)) :
-  '[ [> swaptf v ; swaptf u <] ; x1,x2 ] = 
+  '[ [> (@swaptf R _ _ v) ; (@swaptf R _ _ u) <] ; x1,x2 ] = 
     '[ [> v ; u <] ; (x1.2,x1.1) , (x2.2,x2.1) ].
 Proof. by rewrite touterT_swapl touterT_swapr. Qed.
 Lemma touterT_swapV T1 T2 T3 T4 (x1 : qreg (T1 * T2)) (x2 : qreg (T3 * T4)) 
   (u : 'Ht (T1 * T2)) (v : 'Ht (T3 * T4)) :
   '[ [> v ; u <] ; x1,x2 ] = 
-    '[ [> swaptf v ; swaptf u <] ; (x1.2,x1.1) , (x2.2,x2.1) ].
-Proof. by rewrite touterT_swap !eq_qrE. Qed.
+    '[ [> (@swaptf R _ _ v) ; (@swaptf R _ _ u) <] ; (x1.2,x1.1) , (x2.2,x2.1) ].
+Proof.
+rewrite touterT_swap; rewrite !QMemory.tlin.unlock; to_Fnd.
+by apply: (@tf2F_eqr R QMem); rewrite !eq_qrE.
+Qed.
 
 Section tlinGid.
 Variable (T1 T2 T3 T4 : qType) (x1 : qreg T1) (x2 : qreg T2) (x3 : qreg T3) (x4 : qreg T4).
 
 Lemma tlin1Gl f : tlin x1 x1 \1 \· '[ f; x3,(x1,x2) ] = '[ f; x3,(x1,x2) ].
-Proof. by rewrite -tlin1 dotIdid// mset_pairV !eq_qrE subsetUl. Qed.
+Proof. by rewrite -tlin1 dotIdid// -mset_pair subsetUl. Qed.
 Lemma tlin1Gr f : tlin x2 x2 \1 \· '[ f; x3,(x1,x2) ] = '[ f; x3,(x1,x2) ].
-Proof. by rewrite -tlin1 dotIdid// mset_pairV !eq_qrE subsetUr. Qed.
+Proof. by rewrite -tlin1 dotIdid// -mset_pair subsetUr. Qed.
 Lemma tlinG1l f : '[ f; (x1,x2),x3 ] \· tlin x1 x1 \1 = '[ f; (x1,x2),x3 ].
-Proof. by rewrite -tlin1 dotdIid// mset_pairV !eq_qrE subsetUl. Qed.
+Proof. by rewrite -tlin1 dotdIid// -mset_pair subsetUl. Qed.
 Lemma tlinG1r f : '[ f; (x1,x2),x3 ] \· tlin x2 x2 \1 = '[ f; (x1,x2),x3 ].
-Proof. by rewrite -tlin1 dotdIid// mset_pairV !eq_qrE subsetUr. Qed.
+Proof. by rewrite -tlin1 dotdIid// -mset_pair subsetUr. Qed.
 Definition tlin1G := (tlin1Gl, tlin1Gr).
 Definition tlinG1 := (tlinG1l, tlinG1r).
 Lemma tket1Gl v : tlin x1 x1 \1 \· '| v; (x1,x2) > = '| v; (x1,x2) >.
-Proof. by rewrite -tlin1 dotIdid// mset_pairV !eq_qrE subsetUl. Qed.
+Proof. by rewrite -tlin1 dotIdid// -mset_pair subsetUl. Qed.
 Lemma tket1Gr v : tlin x2 x2 \1 \· '| v; (x1,x2) > = '| v; (x1,x2) >.
-Proof. by rewrite -tlin1 dotIdid// mset_pairV !eq_qrE subsetUr. Qed.
+Proof. by rewrite -tlin1 dotIdid// -mset_pair subsetUr. Qed.
 Definition tket1G := (tket1Gl, tket1Gr).
 Lemma tbra1Gl v : '< v; (x1,x2) | \· tlin x1 x1 \1 = '< v; (x1,x2) |.
-Proof. by rewrite -tlin1 dotdIid// mset_pairV !eq_qrE subsetUl. Qed.
+Proof. by rewrite -tlin1 dotdIid// -mset_pair subsetUl. Qed.
 Lemma tbra1Gr v : '< v; (x1,x2) | \· tlin x2 x2 \1 = '< v; (x1,x2) |.
-Proof. by rewrite -tlin1 dotdIid// mset_pairV !eq_qrE subsetUr. Qed.
+Proof. by rewrite -tlin1 dotdIid// -mset_pair subsetUr. Qed.
 Definition tbraG1 := (tbra1Gl, tbra1Gr).
 End tlinGid.
 
 Section tlinG2.
 Variable (T1 T2 T3 T4 : qType) (x1 : 'QReg[T1]) (x2 : 'QReg[T2]) (x3 : qreg T3) (x4 : qreg T4).
 
+Local Lemma tlin_fst N1 :
+  '[N1; <{(x1, x2)}>.1, <{(x1, x2)}>.1] = '[N1; x1, x1].
+Proof.
+rewrite !QMemory.tlin.unlock; to_Fnd.
+by apply: (@tf2F_eqr R QMem); apply: eq_qreg_fst.
+Qed.
+
+Local Lemma tlin_snd N2 :
+  '[N2; <{(x1, x2)}>.2, <{(x1, x2)}>.2] = '[N2; x2, x2].
+Proof.
+rewrite !QMemory.tlin.unlock; to_Fnd.
+by apply: (@tf2F_eqr R QMem); apply: eq_qreg_snd.
+Qed.
+
+Local Lemma tlin_fstL T (y : qreg T) (N1 : 'Hom{T1, T}) :
+  '[N1; <{(x1, x2)}>.1, y] = '[N1; x1, y].
+Proof.
+rewrite !QMemory.tlin.unlock; to_Fnd.
+apply: (@tf2F_eqr R QMem); first by apply: eq_qreg_fst.
+by [].
+Qed.
+
+Local Lemma tlin_sndL T (y : qreg T) (N2 : 'Hom{T2, T}) :
+  '[N2; <{(x1, x2)}>.2, y] = '[N2; x2, y].
+Proof.
+rewrite !QMemory.tlin.unlock; to_Fnd.
+apply: (@tf2F_eqr R QMem); first by apply: eq_qreg_snd.
+by [].
+Qed.
+
+Local Lemma tlin_fstR S1 S2 T (y : qreg T) (z1 : qreg S1) (z2 : qreg S2)
+    (N1 : 'Hom{T, S1}) :
+  '[N1; y, <{(z1, z2)}>.1] = '[N1; y, z1].
+Proof.
+rewrite !QMemory.tlin.unlock; to_Fnd.
+apply: (@tf2F_eqr R QMem); first by [].
+by apply: eq_qreg_fst.
+Qed.
+
+Local Lemma tlin_sndR S1 S2 T (y : qreg T) (z1 : qreg S1) (z2 : qreg S2)
+    (N2 : 'Hom{T, S2}) :
+  '[N2; y, <{(z1, z2)}>.2] = '[N2; y, z2].
+Proof.
+rewrite !QMemory.tlin.unlock; to_Fnd.
+apply: (@tf2F_eqr R QMem); first by [].
+by apply: eq_qreg_snd.
+Qed.
+
 Lemma tlintGl N1 f (dis : disjoint_qreg x1 x2) : 
   tlin x1 x1 N1 \· '[ f; x3, (x1,x2) ] = '[(N1 ⊗f \1) \o f; x3, (x1,x2) ].
 Proof.
-by rewrite -[RHS](tlinG _ _ <{(x1, x2)}>) tlinTV !eq_qrE 
-  -dotd_ten//= -?dotdA/= ?tlin1G// -disj_setE.
+rewrite -[RHS](tlinG _ _ <{(x1, x2)}>) tlinTV tlin_fst tlin_snd
+  -dotd_ten//= -?dotdA/= ?tlin1G//.
+all: try by rewrite (eq_qreg_fst _ _) (eq_qreg_snd _ _).
+all: try by rewrite -disj_setE.
+all: try by exact: dis.
 Qed.
 Lemma tlintGr N2 f (dis : disjoint_qreg x1 x2) : 
   tlin x2 x2 N2 \· '[ f; x3, (x1,x2) ] = '[(\1 ⊗f N2) \o f; x3, (x1,x2) ].
 Proof.
-by rewrite -[RHS](tlinG _ _ <{(x1, x2)}>) tlinTV !eq_qrE tendC
-  -dotd_ten//= -?dotdA/= ?tlin1G// disjoint_sym -disj_setE.
+rewrite -[RHS](tlinG _ _ <{(x1, x2)}>) tlinTV tendC tlin_fst tlin_snd
+  -dotd_ten//= -?dotdA/= ?tlin1G//.
+all: try by rewrite (eq_qreg_fst _ _) (eq_qreg_snd _ _).
+all: try by rewrite disjoint_sym -disj_setE.
+all: try by rewrite disjoint_qregC.
 Qed.
 Lemma tlinGtl f N1 (dis : disjoint_qreg x1 x2) : 
   '[ f; (x1,x2),x3 ] \· tlin x1 x1 N1 = '[ f \o (N1 ⊗f \1); (x1,x2),x3 ].
 Proof.
-by rewrite -[RHS](tlinG _ _ <{(x1, x2)}>) tlinTV !eq_qrE tendC
-  -dotd_ten//= ?dotdA/= ?tlinG1// disjoint_sym -disj_setE.
+rewrite -[RHS](tlinG _ _ <{(x1, x2)}>) tlinTV tendC tlin_fst tlin_snd
+  -dotd_ten//= ?dotdA/= ?tlinG1//.
+all: try by rewrite (eq_qreg_fst _ _) (eq_qreg_snd _ _).
+all: try by rewrite disjoint_sym -disj_setE.
+all: try by rewrite disjoint_qregC.
 Qed.
 Lemma tlinGtr f N2 (dis : disjoint_qreg x1 x2) :
   '[ f; (x1,x2),x3 ] \· tlin x2 x2 N2 = '[ f \o (\1 ⊗f N2); (x1,x2),x3 ].
 Proof.
-by rewrite -[RHS](tlinG _ _ <{(x1, x2)}>) tlinTV !eq_qrE
-  -dotd_ten//= ?dotdA/= ?tlinG1// -disj_setE.
+rewrite -[RHS](tlinG _ _ <{(x1, x2)}>) tlinTV tlin_fst tlin_snd
+  -dotd_ten//= ?dotdA/= ?tlinG1//.
+all: try by rewrite (eq_qreg_fst _ _) (eq_qreg_snd _ _).
+all: try by rewrite -disj_setE.
+all: try by exact: dis.
 Qed.
 Lemma tketGl N1 v (dis : disjoint_qreg x1 x2) :
   '[ N1; x1,x3 ] \· '| v; (x1,x2) > = '|(N1 ⊗f \1) v; (x3,x2) >.
 Proof.
-by rewrite -(tlin_ketG _ <{(x1,x2)}>) tlinTV !eq_qrE -dotd_ten/=
-  -?dotdA/= ?tket1G// -disj_setE.
+rewrite -(tlin_ketG _ <{(x1,x2)}>) tlinTV
+  tlin_fstL tlin_sndL tlin_fstR tlin_sndR -dotd_ten/=
+  -?dotdA/= ?tket1G//.
+all: try by rewrite (eq_qreg_fst _ _) (eq_qreg_snd _ _).
+all: try by rewrite -disj_setE.
+all: try by exact: dis.
 Qed.
 Lemma tketGr N2 v (dis : disjoint_qreg x1 x2) :
   '[ N2; x2,x3 ] \· '| v; (x1,x2) > = '|(\1 ⊗f N2) v; (x1,x3) >.
 Proof.
-by rewrite -(tlin_ketG _ <{(x1,x2)}>) tlinTV !eq_qrE tendC -dotd_ten/=
-  -?dotdA/= ?tket1G// disjoint_sym -disj_setE.
+rewrite -(tlin_ketG _ <{(x1,x2)}>) tlinTV tendC
+  tlin_fstL tlin_sndL tlin_fstR tlin_sndR -dotd_ten/=
+  -?dotdA/= ?tket1G//.
+all: try by rewrite (eq_qreg_fst _ _) (eq_qreg_snd _ _).
+all: try by rewrite disjoint_sym -disj_setE.
+all: try by rewrite disjoint_qregC.
 Qed.
 Lemma tbraGl v N1 (dis : disjoint_qreg x1 x2) :
   '< v; (x1,x2) | \· '[ N1; x3,x1 ] = '<(N1^A ⊗f \1) v; (x3,x2) |.

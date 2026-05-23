@@ -184,7 +184,12 @@ Unset SsrOldRewriteGoalsOrder.
 Local Open Scope fset_scope.
 Local Open Scope ring_scope.
 Local Open Scope lfun_scope.
-Local Notation C := hermitian.C.
+
+Section QuantumReal.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation hermitianType := (@hermitianType R).
+Local Notation chsType := (@chsType R).
 
 Section lfunExtra.
 Local Close Scope lfun_scope.
@@ -602,157 +607,240 @@ Lemma ranklfU {U V : chsType} (A : 'Hom(U,V)) (B : 'End(U)) :
   B \is unitarylf -> \Rank (A \o B) = \Rank A.
 Proof. by move=>/unitarylf_giso; exact: ranklf_BIr. Qed.
 
+End QuantumReal.
+
+Notation "\Tr f" := (@lftrace _ _ f).
+Notation "\Rank A" := (lfrank A) : lfun_scope.
+
+Arguments normallf {R V}.
+Arguments hermlf {R V}.
+Arguments psdlf {R V}.
+Arguments denlf {R V}.
+Arguments bound1lf {R V W}.
+Arguments obslf {R V}.
+Arguments isolf {R V W}.
+Arguments gisolf {R V W}.
+Arguments den1lf {R V}.
+Arguments projlf {R V}.
+Arguments proj1lf {R V}.
+Arguments unitarylf {R V}.
+
 (* lfun hierarchy *)
-HB.mixin Record isNormalLf (V : chsType) (f : 'End(V)) :=
+HB.mixin Record isNormalLf (R : realType) (V : @chsType R) (f : 'End(V)) :=
   { is_normallf : f \is normallf}.
 
 #[short(type="normalfType")]
-HB.structure Definition NormalLf (V : chsType) :=
-  { f of isNormalLf V f}.
+HB.structure Definition NormalLf (R : realType) (V : @chsType R) :=
+  { f of isNormalLf R V f}.
 
-HB.mixin Record Normal_isHermLf (V : chsType) f of NormalLf V f :=
+HB.mixin Record Normal_isHermLf (R : realType) (V : @chsType R) f of @NormalLf R V f :=
   { is_hermlf : f \is hermlf}.
 
 #[short(type="hermfType")]
-HB.structure Definition HermLf (V : chsType) :=
-  { f of NormalLf V f & Normal_isHermLf V f}.
+HB.structure Definition HermLf (R : realType) (V : @chsType R) :=
+  { f of @NormalLf R V f & @Normal_isHermLf R V f}.
 
-HB.mixin Record Herm_isPsdLf (V : chsType) f of HermLf V f :=
+HB.mixin Record Herm_isPsdLf (R : realType) (V : @chsType R) f of @HermLf R V f :=
   { is_psdlf : f \is psdlf}.
 
 #[short(type="psdfType")]
-HB.structure Definition PsdLf (V : chsType) :=
-  { f of HermLf V f & Herm_isPsdLf V f}.
+HB.structure Definition PsdLf (R : realType) (V : @chsType R) :=
+  { f of @HermLf R V f & @Herm_isPsdLf R V f}.
 
-HB.mixin Record isBound1Lf (U V : chsType) (f : 'Hom(U,V)) :=
+HB.mixin Record isBound1Lf (R : realType) (U V : @chsType R) (f : 'Hom(U,V)) :=
   { is_bound1lf : f \is bound1lf}.
 
 #[short(type="bound1fType")]
-HB.structure Definition Bound1Lf (U V : chsType) :=
-  { f of isBound1Lf U V f}.
+HB.structure Definition Bound1Lf (R : realType) (U V : @chsType R) :=
+  { f of isBound1Lf R U V f}.
 
 #[short(type="obsfType")]
-HB.structure Definition ObsLf (V : chsType) :=
-  { f of PsdLf V f & @Bound1Lf V V f}.
+HB.structure Definition ObsLf (R : realType) (V : @chsType R) :=
+  { f of @PsdLf R V f & @Bound1Lf R V V f}.
 
-HB.mixin Record Obs_isDenLf (V : chsType) f of ObsLf V f :=
+HB.mixin Record Obs_isDenLf (R : realType) (V : @chsType R) f of @ObsLf R V f :=
   { is_denlf : f \is denlf}.
 
 #[short(type="denfType")]
-HB.structure Definition DenLf (V : chsType) :=
-  { f of ObsLf V f & Obs_isDenLf V f}.
+HB.structure Definition DenLf (R : realType) (V : @chsType R) :=
+  { f of @ObsLf R V f & @Obs_isDenLf R V f}.
 
-HB.mixin Record Den_isDen1Lf (V : chsType) f of DenLf V f :=
+HB.mixin Record Den_isDen1Lf (R : realType) (V : @chsType R) f of @DenLf R V f :=
   { is_den1lf : f \is den1lf}.
 
 #[short(type="den1fType")]
-HB.structure Definition Den1Lf (V : chsType) :=
-  { f of DenLf V f & Den_isDen1Lf V f}.
+HB.structure Definition Den1Lf (R : realType) (V : @chsType R) :=
+  { f of @DenLf R V f & @Den_isDen1Lf R V f}.
 
-HB.mixin Record Obs_isProjLf (V : chsType) f of ObsLf V f :=
+HB.mixin Record Obs_isProjLf (R : realType) (V : @chsType R) f of @ObsLf R V f :=
   { is_projlf : f \is projlf}.
 
 #[short(type="projfType")]
-HB.structure Definition ProjLf (V : chsType) :=
-  { f of ObsLf V f & Obs_isProjLf V f}.
+HB.structure Definition ProjLf (R : realType) (V : @chsType R) :=
+  { f of @ObsLf R V f & @Obs_isProjLf R V f}.
 
 #[short(type="proj1fType")]
-HB.structure Definition Proj1Lf (V : chsType) :=
-  { f of ProjLf V f & Den1Lf V f}.
+HB.structure Definition Proj1Lf (R : realType) (V : @chsType R) :=
+  { f of @ProjLf R V f & @Den1Lf R V f}.
 
-HB.mixin Record Bound1_isIsoLf (U V : chsType) f of @Bound1Lf U V f :=
+HB.mixin Record Bound1_isIsoLf (R : realType) (U V : @chsType R) f of @Bound1Lf R U V f :=
   { is_isolf : f \is isolf}.
 
 #[short(type="isofType")]
-HB.structure Definition IsoLf (U V : chsType) :=
-  { f of @Bound1Lf U V f & Bound1_isIsoLf U V f}.
+HB.structure Definition IsoLf (R : realType) (U V : @chsType R) :=
+  { f of @Bound1Lf R U V f & @Bound1_isIsoLf R U V f}.
 
-HB.mixin Record Iso_isGisoLf (U V : chsType) f of @IsoLf U V f :=
+HB.mixin Record Iso_isGisoLf (R : realType) (U V : @chsType R) f of @IsoLf R U V f :=
   { is_gisolf : f \is gisolf}.
 
 #[short(type="gisofType")]
-HB.structure Definition GisoLf (U V : chsType) :=
-  { f of @IsoLf U V f & @Iso_isGisoLf U V f}.
+HB.structure Definition GisoLf (R : realType) (U V : @chsType R) :=
+  { f of @IsoLf R U V f & @Iso_isGisoLf R U V f}.
+
+Arguments isNormalLf.Axioms_ {R V} f.
+Arguments NormalLf.Class {R V f}.
+Arguments NormalLf.Pack {R V sort}.
+Arguments Normal_isHermLf.Axioms_ {R V f}.
+Arguments HermLf.Class {R V f}.
+Arguments HermLf.Pack {R V sort}.
+Arguments Herm_isPsdLf.Axioms_ {R V f}.
+Arguments PsdLf.Class {R V f}.
+Arguments PsdLf.Pack {R V sort}.
+Arguments isBound1Lf.Axioms_ {R U V} f.
+Arguments Bound1Lf.Class {R U V f}.
+Arguments Bound1Lf.Pack {R U V sort}.
+Arguments ObsLf.Class {R V f}.
+Arguments ObsLf.Pack {R V sort}.
+Arguments Obs_isDenLf.Axioms_ {R V f}.
+Arguments DenLf.Class {R V f}.
+Arguments DenLf.Pack {R V sort}.
+Arguments Den_isDen1Lf.Axioms_ {R V f}.
+Arguments Den1Lf.Class {R V f}.
+Arguments Den1Lf.Pack {R V sort}.
+Arguments Obs_isProjLf.Axioms_ {R V f}.
+Arguments ProjLf.Class {R V f}.
+Arguments ProjLf.Pack {R V sort}.
+Arguments Proj1Lf.Class {R V f}.
+Arguments Proj1Lf.Pack {R V sort}.
+Arguments Bound1_isIsoLf.Axioms_ {R U V} f.
+Arguments IsoLf.Class {R U V f}.
+Arguments IsoLf.Pack {R U V sort}.
+Arguments Iso_isGisoLf.Axioms_ {R U V} f.
+Arguments GisoLf.Class {R U V f}.
+Arguments GisoLf.Pack {R U V sort}.
+Arguments NormalLf.sort {R V}.
+Arguments HermLf.sort {R V}.
+Arguments PsdLf.sort {R V}.
+Arguments Bound1Lf.sort {R U V}.
+Arguments ObsLf.sort {R V}.
+Arguments DenLf.sort {R V}.
+Arguments Den1Lf.sort {R V}.
+Arguments ProjLf.sort {R V}.
+Arguments Proj1Lf.sort {R V}.
+Arguments IsoLf.sort {R U V}.
+Arguments GisoLf.sort {R U V}.
+Arguments is_normallf {R V s}.
+Arguments is_hermlf {R V s}.
+Arguments is_psdlf {R V s}.
+Arguments is_bound1lf {R U V s}.
+Arguments is_denlf {R V s}.
+Arguments is_den1lf {R V s}.
+Arguments is_projlf {R V s}.
+Arguments is_isolf {R U V s}.
+Arguments is_gisolf {R U V s}.
 
 #[non_forgetful_inheritance]
-HB.instance Definition _ (U : chsType) (f : isofType U U) :=
-  isNormalLf.Build U f (isolf_normal (@is_isolf _ _ f)).
+HB.instance Definition _ (R : realType) (U : @chsType R) (f : isofType U U) :=
+  isNormalLf.Build R U f (isolf_normal (@is_isolf R _ _ f)).
 
 (*
   GisoLf already contains IsoLf, so the IsoLf -> NormalLf inheritance above
   covers gisofType U U. Keeping a second direct route makes HB generation
   prohibitively slow on Rocq 9.2 / HB 1.10.
 #[non_forgetful_inheritance]
-HB.instance Definition _ (U : chsType) (f : gisofType U U) :=
-  isNormalLf.Build U f (isolf_normal (@is_isolf _ _ f)).
+HB.instance Definition _ (R : realType) (U : @chsType R) (f : gisofType U U) :=
+  isNormalLf.Build R U f (isolf_normal (@is_isolf R _ _ f)).
 *)
 
 (* factories *)
 Module isHermLf.
-Definition Build (U : chsType) (f : 'End(U)) (H : f \is hermlf) :
-    HermLf.axioms_ f.
+Definition Build (R : realType) (U : @chsType R) (f : 'End(U)) (H : f \is hermlf) :
+    @HermLf.axioms_ R U f.
 Proof.
 exact:
-  (let n := @isNormalLf.Axioms_ U f (hermlf_normal H) in
-  @HermLf.Class U f n (@Normal_isHermLf.Axioms_ U f n H)).
+  (let n := @isNormalLf.Axioms_ R U f (hermlf_normal H) in
+  @HermLf.Class R U f n (@Normal_isHermLf.Axioms_ R U f n H)).
 Qed.
 End isHermLf.
-Arguments isHermLf.Build U f H : clear implicits.
+Arguments isHermLf.Build {R} U f H.
 
 Section LfSubType.
+Variable R : realType.
+Local Notation chsType := (@chsType R).
 Variable (U V : chsType).
 
 Section LfBuild.
 Variable (x : 'End(U)) (y : 'Hom(U,V)).
 
 Definition NormalLf_Build (H : x \is normallf) : normalfType U :=
-  NormalLf.Pack (NormalLf.Class (isNormalLf.Axioms_ x H)).
+  NormalLf.Pack (@NormalLf.Class R U x (isNormalLf.Axioms_ x H)).
 Definition HermLf_Build (H : x \is hermlf) : hermfType U :=
-  HermLf.Pack (HermLf.Class (Normal_isHermLf.Axioms_
-    (isNormalLf.Axioms_ x (hermlf_normal H)) H)).
+  let n := isNormalLf.Axioms_ x (hermlf_normal H) in
+  HermLf.Pack (@HermLf.Class R U x n (Normal_isHermLf.Axioms_ n H)).
 Definition PsdLf_Build (H : x \is psdlf) : psdfType U :=
-  PsdLf.Pack (PsdLf.Class (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_
-  (isNormalLf.Axioms_ x (psdlf_normal H)) (psdlf_herm H)) H)).
+  let n := isNormalLf.Axioms_ x (psdlf_normal H) in
+  let h := Normal_isHermLf.Axioms_ n (psdlf_herm H) in
+  PsdLf.Pack (@PsdLf.Class R U x n h (Herm_isPsdLf.Axioms_ n h H)).
 Definition ObsLf_Build (H : x \is obslf) : obsfType U :=
-  ObsLf.Pack (ObsLf.Class (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_
-  (isNormalLf.Axioms_ x (obslf_normal H)) (obslf_herm H)) (obslf_psd H))
-  (isBound1Lf.Axioms_ _ x (obslf_bound1 H))).
+  let n := isNormalLf.Axioms_ x (obslf_normal H) in
+  let h := Normal_isHermLf.Axioms_ n (obslf_herm H) in
+  let p := Herm_isPsdLf.Axioms_ n h (obslf_psd H) in
+  let b := isBound1Lf.Axioms_ x (obslf_bound1 H) in
+  ObsLf.Pack (@ObsLf.Class R U x n h p b).
 Definition DenLf_Build (H : x \is denlf) : denfType U :=
-  DenLf.Pack (DenLf.Class (@Obs_isDenLf.Axioms_ _ _ _ _
-  (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_ (isNormalLf.Axioms_ x
-  (denlf_normal H)) (denlf_herm H)) (denlf_psd H))
-  (isBound1Lf.Axioms_ _ x (denlf_bound1 H)) H)).
+  let n := isNormalLf.Axioms_ x (denlf_normal H) in
+  let h := Normal_isHermLf.Axioms_ n (denlf_herm H) in
+  let p := Herm_isPsdLf.Axioms_ n h (denlf_psd H) in
+  let b := isBound1Lf.Axioms_ x (denlf_bound1 H) in
+  let d := Obs_isDenLf.Axioms_ n h p b H in
+  DenLf.Pack (@DenLf.Class R U x n h p b d).
 Definition Den1Lf_Build (H : x \is den1lf) : den1fType U :=
-  Den1Lf.Pack (Den1Lf.Class (Den_isDen1Lf.Axioms_
-  (@Obs_isDenLf.Axioms_ _ _ _ _
-  (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_ (isNormalLf.Axioms_ x
-  (den1lf_normal H)) (den1lf_herm H)) (den1lf_psd H))
-  (isBound1Lf.Axioms_ _ x (den1lf_bound1 H)) (den1lf_den H)) H)).
+  let n := isNormalLf.Axioms_ x (den1lf_normal H) in
+  let h := Normal_isHermLf.Axioms_ n (den1lf_herm H) in
+  let p := Herm_isPsdLf.Axioms_ n h (den1lf_psd H) in
+  let b := isBound1Lf.Axioms_ x (den1lf_bound1 H) in
+  let d := Obs_isDenLf.Axioms_ n h p b (den1lf_den H) in
+  let d1 := Den_isDen1Lf.Axioms_ n h p b d H in
+  Den1Lf.Pack (@Den1Lf.Class R U x n h p b d d1).
 Definition ProjLf_Build (H : x \is projlf) : projfType U :=
-  ProjLf.Pack (ProjLf.Class (@Obs_isProjLf.Axioms_ _ _ _ _
-  (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_ (isNormalLf.Axioms_ x
-  (projlf_normal H)) (projlf_herm H)) (projlf_psd H))
-  (isBound1Lf.Axioms_ _ x (projlf_bound1 H)) H)).
+  let n := isNormalLf.Axioms_ x (projlf_normal H) in
+  let h := Normal_isHermLf.Axioms_ n (projlf_herm H) in
+  let p := Herm_isPsdLf.Axioms_ n h (projlf_psd H) in
+  let b := isBound1Lf.Axioms_ x (projlf_bound1 H) in
+  let pr := Obs_isProjLf.Axioms_ n h p b H in
+  ProjLf.Pack (@ProjLf.Class R U x n h p b pr).
 Definition Proj1Lf_Build (H : x \is proj1lf) : proj1fType U :=
-  Proj1Lf.Pack (Proj1Lf.Class (@Obs_isProjLf.Axioms_ _ _ _ _
-  (Herm_isPsdLf.Axioms_ (Normal_isHermLf.Axioms_ (isNormalLf.Axioms_ x
-  (proj1lf_normal H)) (proj1lf_herm H)) (proj1lf_psd H))
-  (isBound1Lf.Axioms_ _ x (proj1lf_bound1 H)) (proj1lf_proj H))
-  (Den_isDen1Lf.Axioms_
-  (Obs_isDenLf.Axioms_ _ (proj1lf_den H)) (proj1lf_den1 H))).
+  let n := isNormalLf.Axioms_ x (proj1lf_normal H) in
+  let h := Normal_isHermLf.Axioms_ n (proj1lf_herm H) in
+  let p := Herm_isPsdLf.Axioms_ n h (proj1lf_psd H) in
+  let b := isBound1Lf.Axioms_ x (proj1lf_bound1 H) in
+  let pr := Obs_isProjLf.Axioms_ n h p b (proj1lf_proj H) in
+  let d := Obs_isDenLf.Axioms_ n h p b (proj1lf_den H) in
+  let d1 := Den_isDen1Lf.Axioms_ n h p b d (proj1lf_den1 H) in
+  Proj1Lf.Pack (@Proj1Lf.Class R U x n h p b pr d d1).
 Definition Bound1Lf_Build (H : y \is bound1lf) : bound1fType U V :=
-  Bound1Lf.Pack (Bound1Lf.Class (isBound1Lf.Axioms_ _ y H)).
+  Bound1Lf.Pack (@Bound1Lf.Class R U V y (isBound1Lf.Axioms_ y H)).
 Definition IsoLf_Build (H : y \is isolf) : isofType U V :=
-  IsoLf.Pack (IsoLf.Class (Bound1_isIsoLf.Axioms_ y
-  (isBound1Lf.Axioms_ _ y (isolf_bound1 H)) H)).
+  let b := isBound1Lf.Axioms_ y (isolf_bound1 H) in
+  IsoLf.Pack (@IsoLf.Class R U V y b (Bound1_isIsoLf.Axioms_ y b H)).
 Definition GisoLf_Build (H : y \is gisolf) : gisofType U V :=
-  GisoLf.Pack (GisoLf.Class (Iso_isGisoLf.Axioms_ _
-  (Bound1_isIsoLf.Axioms_ y (isBound1Lf.Axioms_ _ y
-  (gisolf_bound1 H)) (gisolf_iso H)) H)).
+  let b := isBound1Lf.Axioms_ y (gisolf_bound1 H) in
+  let i := Bound1_isIsoLf.Axioms_ y b (gisolf_iso H) in
+  GisoLf.Pack (@GisoLf.Class R U V y b i (Iso_isGisoLf.Axioms_ _ b i H)).
 Definition UnitaryLf_Build (H : x \is unitarylf) : gisofType U U :=
-  GisoLf.Pack (GisoLf.Class (Iso_isGisoLf.Axioms_ _
-  (Bound1_isIsoLf.Axioms_ x (isBound1Lf.Axioms_ _ x
-  (unitarylf_bound1 H)) (unitarylf_iso H)) (unitarylf_giso H))).
+  let b := isBound1Lf.Axioms_ x (unitarylf_bound1 H) in
+  let i := Bound1_isIsoLf.Axioms_ x b (unitarylf_iso H) in
+  GisoLf.Pack (@GisoLf.Class R U U x b i (Iso_isGisoLf.Axioms_ _ b i (unitarylf_giso H))).
 
 Lemma NormalLf_BuildE (H : x \is normallf) : x = NormalLf_Build H.
 Proof. by []. Qed.
@@ -785,9 +873,9 @@ End LfBuild.
 (* we define all types as a subtype of lfun instead of their hierarchy *)
 Program Definition normalf_subType :=
   @isSub.Build 'End(U) (fun f => f \is normallf) (normalfType U)
-  (@NormalLf.sort U) NormalLf_Build _ (fun _ _ => erefl).
+  (@NormalLf.sort R U) NormalLf_Build _ (fun _ _ => erefl).
 Next Obligation.
-move=> K X u; move: (@is_normallf _ u) (X _ (@is_normallf _ u)).
+move=> K X u; move: (@is_normallf R U u) (X _ (@is_normallf R U u)).
 by case: u=>/= u [[Pu1]] Pu2; rewrite (eq_irrelevance Pu1 Pu2).
 Qed.
 HB.instance Definition _ := normalf_subType.
@@ -795,10 +883,10 @@ HB.instance Definition _ := [Equality of (normalfType U) by <:].
 HB.instance Definition _ := [Choice of (normalfType U) by <:].
 
 Program Definition hermf_subType := @isSub.Build 'End(U)
-  (fun f => f \is hermlf) (hermfType U) (@HermLf.sort U)
+  (fun f => f \is hermlf) (hermfType U) (@HermLf.sort R U)
   HermLf_Build _ (fun _ _ => erefl).
 Next Obligation.
-move=> K X u; move: (@is_hermlf _ u) (X _ (@is_hermlf _ u)).
+move=> K X u; move: (@is_hermlf R U u) (X _ (@is_hermlf R U u)).
 by case: u=>/= u [[Pu1]] [Pu2] Pu3;
   rewrite /HermLf_Build (eq_irrelevance Pu2 Pu3) (eq_irrelevance (_ _) Pu1).
 Qed.
@@ -807,10 +895,10 @@ HB.instance Definition _ := [Equality of (hermfType U) by <:].
 HB.instance Definition _ := [Choice of (hermfType U) by <:].
 
 Program Definition psdf_subType := @isSub.Build 'End(U)
-  (fun f => f \is psdlf) (psdfType U) (@PsdLf.sort U)
+  (fun f => f \is psdlf) (psdfType U) (@PsdLf.sort R U)
   PsdLf_Build _ (fun _ _ => erefl).
 Next Obligation.
-move=> K X u; move: (@is_psdlf _ u) (X _ (@is_psdlf _ u)).
+move=> K X u; move: (@is_psdlf R U u) (X _ (@is_psdlf R U u)).
 by case: u=>/= u [[Pu1]] [Pu2] [Pu3] Pu4;
   rewrite /PsdLf_Build (eq_irrelevance Pu3 Pu4)
   (eq_irrelevance (_ _) Pu1) (eq_irrelevance (_ _) Pu2).
@@ -821,9 +909,9 @@ HB.instance Definition _ := [Choice of (psdfType U) by <:].
 
 Program Definition bound1f_subType :=
   @isSub.Build 'Hom(U,V) (fun f => f \is bound1lf) (bound1fType U V)
-  (@Bound1Lf.sort U V) Bound1Lf_Build _ (fun _ _ => erefl).
+  (@Bound1Lf.sort R U V) Bound1Lf_Build _ (fun _ _ => erefl).
 Next Obligation.
-move=> K X u; move: (@is_bound1lf _ _ u) (X _ (@is_bound1lf _ _ u)).
+move=> K X u; move: (@is_bound1lf R U V u) (X _ (@is_bound1lf R U V u)).
 by case: u=>/= u [[Pu1]] Pu2; rewrite (eq_irrelevance Pu1 Pu2).
 Qed.
 HB.instance Definition _ := bound1f_subType.
@@ -831,11 +919,11 @@ HB.instance Definition _ := [Equality of (bound1fType U V) by <:].
 HB.instance Definition _ := [Choice of (bound1fType U V) by <:].
 
 Program Definition obsf_subType := @isSub.Build 'End(U)
-  (fun f => f \is obslf) (obsfType U) (@ObsLf.sort U)
+  (fun f => f \is obslf) (obsfType U) (@ObsLf.sort R U)
   ObsLf_Build _ (fun _ _ => erefl).
 Next Obligation.
 move=> K X u.
-move: (psdlf_bound1lf_obs (@is_psdlf _ u) (@is_bound1lf _ _ u))=>Pu.
+move: (psdlf_bound1lf_obs (@is_psdlf R U u) (@is_bound1lf R U U u))=>Pu.
 move: (X _ Pu); case: u Pu=>/= u [[Pu1]] [Pu2] [Pu3] [Pu4] Pu5.
 rewrite /ObsLf_Build.
 rewrite (eq_irrelevance (obslf_normal Pu5) Pu1).
@@ -848,10 +936,10 @@ HB.instance Definition _ := [Equality of (obsfType U) by <:].
 HB.instance Definition _ := [Choice of (obsfType U) by <:].
 
 Program Definition denf_subType := @isSub.Build 'End(U)
-  (fun f => f \is denlf) (denfType U) (@DenLf.sort U)
+  (fun f => f \is denlf) (denfType U) (@DenLf.sort R U)
   DenLf_Build _ (fun _ _ => erefl).
 Next Obligation.
-move=> K X u. move: (@is_denlf _ u) (X _ (@is_denlf _ u)).
+move=> K X u. move: (@is_denlf R U u) (X _ (@is_denlf R U u)).
 case: u=>/= u [[Pu1]] [Pu2] [Pu3] [Pu4] [Pu5] Pu6.
 rewrite /DenLf_Build.
 rewrite (eq_irrelevance Pu5 Pu6).
@@ -865,10 +953,10 @@ HB.instance Definition _ := [Equality of (denfType U) by <:].
 HB.instance Definition _ := [Choice of (denfType U) by <:].
 
 Program Definition den1f_subType := @isSub.Build 'End(U)
-  (fun f => f \is den1lf) (den1fType U) (@Den1Lf.sort U)
+  (fun f => f \is den1lf) (den1fType U) (@Den1Lf.sort R U)
   Den1Lf_Build _ (fun _ _ => erefl).
 Next Obligation.
-move=> K X u. move: (@is_den1lf _ u) (X _ (@is_den1lf _ u)).
+move=> K X u. move: (@is_den1lf R U u) (X _ (@is_den1lf R U u)).
 case: u=>/= u [[Pu1]] [Pu2] [Pu3] [Pu4] [Pu5] [Pu6] Pu7.
 rewrite /Den1Lf_Build.
 rewrite (eq_irrelevance Pu6 Pu7).
@@ -883,10 +971,10 @@ HB.instance Definition _ := [Equality of (den1fType U) by <:].
 HB.instance Definition _ := [Choice of (den1fType U) by <:].
 
 Program Definition projf_subType := @isSub.Build 'End(U)
-  (fun f => f \is projlf) (projfType U) (@ProjLf.sort U)
+  (fun f => f \is projlf) (projfType U) (@ProjLf.sort R U)
   ProjLf_Build _ (fun _ _ => erefl).
 Next Obligation.
-move=> K X u. move: (@is_projlf _ u) (X _ (@is_projlf _ u)).
+move=> K X u. move: (@is_projlf R U u) (X _ (@is_projlf R U u)).
 case: u=>/= u [[Pu1]] [Pu2] [Pu3] [Pu4] [Pu5] Pu6.
 rewrite /ProjLf_Build.
 rewrite (eq_irrelevance Pu5 Pu6).
@@ -900,10 +988,10 @@ HB.instance Definition _ := [Equality of (projfType U) by <:].
 HB.instance Definition _ := [Choice of (projfType U) by <:].
 
 Program Definition proj1f_subType := @isSub.Build 'End(U)
-  (fun f => f \is proj1lf) (proj1fType U) (@Proj1Lf.sort U)
+  (fun f => f \is proj1lf) (proj1fType U) (@Proj1Lf.sort R U)
   Proj1Lf_Build _ (fun _ _ => erefl).
 Next Obligation.
-move=> K X u; move: (den1lf_projlf_proj1 (@is_den1lf _ u) (@is_projlf _ u))=>Pu.
+move=> K X u; move: (den1lf_projlf_proj1 (@is_den1lf R U u) (@is_projlf R U u))=>Pu.
 move: (X _ Pu); case: u Pu
   =>/= u [[Pu1]] [Pu2] [Pu3] [Pu4] [Pu5] [Pu6] [Pu7] Pu8.
 rewrite /Proj1Lf_Build.
@@ -921,9 +1009,9 @@ HB.instance Definition _ := [Choice of (proj1fType U) by <:].
 
 Program Definition isof_subType :=
   @isSub.Build 'Hom(U,V) (fun f => f \is isolf) (isofType U V)
-  (@IsoLf.sort U V) IsoLf_Build _ (fun _ _ => erefl).
+  (@IsoLf.sort R U V) IsoLf_Build _ (fun _ _ => erefl).
 Next Obligation.
-move=> K X u; move: (@is_isolf _ _ u) (X _ (@is_isolf _ _ u)).
+move=> K X u; move: (@is_isolf R U V u) (X _ (@is_isolf R U V u)).
 case: u=>/= u [[Pu1]] [Pu2] Pu3.
 rewrite /IsoLf_Build.
 rewrite (eq_irrelevance Pu2 Pu3).
@@ -935,9 +1023,9 @@ HB.instance Definition _ := [Choice of (isofType U V) by <:].
 
 Program Definition gisof_subType :=
   @isSub.Build 'Hom(U,V) (fun f => f \is gisolf) (gisofType U V)
-  (@IsoLf.sort U V) GisoLf_Build _ (fun _ _ => erefl).
+  (@GisoLf.sort R U V) GisoLf_Build _ (fun _ _ => erefl).
 Next Obligation.
-move=> K X u; move: (@is_gisolf _ _ u) (X _ (@is_gisolf _ _ u)).
+move=> K X u; move: (@is_gisolf R U V u) (X _ (@is_gisolf R U V u)).
 case: u=>/= u [[Pu1]] [Pu2] [Pu3] Pu4.
 rewrite /GisoLf_Build.
 rewrite (eq_irrelevance Pu3 Pu4).
@@ -951,67 +1039,67 @@ HB.instance Definition _ := [Choice of (gisofType U V) by <:].
 End LfSubType.
 
 Module isPsdLf.
-Definition Build (U : chsType) (f : 'End(U)) (H : f \is psdlf) :
-    PsdLf.axioms_ f :=
-  PsdLf.class (@PsdLf_Build U f H).
+Definition Build (R : realType) (U : @chsType R) (f : 'End(U)) (H : f \is psdlf) :
+    @PsdLf.axioms_ R U f :=
+  PsdLf.class (@PsdLf_Build R U f H).
 End isPsdLf.
-Arguments isPsdLf.Build U f H : clear implicits.
+Arguments isPsdLf.Build {R} U f H.
 
 Module isObsLf.
-Definition Build (U : chsType) (f : 'End(U)) (H : f \is obslf) :
-    ObsLf.axioms_ f :=
-  ObsLf.class (@ObsLf_Build U f H).
+Definition Build (R : realType) (U : @chsType R) (f : 'End(U)) (H : f \is obslf) :
+    @ObsLf.axioms_ R U f :=
+  ObsLf.class (@ObsLf_Build R U f H).
 End isObsLf.
-Arguments isObsLf.Build U f H : clear implicits.
+Arguments isObsLf.Build {R} U f H.
 
 Module isDenLf.
-Definition Build (U : chsType) (f : 'End(U)) (H : f \is denlf) :
-    DenLf.axioms_ f :=
-  DenLf.class (@DenLf_Build U f H).
+Definition Build (R : realType) (U : @chsType R) (f : 'End(U)) (H : f \is denlf) :
+    @DenLf.axioms_ R U f :=
+  DenLf.class (@DenLf_Build R U f H).
 End isDenLf.
-Arguments isDenLf.Build U f H : clear implicits.
+Arguments isDenLf.Build {R} U f H.
 
 Module isDen1Lf.
-Definition Build (U : chsType) (f : 'End(U)) (H : f \is den1lf) :
-    Den1Lf.axioms_ f :=
-  Den1Lf.class (@Den1Lf_Build U f H).
+Definition Build (R : realType) (U : @chsType R) (f : 'End(U)) (H : f \is den1lf) :
+    @Den1Lf.axioms_ R U f :=
+  Den1Lf.class (@Den1Lf_Build R U f H).
 End isDen1Lf.
-Arguments isDen1Lf.Build U f H : clear implicits.
+Arguments isDen1Lf.Build {R} U f H.
 
 Module isProjLf.
-Definition Build (U : chsType) (f : 'End(U)) (H : f \is projlf) :
-    ProjLf.axioms_ f :=
-  ProjLf.class (@ProjLf_Build U f H).
+Definition Build (R : realType) (U : @chsType R) (f : 'End(U)) (H : f \is projlf) :
+    @ProjLf.axioms_ R U f :=
+  ProjLf.class (@ProjLf_Build R U f H).
 End isProjLf.
-Arguments isProjLf.Build U f H : clear implicits.
+Arguments isProjLf.Build {R} U f H.
 
 Module isProj1Lf.
-Definition Build (U : chsType) (f : 'End(U)) (H : f \is proj1lf) :
-    Proj1Lf.axioms_ f :=
-  Proj1Lf.class (@Proj1Lf_Build U f H).
+Definition Build (R : realType) (U : @chsType R) (f : 'End(U)) (H : f \is proj1lf) :
+    @Proj1Lf.axioms_ R U f :=
+  Proj1Lf.class (@Proj1Lf_Build R U f H).
 End isProj1Lf.
-Arguments isProj1Lf.Build U f H : clear implicits.
+Arguments isProj1Lf.Build {R} U f H.
 
 Module isIsoLf.
-Definition Build (U V : chsType) (f : 'Hom(U,V)) (H : f \is isolf) :
-    IsoLf.axioms_ f :=
-  IsoLf.class (@IsoLf_Build U V f H).
+Definition Build (R : realType) (U V : @chsType R) (f : 'Hom(U,V)) (H : f \is isolf) :
+    @IsoLf.axioms_ R U V f :=
+  IsoLf.class (@IsoLf_Build R U V f H).
 End isIsoLf.
-Arguments isIsoLf.Build U V f H : clear implicits.
+Arguments isIsoLf.Build {R} U V f H.
 
 Module isGisoLf.
-Definition Build (U V : chsType) (f : 'Hom(U,V)) (H : f \is gisolf) :
-    GisoLf.axioms_ f :=
-  GisoLf.class (@GisoLf_Build U V f H).
+Definition Build (R : realType) (U V : @chsType R) (f : 'Hom(U,V)) (H : f \is gisolf) :
+    @GisoLf.axioms_ R U V f :=
+  GisoLf.class (@GisoLf_Build R U V f H).
 End isGisoLf.
-Arguments isGisoLf.Build U V f H : clear implicits.
+Arguments isGisoLf.Build {R} U V f H.
 
 Module isUnitaryLf.
-Definition Build (U : chsType) (f : 'End(U)) (H : f \is unitarylf) :
-    GisoLf.axioms_ f :=
-  GisoLf.class (@UnitaryLf_Build U f H).
+Definition Build (R : realType) (U : @chsType R) (f : 'End(U)) (H : f \is unitarylf) :
+    @GisoLf.axioms_ R U U f :=
+  GisoLf.class (@UnitaryLf_Build R U f H).
 End isUnitaryLf.
-Arguments isUnitaryLf.Build U f H : clear implicits.
+Arguments isUnitaryLf.Build {R} U f H.
 
 Reserved Notation "''FB1'" .
 Reserved Notation "''FB1_' S"     (at level 8, S at level 2, format "''FB1_' S").
@@ -1062,65 +1150,70 @@ Notation "''FP1'" := ('FP1(_)) (only parsing) : type_scope.
 
 Module LfunExports.
 #[deprecated(since="mathcomp 2.0.0", note="Use NormalLf.clone instead.")]
-Notation "[ 'normal' 'of' f 'as' g ]" := (NormalLf.clone _ f g) : form_scope.
+Notation "[ 'normal' 'of' f 'as' g ]" := (NormalLf.clone _ _ f g) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use NormalLf.clone instead.")]
-Notation "[ 'normal' 'of' f ]" := (NormalLf.clone _ f _) : form_scope.
+Notation "[ 'normal' 'of' f ]" := (NormalLf.clone _ _ f _) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use HermLf.clone instead.")]
-Notation "[ 'herm' 'of' f 'as' g ]" := (HermLf.clone _ f g) : form_scope.
+Notation "[ 'herm' 'of' f 'as' g ]" := (HermLf.clone _ _ f g) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use HermLf.clone instead.")]
-Notation "[ 'herm' 'of' f ]" := (HermLf.clone _ f _) : form_scope.
+Notation "[ 'herm' 'of' f ]" := (HermLf.clone _ _ f _) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use PsdLf.clone instead.")]
-Notation "[ 'psd' 'of' f 'as' g ]" := (PsdLf.clone _ f g) : form_scope.
+Notation "[ 'psd' 'of' f 'as' g ]" := (PsdLf.clone _ _ f g) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use PsdLf.clone instead.")]
-Notation "[ 'psd' 'of' f ]" := (PsdLf.clone _ f _) : form_scope.
+Notation "[ 'psd' 'of' f ]" := (PsdLf.clone _ _ f _) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use Bound1Lf.clone instead.")]
-Notation "[ 'bound1' 'of' f 'as' g ]" := (Bound1Lf.clone _ _ f g) : form_scope.
+Notation "[ 'bound1' 'of' f 'as' g ]" := (Bound1Lf.clone _ _ _ f g) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use Bound1Lf.clone instead.")]
-Notation "[ 'bound1' 'of' f ]" := (Bound1Lf.clone _ _ f _) : form_scope.
+Notation "[ 'bound1' 'of' f ]" := (Bound1Lf.clone _ _ _ f _) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use ObsLf.clone instead.")]
-Notation "[ 'obs' 'of' f 'as' g ]" := (ObsLf.clone _ f g) : form_scope.
+Notation "[ 'obs' 'of' f 'as' g ]" := (ObsLf.clone _ _ f g) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use ObsLf.clone instead.")]
-Notation "[ 'obs' 'of' f ]" := (ObsLf.clone _ f _) : form_scope.
+Notation "[ 'obs' 'of' f ]" := (ObsLf.clone _ _ f _) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use DenLf.clone instead.")]
-Notation "[ 'den' 'of' f 'as' g ]" := (DenLf.clone _ f g) : form_scope.
+Notation "[ 'den' 'of' f 'as' g ]" := (DenLf.clone _ _ f g) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use DenLf.clone instead.")]
-Notation "[ 'den' 'of' f ]" := (DenLf.clone _ f _) : form_scope.
+Notation "[ 'den' 'of' f ]" := (DenLf.clone _ _ f _) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use Den1Lf.clone instead.")]
-Notation "[ 'den1' 'of' f 'as' g ]" := (Den1Lf.clone _ f g) : form_scope.
+Notation "[ 'den1' 'of' f 'as' g ]" := (Den1Lf.clone _ _ f g) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use Den1Lf.clone instead.")]
-Notation "[ 'den1' 'of' f ]" := (Den1Lf.clone _ f _) : form_scope.
+Notation "[ 'den1' 'of' f ]" := (Den1Lf.clone _ _ f _) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use ProjLf.clone instead.")]
-Notation "[ 'proj' 'of' f 'as' g ]" := (ProjLf.clone _ f g) : form_scope.
+Notation "[ 'proj' 'of' f 'as' g ]" := (ProjLf.clone _ _ f g) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use ProjLf.clone instead.")]
-Notation "[ 'proj' 'of' f ]" := (ProjLf.clone _ f _) : form_scope.
+Notation "[ 'proj' 'of' f ]" := (ProjLf.clone _ _ f _) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use Proj1Lf.clone instead.")]
-Notation "[ 'proj1' 'of' f 'as' g ]" := (Proj1Lf.clone _ f g) : form_scope.
+Notation "[ 'proj1' 'of' f 'as' g ]" := (Proj1Lf.clone _ _ f g) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use Proj1Lf.clone instead.")]
-Notation "[ 'proj1' 'of' f ]" := (Proj1Lf.clone _ f _) : form_scope.
+Notation "[ 'proj1' 'of' f ]" := (Proj1Lf.clone _ _ f _) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use IsoLf.clone instead.")]
-Notation "[ 'iso' 'of' f 'as' g ]" := (IsoLf.clone _ _ f g) : form_scope.
+Notation "[ 'iso' 'of' f 'as' g ]" := (IsoLf.clone _ _ _ f g) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use IsoLf.clone instead.")]
-Notation "[ 'iso' 'of' f ]" := (IsoLf.clone _ _ f _) : form_scope.
+Notation "[ 'iso' 'of' f ]" := (IsoLf.clone _ _ _ f _) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use GisoLf.clone instead.")]
-Notation "[ 'giso' 'of' f 'as' g ]" := (GisoLf.clone _ _ f g) : form_scope.
+Notation "[ 'giso' 'of' f 'as' g ]" := (GisoLf.clone _ _ _ f g) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use GisoLf.clone instead.")]
-Notation "[ 'giso' 'of' f ]" := (GisoLf.clone _ _ f _) : form_scope.
+Notation "[ 'giso' 'of' f ]" := (GisoLf.clone _ _ _ f _) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use GisoLf.clone instead.")]
-Notation "[ 'unitary' 'of' f 'as' g ]" := (GisoLf.clone _ _ f g) : form_scope.
+Notation "[ 'unitary' 'of' f 'as' g ]" := (GisoLf.clone _ _ _ f g) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use GisoLf.clone instead.")]
-Notation "[ 'unitary' 'of' f ]" := (GisoLf.clone _ _ f _) : form_scope.
+Notation "[ 'unitary' 'of' f ]" := (GisoLf.clone _ _ _ f _) : form_scope.
 End LfunExports.
 HB.export LfunExports.
 
-Arguments is_normallf [V] s.
-Arguments is_hermlf [V] s.
-Arguments is_psdlf [V] s.
-Arguments is_bound1lf [U V] s.
-Arguments is_denlf [V] s.
-Arguments is_den1lf [V] s.
-Arguments is_projlf [V] s.
-Arguments is_isolf [U V] s.
-Arguments is_gisolf [U V] s.
+Arguments is_normallf {R V} s.
+Arguments is_hermlf {R V} s.
+Arguments is_psdlf {R V} s.
+Arguments is_bound1lf {R U V} s.
+Arguments is_denlf {R V} s.
+Arguments is_den1lf {R V} s.
+Arguments is_projlf {R V} s.
+Arguments is_isolf {R U V} s.
+Arguments is_gisolf {R U V} s.
+
+Section LfunHierarchyTheory.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 
 Lemma is_obslf (V : chsType) (f : 'FO(V)) : f%:VF \is obslf.
 Proof. by move: (is_psdlf f) (is_bound1lf f); exact: psdlf_bound1lf_obs. Qed.
@@ -1435,7 +1528,7 @@ apply/eqb_iff; split.
   have P1 (v : 'cV_(dim U)) : l2norm (h2mx B *m v) <= l2norm v
     by move: (P (c2h v)); rewrite !hnorm_l2norm applyfh !c2hK.
   move: P1; set mB := h2mx B; move: mB.
-    rewrite -dim_proper_cast -(@dim_proper_cast V)=>mB P1.
+    rewrite -dim_proper_cast -(@dim_proper_cast R V)=>mB P1.
     move: (i2norm_existsr mB 0)=>[] v Pv Pm; move: (P1 v).
     by rewrite Pv Pm.
 move=>P1; apply/bound1lf_normP=>v; rewrite !hnorm_l2norm applyfh c2hK.
@@ -1528,20 +1621,20 @@ Proof. by apply/projlfP; rewrite linear0 comp_lfun0l. Qed.
 HB.instance Definition _ := isProjLf.Build V 0 projlf0.
 Lemma denlf0 : (0 : 'End(V)) \is denlf.
 Proof. apply/denlfP; split. apply/is_psdlf. by rewrite linear0. Qed.
-HB.instance Definition _ := Obs_isDenLf.Build V 0 denlf0.
+HB.instance Definition _ := Obs_isDenLf.Build R V 0 denlf0.
 
 Lemma projlf1 : (\1 : 'End(V)) \is projlf.
 Proof. by apply/projlfP; rewrite adjf1 comp_lfun1l. Qed.
 HB.instance Definition _ := isProjLf.Build V \1 projlf1.
 Lemma unitarylf1 : (\1 : 'End(V)) \is unitarylf.
 Proof. by apply/unitarylfP; rewrite adjf1 comp_lfun1l. Qed.
-HB.instance Definition _ := Bound1_isIsoLf.Build V V \1 (unitarylf_iso unitarylf1).
-HB.instance Definition _ := Iso_isGisoLf.Build V V \1 (unitarylf_giso unitarylf1).
+HB.instance Definition _ := Bound1_isIsoLf.Build R V V \1 (unitarylf_iso unitarylf1).
+HB.instance Definition _ := Iso_isGisoLf.Build R V V \1 (unitarylf_giso unitarylf1).
 
 Lemma normallf_adj (A:'End(V)) : A^A \is normallf = (A \is normallf).
 Proof. by rewrite !normallfE adjfK eq_sym. Qed.
 Lemma normallf_tr (A:'End(V)) : A^T \is normallf = (A \is normallf).
-Proof. by rewrite !normallfE lfTAC -!trf_comp eq_sym (can_eq (@trfK _ _)). Qed.
+Proof. by rewrite !normallfE lfTAC -!trf_comp eq_sym (can_eq (@trfK R V V)). Qed.
 Lemma normallf_conj (A:'End(V)) : A^C \is normallf = (A \is normallf).
 Proof. by rewrite conjfAT normallf_tr normallf_adj. Qed.
 
@@ -1553,7 +1646,7 @@ Proof. by rewrite !normallfE adjfN/= !comp_lfunNl !comp_lfunNr !opprK. Qed.
 Lemma hermlf_adj (A:'End(V)) : A^A \is hermlf = (A \is hermlf).
 Proof. by rewrite !hermlfE adjfK eq_sym. Qed.
 Lemma hermlf_tr (A:'End(V)) : A^T \is hermlf = (A \is hermlf).
-Proof. by rewrite !hermlfE lfTAC (can_eq (@trfK _ _)). Qed.
+Proof. by rewrite !hermlfE lfTAC (can_eq (@trfK R V V)). Qed.
 Lemma hermlf_conj (A:'End(V)) : A^C \is hermlf = (A \is hermlf).
 Proof. by rewrite conjfAT hermlf_tr hermlf_adj. Qed.
 
@@ -1699,12 +1792,12 @@ Lemma normalfZ (c : C) (A : 'FN(V)) : (c *: A%:VF) \is normallf.
 Proof. by apply/normallfZ/is_normallf. Qed.
 Lemma normalfN (A : 'FN(V)) : (-A%:VF) \is normallf.
 Proof. by rewrite normallfN is_normallf. Qed.
-HB.instance Definition _ (A : 'FN(V)) := isNormalLf.Build V (A^A) (normalf_adj A).
-HB.instance Definition _ (A : 'FN(V)) := isNormalLf.Build V (A^T) (normalf_tr A).
-HB.instance Definition _ (A : 'FN(V)) := isNormalLf.Build V (A^C) (normalf_conj A).
+HB.instance Definition _ (A : 'FN(V)) := isNormalLf.Build R V (A^A) (normalf_adj A).
+HB.instance Definition _ (A : 'FN(V)) := isNormalLf.Build R V (A^T) (normalf_tr A).
+HB.instance Definition _ (A : 'FN(V)) := isNormalLf.Build R V (A^C) (normalf_conj A).
 HB.instance Definition _ (c : C) (A : 'FN(V)) :=
-  isNormalLf.Build V (c *: A%:VF) (normalfZ c A).
-HB.instance Definition _ (A : 'FN(V)) := isNormalLf.Build V (-A%:VF) (normalfN A).
+  isNormalLf.Build R V (c *: A%:VF) (normalfZ c A).
+HB.instance Definition _ (A : 'FN(V)) := isNormalLf.Build R V (-A%:VF) (normalfN A).
 
 Lemma hermf_adj (A : 'FH(V)) : A^A \is hermlf.
 Proof. by rewrite hermlf_adj is_hermlf. Qed.
@@ -1719,11 +1812,11 @@ Proof. by rewrite hermlfN is_hermlf. Qed.
 Lemma hermf_sum I (r : seq I) (P : pred I) (f : I -> 'FH(V)) :
   \sum_(i <- r | P i) (f i)%:VF \is hermlf.
 Proof. by apply/hermlf_sum=>i _; apply/is_hermlf. Qed.
-HB.instance Definition _ (A : 'FH(V)) := Normal_isHermLf.Build V (A^A) (hermf_adj A).
-HB.instance Definition _ (A : 'FH(V)) := Normal_isHermLf.Build V (A^T) (hermf_tr A).
-HB.instance Definition _ (A : 'FH(V)) := Normal_isHermLf.Build V (A^C) (hermf_conj A).
+HB.instance Definition _ (A : 'FH(V)) := Normal_isHermLf.Build R V (A^A) (hermf_adj A).
+HB.instance Definition _ (A : 'FH(V)) := Normal_isHermLf.Build R V (A^T) (hermf_tr A).
+HB.instance Definition _ (A : 'FH(V)) := Normal_isHermLf.Build R V (A^C) (hermf_conj A).
 HB.instance Definition _ (A B : 'FH(V)) := isHermLf.Build V (A%:VF + B) (hermfD A B).
-HB.instance Definition _ (A : 'FH(V)) := Normal_isHermLf.Build V (-A%:VF) (hermfN A).
+HB.instance Definition _ (A : 'FH(V)) := Normal_isHermLf.Build R V (-A%:VF) (hermfN A).
 HB.instance Definition _ I (r : seq I) (P : pred I) (f : I -> 'FH(V)) :=
   isHermLf.Build V (\sum_(i <- r | P i) (f i)%:VF) (hermf_sum r P f).
 
@@ -1739,12 +1832,12 @@ Proof. apply/psdlfD; apply/is_psdlf. Qed.
 Lemma psdf_sum I (r : seq I) (P : pred I) (f : I -> 'F+(V)) :
   \sum_(i <- r | P i) (f i)%:VF \is psdlf.
 Proof. by apply/psdlf_sum=>i _; apply/is_psdlf. Qed.
-HB.instance Definition _ (A : 'F+(V)) := Herm_isPsdLf.Build V (A^A) (psdf_adj A).
-HB.instance Definition _ (A : 'F+(V)) := Herm_isPsdLf.Build V (A^T) (psdf_tr A).
-HB.instance Definition _ (A : 'F+(V)) := Herm_isPsdLf.Build V (A^C) (psdf_conj A).
-HB.instance Definition _ (A B : 'F+(V)) := Herm_isPsdLf.Build V (A%:VF + B) (psdfD A B).
+HB.instance Definition _ (A : 'F+(V)) := Herm_isPsdLf.Build R V (A^A) (psdf_adj A).
+HB.instance Definition _ (A : 'F+(V)) := Herm_isPsdLf.Build R V (A^T) (psdf_tr A).
+HB.instance Definition _ (A : 'F+(V)) := Herm_isPsdLf.Build R V (A^C) (psdf_conj A).
+HB.instance Definition _ (A B : 'F+(V)) := Herm_isPsdLf.Build R V (A%:VF + B) (psdfD A B).
 HB.instance Definition _ I (r : seq I) (P : pred I) (f : I -> 'F+(V)) :=
-  Herm_isPsdLf.Build V (\sum_(i <- r | P i) (f i)%:VF) (psdf_sum r P f).
+  Herm_isPsdLf.Build R V (\sum_(i <- r | P i) (f i)%:VF) (psdf_sum r P f).
 
 Lemma bound1f_adj U W (B : 'FB1(U,W)) : B^A \is bound1lf.
 Proof. by rewrite bound1lf_adj is_bound1lf. Qed.
@@ -1754,18 +1847,21 @@ Lemma bound1f_tr U W (B : 'FB1(U,W)) : B^T \is bound1lf.
 Proof. by rewrite bound1lf_tr is_bound1lf. Qed.
 Lemma bound1f_comp U W T (A : 'FB1(U,W)) (B : 'FB1(T,U)) : A \o B \is bound1lf.
 Proof. by rewrite bound1lf_comp ?is_bound1lf. Qed.
-HB.instance Definition _ U W (B : 'FB1(U,W)) := isBound1Lf.Build W U (B^A) (bound1f_adj B).
-HB.instance Definition _ U W (B : 'FB1(U,W)) := isBound1Lf.Build U W (B^C) (bound1f_conj B).
-HB.instance Definition _ U W (B : 'FB1(U,W)) := isBound1Lf.Build W U (B^T) (bound1f_tr B).
+HB.instance Definition _ U W (B : 'FB1(U,W)) := isBound1Lf.Build R W U (B^A) (bound1f_adj B).
+HB.instance Definition _ U W (B : 'FB1(U,W)) := isBound1Lf.Build R U W (B^C) (bound1f_conj B).
+HB.instance Definition _ U W (B : 'FB1(U,W)) := isBound1Lf.Build R W U (B^T) (bound1f_tr B).
 HB.instance Definition _ U W T (A : 'FB1(U,W)) (B : 'FB1(T,U)) :=
-  isBound1Lf.Build _ _ (A \o B) (bound1f_comp A B).
+  isBound1Lf.Build R _ _ (A \o B) (bound1f_comp A B).
 
-HB.instance Definition _ (A : 'FO(V)) := ObsLf.Class (PsdLf.on (A^A)) (Bound1Lf.on (A^A)).
-HB.instance Definition _ (A : 'FO(V)) := ObsLf.Class (PsdLf.on (A^T)) (Bound1Lf.on (A^T)).
-HB.instance Definition _ (A : 'FO(V)) := ObsLf.Class (PsdLf.on (A^C)) (Bound1Lf.on (A^C)).
-Lemma obsf_adj (A : 'FO(V)) : A^A \is obslf. Proof. apply/is_obslf. Qed.
-Lemma obsf_conj (A : 'FO(V)) : A^C \is obslf. Proof. apply/is_obslf. Qed.
-Lemma obsf_tr (A : 'FO(V)) : A^T \is obslf. Proof. apply/is_obslf. Qed.
+Lemma obsf_adj (A : 'FO(V)) : A^A \is obslf.
+Proof. exact: psdlf_bound1lf_obs (psdf_adj A) (bound1f_adj A). Qed.
+Lemma obsf_conj (A : 'FO(V)) : A^C \is obslf.
+Proof. exact: psdlf_bound1lf_obs (psdf_conj A) (bound1f_conj A). Qed.
+Lemma obsf_tr (A : 'FO(V)) : A^T \is obslf.
+Proof. exact: psdlf_bound1lf_obs (psdf_tr A) (bound1f_tr A). Qed.
+HB.instance Definition _ (A : 'FO(V)) := isObsLf.Build V (A^A) (obsf_adj A).
+HB.instance Definition _ (A : 'FO(V)) := isObsLf.Build V (A^T) (obsf_tr A).
+HB.instance Definition _ (A : 'FO(V)) := isObsLf.Build V (A^C) (obsf_conj A).
 (* HB.instance Definition _ (A : 'FO(V)) := Psd_isObsLf.Build V (A^A) (obsf_adj A).
 HB.instance Definition _ (A : 'FO(V)) := Psd_isObsLf.Build V (A^T) (obsf_tr A).
 HB.instance Definition _ (A : 'FO(V)) := Psd_isObsLf.Build V (A^C) (obsf_conj A). *)
@@ -1776,9 +1872,9 @@ Lemma denf_conj (A : 'FD(V)) : A^C \is denlf.
 Proof. by rewrite denlf_conj is_denlf. Qed.
 Lemma denf_tr (A : 'FD(V)) : A^T \is denlf.
 Proof. by rewrite denlf_tr is_denlf. Qed.
-HB.instance Definition _ (A : 'FD(V)) := Obs_isDenLf.Build V (A^A) (denf_adj A).
-HB.instance Definition _ (A : 'FD(V)) := Obs_isDenLf.Build V (A^T) (denf_tr A).
-HB.instance Definition _ (A : 'FD(V)) := Obs_isDenLf.Build V (A^C) (denf_conj A).
+HB.instance Definition _ (A : 'FD(V)) := Obs_isDenLf.Build R V (A^A) (denf_adj A).
+HB.instance Definition _ (A : 'FD(V)) := Obs_isDenLf.Build R V (A^T) (denf_tr A).
+HB.instance Definition _ (A : 'FD(V)) := Obs_isDenLf.Build R V (A^C) (denf_conj A).
 
 Lemma den1f_adj (A : 'FD1(V)) : A^A \is den1lf.
 Proof. by rewrite den1lf_adj is_den1lf. Qed.
@@ -1786,9 +1882,9 @@ Lemma den1f_conj (A : 'FD1(V)) : A^C \is den1lf.
 Proof. by rewrite den1lf_conj is_den1lf. Qed.
 Lemma den1f_tr (A : 'FD1(V)) : A^T \is den1lf.
 Proof. by rewrite den1lf_tr is_den1lf. Qed.
-HB.instance Definition _ (A : 'FD1(V)) := Den_isDen1Lf.Build V (A^A) (den1f_adj A).
-HB.instance Definition _ (A : 'FD1(V)) := Den_isDen1Lf.Build V (A^T) (den1f_tr A).
-HB.instance Definition _ (A : 'FD1(V)) := Den_isDen1Lf.Build V (A^C) (den1f_conj A).
+HB.instance Definition _ (A : 'FD1(V)) := Den_isDen1Lf.Build R V (A^A) (den1f_adj A).
+HB.instance Definition _ (A : 'FD1(V)) := Den_isDen1Lf.Build R V (A^T) (den1f_tr A).
+HB.instance Definition _ (A : 'FD1(V)) := Den_isDen1Lf.Build R V (A^C) (den1f_conj A).
 
 Lemma projf_adj (A : 'FP(V)) : A^A \is projlf.
 Proof. by rewrite projlf_adj is_projlf. Qed.
@@ -1796,16 +1892,19 @@ Lemma projf_conj (A : 'FP(V)) : A^C \is projlf.
 Proof. by rewrite projlf_conj is_projlf. Qed.
 Lemma projf_tr (A : 'FP(V)) : A^T \is projlf.
 Proof. by rewrite projlf_tr is_projlf. Qed.
-HB.instance Definition _ (A : 'FP(V)) := Obs_isProjLf.Build V (A^A) (projf_adj A).
-HB.instance Definition _ (A : 'FP(V)) := Obs_isProjLf.Build V (A^T) (projf_tr A).
-HB.instance Definition _ (A : 'FP(V)) := Obs_isProjLf.Build V (A^C) (projf_conj A).
+HB.instance Definition _ (A : 'FP(V)) := Obs_isProjLf.Build R V (A^A) (projf_adj A).
+HB.instance Definition _ (A : 'FP(V)) := Obs_isProjLf.Build R V (A^T) (projf_tr A).
+HB.instance Definition _ (A : 'FP(V)) := Obs_isProjLf.Build R V (A^C) (projf_conj A).
 
-HB.instance Definition _ (A : 'FP1(V)) := Proj1Lf.Class (ProjLf.on (A^A)) (Den1Lf.on (A^A)).
-HB.instance Definition _ (A : 'FP1(V)) := Proj1Lf.Class (ProjLf.on (A^T)) (Den1Lf.on (A^T)).
-HB.instance Definition _ (A : 'FP1(V)) := Proj1Lf.Class (ProjLf.on (A^C)) (Den1Lf.on (A^C)).
-Lemma proj1f_adj (A : 'FP1(V)) : A^A \is proj1lf. Proof. apply/is_proj1lf. Qed.
-Lemma proj1f_conj (A : 'FP1(V)) : A^C \is proj1lf. Proof. apply/is_proj1lf. Qed.
-Lemma proj1f_tr (A : 'FP1(V)) : A^T \is proj1lf. Proof. apply/is_proj1lf. Qed.
+Lemma proj1f_adj (A : 'FP1(V)) : A^A \is proj1lf.
+Proof. exact: den1lf_projlf_proj1 (den1f_adj A) (projf_adj A). Qed.
+Lemma proj1f_conj (A : 'FP1(V)) : A^C \is proj1lf.
+Proof. exact: den1lf_projlf_proj1 (den1f_conj A) (projf_conj A). Qed.
+Lemma proj1f_tr (A : 'FP1(V)) : A^T \is proj1lf.
+Proof. exact: den1lf_projlf_proj1 (den1f_tr A) (projf_tr A). Qed.
+HB.instance Definition _ (A : 'FP1(V)) := isProj1Lf.Build V (A^A) (proj1f_adj A).
+HB.instance Definition _ (A : 'FP1(V)) := isProj1Lf.Build V (A^T) (proj1f_tr A).
+HB.instance Definition _ (A : 'FP1(V)) := isProj1Lf.Build V (A^C) (proj1f_conj A).
 
 (* HB.instance Definition _ (A : 'FP1(V)) := isProj1Lf.Build V (A^A) (proj1f_adj A).
 HB.instance Definition _ (A : 'FP1(V)) := isProj1Lf.Build V (A^T) (proj1f_tr A).
@@ -1815,9 +1914,9 @@ Lemma isof_conj U W (B : 'FI(U,W)) : B^C \is isolf.
 Proof. by rewrite isolf_conj is_isolf. Qed.
 Lemma isof_comp U W T (A : 'FI(U,W)) (B : 'FI(T,U)) : A \o B \is isolf.
 Proof. by rewrite isolf_comp ?is_isolf. Qed.
-HB.instance Definition _ U W (B : 'FI(U,W)) := Bound1_isIsoLf.Build U W (B^C) (isof_conj B).
+HB.instance Definition _ U W (B : 'FI(U,W)) := Bound1_isIsoLf.Build R U W (B^C) (isof_conj B).
 HB.instance Definition _ U W T (A : 'FI(U,W)) (B : 'FI(T,U)) :=
-  Bound1_isIsoLf.Build _ _ (A \o B) (isof_comp A B).
+  Bound1_isIsoLf.Build R _ _ (A \o B) (isof_comp A B).
 
 Lemma gisof_adj U W (B : 'FGI(U,W)) : B^A \is gisolf.
 Proof. by rewrite gisolf_adj is_gisolf. Qed.
@@ -1827,13 +1926,13 @@ Lemma gisof_tr U W (B : 'FGI(U,W)) : B^T \is gisolf.
 Proof. by rewrite gisolf_tr is_gisolf. Qed.
 Lemma gisof_comp U W T (A : 'FGI(U,W)) (B : 'FGI(T,U)) : A \o B \is gisolf.
 Proof. by rewrite gisolf_comp ?is_gisolf. Qed.
-HB.instance Definition _ U W (B : 'FGI(U,W)) := Bound1_isIsoLf.Build W U (B^A) (gisolf_iso (gisof_adj B)).
-HB.instance Definition _ U W (B : 'FGI(U,W)) := Iso_isGisoLf.Build W U (B^A) (gisof_adj B).
-HB.instance Definition _ U W (B : 'FGI(U,W)) := Iso_isGisoLf.Build U W (B^C) (gisof_conj B).
-HB.instance Definition _ U W (B : 'FGI(U,W)) := Bound1_isIsoLf.Build W U (B^T) (gisolf_iso (gisof_tr B)).
-HB.instance Definition _ U W (B : 'FGI(U,W)) := Iso_isGisoLf.Build W U (B^T) (gisof_tr B).
+HB.instance Definition _ U W (B : 'FGI(U,W)) := Bound1_isIsoLf.Build R W U (B^A) (gisolf_iso (gisof_adj B)).
+HB.instance Definition _ U W (B : 'FGI(U,W)) := Iso_isGisoLf.Build R W U (B^A) (gisof_adj B).
+HB.instance Definition _ U W (B : 'FGI(U,W)) := Iso_isGisoLf.Build R U W (B^C) (gisof_conj B).
+HB.instance Definition _ U W (B : 'FGI(U,W)) := Bound1_isIsoLf.Build R W U (B^T) (gisolf_iso (gisof_tr B)).
+HB.instance Definition _ U W (B : 'FGI(U,W)) := Iso_isGisoLf.Build R W U (B^T) (gisof_tr B).
 HB.instance Definition _ U W T (A : 'FGI(U,W)) (B : 'FGI(T,U)) :=
-  Iso_isGisoLf.Build _ _ (A \o B) (gisof_comp A B).
+  Iso_isGisoLf.Build R _ _ (A \o B) (gisof_comp A B).
 
 Lemma unitaryf_comp (A B : 'FU(V)) : A \o B \is unitarylf. Proof. by apply/is_unitarylf. Qed.
 Lemma unitaryf_adj (A : 'FU(V)) : A^A \is unitarylf. Proof. by apply/is_unitarylf. Qed.
@@ -1858,110 +1957,129 @@ Qed.
 
 End DefaultDenObs.
 
+End LfunHierarchyTheory.
+
 (* should build PONB -> ONB *)
 (* do this later; e.g., canonical ONB as PONB*)
 
-HB.mixin Record isPONB (H : chsType) (F : finType) (f : F -> H) := {
+HB.mixin Record isPONB (R : realType) (H : @chsType R) (F : finType) (f : F -> H) := {
   ponb_dot : forall i j, [< f i ; f j >] = (i == j)%:R;
 }.
 
 #[short(type="ponbType")]
-HB.structure Definition PONB (H : chsType) (F : finType) :=
-  { f of isPONB H F f}.
+HB.structure Definition PONB (R : realType) (H : @chsType R) (F : finType) :=
+  { f of isPONB R H F f}.
+
+Arguments ponbType {R}.
 
 Notation "''PONB' ( F ; S )" := (ponbType S F) : type_scope.
 Notation "''PONB'" := ('PONB(_;_)) (only parsing) : type_scope.
 
 Module PONBExports.
 #[deprecated(since="mathcomp 2.0.0", note="Use PONB.clone instead.")]
-Notation "[ 'PONB' 'of' f 'as' g ]" := (@PONB.clone _ _ f g) : form_scope.
+Notation "[ 'PONB' 'of' f 'as' g ]" := (@PONB.clone _ _ _ f g) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use PONB.clone instead.")]
-Notation "[ 'PONB' 'of' f ]" := (@PONB.clone _ _ f _) : form_scope.
+Notation "[ 'PONB' 'of' f ]" := (@PONB.clone _ _ _ f _) : form_scope.
 End PONBExports.
 HB.export PONBExports.
 
-HB.mixin Record isFullDim (H : chsType) (F : finType) f of @PONB H F f := {
+HB.mixin Record isFullDim (R : realType) (H : @chsType R) (F : finType) f
+    of @PONB R H F f := {
   onb_card : #|F| = dim H;
 }.
 
 #[short(type="onbType")]
-HB.structure Definition ONB (H : chsType) (F : finType) :=
-  { f of @PONB H F f & @isFullDim H F f}.
+HB.structure Definition ONB (R : realType) (H : @chsType R) (F : finType) :=
+  { f of @PONB R H F f & @isFullDim R H F f}.
+
+Arguments onbType {R}.
 
 Notation "''ONB' ( F ; S )" := (onbType S F) : type_scope.
 Notation "''ONB'" := ('ONB(_;_)) (only parsing) : type_scope.
 
 Module ONBExports.
 #[deprecated(since="mathcomp 2.0.0", note="Use ONB.clone instead.")]
-Notation "[ 'ONB' 'of' f 'as' g ]" := (@ONB.clone _ _ f g) : form_scope.
+Notation "[ 'ONB' 'of' f 'as' g ]" := (@ONB.clone _ _ _ f g) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use ONB.clone instead.")]
-Notation "[ 'ONB' 'of' f ]" := (@ONB.clone _ _ f _) : form_scope.
+Notation "[ 'ONB' 'of' f ]" := (@ONB.clone _ _ _ f _) : form_scope.
 End ONBExports.
 HB.export ONBExports.
 
-HB.factory Record isONB (H : chsType) (F : finType) (f : F -> H) := {
+HB.factory Record isONB (R : realType) (H : @chsType R) (F : finType) (f : F -> H) := {
   onb_dot : forall i j, [< f i ; f j >] = (i == j)%:R;
   onb_card : #|F| = dim H;
 }.
-HB.builders Context H F f of isONB H F f.
-  HB.instance Definition _ := isPONB.Build H F f onb_dot.
-  HB.instance Definition _ := isFullDim.Build H F f onb_card.
+HB.builders Context R H F f of isONB R H F f.
+  HB.instance Definition _ := isPONB.Build R H F f onb_dot.
+  HB.instance Definition _ := isFullDim.Build R H F f onb_card.
 HB.end.
 
-HB.mixin Record isPartialState (U : chsType) (u : U) := {
+HB.mixin Record isPartialState (R : realType) (U : @chsType R) (u : U) := {
   ps_dot : [< u ; u >] <= 1;
 }.
 
 #[short(type="psType")]
-HB.structure Definition PartialState (U : chsType) :=
-  { u of isPartialState U u }.
+HB.structure Definition PartialState (R : realType) (U : @chsType R) :=
+  { u of isPartialState R U u }.
+
+Arguments psType {R}.
 
 Notation "''PS' ( S )" := (psType S) : type_scope.
 Notation "''PS'" := ('PS(_)) (only parsing) : type_scope.
 
 Module PartialStateExports.
 #[deprecated(since="mathcomp 2.0.0", note="Use PartialState.clone instead.")]
-Notation "[ 'PS' 'of' u 'as' v ]" := (@PartialState.clone _ u v) : form_scope.
+Notation "[ 'PS' 'of' u 'as' v ]" := (@PartialState.clone _ _ u v) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use PartialState.clone instead.")]
-Notation "[ 'PS' 'of' u ]" := (@PartialState.clone _ u _) : form_scope.
+Notation "[ 'PS' 'of' u ]" := (@PartialState.clone _ _ u _) : form_scope.
 End PartialStateExports.
 HB.export PartialStateExports.
 
-HB.mixin Record Partial_isNormalState (U : chsType) u of PartialState U u := {
+HB.mixin Record Partial_isNormalState (R : realType) (U : @chsType R) u
+    of @PartialState R U u := {
   ns_dot : [< u ; u >] = 1;
 }.
 
 #[short(type="nsType")]
-HB.structure Definition NormalState (U : chsType) :=
-  { u of PartialState U u & Partial_isNormalState U u}.
+HB.structure Definition NormalState (R : realType) (U : @chsType R) :=
+  { u of @PartialState R U u & @Partial_isNormalState R U u}.
+
+Arguments nsType {R}.
 
 Notation "''NS' ( S )" := (nsType S) : type_scope.
 Notation "''NS'" := ('NS(_)) (only parsing) : type_scope.
 
 Module NormalStateExports.
 #[deprecated(since="mathcomp 2.0.0", note="Use NormalState.clone instead.")]
-Notation "[ 'NS' 'of' u 'as' v ]" := (@NormalState.clone _ u v) : form_scope.
+Notation "[ 'NS' 'of' u 'as' v ]" := (@NormalState.clone _ _ u v) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use NormalState.clone instead.")]
-Notation "[ 'NS' 'of' u ]" := (@NormalState.clone _ u _) : form_scope.
+Notation "[ 'NS' 'of' u ]" := (@NormalState.clone _ _ u _) : form_scope.
 End NormalStateExports.
 HB.export NormalStateExports.
 
-HB.factory Record isNormalState (U : chsType) (u : U) := {
+HB.factory Record isNormalState (R : realType) (U : @chsType R) (u : U) := {
   ns_dot : [< u ; u >] = 1;
 }.
-HB.builders Context U u of isNormalState U u.
+HB.builders Context R U u of isNormalState R U u.
   Lemma ps_dot : [< u ; u >] <= 1.
   Proof. by rewrite ns_dot. Qed.
-  HB.instance Definition _ := isPartialState.Build U u ps_dot.
-  HB.instance Definition _ := Partial_isNormalState.Build U u ns_dot.
+  HB.instance Definition _ := isPartialState.Build R U u ps_dot.
+  HB.instance Definition _ := Partial_isNormalState.Build R U u ns_dot.
 HB.end.
+
+Section StateAndBasisTheory.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 
 Program Definition PartialState_subType (U : chsType) :=
   @isSub.Build U (fun u => [< u ; u >] <= 1) (psType U)
-  (@PartialState.sort U) (fun (u : U) (H : [< u ; u >] <= 1) =>
-  PartialState.Pack (PartialState.Class (isPartialState.Axioms_ u H))) _ (fun _ _ => erefl).
+  (@PartialState.sort R U) (fun (u : U) (H : [< u ; u >] <= 1) =>
+  @PartialState.Pack R U u
+    (@PartialState.Class R U u (@isPartialState.Axioms_ R U u H))) _
+  (fun _ _ => erefl).
 Next Obligation.
-move=> U K X u; move: (@ps_dot _ u) (X _ (@ps_dot _ u)).
+move=> U K X u; move: (@ps_dot R U u) (X _ (@ps_dot R U u)).
 by case: u=>/= u [[Pu1]] Pu2; rewrite (eq_irrelevance Pu1 Pu2).
 Qed.
 HB.instance Definition _ (U : chsType) := @PartialState_subType U.
@@ -1970,12 +2088,14 @@ HB.instance Definition _ (U : chsType) := [Choice of (psType U) by <:].
 
 Program Definition NormalState_subType (U : chsType) :=
   @isSub.Build U (fun u => [< u ; u >] == 1) (nsType U)
-  (@NormalState.sort U) (fun (u : U) (H : [< u ; u >] == 1) =>
-  NormalState.Pack (NormalState.Class
-  (Partial_isNormalState.Axioms_ (isPartialState.Axioms_ u _) (eqP H)))) _ (fun _ _ => erefl).
+  (@NormalState.sort R U) (fun (u : U) (H : [< u ; u >] == 1) =>
+  let p := @isPartialState.Axioms_ R U u _ in
+  @NormalState.Pack R U u
+    (@NormalState.Class R U u p (@Partial_isNormalState.Axioms_ R U u p (eqP H)))) _
+  (fun _ _ => erefl).
 Next Obligation. by move=>??/eqP->. Qed.
 Next Obligation.
-move=> U K X u; move: (@ns_dot _ u)=>/eqP Pu; move: (X _ Pu).
+move=> U K X u; move: (@ns_dot R U u)=>/eqP Pu; move: (X _ Pu).
 case: u Pu=>/= u [[Pu1]] [Pu2] Pu3.
 by rewrite (eq_irrelevance (_ Pu3) Pu1) (eq_irrelevance (_ Pu3) Pu2).
 Qed.
@@ -1983,9 +2103,9 @@ HB.instance Definition _ (U : chsType) := @NormalState_subType U.
 HB.instance Definition _ (U : chsType) := [Equality of (nsType U) by <:].
 HB.instance Definition _ (U : chsType) := [Choice of (nsType U) by <:].
 
-Arguments ponb_dot [H F] s i j.
-Arguments ps_dot [U] s.
-Arguments ns_dot [U] s.
+Arguments ponb_dot {R} [H F] s i j.
+Arguments ps_dot {R} [U] s.
+Arguments ns_dot {R} [U] s.
 
 (* provide the complement of an ponb basis *)
 Section PONBDot.
@@ -2023,7 +2143,7 @@ by apply/schmidt_unitarymx; rewrite subnKC// ponb_card.
 by rewrite mxE (inj_eq (@rshift_inj _ _)) eq_sym.
 Qed.
 HB.instance Definition _ :=
-  isPONB.Build H 'I_(dim H - #|F|) ponb_compl ponb_compl_ponb.
+  isPONB.Build R H 'I_(dim H - #|F|) ponb_compl ponb_compl_ponb.
 
 Lemma ponb_ortho_compl i j : [< f i ; ponb_compl j >] = 0.
 Proof.
@@ -2046,7 +2166,7 @@ by case: i; case: j=>i j; rewrite /ponb_ext/= ?ponb_compl_ponb
 Qed.
 Lemma ponb_ext_card : #|{: F + 'I_(dim H - #|F|)%N}| = dim H.
 Proof. by rewrite card_sum card_ord addnC subnK// ponb_card. Qed.
-HB.instance Definition _ := isONB.Build H (F + 'I_(dim H - #|F|)%N)%type
+HB.instance Definition _ := isONB.Build R H (F + 'I_(dim H - #|F|)%N)%type
   ponb_ext ponb_ext_onb ponb_ext_card.
 
 End PONBDot.
@@ -2056,7 +2176,7 @@ Variable (H : chsType) (F : finType) (f : 'ONB(F;H)).
 
 Lemma onb_dot i j : [< f i ; f j >] = (i == j)%:R. Proof. exact: ponb_dot. Qed.
 
-Local Notation "'''' i" := (cast_ord (@onb_card _ _ f) (enum_rank i)) (at level 2).
+Local Notation "'''' i" := (cast_ord (@onb_card R H F f) (enum_rank i)) (at level 2).
 Definition onb2eb : 'End(H) := \sum_i [> eb ''i ; f i <].
 Definition eb2onb : 'End(H) := \sum_i [> f i ; eb ''i <].
 
@@ -2159,7 +2279,7 @@ Section DefaultONB.
 Lemma eb_card (H : chsType) : #|'I_(dim H) | = dim H.
 Proof. by rewrite card_ord. Qed.
 HB.instance Definition _ (H : chsType) :=
-  isONB.Build H 'I_(dim H) (@eb H) (@eb_dot H) (@eb_card H).
+  isONB.Build R H 'I_(dim H) (@eb R H) (@eb_dot R H) (@eb_card H).
 
 End DefaultONB.
 
@@ -2175,7 +2295,7 @@ Proof. by rewrite ponb_dot eqxx. Qed.
 
 #[non_forgetful_inheritance]
 HB.instance Definition _ F (f : 'PONB(F;U)) (i : F) :=
-  isNormalState.Build U (f i) (ponb_ns f i).
+  isNormalState.Build R U (f i) (ponb_ns f i).
 
 #[non_forgetful_inheritance]
 HB.instance Definition _ F (f : 'ONB(F;U)) (i : F) :=
@@ -2186,7 +2306,7 @@ HB.instance Definition _ (i : 'I_(dim U)) :=
 
 Lemma zero_ps_subproof : [<0 : U ; 0>] <= 1.
 Proof. by rewrite linear0 ler01. Qed.
-HB.instance Definition _ := isPartialState.Build U 0 zero_ps_subproof.
+HB.instance Definition _ := isPartialState.Build R U 0 zero_ps_subproof.
 
 Lemma bound1lf_ps (V : chsType) (f : 'FB1(U,V)) (v : 'PS(U)) :
   [< f (v : U) ; f (v : U) >] <= 1.
@@ -2196,7 +2316,7 @@ apply/(le_trans P1)/ps_dot.
 Qed.
 
 HB.instance Definition _ (V : chsType) (f : 'FB1(U,V)) (v : 'PS(U)) :=
-  isPartialState.Build V (f (v : U)) (bound1lf_ps f v).
+  isPartialState.Build R V (f (v : U)) (bound1lf_ps f v).
 
 End PartialStateTheory.
 
@@ -2225,7 +2345,7 @@ Lemma isolf_ns (V : chsType) (f : 'FI(U,V)) :
 Proof. by rewrite -adj_dotEl isofKE ns_dot. Qed.
 
 HB.instance Definition _ (V : chsType) (f : 'FI(U,V)) :=
-  Partial_isNormalState.Build V (f (v : U)) (isolf_ns f).
+  Partial_isNormalState.Build R V (f (v : U)) (isolf_ns f).
 
 End NormalizedStateTheory.
 
@@ -2566,16 +2686,16 @@ Qed.
 Lemma outp_psd (v : H) : [> v ; v <] \is psdlf.
 Proof. by rewrite psdlfE outp_ge0. Qed.
 HB.instance Definition _ v := isHermLf.Build H [> v ; v <] (psdlf_herm (@outp_psd v)).
-HB.instance Definition _ v := Herm_isPsdLf.Build H [> v ; v <] (@outp_psd v).
+HB.instance Definition _ v := Herm_isPsdLf.Build R H [> v ; v <] (@outp_psd v).
 
 Lemma outp_den (v : 'PS(H)) : [> v ; v <] \is denlf.
 Proof. by apply/denlfP; split; [apply/is_psdlf | rewrite outp_trlf ps_dot]. Qed.
 HB.instance Definition _ (v : 'PS(H)) := isBound1Lf.Build
-  H H [> v ; v <] (obslf_bound1 (denlf_obs (@outp_den v))).
+  R H H [> v ; v <] (obslf_bound1 (denlf_obs (@outp_den v))).
 HB.instance Definition _ (v : 'PS(H)) :=
-  ObsLf.Class (PsdLf.on [> v ; v <]) (Bound1Lf.on [> v ; v <]).
+  isObsLf.Build H [> v ; v <] (denlf_obs (@outp_den v)).
 HB.instance Definition _ (v : 'PS(H)) := Obs_isDenLf.Build
-  H [> v ; v <] (@outp_den v).
+  R H [> v ; v <] (@outp_den v).
 
 Lemma outp_proj1 (v : 'NS(H)) : [> v; v <] \is proj1lf.
 Proof.
@@ -2583,9 +2703,9 @@ apply/proj1lfP; split; last by rewrite outp_trlf ns_dot.
 by apply/projlfP; rewrite adj_outp outp_comp ns_dot scale1r.
 Qed.
 HB.instance Definition _ (v : 'NS(H)) := Obs_isProjLf.Build
-  H [> v ; v <] (proj1lf_proj (@outp_proj1 v)).
+  R H [> v ; v <] (proj1lf_proj (@outp_proj1 v)).
 HB.instance Definition _ (v : 'NS(H)) := Den_isDen1Lf.Build
-  H [> v ; v <] (proj1lf_den1 (@outp_proj1 v)).
+  R H [> v ; v <] (proj1lf_den1 (@outp_proj1 v)).
 
 Lemma outp_le1 (v : H) : [< v ; v >] <= 1 -> [> v; v <] ⊑ \1.
 Proof.
@@ -2604,8 +2724,11 @@ by rewrite -(sumonb_out (ponb_ext p)) big_sumType/= levDl sumv_ge0// =>??;
 rewrite outp_ge0.
 Qed.
 
+End StateAndBasisTheory.
+
 Section SuperOperatorDef.
-Variable (U V: chsType).
+Variable R : realType.
+Variable (U V: @chsType R).
 
 Variant superop : predArgType :=
   Superop of 'Hom('End(U),'End(V)).
@@ -2620,21 +2743,32 @@ Coercion fun_of_superof : superop >-> Funclass.
 
 End SuperOperatorDef.
 
+Arguments superop {R}.
+Arguments Superop {R U V}.
+Arguments so_val {R U V}.
+Arguments fun_of_superof {R U V}.
+
 Fact superop_key : unit. Proof. by []. Qed.
 HB.lock
-Definition superof_of_fun (U V : chsType) (k : unit) (F : 'Hom('End(U),'End(V))) :=
-  @Superop U V F.
+Definition superof_of_fun {R : realType} {U V : @chsType R}
+    (k : unit) (F : 'Hom('End(U),'End(V))) :=
+  @Superop R U V F.
 Canonical superof_unlockable := Unlockable superof_of_fun.unlock.
 
-Notation "''SO' ( S , T )" := (@superop S T) : type_scope.
+Notation "''SO' ( S , T )" := (@superop _ S T) : type_scope.
 Notation "''SO' ( S )" := ('SO(S,S)) : type_scope.
-Notation "''SO'" := (@superop _ _) (only parsing) : type_scope.
+Notation "''SO'" := (@superop _ _ _) (only parsing) : type_scope.
 Notation SOType F := (superof_of_fun superop_key F).
 
-HB.instance Definition _ U V := [Equality of 'SO(U,V) by <:].
-HB.instance Definition _ U V := [Choice of 'SO(U,V) by <:].
+HB.instance Definition _ {R : realType} (U V : @chsType R) :=
+  [Equality of 'SO(U,V) by <:].
+HB.instance Definition _ {R : realType} (U V : @chsType R) :=
+  [Choice of 'SO(U,V) by <:].
 
 Section  SuperOperator.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (U V : chsType).
 Implicit Type (F : 'Hom('End(U), 'End(V))).
 Local Notation SO := ('SO(U,V)).
@@ -2723,6 +2857,8 @@ Lemma scale_soE k (f : SO) x : (k *: f) x = k *: f x. Proof. by rewrite superopE
 End SuperOperator.
 
 Section CompSuperopDef.
+Variable R : realType.
+Local Notation chsType := (@chsType R).
 
 Definition idso (T:chsType) : 'SO(T):= SOType \1%VF.
 
@@ -2733,10 +2869,16 @@ Definition comp_sor (U V W : chsType) (A : 'SO(U,V)) (B : 'SO(V,W)) :=
 
 End CompSuperopDef.
 
-Arguments idso {T}.
-Notation "\:1" := (@idso _) : lfun_scope.
+Arguments idso {R T}.
+Arguments comp_so {R U V W}.
+Arguments comp_sor {R U V W}.
+Notation "\:1" := (@idso _ _) : lfun_scope.
 Notation "E ':o' F" := (comp_so E F) : lfun_scope.
 Notation "E 'o:' F" := (comp_sor E F) : lfun_scope.
+Section CompSuperopTop.
+Variable R : realType.
+Local Notation chsType := (@chsType R).
+
 Lemma comp_soElr (U V W : chsType) (f : 'SO(U,V)) (g : 'SO(W,U)) :
   (f :o g) = g o: f.
 Proof. by []. Qed.
@@ -2744,61 +2886,66 @@ Lemma comp_soErl (U V W : chsType) (f : 'SO(U,V)) (g : 'SO(V,W)) :
   (f o: g) = g :o f.
 Proof. by []. Qed.
 
+End CompSuperopTop.
+
 Notation "\compl_ ( i <- r | P ) F" :=
-  (\big[ (@comp_so _ _ _) / (@idso _) ]_(i <- r | P%B) F%VF ) : lfun_scope.
+  (\big[ (@comp_so _ _ _ _) / (@idso _ _) ]_(i <- r | P%B) F%VF ) : lfun_scope.
 Notation "\compl_ ( i <- r ) F" :=
-  (\big[ (@comp_so _ _ _) / (@idso _) ]_(i <- r) F%VF) : lfun_scope.
+  (\big[ (@comp_so _ _ _ _) / (@idso _ _) ]_(i <- r) F%VF) : lfun_scope.
 Notation "\compl_ ( m <= i < n | P ) F" :=
-  ((\big[ (@comp_so _ _ _) / (@idso _) ]_( m%N <= i < n%N | P%B) F%VF)%BIG)
+  ((\big[ (@comp_so _ _ _ _) / (@idso _ _) ]_( m%N <= i < n%N | P%B) F%VF)%BIG)
     : lfun_scope.
 Notation "\compl_ ( m <= i < n ) F" :=
-  ((\big[ (@comp_so _ _ _) / (@idso _) ]_(m%N <= i < n%N) F%VF)%BIG) : lfun_scope.
+  ((\big[ (@comp_so _ _ _ _) / (@idso _ _) ]_(m%N <= i < n%N) F%VF)%BIG) : lfun_scope.
 Notation "\compl_ ( i | P ) F" :=
-  (\big[ (@comp_so _ _ _) / (@idso _) ]_(i | P%B) F%VF) : lfun_scope.
+  (\big[ (@comp_so _ _ _ _) / (@idso _ _) ]_(i | P%B) F%VF) : lfun_scope.
 Notation "\compl_ i F" :=
-  (\big[ (@comp_so _ _ _) / (@idso _) ]_i F%VF) : lfun_scope.
+  (\big[ (@comp_so _ _ _ _) / (@idso _ _) ]_i F%VF) : lfun_scope.
 Notation "\compl_ ( i : t | P ) F" :=
-  (\big[ (@comp_so _ _ _) / (@idso _) ]_(i : t | P%B) F%VF) (only parsing)
+  (\big[ (@comp_so _ _ _ _) / (@idso _ _) ]_(i : t | P%B) F%VF) (only parsing)
     : lfun_scope.
 Notation "\compl_ ( i : t ) F" :=
-  (\big[ (@comp_so _ _ _) / (@idso _) ]_(i : t) F%VF) (only parsing) : lfun_scope.
+  (\big[ (@comp_so _ _ _ _) / (@idso _ _) ]_(i : t) F%VF) (only parsing) : lfun_scope.
 Notation "\compl_ ( i < n | P ) F" :=
-  ((\big[ (@comp_so _ _ _) / (@idso _) ]_(i < n%N | P%B) F%VF)%BIG) : lfun_scope.
+  ((\big[ (@comp_so _ _ _ _) / (@idso _ _) ]_(i < n%N | P%B) F%VF)%BIG) : lfun_scope.
 Notation "\compl_ ( i < n ) F" :=
-  ((\big[ (@comp_so _ _ _) / (@idso _) ]_(i < n%N) F%VF)%BIG) : lfun_scope.
+  ((\big[ (@comp_so _ _ _ _) / (@idso _ _) ]_(i < n%N) F%VF)%BIG) : lfun_scope.
 Notation "\compl_ ( i 'in' A | P ) F" :=
-  (\big[ (@comp_so _ _ _) / (@idso _) ]_(i in A | P%B) F%VF) : lfun_scope.
+  (\big[ (@comp_so _ _ _ _) / (@idso _ _) ]_(i in A | P%B) F%VF) : lfun_scope.
 Notation "\compl_ ( i 'in' A ) F" :=
-  (\big[ (@comp_so _ _ _) / (@idso _) ]_(i in A) F%VF) : lfun_scope.
+  (\big[ (@comp_so _ _ _ _) / (@idso _ _) ]_(i in A) F%VF) : lfun_scope.
 
 Notation "\compr_ ( i <- r | P ) F" :=
-  (\big[ (@comp_sor _ _ _) / (@idso _) ]_(i <- r | P%B) F%VF ) : lfun_scope.
+  (\big[ (@comp_sor _ _ _ _) / (@idso _ _) ]_(i <- r | P%B) F%VF ) : lfun_scope.
 Notation "\compr_ ( i <- r ) F" :=
-  (\big[ (@comp_sor _ _ _) / (@idso _) ]_(i <- r) F%VF) : lfun_scope.
+  (\big[ (@comp_sor _ _ _ _) / (@idso _ _) ]_(i <- r) F%VF) : lfun_scope.
 Notation "\compr_ ( m <= i < n | P ) F" :=
-  ((\big[ (@comp_sor _ _ _) / (@idso _) ]_( m%N <= i < n%N | P%B) F%VF)%BIG)
+  ((\big[ (@comp_sor _ _ _ _) / (@idso _ _) ]_( m%N <= i < n%N | P%B) F%VF)%BIG)
     : lfun_scope.
 Notation "\compr_ ( m <= i < n ) F" :=
-  ((\big[ (@comp_sor _ _ _) / (@idso _) ]_(m%N <= i < n%N) F%VF)%BIG) : lfun_scope.
+  ((\big[ (@comp_sor _ _ _ _) / (@idso _ _) ]_(m%N <= i < n%N) F%VF)%BIG) : lfun_scope.
 Notation "\compr_ ( i | P ) F" :=
-  (\big[ (@comp_sor _ _ _) / (@idso _) ]_(i | P%B) F%VF) : lfun_scope.
+  (\big[ (@comp_sor _ _ _ _) / (@idso _ _) ]_(i | P%B) F%VF) : lfun_scope.
 Notation "\compr_ i F" :=
-  (\big[ (@comp_sor _ _ _) / (@idso _) ]_i F%VF) : lfun_scope.
+  (\big[ (@comp_sor _ _ _ _) / (@idso _ _) ]_i F%VF) : lfun_scope.
 Notation "\compr_ ( i : t | P ) F" :=
-  (\big[ (@comp_sor _ _ _) / (@idso _) ]_(i : t | P%B) F%VF) (only parsing)
+  (\big[ (@comp_sor _ _ _ _) / (@idso _ _) ]_(i : t | P%B) F%VF) (only parsing)
     : lfun_scope.
 Notation "\compr_ ( i : t ) F" :=
-  (\big[ (@comp_sor _ _ _) / (@idso _) ]_(i : t) F%VF) (only parsing) : lfun_scope.
+  (\big[ (@comp_sor _ _ _ _) / (@idso _ _) ]_(i : t) F%VF) (only parsing) : lfun_scope.
 Notation "\compr_ ( i < n | P ) F" :=
-  ((\big[ (@comp_sor _ _ _) / (@idso _) ]_(i < n%N | P%B) F%VF)%BIG) : lfun_scope.
+  ((\big[ (@comp_sor _ _ _ _) / (@idso _ _) ]_(i < n%N | P%B) F%VF)%BIG) : lfun_scope.
 Notation "\compr_ ( i < n ) F" :=
-  ((\big[ (@comp_sor _ _ _) / (@idso _) ]_(i < n%N) F%VF)%BIG) : lfun_scope.
+  ((\big[ (@comp_sor _ _ _ _) / (@idso _ _) ]_(i < n%N) F%VF)%BIG) : lfun_scope.
 Notation "\compr_ ( i 'in' A | P ) F" :=
-  (\big[ (@comp_sor _ _ _) / (@idso _) ]_(i in A | P%B) F%VF) : lfun_scope.
+  (\big[ (@comp_sor _ _ _ _) / (@idso _ _) ]_(i in A | P%B) F%VF) : lfun_scope.
 Notation "\compr_ ( i 'in' A ) F" :=
-  (\big[ (@comp_sor _ _ _) / (@idso _) ]_(i in A) F%VF) : lfun_scope.
+  (\big[ (@comp_sor _ _ _ _) / (@idso _ _) ]_(i in A) F%VF) : lfun_scope.
 
 Section CompSuperop.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (U V W T: chsType).
 Implicit Types (f : 'SO(W, T)) (g : 'SO(V, W)) (h : 'SO(U, V)).
 
@@ -2815,29 +2962,29 @@ Proof. by apply/val_inj; rewrite /= !soK comp_lfunA. Qed.
 Lemma comp_sorA h g f : (h o: (g o: f) = (h o: g) o: f).
 Proof. by apply/val_inj; rewrite /= !soK comp_lfunA. Qed.
 
-Lemma linear_comp_so f : linear (@comp_so W T V f).
+Lemma linear_comp_so f : linear (@comp_so R W T V f).
 Proof. by move=>a u v; apply/val_inj; rewrite /= !soK comp_lfunDr comp_lfunZr. Qed.
 
 HB.instance Definition _ f := GRing.isLinear.Build C 'SO(V, W) 'SO(V, T)
-  *:%R (@comp_so W T V f) (@linear_comp_so f).
+  *:%R (@comp_so R W T V f) (@linear_comp_so f).
 
-Lemma linear_compr_so g : linear ((@comp_so W T V)^~ g).
+Lemma linear_compr_so g : linear ((@comp_so R W T V)^~ g).
 Proof. by move=>a u v; apply/val_inj; rewrite /= !soK comp_lfunDl comp_lfunZl. Qed.
 
 HB.instance Definition _ := bilinear_isBilinear.Build C 'SO(W, T) 'SO(V, W) 'SO(V, T)
-  *:%R *:%R (@comp_so W T V) (linear_compr_so, linear_comp_so).
+  *:%R *:%R (@comp_so R W T V) (linear_compr_so, linear_comp_so).
 
-Lemma linear_comp_sor g : linear (@comp_sor V W T g).
+Lemma linear_comp_sor g : linear (@comp_sor R V W T g).
 Proof. by move=>a u v; rewrite !comp_soErl linear_compr_so. Qed.
 
 HB.instance Definition _ g := GRing.isLinear.Build C 'SO(W, T) 'SO(V, T)
-  *:%R (@comp_sor V W T g) (@linear_comp_sor g).
+  *:%R (@comp_sor R V W T g) (@linear_comp_sor g).
 
-Lemma linear_compr_sor f : linear ((@comp_sor V W T)^~ f).
+Lemma linear_compr_sor f : linear ((@comp_sor R V W T)^~ f).
 Proof. by move=>a u v; rewrite !comp_soErl linear_comp_so. Qed.
 
 HB.instance Definition _ := bilinear_isBilinear.Build C 'SO(V, W) 'SO(W, T) 'SO(V, T)
-  *:%R *:%R (@comp_sor V W T) (linear_compr_sor, linear_comp_sor).
+  *:%R *:%R (@comp_sor R V W T) (linear_compr_sor, linear_comp_sor).
 
 Lemma comp_so1l f : \:1 :o f = f.
 Proof. by apply/val_inj; rewrite /= !soK comp_lfun1l. Qed.
@@ -2891,10 +3038,16 @@ Proof. exact: linearPr. Qed.
 
 End CompSuperop.
 
+Section CompSuperopInstances.
+Variable R : realType.
+Local Notation chsType := (@chsType R).
+
 HB.instance Definition _ (U : chsType) := Monoid.isLaw.Build
-  'SO(U) \:1 (@comp_so U U U) (@comp_soA U U U U) (@comp_so1l U U) (@comp_so1r U U).
+  'SO(U) \:1 (@comp_so R U U U) (@comp_soA R U U U U)
+  (@comp_so1l R U U) (@comp_so1r R U U).
 HB.instance Definition _ (U : chsType) := Monoid.isLaw.Build
-  'SO(U) \:1 (@comp_sor U U U) (@comp_sorA U U U U) (@comp_sor1l U U) (@comp_sor1r U U).
+  'SO(U) \:1 (@comp_sor R U U U) (@comp_sorA R U U U U)
+  (@comp_sor1l R U U) (@comp_sor1r R U U).
 
 Lemma comp_soACA (U1 U2 U3 U4 U5 : chsType) (A: 'SO(U4,U5)) (B: 'SO(U3,U4))
 (C: 'SO(U2,U3)) (D: 'SO(U1,U2)) :
@@ -2906,32 +3059,42 @@ Lemma comp_sorACA (U1 U2 U3 U4 U5 : chsType) (A: 'SO(U1,U2)) (B: 'SO(U2,U3))
   A o: B o: C o: D = A o: (B o: C) o: D.
 Proof. by rewrite !comp_sorA. Qed.
 
-Definition krausso_fun (U V: chsType) (F : finType) (f : F -> 'Hom(U,V)) :=
-  (fun x : 'End(U) => \sum_i ((f i) \o x \o (f i)^A)).
-HB.lock Definition krausso U V F f := SOType (linfun (@krausso_fun U V F f)).
+End CompSuperopInstances.
 
-Definition ifso_fun (U V W : chsType) (F : finType) (f : F -> 'Hom(U,V))
+Definition krausso_fun {R : realType} (U V: @chsType R) (F : finType)
+    (f : F -> 'Hom(U,V)) :=
+  (fun x : 'End(U) => \sum_i ((f i) \o x \o (f i)^A)).
+HB.lock Definition krausso {R : realType} {U V : @chsType R} F f :=
+  SOType (linfun (@krausso_fun R U V F f)).
+Arguments krausso {R U V F} f.
+
+Definition ifso_fun {R : realType} (U V W : @chsType R) (F : finType) (f : F -> 'Hom(U,V))
   (br : forall (i : F), 'SO(V,W)) :=
     (fun x : 'End(U) => \sum_i (br i ((f i) \o x \o (f i)^A))).
-HB.lock Definition ifso U V W F f br := SOType (linfun (@ifso_fun U V W F f br)).
+HB.lock Definition ifso {R : realType} {U V W : @chsType R} F f br :=
+  SOType (linfun (@ifso_fun R U V W F f br)).
+Arguments ifso {R U V W F} f br.
 
 Section KrausIfSuperop.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (U V W: chsType).
 
-Lemma krausso_fun_is_linear F f : linear (@krausso_fun U V F f).
+Lemma krausso_fun_is_linear F f : linear (@krausso_fun R U V F f).
 Proof.
 move=>a x y; rewrite /krausso_fun linear_sum -big_split/=.
 by apply eq_bigr=>i _; rewrite linearPr linearPl.
 Qed.
 HB.instance Definition _ F f := GRing.isLinear.Build C 'End(U) 'End(V)
-  *:%R (@krausso_fun U V F f) (@krausso_fun_is_linear F f).
+  *:%R (@krausso_fun R U V F f) (@krausso_fun_is_linear F f).
 
-Lemma kraussoE F f x : (@krausso U V F f) x = \sum_i ((f i) \o x \o (f i)^A).
+Lemma kraussoE F f x : (@krausso R U V F f) x = \sum_i ((f i) \o x \o (f i)^A).
 Proof. by rewrite krausso.unlock superopE lfunE/=. Qed.
 
 Lemma krausso_reindex (I J : finType) (h : J -> I) F G :
   bijective h -> (forall j, F (h j) = G j ) ->
-    @krausso U V I F = @krausso U V J G.
+    @krausso R U V I F = @krausso R U V J G.
 Proof.
 move=>[g hK gK] P1; apply/superopP=>x.
 rewrite !kraussoE (@reindex _ _ _ _ _ h)//=; first by exists g=>s _.
@@ -2946,20 +3109,23 @@ Proof. by rewrite kraussoE big_ord1. Qed.
 Lemma formso0 : (formso 0) = 0.
 Proof. by apply/superopP=>x; rewrite formsoE abort_soE !comp_lfun0l. Qed.
 
-Lemma ifso_fun_is_linear F f br : linear (@ifso_fun U V W F f br).
+Lemma ifso_fun_is_linear F f br : linear (@ifso_fun R U V W F f br).
 Proof.
 move=>a x y; rewrite /ifso_fun linear_sum/= -big_split/=.
 by apply eq_bigr=>i _; rewrite linearPr linearPl linearP.
 Qed.
 HB.instance Definition _ F f br := GRing.isLinear.Build C 'End(U) 'End(W)
-  *:%R (@ifso_fun U V W F f br) (@ifso_fun_is_linear F f br).
+  *:%R (@ifso_fun R U V W F f br) (@ifso_fun_is_linear F f br).
 
-Lemma ifsoE F f br x : (@ifso U V W F f br) x = \sum_i (br i ((f i) \o x \o (f i)^A)).
+Lemma ifsoE F f br x : (@ifso R U V W F f br) x = \sum_i (br i ((f i) \o x \o (f i)^A)).
 Proof. by rewrite ifso.unlock superopE lfunE. Qed.
 
 End KrausIfSuperop.
 
 Section KrausSuperopExtra.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 
 Lemma formso1 (U : chsType) : formso (\1 : 'End(U)) = \:1.
 Proof. by apply/superopP=>x; rewrite formsoE adjf1 id_soE comp_lfun1l comp_lfun1r. Qed.
@@ -3015,42 +3181,48 @@ Qed.
 
 End KrausSuperopExtra.
 
-Definition soE := (comp_soE, scale_soE, opp_soE, add_soE, sum_soE, abort_soE,
-  id_soE, superopE, formsoE, kraussoE).
+Definition soE {R : realType} := (@comp_soE R, @scale_soE R, @opp_soE R,
+  @add_soE R, @sum_soE R, @abort_soE R, @id_soE R, @superopE R,
+  @formsoE R, @kraussoE R).
 
 Section SOVectType.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (U V: chsType).
 
 Lemma so_vect_iso : Vector.axiom (dim 'End(U) * dim 'End(V)) 'SO(U,V).
 Proof.
 move: (lfun_vect_iso 'End(U) 'End(V))=>[f lf bf].
 case: lf=> lfZ lfD.
-exists (f \o @so_val U V)%FUN=>[a x y /= | ]; first
+exists (f \o @so_val R U V)%FUN=>[a x y /= | ]; first
   by rewrite !soK lfD lfZ.
-by apply bij_comp=>//; exists (@Superop U V)=>[x|//]; apply/val_inj.
+by apply bij_comp=>//; exists (@Superop R U V)=>[x|//]; apply/val_inj.
 Qed.
 HB.instance Definition _ := Lmodule_hasFinDim.Build C 'SO(U,V) so_vect_iso.
 
 End SOVectType.
 
-Definition trace_nincr (U V : chsType) (F:finType) (f : F -> 'Hom(U,V))
+Definition trace_nincr {R : realType} (U V : @chsType R) (F:finType) (f : F -> 'Hom(U,V))
   := (\sum_i ((f i)^A \o (f i)) ⊑ \1)%VF.
 
-Definition trace_presv (U V : chsType) (F:finType) (f : F -> 'Hom(U,V))
+Definition trace_presv {R : realType} (U V : @chsType R) (F:finType) (f : F -> 'Hom(U,V))
   := (\sum_i ((f i)^A \o (f i)) == \1)%VF.
 
-Lemma trace_presv_nincr (U V : chsType) (F:finType) (f : F -> 'Hom(U,V)) :
+Lemma trace_presv_nincr {R : realType} (U V : @chsType R) (F:finType) (f : F -> 'Hom(U,V)) :
   trace_presv f -> trace_nincr f.
 Proof. by rewrite /trace_presv /trace_nincr=>/eqP->. Qed.
 
 (* trace nonincreasing *)
-HB.mixin Record isTraceNincr (U V : chsType) (F : finType) (f : F -> 'Hom(U,V)) := {
+HB.mixin Record isTraceNincr (R : realType) (U V : @chsType R) (F : finType) (f : F -> 'Hom(U,V)) := {
   is_trnincr : trace_nincr f;
 }.
 
 #[short(type="tnType")]
-HB.structure Definition TraceNincr (U V : chsType) (F : finType) :=
-  { f of isTraceNincr U V F f}.
+HB.structure Definition TraceNincr (R : realType) (U V : @chsType R) (F : finType) :=
+  { f of isTraceNincr R U V F f}.
+
+Arguments tnType {R}.
 
 Notation "''TN' ( F ; S , T )" := (tnType S T F) : type_scope.
 Notation "''TN' ( F ; S )"     := ('TN(F; S, S)) : type_scope.
@@ -3058,27 +3230,29 @@ Notation "''TN'" := ('TN(_; _, _)) (only parsing): type_scope.
 
 Module TraceNincrExports.
 #[deprecated(since="mathcomp 2.0.0", note="Use TraceNincr.clone instead.")]
-Notation "[ 'TN' 'of' f 'as' g ]" := (@TraceNincr.clone _ _ _ f g) : form_scope.
+Notation "[ 'TN' 'of' f 'as' g ]" := (@TraceNincr.clone _ _ _ _ f g) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use TraceNincr.clone instead.")]
-Notation "[ 'TN' 'of' f ]" := (@TraceNincr.clone _ _ _ f _) : form_scope.
+Notation "[ 'TN' 'of' f ]" := (@TraceNincr.clone _ _ _ _ f _) : form_scope.
 End TraceNincrExports.
 HB.export TraceNincrExports.
 
-HB.mixin Record TraceNincr_isQMeasure (U V : chsType) (F : finType)
-  f of isTraceNincr U V F f := {
+HB.mixin Record TraceNincr_isQMeasure (R : realType) (U V : @chsType R) (F : finType)
+  f of isTraceNincr R U V F f := {
   is_qmeasure : trace_presv f;
 }.
 
 #[short(type="qmType")]
-HB.structure Definition QMeasure (U V : chsType) (F : finType) :=
-  { f of @TraceNincr U V F f & TraceNincr_isQMeasure U V F f}.
+HB.structure Definition QMeasure (R : realType) (U V : @chsType R) (F : finType) :=
+  { f of @TraceNincr R U V F f & TraceNincr_isQMeasure R U V F f}.
 
-HB.factory Record isQMeasure (U V : chsType) (F : finType) (f : F -> 'Hom(U,V)) := {
+Arguments qmType {R}.
+
+HB.factory Record isQMeasure (R : realType) (U V : @chsType R) (F : finType) (f : F -> 'Hom(U,V)) := {
   is_qmeasure : trace_presv f;
 }.
-HB.builders Context U V F f of isQMeasure U V F f.
-  HB.instance Definition _ := isTraceNincr.Build U V F f (trace_presv_nincr is_qmeasure).
-  HB.instance Definition _ := TraceNincr_isQMeasure.Build U V F f is_qmeasure.
+HB.builders Context R U V F f of isQMeasure R U V F f.
+  HB.instance Definition _ := isTraceNincr.Build R U V F f (trace_presv_nincr is_qmeasure).
+  HB.instance Definition _ := TraceNincr_isQMeasure.Build R U V F f is_qmeasure.
 HB.end.
 
 Notation "''QM' ( F ; S , T )" := (qmType S T F) : type_scope.
@@ -3088,20 +3262,25 @@ Notation tpType := qmType (only parsing).
 
 Module QMeasureExports.
 #[deprecated(since="mathcomp 2.0.0", note="Use QMeasure.clone instead.")]
-Notation "[ 'QM' 'of' f 'as' g ]" := (@QMeasure.clone _ _ _ f g) : form_scope.
+Notation "[ 'QM' 'of' f 'as' g ]" := (@QMeasure.clone _ _ _ _ f g) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use QMeasure.clone instead.")]
-Notation "[ 'QM' 'of' f ]" := (@QMeasure.clone _ _ _ f _) : form_scope.
+Notation "[ 'QM' 'of' f ]" := (@QMeasure.clone _ _ _ _ f _) : form_scope.
 End QMeasureExports.
 HB.export QMeasureExports.
 
 Section QMBuild.
+Variable R : realType.
+Local Notation chsType := (@chsType R).
 Variable (U V : chsType) (F : finType) (f : F -> 'Hom(U,V)).
 
 Definition TraceNincr_Build (H : trace_nincr f) :=
-  TraceNincr.Pack (TraceNincr.Class (isTraceNincr.Axioms_ V F f H)).
+  @TraceNincr.Pack R U V F f
+    (@TraceNincr.Class R U V F f (@isTraceNincr.Axioms_ R U V F f H)).
 Definition QMeasure_Build (H : trace_presv f) :=
-  QMeasure.Pack (QMeasure.Class (TraceNincr_isQMeasure.Axioms_ F f
-    (isTraceNincr.Axioms_ V F f (trace_presv_nincr H)) H)).
+  let p := @isTraceNincr.Axioms_ R U V F f (trace_presv_nincr H) in
+  @QMeasure.Pack R U V F f
+    (@QMeasure.Class R U V F f p
+      (@TraceNincr_isQMeasure.Axioms_ R U V F f p H)).
 
 Lemma TraceNincr_BuildE (tn : trace_nincr f) : f = TraceNincr_Build tn.
 Proof. by []. Qed.
@@ -3111,25 +3290,37 @@ End QMBuild.
 
 (* choimx for super operator 'Hom('End(U),'End(V))*)
 
-HB.lock Definition so2choi (U V: chsType) (E : 'SO(U,V)) : 'M[C]_(dim U * dim V, dim U * dim V) :=
+HB.lock Definition so2choi {R : realType} {U V: @chsType R}
+    (E : 'SO(U,V)) : 'M[@hermitian.C R]_(dim U * dim V, dim U * dim V) :=
   \sum_i\sum_j (delta_mx i j *t h2mx (E (delta_lf i j))).
-Definition choi2so_fun (U V: chsType) (M : 'M[C]_(dim U * dim V)) : 'End(U) -> 'End(V) :=
+Arguments so2choi {R U V} E.
+
+Definition choi2so_fun {R : realType} (U V: @chsType R)
+    (M : 'M[@hermitian.C R]_(dim U * dim V)) : 'End(U) -> 'End(V) :=
   (fun x => mx2h (ptrace1 (M *m ((h2mx x)^T *t 1%:M)))).
-HB.lock Definition choi2so (U V: chsType) (M : 'M[C]_(dim U * dim V)) :=
-  SOType (linfun (choi2so_fun M)).
-HB.lock Definition choi2kraus (U V: chsType) (A : 'M[C]_(dim U * dim V)) k
+HB.lock Definition choi2so {R : realType} {U V: @chsType R}
+    (M : 'M[@hermitian.C R]_(dim U * dim V)) :=
+  SOType (linfun (@choi2so_fun R U V M)).
+Arguments choi2so {R U V} M.
+
+HB.lock Definition choi2kraus {R : realType} {U V: @chsType R}
+    (A : 'M[@hermitian.C R]_(dim U * dim V)) k
  := mx2h (castmx (mul1n _, erefl _)
   (\sum_i (delta_mx 0 i *t 1%:M) *m (sqrtC (eigenval A k) *: (eigenvec A k))
     *m (delta_mx (0 : 'I_1) i))).
+Arguments choi2kraus {R U V} A k.
 
 Section SOChoiMatrix.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (U V: chsType).
 Implicit Type (E F : 'SO(U,V)).
 Local Open Scope lfun_scope.
 
-Local Notation so2choi := (@so2choi U V).
-Local Notation choi2so := (@choi2so U V).
-Local Notation choi2kraus := (@choi2kraus U V).
+Local Notation so2choi := (@so2choi R U V).
+Local Notation choi2so := (@choi2so R U V).
+Local Notation choi2kraus := (@choi2kraus R U V).
 
 Lemma choimxE E x :
   ptrace1 (so2choi E *m ((h2mx x)^T *t 1%:M) ) = h2mx (E x).
@@ -3148,10 +3339,10 @@ by rewrite dotp_ebl applyfh c2hK h2c_eb !delta_mx_mulEl
   delta_mx_mulEr !mxE eqxx !mul1r mulr1.
 Qed.
 
-Lemma choi2so_fun_is_linear M : linear (@choi2so_fun U V M).
+Lemma choi2so_fun_is_linear M : linear (@choi2so_fun R U V M).
 Proof. by move=>a x y; rewrite /choi2so_fun !linearP/= linearPl/= !linearP. Qed.
 HB.instance Definition _ M := GRing.isLinear.Build C 'End(U) 'End(V) *:%R
-  (@choi2so_fun U V M) (@choi2so_fun_is_linear M).
+  (@choi2so_fun R U V M) (@choi2so_fun_is_linear M).
 
 Lemma choi2so_soE M x :
   choi2so M x = mx2h (ptrace1 (M *m ((h2mx x)^T *t 1%:M))).
@@ -3424,27 +3615,29 @@ HB.instance Definition _ := VOrder_isCan.Build C 'SO(U,V) pscaleso_lge0.
 
 End SOChoiMatrix.
 
-Arguments so2choi {U V}.
-Arguments choi2so {U V}.
-Arguments cpmap {U V}.
-Arguments tnmap {U V}.
-Arguments tpmap {U V}.
-Arguments cptn {U V}.
-Arguments cptp {U V}.
-Arguments so2choi_bij {U V}.
-Arguments choi2so_bij {U V}.
+Arguments cpmap {R U V}.
+Arguments tnmap {R U V}.
+Arguments tpmap {R U V}.
+Arguments cptn {R U V}.
+Arguments cptp {R U V}.
+Arguments so2choi_bij {R U V}.
+Arguments choi2so_bij {R U V}.
 
 Reserved Notation "E '^*o' " (at level 8).
 
-HB.lock Definition dualso (U V : chsType) (E : 'SO(U,V)) :=
+HB.lock Definition dualso {R : realType} {U V : @chsType R} (E : 'SO(U,V)) :=
   choi2so (mxswap (so2choi E)^T).
+Arguments dualso {R U V} E.
 Notation "E '^*o' " := (dualso E) : lfun_scope.
 
-Lemma dualsoK (U V : chsType) (E : 'SO(U,V)) : dualso (dualso E) = E.
+Lemma dualsoK {R : realType} (U V : @chsType R) (E : 'SO(U,V)) : dualso (dualso E) = E.
 Proof. by rewrite dualso.unlock choi2soK mxswap_tr mxswapK trmxK so2choiK. Qed.
 
 (* adjoint of super operator *)
 Section DualSO.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (U V : chsType).
 
 Lemma dualso_trlfE (E : 'SO(U,V)) (x : 'End(U)) A :
@@ -3482,49 +3675,59 @@ Lemma dualso_formso (f : 'Hom(U,V)) :
   dualso (formso f) = formso (f^A).
 Proof. exact: dualso_krausso. Qed.
 
-Lemma dualso_is_linear : linear (@dualso U V).
+Lemma dualso_is_linear : linear (@dualso R U V).
 Proof. by move=>a x y; rewrite dualso.unlock !linearP/=. Qed.
 HB.instance Definition _ := GRing.isLinear.Build
-  C 'SO(U,V) 'SO(V,U) *:%R (@dualso U V) dualso_is_linear.
+  C 'SO(U,V) 'SO(V,U) *:%R (@dualso R U V) dualso_is_linear.
 
 End DualSO.
 
-Lemma dualso_cpE U V (E : 'SO(U,V)) : E ^*o \is cpmap = (E \is cpmap).
+Section DualSOTheory.
+Variable R : realType.
+Local Notation chsType := (@chsType R).
+
+Lemma dualso_cpE (U V : chsType) (E : 'SO(U,V)) : E ^*o \is cpmap = (E \is cpmap).
 Proof.
 apply/eqb_iff; split; first rewrite -{2}(dualsoK E).
 all: move=>/cpmapP/krausso2choiK<-; rewrite dualso_krausso;
 apply/cpmapP/krausso2choi_psd.
 Qed.
 
-Lemma dualso_cpP U V (E : 'SO(U,V)) : E ^*o \is cpmap -> (E \is cpmap).
+Lemma dualso_cpP (U V : chsType) (E : 'SO(U,V)) : E ^*o \is cpmap -> (E \is cpmap).
 Proof. by rewrite dualso_cpE. Qed.
 
+End DualSOTheory.
+
 (* complete positive maps*)
-HB.mixin Record isCPMap (U V : chsType) (f : 'SO(U,V)) :=
+HB.mixin Record isCPMap (R : realType) (U V : @chsType R) (f : 'SO(U,V)) :=
   { is_cpmap : f \is cpmap}.
 
 #[short(type="cpType")]
-HB.structure Definition CPMap (U V : chsType) :=
-  { f of isCPMap U V f}.
+HB.structure Definition CPMap (R : realType) (U V : @chsType R) :=
+  { f of isCPMap R U V f}.
+
+Arguments cpType {R}.
 
 Notation "''CP' ( S , T )" := (cpType S T) : type_scope.
 Notation "''CP' ( S )" := ('CP(S,S)) : type_scope.
 Notation "''CP'" := ('CP(_,_)) (only parsing) : type_scope.
 Module CPMapExports.
 #[deprecated(since="mathcomp 2.0.0", note="Use CPMap.clone instead.")]
-Notation "[ 'CP' 'of' f 'as' g ]" := (CPMap.clone _ _ f g) : form_scope.
+Notation "[ 'CP' 'of' f 'as' g ]" := (CPMap.clone _ _ _ f g) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use CPMap.clone instead.")]
-Notation "[ 'CP' 'of' f ]" := (CPMap.clone _ _ f _) : form_scope.
+Notation "[ 'CP' 'of' f ]" := (CPMap.clone _ _ _ f _) : form_scope.
 End CPMapExports.
 HB.export CPMapExports.
 
 (* quantum operation - complete positive trace nonincreasing *)
-HB.mixin Record CPMap_isTNMap (U V : chsType) f of @CPMap U V f :=
+HB.mixin Record CPMap_isTNMap (R : realType) (U V : @chsType R) f of @CPMap R U V f :=
   { is_tnmap : f \is tnmap}.
 
 #[short(type="qoType")]
-HB.structure Definition QOperation (U V : chsType) :=
-  { f of @CPMap U V f & CPMap_isTNMap U V f}.
+HB.structure Definition QOperation (R : realType) (U V : @chsType R) :=
+  { f of @CPMap R U V f & CPMap_isTNMap R U V f}.
+
+Arguments qoType {R}.
 
 Notation cptnType := qoType (only parsing).
 Notation "''QO' ( S , T )" := (qoType S T) : type_scope.
@@ -3532,19 +3735,21 @@ Notation "''QO' ( S )" := ('QO(S,S)) : type_scope.
 Notation "''QO'" := ('QO(_,_)) (only parsing) : type_scope.
 Module QOperationExports.
 #[deprecated(since="mathcomp 2.0.0", note="Use QOperation.clone instead.")]
-Notation "[ 'QO' 'of' f 'as' g ]" := (QOperation.clone _ _ f g) : form_scope.
+Notation "[ 'QO' 'of' f 'as' g ]" := (QOperation.clone _ _ _ f g) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use QOperation.clone instead.")]
-Notation "[ 'QO' 'of' f ]" := (QOperation.clone _ _ f _) : form_scope.
+Notation "[ 'QO' 'of' f ]" := (QOperation.clone _ _ _ f _) : form_scope.
 End QOperationExports.
 HB.export QOperationExports.
 
 (* quantum operation - complete positive trace preserving *)
-HB.mixin Record QOperation_isTPMap (U V : chsType) f of @QOperation U V f :=
+HB.mixin Record QOperation_isTPMap (R : realType) (U V : @chsType R) f of @QOperation R U V f :=
   { is_tpmap : f \is tpmap}.
 
 #[short(type="qcType")]
-HB.structure Definition QChannel (U V : chsType) :=
-  { f of @QOperation U V f & QOperation_isTPMap U V f}.
+HB.structure Definition QChannel (R : realType) (U V : @chsType R) :=
+  { f of @QOperation R U V f & QOperation_isTPMap R U V f}.
+
+Arguments qcType {R}.
 
 Notation cptpType := qcType (only parsing).
 Notation "''QC' ( S , T )" := (qcType S T) : type_scope.
@@ -3552,117 +3757,129 @@ Notation "''QC' ( S )" := ('QC(S,S)) : type_scope.
 Notation "''QC'" := ('QC(_,_)) (only parsing) : type_scope.
 Module QChannelExports.
 #[deprecated(since="mathcomp 2.0.0", note="Use QChannel.clone instead.")]
-Notation "[ 'QC' 'of' f 'as' g ]" := (QChannel.clone _ _ f g) : form_scope.
+Notation "[ 'QC' 'of' f 'as' g ]" := (QChannel.clone _ _ _ f g) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use QChannel.clone instead.")]
-Notation "[ 'QC' 'of' f ]" := (QChannel.clone _ _ f _) : form_scope.
+Notation "[ 'QC' 'of' f ]" := (QChannel.clone _ _ _ f _) : form_scope.
 End QChannelExports.
 HB.export QChannelExports.
 
 (* dual of quantum operation, E(I) <= I *)
-HB.mixin Record CPMap_isDTNMap (U V : chsType) f of @CPMap U V f :=
+HB.mixin Record CPMap_isDTNMap (R : realType) (U V : @chsType R) f of @CPMap R U V f :=
   { is_dualtn : f^*o \is tnmap}.
 
 #[short(type="dualqoType")]
-HB.structure Definition DualQO (U V : chsType) :=
-  { f of @CPMap U V f & CPMap_isDTNMap U V f}.
+HB.structure Definition DualQO (R : realType) (U V : @chsType R) :=
+  { f of @CPMap R U V f & CPMap_isDTNMap R U V f}.
+
+Arguments dualqoType {R}.
 
 Notation "''DQO' ( S , T )" := (dualqoType S T) : type_scope.
 Notation "''DQO' ( S )" := ('DQO(S,S)) : type_scope.
 Notation "''DQO'" := ('DQO(_,_)) (only parsing) : type_scope.
 Module DualQOExports.
 #[deprecated(since="mathcomp 2.0.0", note="Use DualQO.clone instead.")]
-Notation "[ 'DQO' 'of' f 'as' g ]" := (DualQO.clone _ _ f g) : form_scope.
+Notation "[ 'DQO' 'of' f 'as' g ]" := (DualQO.clone _ _ _ f g) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use DualQO.clone instead.")]
-Notation "[ 'DQO' 'of' f ]" := (DualQO.clone _ _ f _) : form_scope.
+Notation "[ 'DQO' 'of' f ]" := (DualQO.clone _ _ _ f _) : form_scope.
 End DualQOExports.
 HB.export DualQOExports.
 
 (* unital map - complete positive and unital, i.e., E(I) = I *)
-HB.mixin Record DualQO_isUnitalMap (U V : chsType) f of @DualQO U V f :=
+HB.mixin Record DualQO_isUnitalMap (R : realType) (U V : @chsType R) f of @DualQO R U V f :=
   { is_dualtp : f^*o \is tpmap}.
 
 #[short(type="quType")]
-HB.structure Definition QUnital (U V : chsType) :=
-  { f of @DualQO U V f & DualQO_isUnitalMap U V f}.
+HB.structure Definition QUnital (R : realType) (U V : @chsType R) :=
+  { f of @DualQO R U V f & DualQO_isUnitalMap R U V f}.
+
+Arguments quType {R}.
 
 Notation "''QU' ( S , T )" := (quType S T) : type_scope.
 Notation "''QU' ( S )" := ('QU(S,S)) : type_scope.
 Notation "''QU'" := ('QU(_,_)) (only parsing) : type_scope.
 Module QUnitalExports.
 #[deprecated(since="mathcomp 2.0.0", note="Use QUnital.clone instead.")]
-Notation "[ 'QU' 'of' f 'as' g ]" := (QUnital.clone _ _ f g) : form_scope.
+Notation "[ 'QU' 'of' f 'as' g ]" := (QUnital.clone _ _ _ f g) : form_scope.
 #[deprecated(since="mathcomp 2.0.0", note="Use QUnital.clone instead.")]
-Notation "[ 'QU' 'of' f ]" := (QUnital.clone _ _ f _) : form_scope.
+Notation "[ 'QU' 'of' f ]" := (QUnital.clone _ _ _ f _) : form_scope.
 End QUnitalExports.
 HB.export QUnitalExports.
 
 (* factories *)
-HB.factory Record isQOperation (U V : chsType) (f : 'SO(U,V)) := {
+HB.factory Record isQOperation (R : realType) (U V : @chsType R) (f : 'SO(U,V)) := {
   is_cptn : f \is cptn;
 }.
-HB.builders Context U V f of isQOperation U V f.
-  HB.instance Definition _ := isCPMap.Build U V f (cptn_cpmap is_cptn).
-  HB.instance Definition _ := CPMap_isTNMap.Build U V f (cptn_tnmap is_cptn).
+HB.builders Context R U V f of isQOperation R U V f.
+  HB.instance Definition _ := isCPMap.Build R U V f (cptn_cpmap is_cptn).
+  HB.instance Definition _ := CPMap_isTNMap.Build R U V f (cptn_tnmap is_cptn).
 HB.end.
 
-HB.factory Record isQChannel (U V : chsType) (f : 'SO(U,V)) := {
+HB.factory Record isQChannel (R : realType) (U V : @chsType R) (f : 'SO(U,V)) := {
   is_cptp : f \is cptp;
 }.
-HB.builders Context U V f of isQChannel U V f.
-  HB.instance Definition _ := isQOperation.Build U V f (cptp_cptn is_cptp).
-  HB.instance Definition _ := QOperation_isTPMap.Build U V f (cptp_tpmap is_cptp).
+HB.builders Context R U V f of isQChannel R U V f.
+  HB.instance Definition _ := isQOperation.Build R U V f (cptp_cptn is_cptp).
+  HB.instance Definition _ := QOperation_isTPMap.Build R U V f (cptp_tpmap is_cptp).
 HB.end.
 
-HB.factory Record isDualQO (U V : chsType) (f : 'SO(U,V)) := {
+HB.factory Record isDualQO (R : realType) (U V : @chsType R) (f : 'SO(U,V)) := {
   is_cptn : f^*o \is cptn;
 }.
-HB.builders Context U V f of isDualQO U V f.
-  HB.instance Definition _ := isCPMap.Build U V f (dualso_cpP (cptn_cpmap is_cptn)).
-  HB.instance Definition _ := CPMap_isDTNMap.Build U V f (cptn_tnmap is_cptn).
+HB.builders Context R U V f of isDualQO R U V f.
+  HB.instance Definition _ := isCPMap.Build R U V f (dualso_cpP (cptn_cpmap is_cptn)).
+  HB.instance Definition _ := CPMap_isDTNMap.Build R U V f (cptn_tnmap is_cptn).
 HB.end.
 
-HB.factory Record isQUnital (U V : chsType) (f : 'SO(U,V)) := {
+HB.factory Record isQUnital (R : realType) (U V : @chsType R) (f : 'SO(U,V)) := {
   is_cptp : f^*o \is cptp;
 }.
-HB.builders Context U V f of isQUnital U V f.
-  HB.instance Definition _ := isDualQO.Build U V f (cptp_cptn is_cptp).
-  HB.instance Definition _ := DualQO_isUnitalMap.Build U V f (cptp_tpmap is_cptp).
+HB.builders Context R U V f of isQUnital R U V f.
+  HB.instance Definition _ := isDualQO.Build R U V f (cptp_cptn is_cptp).
+  HB.instance Definition _ := DualQO_isUnitalMap.Build R U V f (cptp_tpmap is_cptp).
 HB.end.
 
-HB.factory Record CPMap_isQChannel (U V : chsType) f of @CPMap U V f := {
+HB.factory Record CPMap_isQChannel (R : realType) (U V : @chsType R) f of @CPMap R U V f := {
   is_tpmap : f \is tpmap;
 }.
-HB.builders Context U V f of CPMap_isQChannel U V f.
-  HB.instance Definition _ := CPMap_isTNMap.Build U V f (tpmap_tn is_tpmap).
-  HB.instance Definition _ := QOperation_isTPMap.Build U V f is_tpmap.
+HB.builders Context R U V f of CPMap_isQChannel R U V f.
+  HB.instance Definition _ := CPMap_isTNMap.Build R U V f (tpmap_tn is_tpmap).
+  HB.instance Definition _ := QOperation_isTPMap.Build R U V f is_tpmap.
 HB.end.
 
-HB.factory Record CPMap_isQUnital (U V : chsType) f of @CPMap U V f := {
+HB.factory Record CPMap_isQUnital (R : realType) (U V : @chsType R) f of @CPMap R U V f := {
   is_dualtp : f^*o \is tpmap;
 }.
-HB.builders Context U V f of CPMap_isQUnital U V f.
-  HB.instance Definition _ := CPMap_isDTNMap.Build U V f (tpmap_tn is_dualtp).
-  HB.instance Definition _ := DualQO_isUnitalMap.Build U V f is_dualtp.
+HB.builders Context R U V f of CPMap_isQUnital R U V f.
+  HB.instance Definition _ := CPMap_isDTNMap.Build R U V f (tpmap_tn is_dualtp).
+  HB.instance Definition _ := DualQO_isUnitalMap.Build R U V f is_dualtp.
 HB.end.
 
 Section SOBuild.
+Variable R : realType.
+Local Notation chsType := (@chsType R).
 Variable (U V : chsType) (f : 'SO(U,V)).
 
 Definition CPMap_Build (H : f \is cpmap) :=
-  CPMap.Pack (CPMap.Class (isCPMap.Axioms_ V f H)).
+  @CPMap.Pack R U V f
+    (@CPMap.Class R U V f (@isCPMap.Axioms_ R U V f H)).
 Definition QOperation_Build (H : f \is cptn) :=
-  QOperation.Pack (QOperation.Class (CPMap_isTNMap.Axioms_ f
-    (isCPMap.Axioms_ V f (cptn_cpmap H))  (cptn_tnmap H)) ).
+  let p := @isCPMap.Axioms_ R U V f (cptn_cpmap H) in
+  let q := @CPMap_isTNMap.Axioms_ R U V f p (cptn_tnmap H) in
+  @QOperation.Pack R U V f (@QOperation.Class R U V f p q).
 Definition QChannel_Build (H : f \is cptp) :=
-  QChannel.Pack (QChannel.Class (QOperation_isTPMap.Axioms_ _ (CPMap_isTNMap.Axioms_ f
-  (isCPMap.Axioms_ V f (cptp_cpmap H))  (cptn_tnmap (cptp_cptn H))) (cptp_tpmap H) ) ).
+  let p := @isCPMap.Axioms_ R U V f (cptp_cpmap H) in
+  let q := @CPMap_isTNMap.Axioms_ R U V f p (cptn_tnmap (cptp_cptn H)) in
+  let t := @QOperation_isTPMap.Axioms_ R U V f p q (cptp_tpmap H) in
+  @QChannel.Pack R U V f (@QChannel.Class R U V f p q t).
 Definition DualQO_Build (H : f^*o \is cptn) :=
-  DualQO.Pack (DualQO.Class (CPMap_isDTNMap.Axioms_ f (isCPMap.Axioms_
-  V f (dualso_cpP (cptn_cpmap H))) (cptn_tnmap H))).
+  let p := @isCPMap.Axioms_ R U V f (dualso_cpP (cptn_cpmap H)) in
+  let q := @CPMap_isDTNMap.Axioms_ R U V f p (cptn_tnmap H) in
+  @DualQO.Pack R U V f (@DualQO.Class R U V f p q).
 Definition QUnital_Build (H : f^*o \is cptp) :=
-  QUnital.Pack (QUnital.Class (DualQO_isUnitalMap.Axioms_ _
-  (CPMap_isDTNMap.Axioms_ f (isCPMap.Axioms_ V f (dualso_cpP (cptp_cpmap H)))
-  (cptn_tnmap (cptp_cptn H))) (cptp_tpmap H))).
+  let p := @isCPMap.Axioms_ R U V f (dualso_cpP (cptp_cpmap H)) in
+  let q := @CPMap_isDTNMap.Axioms_ R U V f p (cptn_tnmap (cptp_cptn H)) in
+  let t := @DualQO_isUnitalMap.Axioms_ R U V f p q (cptp_tpmap H) in
+  @QUnital.Pack R U V f (@QUnital.Class R U V f p q t).
 
 Lemma CPMap_BuildE (cp : f \is cpmap) : f = CPMap_Build cp.
 Proof. by []. Qed.
@@ -3678,12 +3895,16 @@ End SOBuild.
 
 (* subtype *)
 (* we define all types as a subtype of lfun instead of their hierarchy *)
+Section SOSubTypes.
+Variable R : realType.
+Local Notation chsType := (@chsType R).
+
 Program Definition cpmap_subType (U V : chsType) :=
   @isSub.Build 'SO(U,V) (fun f => f \is cpmap) (cpType U V)
-  (@CPMap.sort U V) (fun (x : 'SO(U,V)) (H : x \is cpmap) =>
+  (@CPMap.sort R U V) (fun (x : 'SO(U,V)) (H : x \is cpmap) =>
   CPMap_Build H) _ (fun _ _ => erefl).
 Next Obligation.
-move=> U V K X u; move: (@is_cpmap _ _ u) (X _ (@is_cpmap _ _ u)).
+move=> U V K X u; move: (@is_cpmap R U V u) (X _ (@is_cpmap R U V u)).
 by case: u=>/= u [[Pu1]] Pu2; rewrite (eq_irrelevance Pu1 Pu2).
 Qed.
 HB.instance Definition _ (U V : chsType) := @cpmap_subType U V.
@@ -3692,10 +3913,10 @@ HB.instance Definition _ (U V : chsType) := [Choice of (cpType U V) by <:].
 
 Program Definition qoperation_subType (U V : chsType) :=
   @isSub.Build 'SO(U,V) (fun f => f \is cptn) (qoType U V)
-  (@QOperation.sort U V) (fun (x : 'SO(U,V)) (H : x \is cptn) =>
+  (@QOperation.sort R U V) (fun (x : 'SO(U,V)) (H : x \is cptn) =>
   QOperation_Build H) _ (fun _ _ => erefl).
 Next Obligation.
-move=> U V K X u; move: (@is_tnmap _ _ u) (@is_cpmap _ _ u)=>P1 P2.
+move=> U V K X u; move: (@is_tnmap R U V u) (@is_cpmap R U V u)=>P1 P2.
 move: (X _ (cpmap_tnmap_cptn P2 P1)); case: u P1 P2=>/= u [[Pu1]] [Pu2] Pu3 Pu4.
 by rewrite /QOperation_Build (eq_irrelevance (cptn_cpmap _) Pu1)
   (eq_irrelevance (cptn_tnmap _) Pu2).
@@ -3706,10 +3927,10 @@ HB.instance Definition _ (U V : chsType) := [Choice of (qoType U V) by <:].
 
 Program Definition qchannel_subType (U V : chsType) :=
   @isSub.Build 'SO(U,V) (fun f => f \is cptp) (qcType U V)
-  (@QChannel.sort U V) (fun (x : 'SO(U,V)) (H : x \is cptp) =>
+  (@QChannel.sort R U V) (fun (x : 'SO(U,V)) (H : x \is cptp) =>
   QChannel_Build H) _ (fun _ _ => erefl).
 Next Obligation.
-move=> U V K X u; move: (@is_tpmap _ _ u) (@is_cpmap _ _ u)=>P1 P2.
+move=> U V K X u; move: (@is_tpmap R U V u) (@is_cpmap R U V u)=>P1 P2.
 move: (X _ (cpmap_tpmap_cptp P2 P1));
 case: u P1 P2=>/= u [[Pu1]] [Pu2] [Pu3] Pu4 Pu5.
 by rewrite /QChannel_Build (eq_irrelevance (cptp_cpmap _) Pu1)
@@ -3721,10 +3942,10 @@ HB.instance Definition _ (U V : chsType) := [Choice of (qcType U V) by <:].
 
 Program Definition dualqo_subType (U V : chsType) :=
   @isSub.Build 'SO(U,V) (fun f => f^*o \is cptn) (dualqoType U V)
-  (@DualQO.sort U V) (fun (x : 'SO(U,V)) (H : x^*o \is cptn) =>
+  (@DualQO.sort R U V) (fun (x : 'SO(U,V)) (H : x^*o \is cptn) =>
   DualQO_Build H) _ (fun _ _ => erefl).
 Next Obligation.
-move=> U V K X u. move: (@is_cpmap _ _ u) (@is_dualtn _ _ u); rewrite -dualso_cpE=>P1 P2.
+move=> U V K X u. move: (@is_cpmap R U V u) (@is_dualtn R U V u); rewrite -dualso_cpE=>P1 P2.
 move: (X _ (cpmap_tnmap_cptn P1 P2)); case: u P1 P2=>/= u [[Pu1]] [Pu2] Pu3 Pu4.
 by rewrite /DualQO_Build (eq_irrelevance (dualso_cpP _) Pu1)
   (eq_irrelevance (cptn_tnmap _) Pu2).
@@ -3735,10 +3956,10 @@ HB.instance Definition _ (U V : chsType) := [Choice of (dualqoType U V) by <:].
 
 Program Definition qunital_subType (U V : chsType) :=
   @isSub.Build 'SO(U,V) (fun f => f^*o \is cptp) (quType U V)
-  (@QUnital.sort U V) (fun (x : 'SO(U,V)) (H : x^*o \is cptp) =>
+  (@QUnital.sort R U V) (fun (x : 'SO(U,V)) (H : x^*o \is cptp) =>
   QUnital_Build H) _ (fun _ _ => erefl).
 Next Obligation.
-move=> U V K X u; move: (@is_cpmap _ _ u) (@is_dualtp _ _ u); rewrite -dualso_cpE=>P1 P2.
+move=> U V K X u; move: (@is_cpmap R U V u) (@is_dualtp R U V u); rewrite -dualso_cpE=>P1 P2.
 move: (X _ (cpmap_tpmap_cptp P1 P2)); case: u P1 P2=>/= u [[Pu1]] [Pu2] [Pu3] Pu4 Pu5.
 by rewrite /QUnital_Build (eq_irrelevance (dualso_cpP  _) Pu1)
   (eq_irrelevance (cptn_tnmap _) Pu2) (eq_irrelevance (cptp_tpmap _) Pu3).
@@ -3753,8 +3974,13 @@ HB.instance Definition _ (U V : chsType) :=
   [SubChoice_isSubPOrder of 'QO(U,V) by <: with ring_display].
 (* HB.instance Definition _ (U V : chsType) := [SubChoice_isSubPOrder of 'QC(V) by <: with ring_display]. *)
 
+End SOSubTypes.
+
 (* we use trace norm *)
 Section LfunNorm.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (U V: chsType).
 
 Local Notation F := 'Hom(U,V).
@@ -3807,6 +4033,9 @@ Proof. by rewrite !hnorm_l2norm applyfh c2hK -!fbnorm_l2norm /i2fnorm fbnormMr. 
 End LfunNorm.
 
 Section LfunNormExtra.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Implicit Type (U V W : chsType).
 
 Lemma i2fnorm_adj U V (f : 'Hom(U,V)) :
@@ -3961,6 +4190,9 @@ Proof. apply: trfnorm_isof. Qed.
 End LfunNormExtra.
 
 Section LfunNormExtra.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (U : chsType).
 
 Lemma trlf_trfnorm (f : 'End(U)) : `|\Tr f| <= `|f|.
@@ -4023,9 +4255,12 @@ Proof. by move=>P1 P2; rewrite -[g](addrNK f) trfnorm_add ?subv_ge0// lerDr. Qed
 
 End LfunNormExtra.
 
-Arguments chs_default_vect {U}.
+Arguments chs_default_vect {R U}.
 
 Section SOTraceNorm.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (U V: chsType).
 
 (* arbitrary norm, just used for normed space *)
@@ -4139,6 +4374,9 @@ Qed.
 (* Note that, `|Phi| = `|Phi|^H = `|Phi|_diamond for CP map Phi *)
 (* so we can change it to `|Phi|^H or `|Phi|_diamond *)
 Section InducedTraceNorm.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (U V : chsType).
 Implicit Type (f g : 'SO(U,V)).
 
@@ -4460,7 +4698,7 @@ Proof. by move=>???; apply/le_anti/andP; split; [apply: itnorm_ler_ns|apply: itn
 
 End InducedTraceNorm.
 
-Lemma itnormM (U V W: chsType) (A : 'SO(U,V)) (B : 'SO(V,W)) :
+Lemma itnormM {R : realType} (U V W: @chsType R) (A : 'SO(U,V)) (B : 'SO(V,W)) :
   `|B :o A| <= `|B| * `|A|.
 Proof.
 apply: itnorm_ler=>x; rewrite soE. apply: (le_trans (itnormP _ _)).
@@ -4470,19 +4708,22 @@ Qed.
 (* choinorm of super operator : fact: choinorm f + g = choinorm f + choinorm g *)
 (* if both f and g are CP map *)
 Section ChoiNormDef.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (U V : chsType).
 Implicit Type (f g : 'SO(U,V)).
 
 Definition choinorm f := \tr| so2choi f | / (dim U)%:R.
 
-Lemma dim_proper_gt0 (R : numDomainType): (0 : R) < (dim U)%:R.
+Lemma dim_proper_gt0 (K : numDomainType): (0 : K) < (dim U)%:R.
 Proof. by rewrite ltr0n dim_proper. Qed.
 
 Lemma choinorm0_eq0 f : choinorm f = 0 -> f = 0.
 Proof.
 move=>/eqP; rewrite/choinorm mulf_eq0 invr_eq0 =>/orP[/eqP/trnorm0_eq0 P| P].
 by rewrite -(so2choiK f) P linear0.
-by move: P (@dim_proper U); rewrite pnatr_eq0=>/eqP->.
+by move: P (@dim_proper R U); rewrite pnatr_eq0=>/eqP->.
 Qed.
 
 Lemma choinorm_triangle f g : choinorm (f + g) <= choinorm f + choinorm g.
@@ -4512,6 +4753,9 @@ Import Complete.Exports CompletePseudoMetric.Exports CTopology.
 Import FinNormedModule.Exports VNorm.Exports ComplexField.
 
 Section HermitianTopology.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation hermitianType := (@hermitianType R).
 Variable (V: hermitianType).
 
 #[non_forgetful_inheritance]
@@ -4525,13 +4769,17 @@ HB.instance Definition _ := Nbhs_isPseudoMetric.Build C V
 HB.instance Definition _ := NormedZmod_PseudoMetric_eq.Build C V erefl.
 #[non_forgetful_inheritance]
 HB.instance Definition _ :=
-  PseudoMetricNormedZmod_Lmodule_isNormedModule.Build C V (@hnormZ V).
+  PseudoMetricNormedZmod_Lmodule_isNormedModule.Build C V (@hnormZ R V).
 #[non_forgetful_inheritance]
 HB.instance Definition _ := Complete.copy V (V : finNormedModType C).
 
 End HermitianTopology.
 
 Section CHSTopology.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation hermitianType := (@hermitianType R).
+Local Notation chsType := (@chsType R).
 Variable (V: chsType).
 
 #[non_forgetful_inheritance]
@@ -4540,6 +4788,9 @@ HB.instance Definition _ := CompleteNormedModule.copy V (V : hermitianType).
 End CHSTopology.
 
 Section LfunTopology.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (U V: chsType).
 
 Local Notation F := 'Hom(U,V).
@@ -4550,12 +4801,15 @@ HB.instance Definition _ := Nbhs_isPseudoMetric.Build C F
     nbhs_ball_normE ball_norm_center ball_norm_symmetric ball_norm_triangle erefl.
 HB.instance Definition _ := NormedZmod_PseudoMetric_eq.Build C F erefl.
 HB.instance Definition _ :=
-  PseudoMetricNormedZmod_Lmodule_isNormedModule.Build C F (@trfnormZ U V).
+  PseudoMetricNormedZmod_Lmodule_isNormedModule.Build C F (@trfnormZ R U V).
 HB.instance Definition _ := Complete.copy F (F : finNormedModType C).
 
 End LfunTopology.
 
 Section SuperopTopology.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (U V: chsType).
 
 Local Notation F := 'SO(U,V).
@@ -4566,13 +4820,16 @@ HB.instance Definition _ := Nbhs_isPseudoMetric.Build C F
     nbhs_ball_normE ball_norm_center ball_norm_symmetric ball_norm_triangle erefl.
 HB.instance Definition _ := NormedZmod_PseudoMetric_eq.Build C F erefl.
 HB.instance Definition _ :=
-  PseudoMetricNormedZmod_Lmodule_isNormedModule.Build C F (@itnormZ U V).
+  PseudoMetricNormedZmod_Lmodule_isNormedModule.Build C F (@itnormZ R U V).
 HB.instance Definition _ := Complete.copy F (F : finNormedModType C).
 
 End SuperopTopology.
 
 Section Theory.
 Local Open Scope classical_set_scope.
+Variable R : realType.
+Local Notation hermitianType := (@hermitianType R).
+Local Notation chsType := (@chsType R).
 (* since trivial mx is not normedModType, we cannot use linear_continuous *)
 (* linear_continuous : U -> mx   mx -> U *)
 
@@ -4608,10 +4865,10 @@ Lemma f2mx_limnE U V (f : nat -> 'Hom(U,V)) :
   cvgn f -> limn (f2mx \o f)%FUN = f2mx (limn f).
 Proof. apply: (bijective_to_mx_limnE _ f2mx_bij); exact: f2mx_is_linear. Qed.
 
-Lemma h2mx_continuous U V : continuous (@h2mx U V).
+Lemma h2mx_continuous U V : continuous (@h2mx R U V).
 Proof. exact: linear_to_mx_continuous. Qed.
 
-Lemma mx2h_continuous U V : continuous (@mx2h U V).
+Lemma mx2h_continuous U V : continuous (@mx2h R U V).
 Proof. exact: linear_of_mx_continuous. Qed.
 
 Lemma h2mx_cvgnE U V (f : nat -> 'Hom(U,V)) (a : 'Hom(U,V)) :
@@ -4627,21 +4884,21 @@ Lemma h2mx_limnE U V (f : nat -> 'Hom(U,V)) :
 Proof. apply: (bijective_to_mx_limnE _ h2mx_bij); exact: linearP. Qed.
 
 Lemma mx2h_cvgnE U V (f : nat -> 'M__) (a : 'M__) :
-  f @ \oo --> a = ((@mx2h U V \o f)%FUN @ \oo --> mx2h a).
+  f @ \oo --> a = ((@mx2h R U V \o f)%FUN @ \oo --> mx2h a).
 Proof. apply: (bijective_of_mx_cvgnE _ mx2h_bij); exact: linearP. Qed.
 
 Lemma mx2h_is_cvgnE U V (f : nat -> 'M__) :
-  cvgn f = cvgn (@mx2h U V \o f)%FUN.
+  cvgn f = cvgn (@mx2h R U V \o f)%FUN.
 Proof. apply: (bijective_of_mx_is_cvgnE _ mx2h_bij); exact: linearP. Qed.
 
 Lemma mx2h_limnE U V (f : nat -> 'M__) :
-  cvgn f -> limn (@mx2h U V \o f)%FUN = mx2h (limn f).
+  cvgn f -> limn (@mx2h R U V \o f)%FUN = mx2h (limn f).
 Proof. apply: (bijective_of_mx_limnE _ mx2h_bij); exact: linearP. Qed.
 
-Lemma h2c_continuous V : continuous (@h2c V).
+Lemma h2c_continuous V : continuous (@h2c R V).
 Proof. apply: (bijective_to_mx_continuous _ h2c_bij); exact: linearP. Qed.
 
-Lemma c2h_continuous V : continuous (@c2h V).
+Lemma c2h_continuous V : continuous (@c2h R V).
 Proof. apply: (bijective_of_mx_continuous _ c2h_bij); exact: linearP. Qed.
 
 Lemma h2c_cvgnE V (u : nat -> V) (a : V):
@@ -4649,13 +4906,13 @@ Lemma h2c_cvgnE V (u : nat -> V) (a : V):
 Proof. apply: (bijective_to_mx_cvgnE _ h2c_bij); exact: linearP. Qed.
 
 Lemma c2h_cvgnE V (u : nat -> 'M__) (a : 'M__) :
-  u @ \oo --> a = ((@c2h V \o u)%FUN @ \oo --> c2h a).
+  u @ \oo --> a = ((@c2h R V \o u)%FUN @ \oo --> c2h a).
 Proof. apply: (bijective_of_mx_cvgnE _ c2h_bij); exact: linearP. Qed.
 
 Lemma h2c_is_cvgnE V (u : nat -> V) : cvgn u = cvgn (h2c \o u)%FUN.
 Proof. apply: (bijective_to_mx_is_cvgnE _ h2c_bij); exact: linearP. Qed.
 
-Lemma c2h_is_cvgnE V (u : nat -> 'M__) : cvgn u = cvgn (@c2h V \o u)%FUN.
+Lemma c2h_is_cvgnE V (u : nat -> 'M__) : cvgn u = cvgn (@c2h R V \o u)%FUN.
 Proof. apply: (bijective_of_mx_is_cvgnE _ c2h_bij). exact: linearP. Qed.
 
 Lemma h2c_limnE V (u : nat -> V) :
@@ -4663,7 +4920,7 @@ Lemma h2c_limnE V (u : nat -> V) :
 Proof. apply: (bijective_to_mx_limnE _ h2c_bij); exact: linearP. Qed.
 
 Lemma c2h_limnE V (u : nat -> 'M__) :
-  cvgn u -> limn (@c2h V \o u)%FUN = c2h (limn u).
+  cvgn u -> limn (@c2h R V \o u)%FUN = c2h (limn u).
 Proof. apply: (bijective_of_mx_limnE _ c2h_bij); exact: linearP. Qed.
 
 End Theory.
@@ -4674,6 +4931,9 @@ Import HermitianTopology.
 
 Section LfunVOrderFinNomredMod.
 Local Open Scope classical_set_scope.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (U : chsType).
 
 Lemma closed_gef0 : closed [set x : 'End(U) | (0 : 'End(U)) ⊑ x].
@@ -4695,6 +4955,9 @@ End LfunVOrderFinNomredMod.
 
 Section ClosedLfSet.
 Local Open Scope classical_set_scope.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (U : chsType).
 
 Lemma closed_lef (g : 'End(U)) : closed [set f : 'End(U) | f ⊑ g].
@@ -4717,18 +4980,18 @@ rewrite (_ : mkset _ = [set y | (0 : 'End(U)) ⊑ y]).
 by apply/funext=>y/=; rewrite psdlfE. apply: closed_gef.
 Qed.
 
-Lemma trlf_continuous : continuous (@lftrace U).
+Lemma trlf_continuous : continuous (@lftrace R U).
 Proof. exact: linear_continuous. Qed.
 
 Lemma closed_letrlf (x : C) : closed [set f : 'End(U) | \Tr f <= x].
 Proof.
-rewrite (_ : mkset _ = (@lftrace U) @^-1` [set y | y <= x])%classic.
+rewrite (_ : mkset _ = (@lftrace R U) @^-1` [set y | y <= x])%classic.
 by apply/funext=>y. apply: closed_linear. apply/cclosed_le.
 Qed.
 
 Lemma closed_getrf (x : C) : closed [set f : 'End(U) | x <= \Tr f].
 Proof.
-rewrite (_ : mkset _ = (@lftrace U) @^-1` [set y | x <= y])%classic.
+rewrite (_ : mkset _ = (@lftrace R U) @^-1` [set y | x <= y])%classic.
 by apply/funext=>y. apply: closed_linear. apply/cclosed_ge.
 Qed.
 
@@ -4753,6 +5016,8 @@ Local Open Scope classical_set_scope.
 (* FD and FO are CPO *)
 Section LfunCPO.
 Local Close Scope lfun_scope.
+Variable R : realType.
+Local Notation chsType := (@chsType R).
 Variable (V: chsType).
 
 Definition df2f (x : 'FD(V)) := x : 'End(V).
@@ -4847,10 +5112,10 @@ Proof. by move=>c /oflub_lub=>[[_ ]]. Qed.
 End LfunCPO.
 
 Module Import Exports.
-HB.instance Definition _ (V : chsType) := isCpo.Build ring_display
-  'FD(V) (@denf_ges0 V) (@dflub_ub V) (@dflub_least V).
-HB.instance Definition _ (V : chsType) := isCpo.Build ring_display
-  'FO(V) (@obsf_ges0 V) (@oflub_ub V) (@oflub_least V).
+HB.instance Definition _ (R : realType) (V : @chsType R) := isCpo.Build ring_display
+  'FD(V) (@denf_ges0 R V) (@dflub_ub R V) (@dflub_least R V).
+HB.instance Definition _ (R : realType) (V : @chsType R) := isCpo.Build ring_display
+  'FO(V) (@obsf_ges0 R V) (@oflub_ub R V) (@oflub_least R V).
 End Exports.
 
 End LfunCPO.
@@ -4858,13 +5123,16 @@ Export LfunCPO.Exports.
 
 Section ClosedSOSet.
 Local Open Scope classical_set_scope.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (U V : chsType).
 Implicit Type (f g : 'SO(U,V)).
 
-Lemma so2choi_continuous : continuous (@so2choi U V).
+Lemma so2choi_continuous : continuous (@so2choi R U V).
 Proof. apply: (bijective_to_mx_continuous _ so2choi_bij); exact: linearP. Qed.
 
-Lemma choi2so_continuous : continuous (@choi2so U V).
+Lemma choi2so_continuous : continuous (@choi2so R U V).
 Proof. apply: (bijective_of_mx_continuous _ choi2so_bij); exact: linearP. Qed.
 
 Lemma so2choi_cvgE (f : nat -> 'SO(U,V)) (a : 'SO(U,V)) :
@@ -4908,6 +5176,8 @@ Qed.
 End ClosedSOSet.
 
 Section Continuous.
+Variable R : realType.
+Local Notation chsType := (@chsType R).
 
 Lemma bounded_near_cst {K : numFieldType} (V : normedModType K) (x : V):
   \forall x0 \near nbhs +oo, \forall x1 \near x, `|x1| <= x0.
@@ -5213,9 +5483,14 @@ End Lfun_comp.
 
 End Continuous.
 
-HB.lock Definition krausop (U V : chsType) (x : 'SO(U,V)) := choi2kraus (so2choi x).
+HB.lock Definition krausop {R : realType} {U V : @chsType R} (x : 'SO(U,V)) :=
+  choi2kraus (so2choi x).
+Arguments krausop {R U V} x.
 
 Section KrausOp.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (U V : chsType).
 
 Lemma trNincrP (F : finType) (A B : 'TN(F;U,V)) : A =1 B <-> A = B.
@@ -5264,51 +5539,51 @@ Proof. apply/cptpP; split. apply/is_cpmap. apply/is_tpmap. Qed.
 Lemma dualso_cp (E : 'CP(U,V)) : E ^*o \is cpmap.
 Proof. by rewrite dualso_cpE is_cpmap. Qed.
 HB.instance Definition _ (E : 'CP(U,V)) :=
-  isCPMap.Build V U E^*o (dualso_cp E).
+  isCPMap.Build R V U E^*o (dualso_cp E).
 Lemma dualso_dualtn (E : 'QO(U,V)) : (E^*o)^*o \is tnmap.
 Proof. by rewrite dualsoK is_tnmap. Qed.
 HB.instance Definition _ (E : 'QO(U,V)) :=
-  CPMap_isDTNMap.Build V U E^*o (dualso_dualtn E).
+  CPMap_isDTNMap.Build R V U E^*o (dualso_dualtn E).
 Lemma dualso_tn (E : 'DQO(U,V)) : E^*o \is tnmap.
 Proof. by rewrite is_dualtn. Qed.
 HB.instance Definition _ (E : 'DQO(U,V)) :=
-  CPMap_isTNMap.Build V U E^*o (dualso_tn E).
+  CPMap_isTNMap.Build R V U E^*o (dualso_tn E).
 Lemma dualso_unital (E : 'QC(U,V)) : (E^*o)^*o \is tpmap.
 Proof. by rewrite dualsoK is_tpmap. Qed.
 HB.instance Definition _ (E : 'QC(U,V)) :=
-  DualQO_isUnitalMap.Build V U E^*o (dualso_unital E).
+  DualQO_isUnitalMap.Build R V U E^*o (dualso_unital E).
 Lemma dualso_tp (E : 'QU(U,V)) : E^*o \is tpmap.
 Proof. by rewrite is_dualtp. Qed.
 HB.instance Definition _ (E : 'QU(U,V)) :=
-  QOperation_isTPMap.Build V U E^*o (dualso_tp E).
+  QOperation_isTPMap.Build R V U E^*o (dualso_tp E).
 
 Lemma krausso_cp (F : finType) (f : F -> 'Hom(U,V)) :
   krausso f \is cpmap.
 Proof. apply/cpmapP; exact: krausso2choi_psd. Qed.
-HB.instance Definition _ F f := isCPMap.Build U V (krausso f) (@krausso_cp F f).
+HB.instance Definition _ F f := isCPMap.Build R U V (krausso f) (@krausso_cp F f).
 
 Lemma formso_dual (f : 'Hom(U,V)) : (formso f)^*o = formso (f^A).
 Proof. by rewrite dualso_krausso. Qed.
 
 Lemma formso_cp (f : 'Hom(U,V)) : formso f \is cpmap.
 Proof. apply: krausso_cp. Qed.
-HB.instance Definition _ f := isCPMap.Build U V (formso f) (formso_cp f).
+HB.instance Definition _ f := isCPMap.Build R U V (formso f) (formso_cp f).
 Lemma formso_tn (f : 'FB1(U,V)) : formso f \is tnmap.
 Proof. by rewrite krausso_tnE /trace_nincr big_ord1 bound1f_form_le1. Qed.
 HB.instance Definition _ (f : 'FB1(U,V)) :=
-  CPMap_isTNMap.Build U V (formso f) (formso_tn f).
+  CPMap_isTNMap.Build R U V (formso f) (formso_tn f).
 Lemma formso_tp (f : 'FI(U,V)) : formso f \is tpmap.
 Proof. by rewrite krausso_tpE /trace_presv big_ord1 isofE eqxx. Qed.
 HB.instance Definition _ (f : 'FI(U,V)) :=
-  QOperation_isTPMap.Build U V (formso f) (formso_tp f).
+  QOperation_isTPMap.Build R U V (formso f) (formso_tp f).
 Lemma formso_dualtn (f : 'FB1(U,V)) : (formso f)^*o \is tnmap.
 Proof. by rewrite formso_dual krausso_tnE /trace_nincr big_ord1 adjfK bound1f_formV_le1. Qed.
 HB.instance Definition _ (f : 'FB1(U,V)) :=
-  CPMap_isDTNMap.Build U V (formso f) (formso_dualtn f).
+  CPMap_isDTNMap.Build R U V (formso f) (formso_dualtn f).
 Lemma formso_unital (f : 'FGI(U,V)) : (formso f)^*o \is tpmap.
 Proof. by rewrite formso_dual krausso_tpE /trace_presv big_ord1 adjfK gisofEr. Qed.
 HB.instance Definition _ (f : 'FGI(U,V)) :=
-  DualQO_isUnitalMap.Build U V (formso f) (formso_unital f).
+  DualQO_isUnitalMap.Build R U V (formso f) (formso_unital f).
 
 Lemma krausso_qoP (F : finType) (f : F -> 'Hom(U,V)) :
   trace_nincr f <-> krausso f \is cptn.
@@ -5317,7 +5592,7 @@ Lemma krausso_tn (F : finType) (f : 'TN(F;U,V)) :
   krausso f \is tnmap.
 Proof. by apply/cptn_tnmap/krausso_qoP/is_trnincr. Qed.
 HB.instance Definition _ F (f : 'TN(F;U,V)) :=
-  CPMap_isTNMap.Build U V (krausso f) (krausso_tn f).
+  CPMap_isTNMap.Build R U V (krausso f) (krausso_tn f).
 
 Lemma krausso_qcP (F : finType) (f : F -> 'Hom(U,V)) :
   trace_presv f <-> krausso f \is cptp.
@@ -5326,7 +5601,7 @@ Lemma krausso_tp (F : finType) (f : 'QM(F;U,V)) :
   krausso f \is tpmap.
 Proof. apply/cptp_tpmap/krausso_qcP/is_trpresv. Qed.
 HB.instance Definition _ F (f : 'QM(F;U,V)) :=
-  QOperation_isTPMap.Build U V (krausso f) (krausso_tp f).
+  QOperation_isTPMap.Build R U V (krausso f) (krausso_tp f).
 
 Lemma krausopE (x : 'CP(U,V)) : x = krausso (krausop x) :> 'SO.
 Proof.
@@ -5341,12 +5616,12 @@ Proof. by rewrite {1}krausopE kraussoE. Qed.
 Lemma krausop_tn (x : 'QO(U,V)) : trace_nincr (krausop x).
 Proof. by rewrite krausso_qoP -krausopE is_cptn. Qed.
 HB.instance Definition _ (x : 'QO(U,V)) := isTraceNincr.Build
-  U V 'I_(dim U * dim V) (krausop x) (krausop_tn x).
+  R U V 'I_(dim U * dim V) (krausop x) (krausop_tn x).
 
 Lemma krausop_tp (x : 'QC(U,V)) : trace_presv (krausop x).
 Proof. by rewrite krausso_qcP -krausopE is_cptp. Qed.
 HB.instance Definition _ (x : 'QC(U,V)) := TraceNincr_isQMeasure.Build
-  U V 'I_(dim U * dim V) (krausop x) (krausop_tp x).
+  R U V 'I_(dim U * dim V) (krausop x) (krausop_tp x).
 
 Lemma cp_isqcP (E: 'CP(U,V)) :
   reflect (forall x, \Tr (E x) = \Tr x) ((E : 'SO) \is cptp).
@@ -5364,7 +5639,7 @@ Lemma cp_isdualtpE (E : 'CP(V,U)) : E^*o \is tpmap = (E \1 == \1).
 Proof.
 apply/eqb_iff; split=>[|/eqP P]; last first.
   by apply/tpmapP=>x; rewrite -[E^*o x]comp_lfun1r -dualso_trlfEV P comp_lfun1r.
-move: (@is_cpmap _ _ E); rewrite -dualso_cpE -{3}(dualsoK E) =>P1.
+move: (@is_cpmap R V U E); rewrite -dualso_cpE -{3}(dualsoK E) =>P1.
 rewrite (CPMap_BuildE P1) krausopE krausso_tpE /trace_presv=>/eqP <-.
 by rewrite dualso_krausE; under eq_bigr do rewrite comp_lfun1r.
 Qed.
@@ -5383,7 +5658,7 @@ Proof.
 apply/eqb_iff; split=>[|/lef_trden P]; last first.
   apply/tnmapP=>x; rewrite -[E^*o x]comp_lfun1l -dualso_trlfE.
   by apply/(le_trans (P x)); rewrite comp_lfun1l.
-move: (@is_cpmap _ _ E); rewrite -dualso_cpE -{3}(dualsoK E) =>P1.
+move: (@is_cpmap R V U E); rewrite -dualso_cpE -{3}(dualsoK E) =>P1.
 rewrite (krausopE (CPMap_Build P1)) krausso_tnE /trace_nincr.
 by apply: le_trans; rewrite dualso_krausE; under eq_bigr do rewrite comp_lfun1r.
 Qed.
@@ -5578,13 +5853,16 @@ Qed.
 
 End KrausOp.
 
-Lemma dqo_obsP U V (E : 'DQO(U,V)) x : x \is obslf -> E x \is obslf.
+Lemma dqo_obsP {R : realType} (U V : @chsType R) (E : 'DQO(U,V)) x : x \is obslf -> E x \is obslf.
 Proof.
 move=>/obslf_lefP[] P1 P2; apply/obslf_lefP; split.
 by apply/cp_ge0. by apply/(le_trans _ (dqo1_le1 E))/cp_preserve_order.
 Qed.
 
 Section QOConstruct.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Implicit Type (U V W : chsType).
 
 (* abortso is cp, qo *)
@@ -5597,11 +5875,11 @@ Proof.
 apply/cptnP; split. by rewrite abortso_formE is_cpmap.
 by apply/tnmapP=>x; rewrite soE linear0 psdlf_trlf ?is_psdlf.
 Qed.
-HB.instance Definition _ U V := isQOperation.Build U V 0 (abortso_qo U V).
+HB.instance Definition _ U V := isQOperation.Build R U V 0 (abortso_qo U V).
 HB.instance Definition _ U V := QOperation.copy (abortso U V) (0 : 'SO(U,V)).
 Lemma abortso_dualtn U V : (0 : 'SO(U,V))^*o \is tnmap.
 Proof. by rewrite dualso0 is_tnmap. Qed.
-HB.instance Definition _ U V := CPMap_isDTNMap.Build U V 0 (abortso_dualtn U V).
+HB.instance Definition _ U V := CPMap_isDTNMap.Build R U V 0 (abortso_dualtn U V).
 HB.instance Definition _ U V := DualQO.copy (abortso U V) (0 : 'SO(U,V)).
 
 (* idso is cp, qo, qc *)
@@ -5614,10 +5892,10 @@ Proof.
 apply/cptpP; split. by rewrite idso_formE is_cpmap.
 by apply/tpmapP=>x; rewrite soE.
 Qed.
-HB.instance Definition _ U := isQChannel.Build U U \:1 (idso_qc U).
+HB.instance Definition _ U := isQChannel.Build R U U \:1 (idso_qc U).
 Lemma idso_qu U : (\:1 : 'SO(U))^*o \is tpmap.
 Proof. by rewrite dualso1 is_tpmap. Qed.
-HB.instance Definition _ U := CPMap_isQUnital.Build U U \:1 (idso_qu U).
+HB.instance Definition _ U := CPMap_isQUnital.Build R U U \:1 (idso_qu U).
 
 (* unitaryso is cp, qo, qc *)
 Definition unitaryso U (f: 'FU(U)) := formso f.
@@ -5642,7 +5920,7 @@ under eq_bigr do rewrite lftraceC comp_lfunA adj_outp outp_comp linearZl/= linea
 by rewrite -mulr_sumr -linear_sum/= -linear_sumlz/= sumonb_out
   comp_lfun1l ler_piMl// ?ps_dot// psdf_trlf.
 Qed.
-HB.instance Definition _ U (v : 'PS(U)) := CPMap_isTNMap.Build U U
+HB.instance Definition _ U (v : 'PS(U)) := CPMap_isTNMap.Build R U U
   (initialso v) (initialso_tn v).
 Lemma initialso_qc U (v : 'NS(U)) : (@initialso U v) \is tpmap.
 Proof.
@@ -5650,7 +5928,7 @@ apply/tpmapP=>x; rewrite soE linear_sum/=.
 under eq_bigr do rewrite lftraceC comp_lfunA adj_outp outp_comp ns_dot scale1r.
 by rewrite -linear_sum/= -linear_sumlz/= sumonb_out comp_lfun1l.
 Qed.
-HB.instance Definition _ U (v : 'NS(U)) := QOperation_isTPMap.Build U U
+HB.instance Definition _ U (v : 'NS(U)) := QOperation_isTPMap.Build R U U
   (initialso v) (initialso_qc v).
 
 Lemma initialsoE U (v : U) x : initialso v x = \Tr x *: [> v ; v <].
@@ -5683,7 +5961,7 @@ apply/funext=>i; exact: krausopE.
 by rewrite ifso_krausso is_cpmap.
 Qed.
 HB.instance Definition _ U V W (F : finType) f (br : F -> 'CP(V,W)) :=
-  isCPMap.Build U W (ifso f br) (@ifso_cp U V W F f br).
+  isCPMap.Build R U W (ifso f br) (@ifso_cp U V W F f br).
 
 Lemma ifso_tn U V W (F : finType) (f : 'TN(F;U,V)) (br : F -> 'QO(V, W)) :
   ifso f br \is tnmap.
@@ -5693,7 +5971,7 @@ rewrite ifsoE linear_sum/= ler_sum// =>i _.
 by apply/qo_trlfE; move: (is_psdlf x); rewrite !psdlfE; exact: gef0_formfV.
 Qed.
 HB.instance Definition _ U V W (F : finType) (f : 'TN(F;U,V)) (br : F -> 'QO(V, W)) :=
-  CPMap_isTNMap.Build U W (ifso f br) (@ifso_tn U V W F f br).
+  CPMap_isTNMap.Build R U W (ifso f br) (@ifso_tn U V W F f br).
 
 Lemma ifso_tp U V W (F : finType) (f : 'QM(F;U,V)) (br : F -> 'QC(V, W)) :
   ifso f br \is tpmap.
@@ -5702,7 +5980,7 @@ apply/tpmapP=>x; rewrite -[RHS](tp_trlf f) ifsoE linear_sum/=.
 apply eq_bigr =>i _; apply/qc_trlfE.
 Qed.
 HB.instance Definition _ U V W (F : finType) (f : 'QM(F;U,V)) (br : F -> 'QC(V, W)) :=
-  QOperation_isTPMap.Build U W (ifso f br) (@ifso_tp U V W F f br).
+  QOperation_isTPMap.Build R U W (ifso f br) (@ifso_tp U V W F f br).
 
 Lemma dualso_comp U V W (E : 'SO(U,V)) (F : 'SO(W,U)) :
   dualso (E :o F) = dualso F :o dualso E.
@@ -5723,7 +6001,7 @@ Lemma comp_so_cp U V W (E: 'CP(U,V)) (F: 'CP(W,U)) :
   E :o F \is cpmap.
 Proof. by rewrite krausopE (krausopE F) comp_krausso is_cpmap. Qed.
 HB.instance Definition _ U V W (E: 'CP(U,V)) (F: 'CP(W,U)) :=
-  isCPMap.Build W V (E :o F) (comp_so_cp E F).
+  isCPMap.Build R W V (E :o F) (comp_so_cp E F).
 Lemma comp_so_tn U V W (E: 'QO(U,V)) (F: 'QO(W,U)) :
   E :o F \is tnmap.
 Proof.
@@ -5731,48 +6009,48 @@ apply/tnmapP=>x; apply: (le_trans _ (qo_trlfE F (is_psdlf x))).
 by rewrite comp_soE qo_trlfE// cp_psdP ?is_psdlf.
 Qed.
 HB.instance Definition _ U V W (E: 'QO(U,V)) (F: 'QO(W,U)) :=
-  CPMap_isTNMap.Build W V (E :o F) (comp_so_tn E F).
+  CPMap_isTNMap.Build R W V (E :o F) (comp_so_tn E F).
 Lemma comp_so_tp U V W (E: 'QC(U,V)) (F: 'QC(W,U)) :
   E :o F \is tpmap.
 Proof. by apply/tpmapP=>x; rewrite comp_soE !qc_trlfE. Qed.
 HB.instance Definition _ U V W (E: 'QC(U,V)) (F: 'QC(W,U)) :=
-  QOperation_isTPMap.Build W V (E :o F) (comp_so_tp E F).
+  QOperation_isTPMap.Build R W V (E :o F) (comp_so_tp E F).
 Lemma comp_so_dualtn U V W (E: 'DQO(U,V)) (F: 'DQO(W,U)) :
   (E :o F)^*o \is tnmap.
 Proof. by rewrite dualso_comp is_tnmap. Qed.
 HB.instance Definition _ U V W (E: 'DQO(U,V)) (F: 'DQO(W,U)) :=
-  CPMap_isDTNMap.Build W V (E :o F) (comp_so_dualtn E F).
+  CPMap_isDTNMap.Build R W V (E :o F) (comp_so_dualtn E F).
 Lemma comp_so_dualtp U V W (E: 'QU(U,V)) (F: 'QU(W,U)) :
   (E :o F)^*o \is tpmap.
 Proof. by rewrite dualso_comp is_tpmap. Qed.
 HB.instance Definition _ U V W (E: 'QU(U,V)) (F: 'QU(W,U)) :=
-  DualQO_isUnitalMap.Build W V (E :o F) (comp_so_dualtp E F).
+  DualQO_isUnitalMap.Build R W V (E :o F) (comp_so_dualtp E F).
 
 Lemma comp_sor_cp U V W (E: 'CP(U,V)) (F: 'CP(V,W)) :
   E o: F \is cpmap.
 Proof. by rewrite comp_soErl is_cpmap. Qed.
 HB.instance Definition _ U V W (E: 'CP(U,V)) (F: 'CP(V,W)) :=
-  isCPMap.Build U W (E o: F) (comp_sor_cp E F).
+  isCPMap.Build R U W (E o: F) (comp_sor_cp E F).
 Lemma comp_sor_tn U V W (E: 'QO(U,V)) (F: 'QO(V,W)) :
   E o: F \is tnmap.
 Proof. by rewrite comp_soErl is_tnmap. Qed.
 HB.instance Definition _ U V W (E: 'QO(U,V)) (F: 'QO(V,W)) :=
-  CPMap_isTNMap.Build U W (E o: F) (comp_sor_tn E F).
+  CPMap_isTNMap.Build R U W (E o: F) (comp_sor_tn E F).
 Lemma comp_sor_tp U V W (E: 'QC(U,V)) (F: 'QC(V,W)) :
   E o: F \is tpmap.
 Proof. by rewrite comp_soErl is_tpmap. Qed.
 HB.instance Definition _ U V W (E: 'QC(U,V)) (F: 'QC(V,W)) :=
-  QOperation_isTPMap.Build U W (E o: F) (comp_sor_tp E F).
+  QOperation_isTPMap.Build R U W (E o: F) (comp_sor_tp E F).
 Lemma comp_sor_dualtn U V W (E: 'DQO(U,V)) (F: 'DQO(V,W)) :
   (E o: F)^*o \is tnmap.
 Proof. by rewrite dualso_compr is_tnmap. Qed.
 HB.instance Definition _ U V W (E: 'DQO(U,V)) (F: 'DQO(V,W)) :=
-  CPMap_isDTNMap.Build U W (E o: F) (comp_sor_dualtn E F).
+  CPMap_isDTNMap.Build R U W (E o: F) (comp_sor_dualtn E F).
 Lemma comp_sor_dualtp U V W (E: 'QU(U,V)) (F: 'QU(V,W)) :
   (E o: F)^*o \is tpmap.
 Proof. by rewrite dualso_compr is_tpmap. Qed.
 HB.instance Definition _ U V W (E: 'QU(U,V)) (F: 'QU(V,W)) :=
-  DualQO_isUnitalMap.Build U W (E o: F) (comp_sor_dualtp E F).
+  DualQO_isUnitalMap.Build R U W (E o: F) (comp_sor_dualtp E F).
 
 Lemma comp_so_ge0 (U V W : chsType) (h : 'SO(U,V)) (g : 'SO(W,U)) :
   0 <= h -> 0 <= g -> 0 <= h :o g.
@@ -5807,7 +6085,7 @@ apply: (le_trans _ (is_trnincr (s := f))); rewrite (bigD1 i)//= levDl sumv_ge0//
 by rewrite form_gef0.
 Qed.
 HB.instance Definition _ U V (F : finType) (f : 'TN(F;U,V)) i :=
-  isQOperation.Build U V (elemso f i) (elemso_qo f i).
+  isQOperation.Build R U V (elemso f i) (elemso_qo f i).
 
 Lemma elemso_sum U V (F : finType) (f : F -> 'Hom(U,V)) :
   \sum_i (elemso f i) = krausso f.
@@ -5865,12 +6143,12 @@ Lemma ifso_bool U V W (M : bool -> 'Hom(U,V))
 Proof. by apply/superopP=>x; rewrite soE -ifso_boolE. Qed.
 Global Arguments ifso_bool [U V W M br].
 
-Lemma abortso_eq0 U V : (@abortso U V) = 0.
+Lemma abortso_eq0 U V : abortso U V = 0.
 Proof. by []. Qed.
 
 Lemma addso_cp U V (E F : 'CP(U,V)) : (E : 'SO) + F \is cpmap.
 Proof. by rewrite krausopE (krausopE F) addso_krausso is_cpmap. Qed.
-HB.instance Definition _ U V (E F : 'CP(U,V)) := isCPMap.Build U V
+HB.instance Definition _ U V (E F : 'CP(U,V)) := isCPMap.Build R U V
   ((E : 'SO) + F) (addso_cp E F).
 
 Lemma sumso_cp U V F (r : seq F) (P : pred F) (f : F -> 'CP(U,V)) :
@@ -5880,7 +6158,7 @@ elim: r=>[|x r IH]; first by rewrite big_nil is_cpmap.
 by rewrite big_cons; case: (P x)=>[|//]; rewrite (CPMap_BuildE IH) is_cpmap.
 Qed.
 HB.instance Definition _ U V F (r : seq F) (P : pred F) (f : F -> 'CP(U,V)) :=
-  isCPMap.Build U V (\sum_(i <- r | P i) (f i : 'SO)) (sumso_cp r P f).
+  isCPMap.Build R U V (\sum_(i <- r | P i) (f i : 'SO)) (sumso_cp r P f).
 
 (* since the projection is bigop, and we already define the sum, the
    canonical will be ignored, i.e., HB instance won't work *)
@@ -5941,7 +6219,7 @@ Qed.
 Definition comprso_qoE U F r P f := QOperation_BuildE (@comprso_qo U F r P f).
 (* qo is ok, but cp won't work *)
 HB.instance Definition _ U F (r : seq F) (P : pred F) (f : F -> 'QO(U)) :=
-  isQOperation.Build U U (\compr_(i <- r | P i) (f i)) (comprso_qo r P f).
+  isQOperation.Build R U U (\compr_(i <- r | P i) (f i)) (comprso_qo r P f).
 
 Lemma comprso_qc U F (r : seq F) (P : pred F) (f : F -> 'QC(U)) :
   \compr_(i <- r | P i) (f i) \is cptp.
@@ -5952,7 +6230,7 @@ Qed.
 Definition comprso_qcE U F r P f := QChannel_BuildE (@comprso_qc U F r P f).
 (* qc is ok, but cp won't work *)
 HB.instance Definition _ U F (r : seq F) (P : pred F) (f : F -> 'QC(U)) :=
-  QOperation_isTPMap.Build U U (\compr_(i <- r | P i) (f i)) (cptp_tpmap (comprso_qc r P f)).
+  QOperation_isTPMap.Build R U U (\compr_(i <- r | P i) (f i)) (cptp_tpmap (comprso_qc r P f)).
 
 Lemma comprso_dqo U F (r : seq F) (P : pred F) (f : F -> 'DQO(U)) :
   (\compr_(i <- r | P i) (f i))^*o \is cptn.
@@ -5962,7 +6240,7 @@ by rewrite big_cons; case: (P x)=>[|//]; rewrite (DualQO_BuildE IH) is_cptn.
 Qed.
 Definition comprso_dqoE U F r P f := DualQO_Build (@comprso_dqo U F r P f).
 HB.instance Definition _ U F (r : seq F) (P : pred F) (f : F -> 'DQO(U)) :=
-  isDualQO.Build U U (\compr_(i <- r | P i) (f i)) (comprso_dqo r P f).
+  isDualQO.Build R U U (\compr_(i <- r | P i) (f i)) (comprso_dqo r P f).
 
 Lemma comprso_qu U F (r : seq F) (P : pred F) (f : F -> 'QU(U)) :
   (\compr_(i <- r | P i) (f i))^*o \is cptp.
@@ -5972,18 +6250,21 @@ by rewrite big_cons; case: (P x)=>[|//]; rewrite (QUnital_BuildE IH) is_cptp.
 Qed.
 Definition comprso_quE U F r P f := QUnital_Build (@comprso_qu U F r P f).
 HB.instance Definition _ U F (r : seq F) (P : pred F) (f : F -> 'QU(U)) :=
-  DualQO_isUnitalMap.Build U U (\compr_(i <- r | P i) (f i)) (cptp_tpmap (comprso_qu r P f)).
+  DualQO_isUnitalMap.Build R U U (\compr_(i <- r | P i) (f i)) (cptp_tpmap (comprso_qu r P f)).
 
 End QOConstruct.
 
 Section leso_extra.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Implicit Type (U V : chsType).
 
 Lemma leso01 U : (0 : 'SO) ⊑ (\:1 : 'SO(U)).
 Proof. by apply/cp_geso0. Qed.
 Lemma qc_neq0 U V (E : 'QC(U,V)) : (E : 'SO) != 0.
 Proof.
-apply/eqP=>P; move: P=>/(f_equal (@dualso _ _))/superopP/(_ \1)/eqP.
+apply/eqP=>P; move: P=>/(f_equal (@dualso R U V))/superopP/(_ \1)/eqP.
 by rewrite dualso0 qu1_eq1 soE oner_eq0.
 Qed.
 Lemma qc_gt0 U V (E : 'QC(U,V)) : (0 : 'SO) ⊏ E.
@@ -6030,6 +6311,9 @@ Qed.
 End leso_extra.
 
 Section QOQMDenObs.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Implicit Type (U V: chsType).
 
 Lemma qoge0 U V (E: 'QO(U,V)) : ((0 : 'SO) : 'QO) ⊑ E.
@@ -6040,7 +6324,7 @@ Proof. apply/cp_psdP/is_psdlf. Qed.
 HB.instance Definition _ U V (E : 'CP(U,V)) (x : 'F+(U)) :=
   isHermLf.Build V (E x) (psdlf_herm (cp_psdlf E x)).
 HB.instance Definition _ U V (E : 'CP(U,V)) (x : 'F+(U)) :=
-  Herm_isPsdLf.Build V (E x) (cp_psdlf E x).
+  Herm_isPsdLf.Build R V (E x) (cp_psdlf E x).
 
 Lemma dqo_obslf U V (E : 'DQO(U,V)) (O : 'FO(U)) : E O \is obslf.
 Proof. by apply/dqo_obsP/is_obslf. Qed.
@@ -6090,10 +6374,12 @@ Module QOCPO.
 
 Section QOCPOProof.
 Local Close Scope lfun_scope.
+Variable R : realType.
+Local Notation chsType := (@chsType R).
 Variable (U V: chsType).
 Local Open Scope classical_set_scope.
 
-Local Notation qosort := (@QOperation.sort U V).
+Local Notation qosort := (@QOperation.sort R U V).
 
 Definition qolub (u : nat -> 'QO(U,V)) :=
   match limn (qosort \o u) \is cptn =P true with
@@ -6147,16 +6433,16 @@ Lemma qolub_least : forall c : nat -> 'QO(U,V),
 Proof. by move=>c /qolub_lub=>[[_ ]]. Qed.
 
 Definition qo_cpoMixin := isCpo.Build ring_display 'QO(U,V)
-  (@qoge0 U V) qolub_ub qolub_least.
+  (@qoge0 R U V) qolub_ub qolub_least.
 
 End QOCPOProof.
 
 Module Exports.
 
-HB.instance Definition _ (U V : chsType) := (@qo_cpoMixin U V).
+HB.instance Definition _ (R : realType) (U V : @chsType R) := (@qo_cpoMixin R U V).
 
-Lemma qolubE (U V : chsType) : forall c : nat -> 'QO(U,V),
-  chain c -> limn ((@QOperation.sort U V) \o c)%FUN = lub c.
+Lemma qolubE (R : realType) (U V : @chsType R) : forall c : nat -> 'QO(U,V),
+  chain c -> limn ((@QOperation.sort R U V) \o c)%FUN = lub c.
 Proof.
 move=>c Pc. rewrite /lub/= /qolub. case: eqP=>//.
 by move: (chainqo_cvg Pc)=>/lim_qo/= ->.
@@ -6167,16 +6453,21 @@ End QOCPO.
 
 Import QOCPO.Exports.
 
-Fixpoint whileso_iter (U: chsType) (M: bool -> 'End(U)) (b : bool) (D: 'SO(U)) (n : nat) :=
+Fixpoint whileso_iter {R : realType} {U: @chsType R}
+    (M: bool -> 'End(U)) (b : bool) (D: 'SO(U)) (n : nat) :=
   match n with
   | O => (0 : 'SO(U))
   | S n => ifso M (fun b' => if b' == b then (whileso_iter M b D n) :o D else \:1)
   end.
 
-HB.lock Definition whileso (U: chsType) (M: bool -> 'End(U)) b (D: 'SO(U)) :=
+HB.lock Definition whileso {R : realType} {U: @chsType R}
+    (M: bool -> 'End(U)) b (D: 'SO(U)) :=
   limn (whileso_iter M b D).
 
 Section QOWhile.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (U: chsType).
 Local Open Scope lfun_scope.
 
@@ -6230,7 +6521,7 @@ elim: n=>[|n IH]; first by rewrite /= is_cpmap.
 by rewrite whileso_incrE (CPMap_BuildE IH) is_cpmap.
 Qed.
 HB.instance Definition _ (M: bool -> 'End(U)) b (D: 'CP(U)) (n : nat) :=
-  isCPMap.Build U U (whileso_incr M b D n) (whilso_incr_cp M b D n).
+  isCPMap.Build R U U (whileso_incr M b D n) (whilso_incr_cp M b D n).
 
 Lemma whilso_incr_tn (M: 'TN(bool;U)) b (D: 'QO(U)) (n : nat) :
   whileso_incr M b D n \is tnmap.
@@ -6239,7 +6530,7 @@ apply/cptn_tnmap; elim: n=>[|n IH]; first by rewrite /= is_cptn.
 by rewrite whileso_incrE (QOperation_BuildE IH) is_cptn.
 Qed.
 HB.instance Definition _ (M: 'TN(bool;U)) b (D: 'QO(U)) (n : nat) :=
-  CPMap_isTNMap.Build U U (whileso_incr M b D n) (whilso_incr_tn M b D n).
+  CPMap_isTNMap.Build R U U (whileso_incr M b D n) (whilso_incr_tn M b D n).
 
 Lemma whileso_iter_cp (M: bool -> 'End(U)) b (D: 'CP(U)) (n : nat) :
   whileso_iter M b D n \is cpmap.
@@ -6248,7 +6539,7 @@ elim: n=>[|n IH]; first by rewrite /= is_cpmap.
 by rewrite whileso_iterE (CPMap_BuildE IH) is_cpmap.
 Qed.
 HB.instance Definition _ (M: bool -> 'End(U)) b (D: 'CP(U)) (n : nat) :=
-  isCPMap.Build U U (whileso_iter M b D n) (whileso_iter_cp M b D n).
+  isCPMap.Build R U U (whileso_iter M b D n) (whileso_iter_cp M b D n).
 
 (* match : makes canonical of ifso fails *)
 Lemma whileso_iter_tn (M: 'TN(bool;U)) b (D: 'QO(U)) (n : nat) :
@@ -6260,7 +6551,7 @@ suff ->: (fun b' => if b' == b then whileso_iter M b D n :o D else \:1)
 apply: is_cptn. by apply/funext=>b'; case: eqP.
 Qed.
 HB.instance Definition _ (M: 'TN(bool;U)) b (D: 'QO(U)) (n : nat) :=
-CPMap_isTNMap.Build U U (whileso_iter M b D n) (whileso_iter_tn M b D n).
+CPMap_isTNMap.Build R U U (whileso_iter M b D n) (whileso_iter_tn M b D n).
 
 (* whileso_iter is nondecreasing *)
 Lemma whileso_iter_chain (M: bool -> 'End(U)) b (D: 'CP(U)) : chain (whileso_iter M b D).
@@ -6296,7 +6587,7 @@ apply closed_isqo. by apply: nearW=>x/=; apply is_cptn.
 by apply whileso_is_cvg.
 Qed.
 HB.instance Definition _ (M: 'TN(bool;U)) b (D: 'QO(U)) :=
-  isQOperation.Build U U (whileso M b D) (whileso_qo M b D).
+  isQOperation.Build R U U (whileso M b D) (whileso_qo M b D).
 
 Lemma whileso_ub (M: 'TN(bool;U)) b (D: 'QO(U)) i : whileso_iter M b D i ⊑ whileso M b D.
 Proof.
@@ -6323,6 +6614,9 @@ Proof. by rewrite whileso.unlock. Qed.
 End QOWhile.
 
 Section QOWhileRanking.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (U: chsType) (M: 'TN(bool;U)) (b: bool) (D: 'QO(U)).
 
 Definition ranking_function (P: 'FO(U))
@@ -6474,6 +6768,9 @@ Instead of introducing the completeNormedModType of lfun,
 we provide a some lemmas to lim while *)
 
 Section QOWhileLim.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Local Open Scope classical_set_scope.
 
 Lemma while_sf_cvg (U: chsType) (M: 'TN(bool;U)) b (D: 'QO(U)) (f: 'End(U) -> C) x :
@@ -6749,7 +7046,7 @@ by apply: whileso_iter_leso.
 Qed.
 
 Lemma whileso_iter_continuous (U : chsType) (M : bool -> 'End(U)) b n :
-  continuous (@whileso_iter U M b ^~ n).
+  continuous (@whileso_iter R U M b ^~ n).
 Proof.
 move=>/= x; rewrite /continuous_at.
 elim: n.  rewrite /=; apply: cvg_cst. apply: nbhs_filter.
@@ -6763,17 +7060,17 @@ Qed.
 
 Lemma whileso_iter_cvg (U : chsType) (M : bool -> 'End(U)) b n
   (T : Type) (F : set_system T) {FF : Filter F} (f : T -> 'SO) (g : 'SO) :
-  f @ F --> g -> (fun i => @whileso_iter U M b (f i) n) @ F --> whileso_iter M b g n.
+  f @ F --> g -> (fun i => @whileso_iter R U M b (f i) n) @ F --> whileso_iter M b g n.
 Proof.
 move=>P; have Pi i : whileso_iter M b (f i) n =
-  ((@whileso_iter U M b ^~ n) \o f)%FUN i by [].
+  ((@whileso_iter R U M b ^~ n) \o f)%FUN i by [].
 under eq_cvg do rewrite Pi.
 apply: (continuous_cvg FF _ P). apply: whileso_iter_continuous.
 Qed.
 
 Lemma whileso_iter_is_cvg (U : chsType) (M : bool -> 'End(U)) b n
   (T : Type) (F : set_system T) {FF : Filter F} (f : T -> 'SO) :
-   cvg (f @ F) -> cvg ((fun i => @whileso_iter U M b (f i) n) @ F).
+   cvg (f @ F) -> cvg ((fun i => @whileso_iter R U M b (f i) n) @ F).
 Proof.
 by move=>?; apply/cvg_ex;
   exists (whileso_iter M b (lim (f @ F)) n); apply: whileso_iter_cvg.
@@ -6782,7 +7079,7 @@ Qed.
 Lemma whileso_iter_limn (U : chsType) (M : bool -> 'End(U)) b n
   (T : Type) (F : set_system T) {PF : ProperFilter F} (f : T -> 'SO) :
   cvg (f @ F)%classic ->
-    (lim ((fun i => @whileso_iter U M b (f i) n) @ F) =
+    (lim ((fun i => @whileso_iter R U M b (f i) n) @ F) =
       whileso_iter M b (lim (f @ F)) n)%classic.
 Proof.
 by move=>?; apply: cvg_lim=>[//|]; apply: whileso_iter_cvg.
@@ -6793,6 +7090,9 @@ End QOWhileLim.
 From mathcomp.boot Require Import finset.
 
 Section ComplementObs.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (U : chsType).
 
 Definition cplmt (P : 'End(U)) := \1 - P.
@@ -6815,11 +7115,11 @@ Qed.
 HB.instance Definition _ (P : 'FO(U)) :=
   isHermLf.Build U (cplmt P) (obslf_herm (cplmt_obs P)).
 HB.instance Definition _ (P : 'FO(U)) :=
-  Herm_isPsdLf.Build U (cplmt P) (obslf_psd (cplmt_obs P)).
+  Herm_isPsdLf.Build R U (cplmt P) (obslf_psd (cplmt_obs P)).
 HB.instance Definition _ (P : 'FO(U)) :=
-  isBound1Lf.Build U U (cplmt P) (obslf_bound1 (cplmt_obs P)).
+  isBound1Lf.Build R U U (cplmt P) (obslf_bound1 (cplmt_obs P)).
 HB.instance Definition _ (P : 'FO(U)) :=
-  ObsLf.Class (PsdLf.on (cplmt P)) (Bound1Lf.on (cplmt P)).
+  ObsLf.on (cplmt P).
 
 Lemma cplmt_proj (P : 'FP(U)) : cplmt P \is projlf.
 Proof.
@@ -6827,7 +7127,7 @@ apply/projlfP; split. apply/hermlfP/obslf_herm/is_obslf.
 rewrite /cplmt linearBl/= !linearBr/= !comp_lfun1l comp_lfun1r.
 by move: (is_projlf P)=>/projlfP[_ ->]; rewrite addrN subr0.
 Qed.
-HB.instance Definition _ (P : 'FP(U)) := Obs_isProjLf.Build U (cplmt P) (cplmt_proj P).
+HB.instance Definition _ (P : 'FP(U)) := Obs_isProjLf.Build R U (cplmt P) (cplmt_proj P).
 
 Lemma cplmt_dualC (E: 'QC(U)) (P:'FO(U)) :
   cplmt (E^*o P) = E^*o (cplmt P).
@@ -6837,27 +7137,34 @@ Proof. by rewrite levBlDl addrA levBrDl levD2r. Qed.
 
 End ComplementObs.
 
-Arguments cplmt {U} P.
+Arguments cplmt {R U} P.
 Notation "P '^⟂'" := (cplmt P).
 
-Lemma formso_comp (U V W : chsType) (f1 : 'Hom(U,V)) (f2 : 'Hom(W,U)) :
+Lemma formso_comp {R : realType} (U V W : @chsType R)
+    (f1 : 'Hom(U,V)) (f2 : 'Hom(W,U)) :
   formso f1 :o formso f2 = formso (f1 \o f2).
 Proof. by apply/superopP=>A; rewrite soE !formsoE adjf_comp !comp_lfunA. Qed.
 
-Lemma normalfE U (f : 'FN(U)) : f \o f^A = f^A \o f.
+Lemma normalfE {R : realType} (U : @chsType R) (f : 'FN(U)) : f \o f^A = f^A \o f.
 Proof. by apply/normallfP/is_normallf. Qed.
 
 HB.lock
-Definition formlf (U V : chsType) (f : 'Hom(U,V)) (A : 'End(U)) :=
+Definition formlf {R : realType} {U V : @chsType R}
+    (f : 'Hom(U,V)) (A : 'End(U)) :=
   f \o A \o f^A.
+Arguments formlf {R U V} f A.
 (* for isometry !! *)
 (* to use different canonical route w.r.t. formso *)
 
-Lemma formlf_comp (U V W : chsType) (f1 : 'Hom(U,V)) (f2 : 'Hom(W,U)) A :
+Lemma formlf_comp {R : realType} (U V W : @chsType R)
+    (f1 : 'Hom(U,V)) (f2 : 'Hom(W,U)) A :
   formlf f1 (formlf f2 A) = formlf (f1 \o f2) A.
 Proof. by rewrite formlf.unlock adjf_comp !comp_lfunA. Qed.
 
 Section formlf_extra.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (U V : chsType).
 
 Lemma formlf_soE (f : 'Hom(U,V)) A :
@@ -6875,13 +7182,13 @@ rewrite formlf.unlock; apply/normallfP.
 by rewrite !adjf_comp !adjfK !comp_lfunA !isofK comp_lfunACA normalfE comp_lfunA.
 Qed.
 HB.instance Definition _ (u : 'FI(U,V)) (A : 'FN) :=
-  isNormalLf.Build _ (formlf u A) (@formlf_normal u A).
+  isNormalLf.Build R V (formlf u A) (@formlf_normal u A).
 
 Lemma formlf_herm (u : 'FI(U,V)) (A : 'FH) :
   formlf u A \is hermlf.
 Proof. by apply/hermlfP; rewrite formlf.unlock !adjf_comp adjfK hermf_adjE comp_lfunA. Qed.
 HB.instance Definition _ (u : 'FI(U,V)) (A : 'FH) :=
-  Normal_isHermLf.Build _ (formlf u A) (@formlf_herm u A).
+  Normal_isHermLf.Build R V (formlf u A) (@formlf_herm u A).
 
 Lemma formlf_psd (u : 'FI(U,V)) (A : 'F+) :
   formlf u A \is psdlf.
@@ -6890,7 +7197,7 @@ apply/psdlfP=>v; rewrite formlf.unlock lfunE/= lfunE/= -adj_dotEl.
 by apply/psdlfP/is_psdlf.
 Qed.
 HB.instance Definition _ (u : 'FI(U,V)) (A : 'F+) :=
-  Herm_isPsdLf.Build _ (formlf u A) (@formlf_psd u A).
+  Herm_isPsdLf.Build R V (formlf u A) (@formlf_psd u A).
 
 Lemma formlf_obs (u : 'FI(U,V)) (A : 'FO) :
   formlf u A \is obslf.
@@ -6901,9 +7208,9 @@ move: (is_obslf A)=>/obslfP[] _ /(_ (u^A v)) P1.
 by apply: (le_trans P1); apply/isofA_dot.
 Qed.
 HB.instance Definition _ (u : 'FI(U,V)) (A : 'FO) :=
-  isBound1Lf.Build _ _ (formlf u A) (obslf_bound1 (@formlf_obs u A)).
+  isBound1Lf.Build R V V (formlf u A) (obslf_bound1 (@formlf_obs u A)).
 HB.instance Definition _ (u : 'FI(U,V)) (A : 'FO) :=
-  ObsLf.Class (PsdLf.on (formlf u A)) (Bound1Lf.on (formlf u A)).
+  ObsLf.on (formlf u A).
 
 Lemma formlf_den (u : 'FI(U,V)) (A : 'FD) :
   formlf u A \is denlf.
@@ -6912,7 +7219,7 @@ apply/denlfP; split. apply/is_psdlf.
 by rewrite formlf.unlock lftraceC comp_lfunA isofE comp_lfun1l denf_trlf.
 Qed.
 HB.instance Definition _ (u : 'FI(U,V)) (A : 'FD) :=
-  Obs_isDenLf.Build _ (formlf u A) (@formlf_den u A).
+  Obs_isDenLf.Build R V (formlf u A) (@formlf_den u A).
 
 Lemma formlf_den1 (u : 'FI(U,V)) (A : 'FD1) :
   formlf u A \is den1lf.
@@ -6921,7 +7228,7 @@ apply/den1lfP; split. apply/is_psdlf.
 by rewrite formlf.unlock lftraceC comp_lfunA isofE comp_lfun1l den1f_trlf.
 Qed.
 HB.instance Definition _ (u : 'FI(U,V)) (A : 'FD1) :=
-  Den_isDen1Lf.Build _ (formlf u A) (@formlf_den1 u A).
+  Den_isDen1Lf.Build R V (formlf u A) (@formlf_den1 u A).
 
 Lemma formlf_proj (u : 'FI(U,V)) (A : 'FP) :
   formlf u A \is projlf.
@@ -6930,36 +7237,41 @@ apply/projlfP; split. apply/hermf_adjE.
 by rewrite formlf.unlock !comp_lfunA isofK comp_lfunACA projf_idem.
 Qed.
 HB.instance Definition _ (u : 'FI(U,V)) (A : 'FP) :=
-  Obs_isProjLf.Build _ (formlf u A) (@formlf_proj u A).
+  Obs_isProjLf.Build R V (formlf u A) (@formlf_proj u A).
 
-HB.instance Definition _ (u : 'FI(U,V)) (A : 'FP1) := Proj1Lf.Class
-  (ProjLf.on (formlf u A)) (Den1Lf.on (formlf u A)).
+Lemma formlf_proj1 (u : 'FI(U,V)) (A : 'FP1) :
+  formlf u A \is proj1lf.
+Proof. exact: den1lf_projlf_proj1 (formlf_den1 u A) (formlf_proj u A). Qed.
+HB.instance Definition _ (u : 'FI(U,V)) (A : 'FP1) :=
+  isProj1Lf.Build V (formlf u A) (@formlf_proj1 u A).
 
 End formlf_extra.
 
-Lemma formlf1E (U V : chsType) (N : 'Hom(U,V)) :
+Lemma formlf1E {R : realType} (U V : @chsType R) (N : 'Hom(U,V)) :
   formlf N \1 = N \o N^A.
 Proof. by rewrite formlf.unlock comp_lfun1r. Qed.
-Lemma formlf1EV (U V : chsType) (N : 'Hom(U,V)) :
+Lemma formlf1EV {R : realType} (U V : @chsType R) (N : 'Hom(U,V)) :
   formlf N^A \1 = N^A \o N.
 Proof. by rewrite formlf.unlock comp_lfun1r adjfK. Qed.
-Lemma formlfE (U V : chsType) (N : 'Hom(U,V)) (A : 'End(U)) :
+Lemma formlfE {R : realType} (U V : @chsType R) (N : 'Hom(U,V)) (A : 'End(U)) :
   formlf N A = N \o A \o N^A.
 Proof. by rewrite formlf.unlock. Qed.
-Lemma formlfEV (U V : chsType) (N : 'Hom(U,V)) (A : 'End(V)) :
+Lemma formlfEV {R : realType} (U V : @chsType R) (N : 'Hom(U,V)) (A : 'End(V)) :
   formlf N^A A = N^A \o A \o N.
 Proof. by rewrite formlfE adjfK. Qed.
 
-Lemma formlf_linear (U V : chsType) (N : 'Hom(U,V)) : linear (@formlf U V N).
+Lemma formlf_linear {R : realType} (U V : @chsType R) (N : 'Hom(U,V)) :
+  linear (@formlf R U V N).
 Proof. by move=>a u v; rewrite !formlfE linearPr/= linearPl. Qed.
-HB.instance Definition _ (U V : chsType) (N : 'Hom(U,V)) :=
-  GRing.isLinear.Build C 'End(U) 'End(V) *:%R (@formlf U V N) (formlf_linear N).
+HB.instance Definition _ {R : realType} (U V : @chsType R) (N : 'Hom(U,V)) :=
+  GRing.isLinear.Build (@hermitian.C R) 'End(U) 'End(V) *:%R
+    (@formlf R U V N) (formlf_linear N).
 
-Lemma formlf_lef (U V : chsType) (N : 'Hom(U,V)) (A B : 'End(U)) :
+Lemma formlf_lef {R : realType} (U V : @chsType R) (N : 'Hom(U,V)) (A B : 'End(U)) :
   A <= B -> formlf N A <= formlf N B.
 Proof. by rewrite formlf.unlock; exact: lef_formV. Qed.
 
-Lemma formlf_sum_diag (U V : chsType) (F : finType)
+Lemma formlf_sum_diag {R : realType} (U V : @chsType R) (F : finType)
   (N : F -> 'Hom(U,V)) (A : 'End(U)) :
   (forall i j, i != j -> (N i) \o A \o (N j)^A = 0) ->
   formlf (\sum_i N i) A = \sum_i formlf (N i) A.
@@ -6969,15 +7281,15 @@ apply eq_bigr=>i _; rewrite !linear_sumlz/= (bigD1 i)//= big1=>[j /P1 //|];
 by rewrite addr0 formlfE.
 Qed.
 
-Lemma formlf_bound1f_le1 (U V : chsType) (N : 'FB1(U,V)) (A : 'End(U)) :
+Lemma formlf_bound1f_le1 {R : realType} (U V : @chsType R) (N : 'FB1(U,V)) (A : 'End(U)) :
   A <= \1 -> formlf N A <= \1.
 Proof.
 move=>/(formlf_lef N) P; apply: (le_trans P).
 by rewrite formlf1E bound1f_formV_le1.
 Qed.
 
-Lemma formlf_sum_bound1 (U V : chsType) (F : finType) (N : 'TN(F;U,V))
-  (W X : chsType) (A : 'FB1(V,W)) (B : 'FB1(X,U)) (C : F -> 'FB1(X)) :
+Lemma formlf_sum_bound1 {R : realType} (U V : @chsType R) (F : finType) (N : 'TN(F;U,V))
+  (W X : @chsType R) (A : 'FB1(V,W)) (B : 'FB1(X,U)) (C : F -> 'FB1(X)) :
     (forall i j, i != j -> (N i)^A \o N j = 0) ->
     (\sum_i (N i \o (N i)^A) <= \1) ->
       \sum_i formlf (A \o N i \o B) (C i) \is bound1lf.
@@ -6996,13 +7308,16 @@ apply/(le_trans _ PN)/lev_sum=>i _.
 rewrite -formlf1E -comp_lfunA -formlf_comp; apply/formlf_lef.
 rewrite [in X in formlf X \1]formlfE -!comp_lfunA -!formlf_comp.
 apply/formlf_bound1f_le1/formlf_bound1f_le1/formlf_bound1f_le1.
-apply: (le_trans _ (@is_trnincr _ _ _ N)).
+apply: (le_trans _ (@is_trnincr R U V F N)).
 by rewrite (bigD1 i)//= formlf1EV levDl sumv_ge0// =>j _; rewrite form_gef0.
 Qed.
 
 (* generalized while; in each iteration, it executes a quantum operation     *)
 (* (but not fixed)                                                           *)
 Section WhileCvg.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (U : chsType) (M0 M1 : 'End(U)).
 Hypothesis (M_tn : (M0^A \o M0) + (M1^A \o M1) <= \1).
 Implicit Type (f : nat -> 'SO(U)).
@@ -7118,16 +7433,18 @@ Qed.
 
 End WhileCvg.
 
-HB.lock Definition whilegso (U : chsType) (M : bool -> 'End(U)) (f : nat -> 'SO(U)) :=
+HB.lock Definition whilegso {R : realType} {U : @chsType R}
+    (M : bool -> 'End(U)) (f : nat -> 'SO(U)) :=
   limn (fun n => \sum_(i < n) (formso (M false) :o \compr_(j < i) ((f j) :o (formso (M true))))).
+Arguments whilegso {R U} M f.
 
-Lemma whilegso_fixpoint (U : chsType) (M : 'TN(bool;U)) (f : nat -> 'QO(U)) :
+Lemma whilegso_fixpoint {R : realType} (U : @chsType R) (M : 'TN(bool;U)) (f : nat -> 'QO(U)) :
   (whilegso M (fun i : nat => f i.+1) :o f 0%N) :o formso (M true) + formso (M false) =
   whilegso M f.
 Proof.
 have Pc: cvgn (fun n : nat => \sum_(i < n) (formso (M false) :o \compr_(j < i) (f j.+1 :o formso (M true)))).
   apply: (whilegso_is_cvgn _ (f := (fun i : nat => f i.+1))).
-  by move: (@is_trnincr _ _ _ M); rewrite /trace_nincr big_bool/= addrC.
+  by move: (@is_trnincr R U U bool M); rewrite /trace_nincr big_bool/= addrC.
   move=>i; apply/is_cptn.
 rewrite whilegso.unlock -so_comp_liml//.
 rewrite -so_comp_liml. apply: so_comp_is_cvgl=>//.

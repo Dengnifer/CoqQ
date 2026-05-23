@@ -49,8 +49,7 @@ Local Open Scope set_scope.
 Local Open Scope ring_scope.
 Local Open Scope lfun_scope.
 
-Local Notation C := hermitian.C.
-Local Notation R := hermitian.R.
+(* Scalar and chsType notations are section-local so hspace stays polymorphic. *)
 
 Declare Scope hspace_scope.
 Local Open Scope ring_scope.
@@ -214,6 +213,9 @@ Notation "\cap_ ( i 'in' A ) U" :=
   (\big[ @Order.meet hspace_display _ /`1`]_(i in A) U%HS) : hspace_scope.
 
 Section HspaceType.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (V : chsType).
 (* projection as sub hilbert space *)
 
@@ -255,21 +257,25 @@ Bind Scope ring_scope with hspace.
 
 Notation "{ 'hspace' V }" := (hspace V).
 
-HB.lock Definition hspace_of_proj (H : chsType) (P : 'FP(H)) : {hspace H}
+HB.lock Definition hspace_of_proj {R : realType} (H : @chsType R) (P : 'FP(H)) : {hspace H}
   := Hspace P.
 Canonical hspace_of_unlockable := Unlockable hspace_of_proj.unlock.
+Arguments hspace_of_proj {R H} P.
 
 Section HspaceOfProj.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (H : chsType).
 
-Lemma hsE F : (@hspace_of_proj H F)%:VF = F.
+Lemma hsE F : (@hspace_of_proj R H F)%:VF = F.
 Proof. by rewrite unlock/=. Qed.
 
 Lemma hspaceP (A B : {hspace H}) : A =1 B <-> A = B.
 Proof. by split=>[eqAB|->//]; apply/val_inj/val_inj=>/=; apply/lfunP. Qed.
 
 Lemma eq_hs (F1 F2 : 'FP(H)) : 
-  (F1 =1 F2) -> @hspace_of_proj H F1 = @hspace_of_proj H F2.
+  (F1 =1 F2) -> @hspace_of_proj R H F1 = @hspace_of_proj R H F2.
 Proof. by move=> eq_F; apply/hspaceP => v; rewrite !hsE eq_F. Qed.
 
 End HspaceOfProj.
@@ -279,6 +285,9 @@ Notation HSType P := (hspace_of_proj P).
 Import VectorInternalTheory.
 
 Section HspacePred.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (H : chsType).
 Implicit Type (U V : {hspace H}).
 
@@ -456,6 +465,9 @@ Qed.
 End HspaceSupport.
 
 Section HspaceSupportLf.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (H : chsType).
 Implicit Type (G : chsType).
 
@@ -483,12 +495,12 @@ Proof. apply/h2mx_inj; rewrite/cosupplf !h2mx_comp adj_lfun.unlock !mx2hK; exact
 Lemma supplf_proj G (A : 'Hom(H,G)) : supplf A \is projlf.
 Proof. rewrite qualifE /supplf h2mx_comp/= adj_lfun.unlock !mx2hK; exact: suppmx_proj. Qed.
 
-HB.instance Definition _ G A := @isProjLf.Build H (supplf A) (@supplf_proj G A).
+HB.instance Definition _ G A := isProjLf.Build H (supplf A) (@supplf_proj G A).
 
 Lemma cosupplf_proj G (A : 'Hom(H,G)) : cosupplf A \is projlf.
 Proof. rewrite qualifE /cosupplf h2mx_comp/= adj_lfun.unlock !mx2hK; exact: cosuppmx_proj. Qed.
 
-HB.instance Definition _ G A := @isProjLf.Build G (cosupplf A) (@cosupplf_proj G A).
+HB.instance Definition _ G A := isProjLf.Build G (cosupplf A) (@cosupplf_proj G A).
 
 End HspaceSupportLf.
 
@@ -518,6 +530,9 @@ Qed.
 End MatrixExtra.
 
 Section Projlf.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (H : chsType).
 Implicit Type (U V W : {hspace H}).
 
@@ -594,6 +609,9 @@ End Projlf.
 Notation "\Dim U" := (dimh U) (at level 10, U at level 8, format "\Dim  U").
 
 Section VS2Proj.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (H : chsType).
 
 #[local] Lemma memvK v (U : {vspace H}) : (v \in U) = (v2r v <= vs2mx U)%MS.
@@ -670,14 +688,17 @@ Module Import BasicConstruct.
 
 (* this construct will be hide after Orthomodular lattices *)
 Section BasicConstruct.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (H : chsType).
 Implicit Type (U V: {hspace H}).
 
 Definition hspace0 := HSType (0: 'End(H)).
 Definition hspace1 := HSType (\1: 'End(H)).
 Definition hscmplt U := HSType (U^⟂).
-Definition supph G A := HSType (@supplf H G A).
-Definition cosupph G A := HSType (@cosupplf H G A).
+Definition supph G A := HSType (@supplf R H G A).
+Definition cosupph G A := HSType (@cosupplf R H G A).
 
 Definition cuph U V := supph (U%:VF + V).
 Definition caph U V := (hscmplt (cuph (hscmplt U) (hscmplt V))).
@@ -692,13 +713,16 @@ End BasicConstruct.
 End BasicConstruct.
 
 Notation "P '^⟂'" := (hscmplt P) : hspace_scope.
-Notation hs1 := (@hspace1 _).
-Notation hs0 := (@hspace0 _).
+Notation hs1 := (@hspace1 _ _).
+Notation hs0 := (@hspace0 _ _).
 
 (* don't export *)
 Module Import HspacePredTheory.
 
 Section HspacePredTheory.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (H : chsType).
 Implicit Type (U V : {hspace H}) (x y : H).
 
@@ -787,7 +811,7 @@ Proof. by apply/hspaceP=>x; rewrite hsE/= /cplmt!hsE/= subrr. Qed.
 Lemma hsOK U : ((U^⟂)%HS^⟂)%HS = U.
 Proof. by apply/hspaceP=>v; rewrite hsE/= hsE/= cplmtK. Qed.
 
-Lemma hsO_inj : injective (@hscmplt H).
+Lemma hsO_inj : injective (@hscmplt R H).
 Proof. exact: (can_inj hsOK). Qed.
 
 Lemma hsO_eq U V : (U^⟂)%HS == (V^⟂)%HS = (U == V).
@@ -828,6 +852,9 @@ End HspacePredTheory.
 Module Import HspaceSupport.
 
 Section HspaceSupport.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (H : chsType).
 Implicit Type (U V W : {hspace H}).
 
@@ -842,17 +869,19 @@ Proof. by rewrite /dimh hsE/= cosupplf_rank. Qed.
 Lemma supphP (G : chsType) (A : 'Hom(H,G)) x :
   (supph A x == 0) = (A x == 0).
 Proof.
-apply/eqb_iff; rewrite !eq_iff hsE/=; split.
-by rewrite -{2}(suppvlf A) comp_lfunE=>->; rewrite linear0.
-by rewrite lfunE/==>->; rewrite linear0.
+apply/eqb_iff; split=>/eqP P; apply/eqP.
+  move: (f_equal A P); rewrite linear0 hsE/= -comp_lfunE.
+  by rewrite (@suppvlf R H G A).
+by rewrite hsE/= /supplf lfunE/= P linear0.
 Qed.
 
 Lemma cosupphP (G K : chsType) (A : 'Hom(H,G)) (B : 'Hom(G,K)) :
   (B \o cosupph A == 0) = (B \o A == 0).
 Proof. 
-apply/eqb_iff; rewrite !eq_iff hsE/=; split;
-[rewrite -{2}(cosupplfv A) | rewrite /cosupplf];
-by rewrite comp_lfunA=>->; rewrite comp_lfun0l.
+apply/eqb_iff; split=>/eqP P; apply/eqP.
+  move: P; rewrite hsE/= => P.
+  by rewrite -(@cosupplfv R H G A) comp_lfunA P comp_lfun0l.
+by rewrite hsE/= /cosupplf comp_lfunA P comp_lfun0l.
 Qed.
 
 Lemma memh_suppOE (G : chsType) (A : 'Hom(H,G)) x : 
@@ -952,13 +981,16 @@ End HspaceSupport.
 Module Import HspaceOrthoModularLattice.
 
 Section Lehs_Alternative.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (H : chsType).
 Implicit Type (U V W : {hspace H}).
 
 Lemma leh_compr U V : U `<=` V = (V \o U == U).
 Proof.
 apply/eqb_iff; rewrite eq_iff; split.
-- move=>/lehP P; apply: (@eq_from_hs _ _ U)=>x Px; rewrite lfunE/=.
+- move=>/lehP P; apply: (@eq_from_hs R H H U)=>x Px; rewrite lfunE/=.
   move: {+}Px; rewrite memhE=>/eqP->. 
   by move/P: Px; rewrite memhE=>/eqP->.
   by move: Px; rewrite memhOE hsOK=>/eqP->; rewrite linear0.
@@ -966,7 +998,7 @@ move=>P; apply/lehP=>x; rewrite !memhE=>/eqP<-.
 by rewrite -comp_lfunE P.
 Qed.
 Lemma leh_compl U V : U `<=` V = (U \o V == U).
-Proof. by rewrite leh_compr -[LHS](can_eq (@adjfK _ _)) adjf_comp !hermf_adjE/=. Qed.
+Proof. by rewrite leh_compr -[LHS](can_eq (@adjfK R H H)) adjf_comp !hermf_adjE/=. Qed.
 
 Lemma aux14 U V : U `<=` V -> (V%:VF - U%:VF \is projlf).
 Proof.
@@ -1011,17 +1043,20 @@ Proof. by move=>/aux14 P; rewrite (supph_projK (ProjLf_Build P)) hsE. Qed.
 End Lehs_Alternative.
 
 Section HspaceOrthoModularLattice.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (H : chsType).
 Implicit Type (U V W : {hspace H}).
 
 (* form branch haven't include meetJoinLeMixin; so do it directly *)
-Lemma cuphC : commutative (@cuph H).
+Lemma cuphC : commutative (@cuph R H).
 Proof. by move=>U V; rewrite /cuph addrC. Qed.
-Lemma caphC : commutative (@caph H).
+Lemma caphC : commutative (@caph R H).
 Proof. by move=>U V; rewrite /caph cuphC. Qed.
-Lemma cuphA : associative (@cuph H).
+Lemma cuphA : associative (@cuph R H).
 Proof. by move=>U V W; rewrite !cuph2v [in LHS]vs2hsK [in RHS]vs2hsK addvA. Qed.
-Lemma caphA : associative (@caph H).
+Lemma caphA : associative (@caph R H).
 Proof. by move=>U V W; rewrite !caph2v [in LHS]vs2hsK [in RHS]vs2hsK capvA. Qed.
 Lemma cuphKI V U : caph U (cuph U V) = U.
 Proof.
@@ -1037,18 +1072,18 @@ rewrite subv_add; apply/andP; split=>//; exact: capvSl.
 Qed.
 Lemma lehEmeet U V : (U `<=` V) = (caph U V == U).
 Proof.
-rewrite leh2v -(can_eq (@hs2vsK _)) caph2v vs2hsK.
+rewrite leh2v -(can_eq (@hs2vsK R H)) caph2v vs2hsK.
 by apply/eqb_iff; rewrite eq_iff; split=>/capv_idPl.
 Qed.
 
 #[export]
 HB.instance Definition _ :=
   @Order.POrder_isLattice.Build hspace_display {hspace H}
-  (@caph H) (@cuph H) caphC cuphC caphA cuphA cuphKI caphKU lehEmeet.
+  (@caph R H) (@cuph R H) caphC cuphC caphA cuphA cuphKI caphKU lehEmeet.
 #[export]
-HB.instance Definition _ := @Order.hasBottom.Build hspace_display {hspace H} _ (@le0h H).
+HB.instance Definition _ := @Order.hasBottom.Build hspace_display {hspace H} _ (@le0h R H).
 #[export]
-HB.instance Definition _ := @Order.hasTop.Build hspace_display {hspace H} _ (@leh1 H).
+HB.instance Definition _ := @Order.hasTop.Build hspace_display {hspace H} _ (@leh1 R H).
 
 Lemma cupOh U : cuph (U^⟂)%HS U = hs1.
 Proof.
@@ -1059,19 +1094,19 @@ Qed.
 Lemma capOh U : caph (U^⟂)%HS U = hs0.
 Proof. by apply/hsO_inj; rewrite hsO0 /caph !hsOK cuphC cupOh. Qed.
 
-Lemma wlehO : {homo (@hscmplt H) : U V /~ U `<=` V}.
+Lemma wlehO : {homo (@hscmplt R H) : U V /~ U `<=` V}.
 Proof. by move=>U V; rewrite lehO. Qed.
 
 #[export]
-HB.instance Definition _ := TBLattice_isOrthoLattice.Build hspace_display {hspace H} cupOh capOh (@hsOK H) wlehO.
+HB.instance Definition _ := TBLattice_isOrthoLattice.Build hspace_display {hspace H} cupOh capOh (@hsOK R H) wlehO.
 
 Lemma hs_orthomodular U V : 
   U `<=` V -> cuph U (caph (U^⟂)%HS V) = V.
 Proof.
 rewrite cuphC caphC -{3}[V]meetx1 -(joinOx U).
-rewrite leh2v=>/(vspace_modr (hs2vs U^⟂))/(f_equal (@vs2hs _)).
+rewrite leh2v=>/(vspace_modr (hs2vs U^⟂))/(f_equal (@vs2hs R H)).
 rewrite addv2h addv2h [in X in X = _ -> _]capv2h [in X in _ = X -> _]capv2h.
-move: (@hs2vsK H); set f1 := (@hs2vs H); set f2 := (@vs2hs H).
+move: (@hs2vsK R H); set f1 := (@hs2vs R H); set f2 := (@vs2hs R H).
 by move: f1 f2=>f1 f2 P; rewrite !P.
 (* unbelievablly slow: rewrite addv2h addv2h !(hs2vsK, capv2h) *)
 Qed.
@@ -1101,6 +1136,9 @@ Canonical hspace_oModularLatticeType. *)
 (* reformulate the theories in HspacePredTheory and HspaceOrthoModularLattice *)
 (* replacing the plain operator to lattice operator *)
 Section Theory.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (H : chsType).
 Implicit Type (U V W: {hspace H}) (x y : H).
 
@@ -1251,7 +1289,7 @@ Lemma cuph0 : right_id   `0` cup.  Proof. exact: joinx0. Qed.
 Lemma cuph_eq0 U V : (U `|` V == `0`) = (U == `0`) && (V == `0`).
 Proof. exact: join_eq0. Qed.
 
-HB.instance Definition _ := Monoid.isComLaw.Build {hspace H} `0` (@cuph H) cuphA cuphC cup0h.
+HB.instance Definition _ := Monoid.isComLaw.Build {hspace H} `0` (@cuph R H) cuphA cuphC cup0h.
 
 Lemma leh1 U : U `<=` `1`. Proof. exact: lex1. Qed.
 Hint Resolve leh1 : core.
@@ -1263,9 +1301,9 @@ Lemma le1h U : (`1` `<=` U) = (U == `1`). Proof. exact: le1x. Qed.
 Lemma caph_eq1 U V : (U `&` V == `1`) = (U == `1`) && (V == `1`).
 Proof. exact: meet_eq1. Qed.
 
-HB.instance Definition _ := Monoid.isComLaw.Build {hspace H} `1` (@caph H) caphA caphC cap1h.
-HB.instance Definition _ := Monoid.isMulLaw.Build {hspace H} `0` (@caph H) cap0h caph0.
-HB.instance Definition _ := Monoid.isMulLaw.Build {hspace H} `1` (@cuph H) cup1h cuph1.
+HB.instance Definition _ := Monoid.isComLaw.Build {hspace H} `1` (@caph R H) caphA caphC cap1h.
+HB.instance Definition _ := Monoid.isMulLaw.Build {hspace H} `0` (@caph R H) cap0h caph0.
+HB.instance Definition _ := Monoid.isMulLaw.Build {hspace H} `1` (@cuph R H) cup1h cuph1.
 
 Section CuphsCaphs.
 Implicit Types (I : finType) (T : eqType).
@@ -1540,9 +1578,9 @@ Qed.
 Lemma dimv2h (U : {vspace H}) : \dim U = \Dim (vs2hs U).
 Proof. by rewrite dimh2v vs2hsK. Qed. 
 Lemma hs2vs_eq U V : (U == V) = (hs2vs U == hs2vs V)%VS.
-Proof. by rewrite (can_eq (@hs2vsK _)). Qed.
+Proof. by rewrite (can_eq (@hs2vsK R H)). Qed.
 Lemma vs2hs_eq (U V : {vspace H}) : (U == V)%VS = (vs2hs U == vs2hs V).
-Proof. by rewrite (can_eq (@vs2hsK _)). Qed.
+Proof. by rewrite (can_eq (@vs2hsK R H)). Qed.
 Lemma hline2v v : hline v = vs2hs (<[v]>)%VS.
 Proof.
 apply/eqhP=>x; rewrite -memv2h.
@@ -1552,7 +1590,7 @@ Lemma vline2h v : (<[v]>)%VS = hs2vs (hline v).
 Proof. by apply/vs2hs_inj; rewrite hs2vsK hline2v. Qed.
 
 End Theory.
-Arguments eq_from_hs {H G} U.
+Arguments eq_from_hs {R H G} U.
 
 Ltac simph2v := do 1 ?[ apply/hs2vs_inj | ]; rewrite ?memh2v ?dimh2v ?hs2vs0 
   ?hs2vs1 ?cuph2v ?caph2v ?hline2v ?caphs2v ?cuphs2v ?leh2v ?hs2vs_eq ?vs2hsK.
@@ -1571,6 +1609,9 @@ End HspaceOrthoModularLattice.
 Export HspaceOrthoModularLattice.Exports.
 
 Section CoHspace.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Implicit Type (H G : chsType).
 
 Lemma ponb_sum_eq0 G (F : finType) (f : 'PONB(F;G)) (l : F -> C) :
@@ -1673,13 +1714,18 @@ Proof. by rewrite kerhE supph0 hsO0. Qed.
 
 End CoHspace.
 
-HB.lock Definition sumoutp (H G : chsType) (F : finType) (l : F -> C) 
+HB.lock Definition sumoutp {R : realType} (H G : @chsType R)
+  (F : finType) (l : F -> @hermitian.C R)
   (f : F -> H) (g : F -> G) : 'Hom(H,G) := 
   (\sum_i (l i) *: [> g i ; f i <]).
 Canonical sumoutp_unlockable := Unlockable sumoutp.unlock.
+Arguments sumoutp {R H G F} l f g.
 
 (* ?? merge to lfrepresent.v ?? *)
 Section CastFinFun.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 
 Definition castfun (F G : finType) (eqc : #|F| = #|G|) (T : Type) (f : F -> T) :=
   (fun i : G => f (enum_val (cast_ord (esym eqc) (enum_rank i)))).
@@ -1704,19 +1750,19 @@ by move=>i j; rewrite /castfun ponb_dot enum_ord_eq enum_valK
   cast_ord_comp cast_ord_id (can_eq enum_rankK).
 Qed.
 HB.instance Definition _ (H : chsType) (F G : finType) eqc (f : 'PONB(F;H)) :=
-  isPONB.Build H G (castfun eqc f) (@castfun_ponb H F G eqc f).
+  isPONB.Build R H G (castfun eqc f) (@castfun_ponb H F G eqc f).
 
 Lemma castfun_card (H : chsType) (F G : finType) (eqc : #|F| = #|G|) (f : 'ONB(F;H)) :
   #|G| = dim H.
-Proof. by rewrite -eqc (@onb_card H F f). Qed.
+Proof. by rewrite -eqc (@onb_card R H F f). Qed.
 HB.instance Definition _ (H : chsType) (F G : finType) eqc (f : 'ONB(F;H)) :=
-  isFullDim.Build H G (castfun eqc f) (@castfun_card H F G eqc f).
+  isFullDim.Build R H G (castfun eqc f) (@castfun_card H F G eqc f).
 
 (* standard form of decomposition *)
 (* Fact sumoutp_key : unit. Proof. by []. Qed. *)
 
 Lemma sumoutpE H G F l f g : 
-  @sumoutp H G F l f g = \sum_i (l i) *: [> g i ; f i <].
+  @sumoutp R H G F l f g = \sum_i (l i) *: [> g i ; f i <].
 Proof. by rewrite unlock. Qed.
 
 Lemma sumoutp_adj (H G : chsType) (F : finType) (l : F -> C) 
@@ -1749,6 +1795,9 @@ Qed.
 End CastFinFun.
 
 Section SumoutpLinear.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (H G : chsType) (F : finType).
 Implicit Type (l : F -> C) (f : F -> H) (g : F -> G) (c : C).
 
@@ -1809,6 +1858,9 @@ Qed.
 End SumoutpLinear.
 
 Section Decomposition.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (H : chsType).
 Implicit Type (U V W : {hspace H}).
 
@@ -1903,6 +1955,9 @@ End Decomposition.
 (* proj1lf : spetralP1E [> eigenvecP1 ; eigenvecP1 <] *)
 (* other case: spectralE eigenval_proj .. property of eigenval *)
 Section SpectralDecomposition.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (H : chsType).
 
 Definition eigenvec_all (U : 'End(H)) i :=
@@ -1918,9 +1973,9 @@ by rewrite dotp_mulmx !c2hK adjmxE tr_col map_row -mulmx_rowcol -adjmxE
 Qed.
 
 HB.instance Definition _ (U : 'End(H)) :=
-  isPONB.Build H 'I_(dim H) (eigenvec_all U) (@eigenvec_all_onb U).
+  isPONB.Build R H 'I_(dim H) (eigenvec_all U) (@eigenvec_all_onb U).
 HB.instance Definition _ (U : 'End(H)) :=
-  isFullDim.Build H 'I_(dim H) (eigenvec_all U) (@card_ord _).
+  isFullDim.Build R H 'I_(dim H) (eigenvec_all U) (@card_ord _).
 HB.instance Definition _ (U : 'End(H)) (i : 'I_(dim H)) := 
   NormalState.copy (eigenvec_all U i) ((eigenvec_all U : 'PONB) i : 'NS).
 
@@ -1963,19 +2018,19 @@ Proof. by rewrite -spectral_allP is_hermlf. Qed.
 HB.instance Definition _ (U : 'FH(H)) := isHermLf.Build H (spectral_all U) (spectral_all_herm U).
 Lemma spectral_all_psd (U : 'F+(H)) : spectral_all U \is psdlf.
 Proof. by rewrite -spectral_allP ?psdlf_herm ?is_psdlf. Qed.
-HB.instance Definition _ (U : 'F+(H)) := Herm_isPsdLf.Build H (spectral_all U) (spectral_all_psd U).
+HB.instance Definition _ (U : 'F+(H)) := Herm_isPsdLf.Build R H (spectral_all U) (spectral_all_psd U).
 Lemma spectral_all_obs (U : 'FO(H)) : spectral_all U \is obslf.
 Proof. by rewrite -spectral_allP ?obslf_herm ?is_obslf. Qed.
 HB.instance Definition _ (U : 'FO(H)) := isObsLf.Build H (spectral_all U) (spectral_all_obs U).
 Lemma spectral_all_den (U : 'FD(H)) : spectral_all U \is denlf.
 Proof. by rewrite -spectral_allP ?denlf_herm ?is_denlf. Qed.
-HB.instance Definition _ (U : 'FD(H)) := Obs_isDenLf.Build H (spectral_all U) (spectral_all_den U).
+HB.instance Definition _ (U : 'FD(H)) := Obs_isDenLf.Build R H (spectral_all U) (spectral_all_den U).
 Lemma spectral_all_den1 (U : 'FD1(H)) : spectral_all U \is den1lf.
 Proof. by rewrite -spectral_allP ?den1lf_herm ?is_den1lf. Qed.
-HB.instance Definition _ (U : 'FD1(H)) := Den_isDen1Lf.Build H (spectral_all U) (spectral_all_den1 U).
+HB.instance Definition _ (U : 'FD1(H)) := Den_isDen1Lf.Build R H (spectral_all U) (spectral_all_den1 U).
 Lemma spectral_all_proj (U : 'FP(H)) : spectral_all U \is projlf.
 Proof. by rewrite -spectral_allP ?projlf_herm ?is_projlf. Qed.
-HB.instance Definition _ (U : 'FP(H)) := Obs_isProjLf.Build H (spectral_all U) (spectral_all_proj U).
+HB.instance Definition _ (U : 'FP(H)) := Obs_isProjLf.Build R H (spectral_all U) (spectral_all_proj U).
 Lemma spectral_all_proj1 (U : 'FP1(H)) : spectral_all U \is proj1lf.
 Proof. by rewrite -spectral_allP ?proj1lf_herm ?is_proj1lf. Qed.
 HB.instance Definition _ (U : 'FP1(H)) := isProj1Lf.Build H (spectral_all U) (spectral_all_proj1 U).
@@ -2012,7 +2067,7 @@ Lemma eigenvec_ponb (U : 'End(H)) i j :
 Proof. by rewrite/eigenvec onb_dot (inj_eq (@eigen_index_inj _)). Qed.
 
 HB.instance Definition _ (U : 'End(H)) :=
-  isPONB.Build H 'I_(\Rank U) (@eigenvec U) (@eigenvec_ponb U).
+  isPONB.Build R H 'I_(\Rank U) (@eigenvec U) (@eigenvec_ponb U).
 HB.instance Definition _ (U : 'End(H)) (i : 'I_(\Rank U)) := 
   NormalState.copy (@eigenvec U i) ((@eigenvec U : 'PONB) i : 'NS).
 
@@ -2103,7 +2158,7 @@ by rewrite sumoutpE big_ord1 /castfun eigenval_proj scale1r.
 Qed.
 Lemma eigenvectP1_ns (U : 'FP1(H)) : [< eigenvecP1 U ; eigenvecP1 U >] == 1.
 Proof. by rewrite -outp_trlf -spectralP1E trlf_proj1. Qed.
-HB.instance Definition _ U := isNormalState.Build H (eigenvecP1 U)
+HB.instance Definition _ U := isNormalState.Build R H (eigenvecP1 U)
   (eqP (@eigenvectP1_ns U)).
 
 Lemma supph_eigenE (U : 'FH(H)) : 
@@ -2120,19 +2175,19 @@ Proof. by rewrite -spectralP is_hermlf. Qed.
 HB.instance Definition _ (U : 'FH(H)) := isHermLf.Build H (spectral U) (spectral_herm U).
 Lemma spectral_psd (U : 'F+(H)) : spectral U \is psdlf.
 Proof. by rewrite -spectralP ?psdlf_herm ?is_psdlf. Qed.
-HB.instance Definition _ (U : 'F+(H)) := Herm_isPsdLf.Build H (spectral U) (spectral_psd U).
+HB.instance Definition _ (U : 'F+(H)) := Herm_isPsdLf.Build R H (spectral U) (spectral_psd U).
 Lemma spectral_obs (U : 'FO(H)) : spectral U \is obslf.
 Proof. by rewrite -spectralP ?obslf_herm ?is_obslf. Qed.
 HB.instance Definition _ (U : 'FO(H)) := isObsLf.Build H (spectral U) (spectral_obs U).
 Lemma spectral_den (U : 'FD(H)) : spectral U \is denlf.
 Proof. by rewrite -spectralP ?denlf_herm ?is_denlf. Qed.
-HB.instance Definition _ (U : 'FD(H)) := Obs_isDenLf.Build H (spectral U) (spectral_den U).
+HB.instance Definition _ (U : 'FD(H)) := Obs_isDenLf.Build R H (spectral U) (spectral_den U).
 Lemma spectral_den1 (U : 'FD1(H)) : spectral U \is den1lf.
 Proof. by rewrite -spectralP ?den1lf_herm ?is_den1lf. Qed.
-HB.instance Definition _ (U : 'FD1(H)) := Den_isDen1Lf.Build H (spectral U) (spectral_den1 U).
+HB.instance Definition _ (U : 'FD1(H)) := Den_isDen1Lf.Build R H (spectral U) (spectral_den1 U).
 Lemma spectral_proj (U : 'FP(H)) : spectral U \is projlf.
 Proof. by rewrite -spectralP ?projlf_herm ?is_projlf. Qed.
-HB.instance Definition _ (U : 'FP(H)) := Obs_isProjLf.Build H (spectral U) (spectral_proj U).
+HB.instance Definition _ (U : 'FP(H)) := Obs_isProjLf.Build R H (spectral U) (spectral_proj U).
 Lemma spectral_proj1 (U : 'FP1(H)) : spectral U \is proj1lf.
 Proof. by rewrite -spectralP ?proj1lf_herm ?is_proj1lf. Qed.
 (*? no canonical*)
@@ -2178,27 +2233,30 @@ Qed.
 
 End SpectralDecomposition.
 
-Lemma ranklf_le_minn (U V : chsType) (A : 'Hom(U,V)) :
+Lemma ranklf_le_minn {R : realType} (U V : @chsType R) (A : 'Hom(U,V)) :
   (\Rank A <= minn (dim V) (dim U))%N.
 Proof. by rewrite leq_min ranklf_le_dom ranklf_le_codom. Qed.
 
 HB.lock
-Definition svd_ui (U V : chsType) (A : 'Hom(U,V)) (i : 'I_(\Rank A)) :=
+Definition svd_ui {R : realType} (U V : @chsType R) (A : 'Hom(U,V)) (i : 'I_(\Rank A)) :=
   c2h (col (widen_ord (ranklf_le_codom A) i) (svd_u (h2mx A))).
-Arguments svd_ui {U V} A i.
+Arguments svd_ui {R U V} A i.
 
 HB.lock
-Definition svd_vi (U V : chsType) (A : 'Hom(U,V)) (i : 'I_(\Rank A)) :=
+Definition svd_vi {R : realType} (U V : @chsType R) (A : 'Hom(U,V)) (i : 'I_(\Rank A)) :=
   c2h (col (widen_ord (ranklf_le_dom A) i) (svd_v (h2mx A))^*t).
-Arguments svd_vi {U V} A i.
+Arguments svd_vi {R U V} A i.
 
 HB.lock
-Definition svd_di (U V : chsType) (A : 'Hom(U,V)) (i : 'I_(\Rank A)) :=
+Definition svd_di {R : realType} (U V : @chsType R) (A : 'Hom(U,V)) (i : 'I_(\Rank A)) :=
   svd_d (h2mx A) 0 (widen_ord (ranklf_le_minn A) i).
-Arguments svd_di {U V} A i.
+Arguments svd_di {R U V} A i.
 
 (* TODO : unfinished *)
 (* Section SingularValueDecomposition.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (U V : chsType).
 Implicit Type (A : 'Hom(U,V)).
 
@@ -2220,6 +2278,9 @@ Lemma svd_di_decreasing A (i j : 'I_(\Rank A)) :
 End SingularValueDecomposition. *)
 
 Section RankExtra.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (F G H : chsType).
 
 Lemma ranklfM_max (A : 'Hom(F,G)) (B : 'Hom(H,F)) :
@@ -2267,6 +2328,9 @@ End RankExtra.
 
 
 Section CopyVspace.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (H : chsType).
 Implicit Type (U V W : {hspace H}).
 
@@ -2418,10 +2482,16 @@ End CopyVspace.
 (* orthogonal between vector & space , space & space , vector & vector *)
 (* commutative , lattice commute <-> projection commute *)
 Section ProjectionLattice.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (H : chsType).
 End ProjectionLattice.
 
 Section Extra.
+Variable R : realType.
+Local Notation C := (@hermitian.C R).
+Local Notation chsType := (@chsType R).
 Variable (H : chsType).
 Implicit Type (u v : H) (U V : {hspace H}).
 
@@ -2476,7 +2546,7 @@ Lemma hline_sum (I : finType) (P : pred I) (f : I -> H) U :
   (forall i, P i -> f i \in U) -> <[\sum_(i | P i) f i]> `<=` U.
 Proof. exact: hline_sum_seq. Qed.
 Lemma projf_comp_eq0 (U V : 'FP(H)) : U \o V == 0 = (V \o U == 0).
-Proof. by rewrite -(inj_eq (@adjf_inj _ _)) linear0 adjf_comp !hermf_adjE/=. Qed.
+Proof. by rewrite -(inj_eq (@adjf_inj R H H)) linear0 adjf_comp !hermf_adjE/=. Qed.
 Lemma projf_comp_eq0P (U V : 'FP(H)) : U \o V = 0 -> (V \o U = 0).
 Proof. by move=>/eqP; rewrite projf_comp_eq0=>/eqP. Qed.
 

@@ -1294,24 +1294,25 @@ End VDistrCoreTh.
 
 Require Import hermitian.
 
-Notation C := hermitian.C.
+Section DistrTheory.
+Variable R : realType.
+Notation C := (@hermitian.C R).
 
 Definition Distr (I : choiceType) :=
-  (@VDistr.type I hermitian.R
-    (ctopology_C__canonical__extnum_VOrderFinNormedModule hermitian.R)).
+  (@VDistr.type I R
+    (ctopology_C__canonical__extnum_VOrderFinNormedModule R)).
 Arguments Distr : simpl never.
 
-Section DistrTheory.
 Context (I : choiceType) (mu : Distr I).
 Local Notation CV :=
-  (ctopology_C__canonical__extnum_VOrderFinNormedModule hermitian.R).
+  (ctopology_C__canonical__extnum_VOrderFinNormedModule R).
 
 Lemma ge0_mu : forall x, 0 <= mu x.
-Proof. move=>x; exact: (@vdistr_ge0 I hermitian.R CV mu x). Qed.
+Proof. move=>x; exact: (@vdistr_ge0 I R CV mu x). Qed.
 
 Lemma sum_le1_mu : sum mu <= 1.
 Proof.
-apply/(le_trans _ (@vdistr_sum_le1 I hermitian.R CV mu))/real_ler_norm.
+apply/(le_trans _ (@vdistr_sum_le1 I R CV mu))/real_ler_norm.
 move: (summable_cvg (f := mu)).
 apply: (closed_cvg _ etclosed_real)=>//.
 near=>J. apply/ger0_real/sumr_ge0=>i _; apply: ge0_mu.
@@ -1322,7 +1323,7 @@ Lemma summable_mu : summable mu.
 Proof. exact: vdistr_summable. Qed.
 
 Lemma le_psum_mu (A : {fset I}) : psum mu A <= sum mu.
-Proof. exact: (@psum_vdistr_lev_sum I hermitian.R CV mu A). Qed.
+Proof. exact: (@psum_vdistr_lev_sum I R CV mu A). Qed.
 
 Lemma le_sum_mu (x : I) : mu x <= sum mu.
 Proof. by apply/(le_trans _ (le_psum_mu [fset x]%fset)); rewrite psum1. Qed.
