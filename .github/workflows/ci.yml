@@ -1,0 +1,68 @@
+name: CoqQ Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  dune-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      CI_JOBS: "1"
+    steps:
+      - name: Checkout CoqQ
+        uses: actions/checkout@v4
+
+      - name: Set up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: 5.2.1
+          dune-cache: true
+
+      - name: Configure opam repositories
+        run: |
+          eval "$(opam env)"
+          if opam repository list --short | grep -qx coq-released; then
+            opam repository set-url -y coq-released https://coq.inria.fr/opam/released
+          else
+            opam repository add -y coq-released https://coq.inria.fr/opam/released
+          fi
+          if opam repository list --short | grep -qx rocq-released; then
+            opam repository set-url -y rocq-released https://rocq-prover.org/opam/released
+          else
+            opam repository add -y rocq-released https://rocq-prover.org/opam/released
+          fi
+          opam update
+
+      - name: Install dependencies
+        run: |
+          eval "$(opam env)"
+          opam install -y dune.3.23.1 dune-configurator.3.23.1
+          opam install -y \
+            coq-core.9.1.1 \
+            rocq-core.9.1.1 \
+            rocq-elpi.3.3.1 \
+            rocq-hierarchy-builder.1.10.2
+          opam install -y \
+            rocq-mathcomp-ssreflect.2.5.0 \
+            rocq-mathcomp-algebra.2.5.0 \
+            rocq-mathcomp-field.2.5.0 \
+            rocq-mathcomp-fingroup.2.5.0 \
+            rocq-mathcomp-finmap.2.2.2 \
+            rocq-mathcomp-solvable.2.5.0 \
+            rocq-mathcomp-bigenough.1.0.4 \
+            rocq-mathcomp-classical.1.16.0 \
+            rocq-mathcomp-analysis.1.16.0 \
+            coq-mathcomp-real-closed.2.0.3
+          opam install -y --deps-only .
+
+      - name: Build CoqQ
+        run: |
+          eval "$(opam env)"
+          make DUNEOPTS="--root=. -j${CI_JOBS}"
